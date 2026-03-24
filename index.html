@@ -2562,10 +2562,10 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
         </div>
         <!-- Drop zone -->
         <div class="ai-drop-zone" id="ai-drop-zone" onclick="document.getElementById('ai-file-input').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleAiDrop(event)">
-          <input type="file" id="ai-file-input" accept=".pdf,.xlsx,.xls,.csv" onchange="handleAiFile(this.files[0])">
+          <input type="file" id="ai-file-input" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" onchange="handleAiFile(this.files[0])">
           <div class="ai-drop-icon">📄</div>
           <div class="ai-drop-title">Arrastra el PDF aquí o haz clic</div>
-          <div class="ai-drop-sub">Acepta PDF, Excel y CSV · Claude detecta el proveedor de cada factura</div>
+          <div class="ai-drop-sub">PDF · JPG · PNG · foto de factura · Claude extrae los datos automáticamente</div>
         </div>
         <!-- Progress -->
         <div class="ai-progress" id="ai-progress">
@@ -7127,7 +7127,7 @@ function openAiImport() {
   document.getElementById('ai-import-confirm').style.display  = 'none';
   document.getElementById('ai-progress').classList.remove('show');
   document.getElementById('ai-drop-zone').querySelector('.ai-drop-title').textContent = 'Arrastra el PDF aquí o haz clic';
-  document.getElementById('ai-drop-zone').querySelector('.ai-drop-sub').textContent   = 'Acepta PDF, Excel y CSV · Claude detecta el proveedor de cada factura';
+  document.getElementById('ai-drop-zone').querySelector('.ai-drop-sub').textContent   = 'PDF · JPG · PNG · foto de factura · Claude extrae los datos automáticamente';
   document.getElementById('aiModal').classList.add('open');
 }
 function closeAiModal(e) { if (e.target===document.getElementById('aiModal')) closeAiModalBtn(); }
@@ -7187,9 +7187,10 @@ function handleAiFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   document.getElementById('ai-drop-zone').querySelector('.ai-drop-title').textContent = `📎 ${file.name}`;
   document.getElementById('ai-drop-zone').querySelector('.ai-drop-sub').textContent   = `${(file.size/1024).toFixed(1)} KB · ${ext.toUpperCase()}`;
-  if (ext === 'pdf')                      processAiPdf(file);
-  else if (['xlsx','xls','csv'].includes(ext)) processAiText(file, ext);
-  else notify('⚠ Formato no soportado. Usa PDF, Excel o CSV.');
+  if (ext === 'pdf')                           processAiPdf(file);
+  else if (['jpg','jpeg','png'].includes(ext))  processAiImage(file, ext);
+  else if (['xlsx','xls','csv'].includes(ext))  processAiText(file, ext);
+  else notify('⚠ Formato no soportado. Usa PDF, JPG, PNG, Excel o CSV.');
 }
 
 function setAiProgress(pct, msg) {
@@ -7243,40 +7244,78 @@ Responde SOLO con array JSON válido. Sin texto, sin markdown, sin backticks.
 Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORÍFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","items":[{"descripcion":"Lomo vetado","cantidad":15,"unidad":"kg","precioUnit":8900,"subtotal":133500,"invProdId":"inv_123"},{"descripcion":"Pollo entero","cantidad":20,"unidad":"un","precioUnit":3200,"subtotal":64000,"invProdId":""}]}]`;
 }
 
-async function processAiPdf(file) {
-  const apiKey = iaGetKey();
-  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic en el campo superior'); return; }
+// Subida en chunks: divide el archivo en trozos de 200KB
+// para evitar el límite de payload de Apps Script
+const AI_CHUNK_BYTES = 200000; // ~200KB por chunk
 
-  setAiProgress(15, 'Leyendo PDF…');
-  const base64 = await new Promise((res,rej) => {
+async function uploadFileInChunks(file, mtype, onProgress) {
+  const uploadId = 'up_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const base64   = await new Promise((res,rej) => {
     const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
+    r.onload  = () => res(r.result.split(',')[1]);
     r.onerror = rej;
     r.readAsDataURL(file);
   });
-
-  setAiProgress(40, 'Enviando a Claude…');
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'anthropicProxy',
-        apiKey,
-        model: 'claude-opus-4-6',
-        max_tokens: 8000,
-        messages: [{ role:'user', content:[
-          { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
-          { type:'text', text: aiPrompt() }
-        ]}]
-      })
-    });
-    setAiProgress(80, 'Procesando respuesta…');
+  // Dividir base64 en chunks
+  const chunks = [];
+  for (let i = 0; i < base64.length; i += AI_CHUNK_BYTES)
+    chunks.push(base64.slice(i, i + AI_CHUNK_BYTES));
+  const total = chunks.length;
+  // Subir cada chunk
+  for (let i = 0; i < total; i++) {
+    onProgress && onProgress(Math.round((i/total)*60)+10, `Subiendo parte ${i+1} de ${total}…`);
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({
+      action:'uploadChunk', uploadId, chunk:i, total, data:chunks[i],
+      mtype, nombre:file.name
+    })});
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Error del proxy');
-    const text  = data.content.map(c=>c.text||'').join('');
-    const rows  = JSON.parse(text.replace(/```json|```/g,'').trim());
+    if (!data.ok) throw new Error(data.error || 'Error subiendo chunk '+i);
+  }
+  return { uploadId, total, mtype };
+}
+
+async function processAiPdf(file) {
+  const apiKey = iaGetKey();
+  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
+  setAiProgress(5, 'Preparando PDF…');
+  try {
+    const { uploadId, total } = await uploadFileInChunks(file, 'application/pdf',
+      (pct, msg) => setAiProgress(pct, msg));
+    setAiProgress(75, 'Claude está leyendo el documento…');
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({
+      action:'processUpload', uploadId, total, mtype:'application/pdf',
+      apiKey, prompt: aiPrompt()
+    })});
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error procesando');
+    const text = data.content.map(c=>c.text||'').join('');
+    const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
-    setAiProgress(100, `✓ Claude procesó ${rows.length} facturas`);
+    setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
+  } catch(e) {
+    document.getElementById('ai-progress').classList.remove('show');
+    notify('⚠ Error: ' + e.message);
+  }
+}
+
+async function processAiImage(file, ext) {
+  const apiKey = iaGetKey();
+  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
+  const mtype = ext === 'png' ? 'image/png' : 'image/jpeg';
+  setAiProgress(5, 'Preparando imagen…');
+  try {
+    const { uploadId, total } = await uploadFileInChunks(file, mtype,
+      (pct, msg) => setAiProgress(pct, msg));
+    setAiProgress(75, 'Claude está analizando la imagen…');
+    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({
+      action:'processUpload', uploadId, total, mtype, apiKey, prompt: aiPrompt()
+    })});
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error procesando');
+    const text = data.content.map(c=>c.text||'').join('');
+    const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
+    aiShowPreview(rows);
+    setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
   } catch(e) {
     document.getElementById('ai-progress').classList.remove('show');
     notify('⚠ Error: ' + e.message);
