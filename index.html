@@ -7257,10 +7257,11 @@ async function processAiPdf(file) {
 
   setAiProgress(40, 'Enviando a Claude…');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
+        action: 'anthropicProxy',
+        apiKey,
         model: 'claude-opus-4-6',
         max_tokens: 8000,
         messages: [{ role:'user', content:[
@@ -7271,7 +7272,7 @@ async function processAiPdf(file) {
     });
     setAiProgress(80, 'Procesando respuesta…');
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Error de API: ' + res.status);
+    if (!data.ok) throw new Error(data.error || 'Error del proxy');
     const text  = data.content.map(c=>c.text||'').join('');
     const rows  = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
@@ -7289,10 +7290,11 @@ async function processAiText(file, ext) {
   const textContent = ext === 'csv' ? await file.text() : await file.text().catch(() => 'Error al leer.');
   setAiProgress(50, 'Enviando a Claude…');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
       body: JSON.stringify({
+        action: 'anthropicProxy',
+        apiKey,
         model: 'claude-sonnet-4-6',
         max_tokens: 8000,
         messages: [{ role:'user', content: aiPrompt() + '\n\nDATOS:\n' + textContent.slice(0,10000) }]
@@ -7300,7 +7302,7 @@ async function processAiText(file, ext) {
     });
     setAiProgress(80, 'Procesando…');
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Error ' + res.status);
+    if (!data.ok) throw new Error(data.error || 'Error del proxy');
     const text  = data.content.map(c=>c.text||'').join('');
     const rows  = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
@@ -8692,15 +8694,14 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","nombreMatch":"Lomo de res"
       ];
     }
 
-    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+    const res  = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({ model:'claude-opus-4-6', max_tokens:4000, messages:[{role:'user',content}] })
+      body: JSON.stringify({ action:'anthropicProxy', apiKey, model:'claude-opus-4-6', max_tokens:4000, messages:[{role:'user',content}] })
     });
 
     setInvProgress(80, 'Procesando respuesta…');
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'Error ' + res.status);
+    if (!data.ok) throw new Error(data.error || 'Error del proxy');
 
     const text = data.content.map(c=>c.text||'').join('');
     const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
