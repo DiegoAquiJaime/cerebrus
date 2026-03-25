@@ -7574,10 +7574,12 @@ function aiShowPreview(rows) {
           <div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
             ${allItems.map((it,i) => {
               const matched = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
-              return `<div style="display:grid;grid-template-columns:20px 1fr 60px 60px 80px;gap:6px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="ai-inv-item-${i}">
-                <input type="checkbox" class="ai-chk-prod" data-idx="${i}" checked
+              const rowId   = 'ai-inv-item-' + i;
+              const chkId   = 'ai-inv-chk-' + i;
+              return `<div style="display:grid;grid-template-columns:20px 1fr 60px 60px 80px;gap:6px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="${rowId}">
+                <input type="checkbox" class="ai-chk-prod" id="${chkId}" data-idx="${i}" checked
                   style="width:14px;height:14px;accent-color:var(--success);cursor:pointer;"
-                  onchange="const row=document.getElementById('ai-inv-item-${i}');row.style.opacity=this.checked?'1':'0.4';">
+                  onchange="document.getElementById('${rowId}').style.opacity=this.checked?'1':'0.4';">
                 <div>
                   <span style="font-weight:600;">${esc(it.descripcion)}</span>
                   ${matched?`<span style="font-size:9px;color:var(--success);margin-left:4px;">→ ${esc(matched.nombre)}</span>`:'<span style="font-size:9px;color:#94a3b8;margin-left:4px;">sin match</span>'}
