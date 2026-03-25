@@ -7827,16 +7827,19 @@ function aiConfirmImport() {
           const existing = orden.items.find(x=>x.prodId===prod.id);
           if (existing) { existing.qty += qty; if (precio) existing.precio = precio; }
           else orden.items.push({ prodId:prod.id, qty, precio, prov:'' });
-          // Also update price in product catalog if we have a price
+          // Save price to BOTH precios (used by invRender) AND proveedores
           if (precio) {
+            const provNombreExist = it._provNombre || 'Importado';
+            // Update precios array (what invRender reads)
+            if (!prod.precios) prod.precios = [];
+            const precioExist = prod.precios.find(p=>p.prov===provNombreExist||p.prov===''||p.prov==='Importado');
+            if (precioExist) { precioExist.precio = precio; precioExist.prov = provNombreExist; }
+            else prod.precios.push({ prov: provNombreExist, precio });
+            // Also update proveedores array
             if (!prod.proveedores) prod.proveedores = [];
-            const provExist = prod.proveedores.find(p=>p.nombre==='' || p.nombre==='Importado');
-            if (provExist) { provExist.precio = precio; }
-            else prod.proveedores.push({ nombre:'Importado', precio, esMejor:true });
-            // Mark best price
-            const maxP = Math.max(...prod.proveedores.map(p=>p.precio||0));
-            const minP = Math.min(...prod.proveedores.filter(p=>p.precio>0).map(p=>p.precio));
-            prod.proveedores.forEach(p => p.esMejor = p.precio === minP);
+            const provExist = prod.proveedores.find(p=>p.nombre===provNombreExist||p.nombre===''||p.nombre==='Importado');
+            if (provExist) { provExist.precio = precio; provExist.nombre = provNombreExist; }
+            else prod.proveedores.push({ nombre: provNombreExist, precio, esMejor:true });
           }
           added++;
         } else {
@@ -7860,6 +7863,8 @@ function aiConfirmImport() {
             cat,
             unidad: it.unidad||'un',
             stock: 0, stockMin: 0,
+            // Save to BOTH precios (invRender reads this) AND proveedores
+            precios:    precio ? [{ prov: provNombre, precio }] : [],
             proveedores: precio ? [{ nombre: provNombre, precio, esMejor:true }] : []
           };
           if (!state.inventario) state.inventario = [];
