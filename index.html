@@ -1391,8 +1391,8 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
     <p style="color:rgba(255,255,255,0.28);font-size:9px;margin-top:6px;line-height:1.5;letter-spacing:0;">Desarrollado por Palacios-Brockhaus<br>para Aquí Jaime restaurante<br>Códigos de Gemini (Google) &amp; Claude Sonnet (Anthropic)</p>
   </div>
   <div class="nav-sep">Vistas</div>
-  <div class="nav-item active" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
-  <div class="nav-item" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
+  <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
+  <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
   <div class="nav-item" id="nav-semanas" onclick="showTab('semanas')"><span class="ni">📊</span> Proyección Mensual</div>
   <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;"><span class="ni">📈</span> Venta Semanal</div>
   <div class="nav-item" id="nav-historial" onclick="showTab('historial')"><span class="ni">🗓</span> Historial Meses</div>
@@ -1504,6 +1504,22 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
   <!-- ======= TAB RESUMEN ======= -->
   <div id="resumen" class="tab-content active">
     <div class="content">
+
+      <!-- 🌤 Widget Clima Concón / Caleta Higuerillas -->
+      <div id="weather-widget" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;color:white;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div id="wx-icon" style="font-size:36px;">⛅</div>
+          <div>
+            <div style="font-size:11px;opacity:.8;font-weight:600;">📍 Caleta Higuerillas · Concón</div>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <div id="wx-temp" style="font-size:28px;font-weight:900;">—°C</div>
+              <div id="wx-cond" style="font-size:12px;opacity:.85;">Cargando…</div>
+            </div>
+          </div>
+        </div>
+        <div id="wx-forecast" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
+        <div style="font-size:9px;opacity:.5;width:100%;text-align:right;" id="wx-updated"></div>
+      </div>
 
       <!-- Calendario chileno widget -->
       <div class="cal-widget">
@@ -4536,6 +4552,7 @@ function showTab(tabId) {
     // Refresh SAC summary on dashboard
     const _w = sacCurrentWeek ? sacCurrentWeek() : 1;
     if (typeof sacCalcBalance === 'function') sacCalcBalance(_w);
+    wxFetch();
   }
 }
 
@@ -7337,12 +7354,21 @@ function aiPromptTexto() {
   const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
   return `Eres un asistente experto en contabilidad chilena.
 Analiza el siguiente TEXTO extraído de documentos tributarios chilenos mediante OCR.
-El texto puede tener problemas de formato por el OCR — interpreta con sentido común.
+El texto puede tener problemas de formato — interpreta con sentido común.
 
 RUT propio del restaurante (NO es proveedor): 77.912.330-8
-
 Proveedores conocidos: ${known || '(ninguno aún)'}
 RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
+
+REGLAS DE PRECIOS — MUY IMPORTANTE:
+1. Verifica matemáticamente si los precios son netos o brutos:
+   - Suma (cantidad × precioUnit de cada línea)
+   - Si esa suma ≈ monto total de la factura → precios YA incluyen IVA → úsalos directamente
+   - Si esa suma × 1.19 ≈ monto total → precios son NETOS → multiplica cada precioUnit por 1.19
+   - Si ninguno coincide (puede haber descuentos, ILA u otros impuestos) → usa confianza "duda" y explica en observacion
+2. precioUnit siempre debe ser CON IVA incluido en el resultado final
+3. Para bebidas alcohólicas (vino, cerveza, pisco, licores): el ILA es un impuesto adicional al IVA. Si detectas ILA en la factura, inclúyelo en el precio final y marca eraNetoIVA:true con observacion explicando el ILA
+4. Si la factura muestra precio por caja, calcula precio unitario dividiendo por las unidades por caja
 
 Para CADA documento extrae un JSON con:
 - tipoDoc: "factura" | "nc" | "nd" | "guia" | "otro"
@@ -7351,12 +7377,20 @@ Para CADA documento extrae un JSON con:
 - rut: RUT del proveedor (con puntos y guión)
 - proveedor: nombre del proveedor
 - emision: fecha DD-MM-YYYY
-- monto: monto total entero en pesos
+- monto: monto TOTAL con IVA en pesos entero
 - vence: fecha vencimiento DD-MM-YYYY
 - comentario: glosa
 - confianza: "ok" | "duda" | "ilegible"
-- observacion: qué no quedó claro
-- items: array de líneas con {descripcion, cantidad, unidad, precioUnit, subtotal}
+- observacion: si hay dudas sobre IVA u otros datos
+- tieneIVA: true si detectaste que los precios de línea incluyen IVA, false si son netos, null si no puedes determinarlo
+- items: array de líneas con:
+  * descripcion: nombre del producto
+  * cantidad: número (kg, litros, unidades)
+  * unidad: "kg" | "L" | "un" | "caja" u otra
+  * precioUnit: precio unitario CON IVA incluido (entero en pesos)
+  * subtotal: subtotal de la línea CON IVA (entero en pesos)
+  * precioOriginal: precio como aparece en la factura (antes de aplicar IVA si era neto)
+  * eraNetoIVA: true si tuviste que multiplicar por 1.19
 
 Responde SOLO con array JSON válido. Sin texto ni markdown.`;
 }
@@ -7561,8 +7595,28 @@ function aiShowPreview(rows) {
   if (invWrap) {
     if (allItems.length) {
       invWrap.style.display = '';
+      // Check if any document had net prices
+      const docConIVAAplicado = rows.filter(r=>r.items?.some(it=>it.eraNetoIVA)).length;
+      const docSinIVAInfo     = rows.filter(r=>r.tieneIVA===null && r.items?.length).length;
+      const docNeto           = rows.filter(r=>r.tieneIVA===false && r.items?.length).length;
+
+      let ivaWarning = '';
+      if (docConIVAAplicado > 0)
+        ivaWarning = `<div style="font-size:10px;color:#059669;margin-bottom:6px;">✓ IVA aplicado automáticamente — precios con IVA incluido</div>`;
+      else if (docNeto > 0)
+        ivaWarning = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:var(--danger);font-weight:700;">⚠ Precios NETOS detectados — sin IVA incluido</span>
+          <button onclick="aiAplicarIVA(1.19)" style="background:#3b82f6;color:white;border:none;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ IVA 19% a todos</button>
+        </div>`;
+      else if (docSinIVAInfo > 0)
+        ivaWarning = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:var(--warning);font-weight:700;">⚠ No se pudo verificar si los precios incluyen IVA</span>
+          <button onclick="aiAplicarIVA(1.19)" style="background:#f59e0b;color:white;border:none;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ IVA 19% a todos</button>
+        </div>`;
+
       invWrap.innerHTML = `
         <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-top:12px;">
+          ${ivaWarning}
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
               <input type="checkbox" id="ai-chk-inv" checked style="width:15px;height:15px;accent-color:var(--success);"
@@ -7571,22 +7625,30 @@ function aiShowPreview(rows) {
             </label>
             <span style="font-size:10px;color:#94a3b8;">${allItems.length} productos — desmarca los que no quieras</span>
           </div>
-          <div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+          <div style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;" id="ai-inv-items-list">
             ${allItems.map((it,i) => {
-              const matched = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
-              const rowId   = 'ai-inv-item-' + i;
-              const chkId   = 'ai-inv-chk-' + i;
-              return `<div style="display:grid;grid-template-columns:20px 1fr 60px 60px 80px;gap:6px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="${rowId}">
+              const matched  = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
+              const rowId    = 'ai-inv-item-' + i;
+              const chkId    = 'ai-inv-chk-' + i;
+              const descU    = (it.descripcion||'').toUpperCase();
+              // Detect if alcohol/ILA product
+              const esAlcohol = /VINO|CERVEZA|PISCO|VODKA|RON|WHISKY|LICOR|CHAMPAGNE|ESPUMANTE|SIDRA|CAVA/.test(descU);
+              const impuestoBadge = esAlcohol
+                ? `<span style="font-size:8px;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:3px;margin-left:3px;" title="Producto con ILA — verifica impuesto adicional al alcohol">ILA</span>`
+                : '';
+              return `<div style="display:grid;grid-template-columns:20px 1fr 55px 45px 85px 60px;gap:4px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="${rowId}">
                 <input type="checkbox" class="ai-chk-prod" id="${chkId}" data-idx="${i}" checked
                   style="width:14px;height:14px;accent-color:var(--success);cursor:pointer;"
                   onchange="document.getElementById('${rowId}').style.opacity=this.checked?'1':'0.4';">
                 <div>
-                  <span style="font-weight:600;">${esc(it.descripcion)}</span>
+                  <span style="font-weight:600;">${esc(it.descripcion)}</span>${impuestoBadge}
                   ${matched?`<span style="font-size:9px;color:var(--success);margin-left:4px;">→ ${esc(matched.nombre)}</span>`:'<span style="font-size:9px;color:#94a3b8;margin-left:4px;">sin match</span>'}
                 </div>
                 <input type="text" value="${it.cantidad}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
                 <span style="color:#94a3b8;font-size:10px;text-align:center;">${esc(it.unidad||'un')}</span>
                 <input type="text" value="${it.precioUnit||''}" placeholder="$ unit" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-price-${i}">
+                <button onclick="aiAplicarIVAItem(${i})" title="Aplicar IVA 19% a este precio"
+                  style="font-size:9px;background:#f1f5f9;border:1px solid var(--border);border-radius:4px;padding:2px 5px;cursor:pointer;font-family:inherit;color:#64748b;white-space:nowrap;">+IVA</button>
               </div>`;
             }).join('')}
           </div>
@@ -7597,6 +7659,31 @@ function aiShowPreview(rows) {
   }
   // Store allItems globally for import
   window._aiInvItems = allItems;
+}
+
+// ── IVA helpers ──
+function aiAplicarIVA(factor) {
+  // Apply IVA factor to ALL visible price inputs
+  const items = window._aiInvItems || [];
+  items.forEach((it, i) => {
+    const inp = document.getElementById('ai-inv-price-' + i);
+    if (!inp) return;
+    const precio = parseInt((inp.value||'0').replace(/[^\d]/g,''),10)||0;
+    if (precio > 0) {
+      inp.value = Math.round(precio * factor);
+      inp.style.borderColor = 'var(--success)';
+    }
+  });
+  notify(`✓ IVA ${Math.round((factor-1)*100)}% aplicado a todos los precios`);
+}
+
+function aiAplicarIVAItem(i) {
+  const inp = document.getElementById('ai-inv-price-' + i);
+  if (!inp) return;
+  const precio = parseInt((inp.value||'0').replace(/[^\d]/g,''),10)||0;
+  if (!precio) { notify('⚠ Ingresa un precio primero'); return; }
+  inp.value = Math.round(precio * 1.19);
+  inp.style.borderColor = 'var(--success)';
 }
 
 // Track provider overrides per group
@@ -7982,10 +8069,12 @@ function _postLoadSetup() {
   _calMap = buildCalMap(_calYear);
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
+  showTab('sac'); // Abre Semana Actual por defecto
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
     if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
     iaLoadSavedKey();
+    setTimeout(wxFetch, 2000); // Fetch weather after load
   }, 800);
   infInit();
 }
@@ -8091,14 +8180,15 @@ function invInit() { if (!state.inventario) state.inventario = []; }
 let _invCatFilter = 'todas';
 
 function invBestPrice(prod) {
-  if (!prod.precios || !prod.precios.length) return 0;
-  const valid = prod.precios.filter(p=>p.precio>0);
+  // Read from proveedores (used by AI import) or precios (legacy)
+  const lista = prod.proveedores?.length ? prod.proveedores : (prod.precios||[]);
+  const valid  = lista.filter(p=>p.precio>0);
   return valid.length ? Math.min(...valid.map(p=>p.precio)) : 0;
 }
 function invBestProvider(prod) {
-  if (!prod.precios || !prod.precios.length) return prod.prov||'';
-  const valid = prod.precios.filter(p=>p.precio>0).sort((a,b)=>a.precio-b.precio);
-  return valid.length ? valid[0].prov : (prod.prov||'');
+  const lista = prod.proveedores?.length ? prod.proveedores : (prod.precios||[]);
+  const valid  = lista.filter(p=>p.precio>0).sort((a,b)=>a.precio-b.precio);
+  return valid.length ? (valid[0].nombre||valid[0].prov||'') : (prod.prov||'');
 }
 function invGetCategories() {
   invInit();
@@ -10001,6 +10091,53 @@ function sebPagoConfirmar() {
 function sebPagoClose() {
   document.getElementById('seb-pago-overlay').classList.remove('show');
   _sebPagoCtx = null;
+}
+
+// ── CLIMA CONCÓN / CALETA HIGUERILLAS ──
+const WX_LAT = -32.9167, WX_LON = -71.5167;
+const WX_ICONS = { 0:'☀️', 1:'🌤', 2:'⛅', 3:'☁️', 45:'🌫', 48:'🌫', 51:'🌦', 53:'🌦', 55:'🌧', 61:'🌧', 63:'🌧', 65:'🌧', 71:'🌨', 73:'🌨', 75:'❄️', 80:'🌦', 81:'🌧', 82:'⛈', 95:'⛈', 96:'⛈', 99:'⛈' };
+const WX_DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+async function wxFetch() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}&current_weather=true&daily=temperature_2m_max,precipitation_probability_max,weathercode&timezone=America%2FSantiago&forecast_days=5`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    const cw   = data.current_weather;
+    const icon = WX_ICONS[cw.weathercode] || '🌡';
+    const el_icon = document.getElementById('wx-icon');
+    const el_temp = document.getElementById('wx-temp');
+    const el_cond = document.getElementById('wx-cond');
+    const el_upd  = document.getElementById('wx-updated');
+    if (el_icon) el_icon.textContent = icon;
+    if (el_temp) el_temp.textContent = Math.round(cw.temperature) + '°C';
+    if (el_cond) el_cond.textContent = wxCondText(cw.weathercode);
+    if (el_upd)  el_upd.textContent  = 'Act. ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const fc = document.getElementById('wx-forecast');
+    if (fc && data.daily?.time) {
+      const dates = data.daily.time;
+      const maxT  = data.daily.temperature_2m_max || [];
+      const codes = data.daily.weathercode || [];
+      const rain  = data.daily.precipitation_probability_max || [];
+      fc.innerHTML = dates.slice(0,5).map((d,i) => {
+        const day  = WX_DIAS[new Date(d+'T12:00:00').getDay()];
+        const ico  = WX_ICONS[codes[i]] || '🌡';
+        const prob = rain[i] > 0 ? `<div style="font-size:9px;opacity:.7;">💧${rain[i]}%</div>` : '';
+        return `<div style="text-align:center;min-width:36px;">
+          <div style="font-size:9px;opacity:.75;font-weight:700;">${day}</div>
+          <div style="font-size:18px;">${ico}</div>
+          <div style="font-size:11px;font-weight:800;">${Math.round(maxT[i])}°</div>${prob}
+        </div>`;
+      }).join('');
+    }
+  } catch(e) {
+    const el = document.getElementById('wx-cond');
+    if (el) el.textContent = 'Sin conexión';
+  }
+}
+function wxCondText(code) {
+  const m = {0:'Despejado',1:'Mayormente despejado',2:'Parcialmente nublado',3:'Nublado',45:'Neblina',51:'Llovizna',53:'Llovizna',55:'Llovizna',61:'Lluvia leve',63:'Lluvia',65:'Lluvia intensa',80:'Chubascos',81:'Chubascos',82:'Chubascos fuertes',95:'Tormenta',96:'Tormenta',99:'Tormenta'};
+  return m[code] || 'Variable';
 }
 
 function setBancoEmpresa(val) {
