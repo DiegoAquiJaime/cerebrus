@@ -7294,12 +7294,23 @@ async function processAiPdf(file) {
         { type:'text', text: aiPrompt() }
       ]}]
     };
-    const res  = await fetch(MAKE_URL, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify(payload)
-    });
-    setAiProgress(80, 'Procesando respuesta…');
+    // Intenta proxy local primero, si falla usa Make
+    const PROXY = 'http://localhost:7532';
+    let res, usedProxy = false;
+    try {
+      res = await fetch(PROXY, { method:'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify(payload), signal: AbortSignal.timeout(5000)
+      });
+      usedProxy = true;
+    } catch(_) {
+      // Proxy local no disponible — usa Make
+      res = await fetch(MAKE_URL, { method:'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify(payload)
+      });
+    }
+    setAiProgress(80, usedProxy ? 'Procesando (proxy local)…' : 'Procesando vía Make…');
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content.map(c=>c.text||'').join('');
