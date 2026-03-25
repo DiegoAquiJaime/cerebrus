@@ -7274,42 +7274,91 @@ async function uploadFileInChunks(file, mtype, onProgress) {
   return { uploadId, total, mtype };
 }
 
+// Nuevo flujo: sube PDF a Drive → Apps Script hace OCR → Claude interpreta texto
 async function processAiPdf(file) {
   const apiKey = iaGetKey();
   if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
-  setAiProgress(15, 'Leyendo PDF…');
-  const base64 = await new Promise((res,rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-  setAiProgress(40, 'Enviando a Claude vía Make…');
+
+  setAiProgress(10, 'Subiendo PDF a Drive…');
+
   try {
-    const payload = {
-      model: 'claude-opus-4-6',
-      max_tokens: 8000,
-      messages: [{ role:'user', content:[
-        { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
-        { type:'text', text: aiPrompt() }
-      ]}]
-    };
-    const res = await fetch('http://localhost:7532', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify(payload)
+    // Paso 1: Subir el PDF a Drive via Apps Script
+    const base64 = await new Promise((res,rej) => {
+      const r = new FileReader();
+      r.onload  = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
     });
-    setAiProgress(80, 'Procesando respuesta…');
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    const text = data.content.map(c=>c.text||'').join('');
+
+    const uploadRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:  'subirPDF',
+        nombre:  file.name,
+        base64,
+        mtype:   'application/pdf'
+      })
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo PDF');
+
+    setAiProgress(40, 'Google está leyendo el PDF con OCR…');
+
+    // Paso 2: Apps Script hace OCR + Claude interpreta
+    const procRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action:  'procesarFactura',
+        fileId:  uploadData.fileId,
+        apiKey,
+        prompt:  aiPromptTexto()
+      })
+    });
+
+    setAiProgress(80, 'Procesando resultado…');
+    const procData = await procRes.json();
+    if (!procData.ok) throw new Error(procData.error || 'Error procesando');
+
+    const text = procData.content.map(c=>c.text||'').join('');
     const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
     setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
+
   } catch(e) {
     document.getElementById('ai-progress').classList.remove('show');
     notify('⚠ Error: ' + e.message);
   }
+}
+
+// Prompt para texto OCR (más simple que para imágenes — solo texto plano)
+function aiPromptTexto() {
+  facInit();
+  const known = Object.keys(state.facturas).sort().join(', ');
+  const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
+  return `Eres un asistente experto en contabilidad chilena.
+Analiza el siguiente TEXTO extraído de documentos tributarios chilenos mediante OCR.
+El texto puede tener problemas de formato por el OCR — interpreta con sentido común.
+
+RUT propio del restaurante (NO es proveedor): 77.912.330-8
+
+Proveedores conocidos: ${known || '(ninguno aún)'}
+RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
+
+Para CADA documento extrae un JSON con:
+- tipoDoc: "factura" | "nc" | "nd" | "guia" | "otro"
+- nro: número del documento
+- nroRef: referencia si es NC/ND
+- rut: RUT del proveedor (con puntos y guión)
+- proveedor: nombre del proveedor
+- emision: fecha DD-MM-YYYY
+- monto: monto total entero en pesos
+- vence: fecha vencimiento DD-MM-YYYY
+- comentario: glosa
+- confianza: "ok" | "duda" | "ilegible"
+- observacion: qué no quedó claro
+- items: array de líneas con {descripcion, cantidad, unidad, precioUnit, subtotal}
+
+Responde SOLO con array JSON válido. Sin texto ni markdown.`;
 }
 
 async function processAiImage(file, ext) {
@@ -7514,20 +7563,27 @@ function aiShowPreview(rows) {
       invWrap.style.display = '';
       invWrap.innerHTML = `
         <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-top:12px;">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;margin-bottom:8px;">
-            <input type="checkbox" id="ai-chk-inv" checked style="width:15px;height:15px;accent-color:var(--success);">
-            📦 También agregar al pedido activo de Inventario (${allItems.length} productos detectados)
-          </label>
-          <div style="max-height:100px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
+              <input type="checkbox" id="ai-chk-inv" checked style="width:15px;height:15px;accent-color:var(--success);"
+                onchange="document.querySelectorAll('.ai-chk-prod').forEach(c=>c.checked=this.checked)">
+              📦 Agregar al pedido de Inventario
+            </label>
+            <span style="font-size:10px;color:#94a3b8;">${allItems.length} productos — desmarca los que no quieras</span>
+          </div>
+          <div style="max-height:140px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
             ${allItems.map((it,i) => {
               const matched = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
-              return `<div style="display:grid;grid-template-columns:1fr 60px 60px 80px;gap:6px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="ai-inv-item-${i}">
+              return `<div style="display:grid;grid-template-columns:20px 1fr 60px 60px 80px;gap:6px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="ai-inv-item-${i}">
+                <input type="checkbox" class="ai-chk-prod" data-idx="${i}" checked
+                  style="width:14px;height:14px;accent-color:var(--success);cursor:pointer;"
+                  onchange="const row=document.getElementById('ai-inv-item-${i}');row.style.opacity=this.checked?'1':'0.4';">
                 <div>
                   <span style="font-weight:600;">${esc(it.descripcion)}</span>
                   ${matched?`<span style="font-size:9px;color:var(--success);margin-left:4px;">→ ${esc(matched.nombre)}</span>`:'<span style="font-size:9px;color:#94a3b8;margin-left:4px;">sin match</span>'}
                 </div>
                 <input type="text" value="${it.cantidad}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
-                <span style="color:#94a3b8;font-size:10px;">${esc(it.unidad||'un')}</span>
+                <span style="color:#94a3b8;font-size:10px;text-align:center;">${esc(it.unidad||'un')}</span>
                 <input type="text" value="${it.precioUnit||''}" placeholder="$ unit" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-price-${i}">
               </div>`;
             }).join('')}
@@ -7643,8 +7699,7 @@ function aiConfirmImport() {
   // ── También importar a Inventario si está marcado ──
   const chkInv   = document.getElementById('ai-chk-inv');
   const invItems = window._aiInvItems || [];
-  if (chkInv?.checked && invItems.length) {
-    invInit();
+  if (chkInv?.checked && invItems.length) {    invInit();
     // Get or create active week
     if (!state.semanaActiva) {
       const hoy = new Date();
@@ -7661,6 +7716,9 @@ function aiConfirmImport() {
     if (orden) {
       let added = 0;
       invItems.forEach((it, i) => {
+        // Check individual product checkbox
+        const chkProd = document.querySelector(`.ai-chk-prod[data-idx="${i}"]`);
+        if (chkProd && !chkProd.checked) return; // skip unchecked products
         const qty    = parseFloat(document.getElementById('ai-inv-qty-'+i)?.value||it.cantidad)||0;
         const precio = parseInt((document.getElementById('ai-inv-price-'+i)?.value||it.precioUnit||'0').toString().replace(/[^\d]/g,''),10)||0;
         if (!qty) return;
