@@ -7277,17 +7277,31 @@ async function uploadFileInChunks(file, mtype, onProgress) {
 async function processAiPdf(file) {
   const apiKey = iaGetKey();
   if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
-  setAiProgress(5, 'Preparando PDF…');
+  setAiProgress(15, 'Leyendo PDF…');
+  const base64 = await new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  setAiProgress(40, 'Enviando a Claude vía Make…');
   try {
-    const { uploadId, total } = await uploadFileInChunks(file, 'application/pdf',
-      (pct, msg) => setAiProgress(pct, msg));
-    setAiProgress(75, 'Claude está leyendo el documento…');
-    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({
-      action:'processUpload', uploadId, total, mtype:'application/pdf',
-      apiKey, prompt: aiPrompt()
-    })});
+    const payload = {
+      model: 'claude-opus-4-6',
+      max_tokens: 8000,
+      messages: [{ role:'user', content:[
+        { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 } },
+        { type:'text', text: aiPrompt() }
+      ]}]
+    };
+    const res  = await fetch(MAKE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify(payload)
+    });
+    setAiProgress(80, 'Procesando respuesta…');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Error procesando');
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content.map(c=>c.text||'').join('');
     const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
@@ -7302,16 +7316,31 @@ async function processAiImage(file, ext) {
   const apiKey = iaGetKey();
   if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
   const mtype = ext === 'png' ? 'image/png' : 'image/jpeg';
-  setAiProgress(5, 'Preparando imagen…');
+  setAiProgress(15, 'Leyendo imagen…');
+  const base64 = await new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  setAiProgress(40, 'Enviando a Claude vía Make…');
   try {
-    const { uploadId, total } = await uploadFileInChunks(file, mtype,
-      (pct, msg) => setAiProgress(pct, msg));
-    setAiProgress(75, 'Claude está analizando la imagen…');
-    const res  = await fetch(API_URL, { method:'POST', body: JSON.stringify({
-      action:'processUpload', uploadId, total, mtype, apiKey, prompt: aiPrompt()
-    })});
+    const payload = {
+      model: 'claude-opus-4-6',
+      max_tokens: 8000,
+      messages: [{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:mtype, data:base64 } },
+        { type:'text', text: aiPrompt() }
+      ]}]
+    };
+    const res  = await fetch(MAKE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify(payload)
+    });
+    setAiProgress(80, 'Procesando respuesta…');
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Error procesando');
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content.map(c=>c.text||'').join('');
     const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
     aiShowPreview(rows);
@@ -7698,6 +7727,7 @@ function aiConfirmImport() {
 //  Pega aquí la URL de tu Google Apps Script Web App
 // ============================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbxo1BPAFrW8p3aS4Bo3NxfxSKT1n-SDmkjKU6aeQzdHV6HO1It4voHszX-wPtoHpbLzyA/exec';
+const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = API_URL !== '__APPS_SCRIPT_URL__' && API_URL.startsWith('https://');
 
 let currentUser     = '';
