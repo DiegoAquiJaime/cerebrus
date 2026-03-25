@@ -7485,7 +7485,7 @@ function aiShowPreview(rows) {
         <div class="ai-group-icon" style="background:${color}">${initials}</div>
         <div class="ai-group-prov-label">${esc(pn)}</div>
         ${badge}${ncTag}
-        <select class="ai-group-prov-sel ${isIlegible||isNuevo?'unknown':''}" id="ai-prov-sel-${i}"
+        <select class="ai-group-prov-sel ${isIlegible||isNuevo?'unknown':''}" id="ai-prov-sel-${esc(pn).replace(/\s/g,'_')}"
           onchange="aiUpdateGroupProv('${esc(pn)}',this)"
           title="Cambiar proveedor destino">
           ${provOptions.replace(`value="${esc(pn)}"`,`value="${esc(pn)}" selected`)}
