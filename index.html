@@ -7701,6 +7701,11 @@ function aiConfirmImport() {
   // ── También importar a Inventario si está marcado ──
   const chkInv   = document.getElementById('ai-chk-inv');
   const invItems = window._aiInvItems || [];
+  // Attach provider name to each item
+  if (invItems.length && _aiParsedRows.length) {
+    const mainProv = resolveProvName(_aiParsedRows.find(r=>r.tipoDoc==='factura')||_aiParsedRows[0]);
+    invItems.forEach(it => { if (!it._provNombre) it._provNombre = mainProv; });
+  }
   if (chkInv?.checked && invItems.length) {    invInit();
     // Get or create active week
     if (!state.semanaActiva) {
@@ -7748,15 +7753,31 @@ function aiConfirmImport() {
           }
           added++;
         } else {
-          // Create new product in inventory
+          // Create new product — detect category from name
+          const nombre = it.descripcion || '';
+          const nombreU = nombre.toUpperCase();
+          let cat = 'Sin categoría';
+          if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) cat = 'Carnes';
+          else if (/SALMON|PESCADO|MERLUZA|ATUN|REINETA|CONGRIO|MARISCOS|CAMARON|CHORITO|OSTIÓN|PULPO|JIBIA/.test(nombreU)) cat = 'Pescados y Mariscos';
+          else if (/TOMATE|LECHUGA|CEBOLLA|AJO|ZANAHORIA|PIMENTÓN|PEPINO|APIO|CILANTRO|PEREJIL|VERDURA|VEGETAL|PAPA|FRUTA|NARANJA|LIMON|PALTA|MANZANA/.test(nombreU)) cat = 'Frutas y Verduras';
+          else if (/LECHE|QUESO|MANTEQUILLA|CREMA|YOGUR|LACTEO/.test(nombreU)) cat = 'Lácteos';
+          else if (/HARINA|ARROZ|PASTA|FIDEOS|ACEITE|VINAGRE|SAL|AZUCAR|CONDIMENTO|ESPECIA/.test(nombreU)) cat = 'Abarrotes';
+          else if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) cat = 'Bebidas';
+          else if (/PAN|HALLULLA|MARRAQUETA|BAGUETTE/.test(nombreU)) cat = 'Panadería';
+          else if (/HUEVO/.test(nombreU)) cat = 'Huevos';
+
+          const provNombre = it._provNombre || 'Proveedor';
           const newProd = {
             id: 'inv_ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
-            nombre: it.descripcion, cat: 'Sin categoría', unidad: it.unidad||'un',
+            nombre: it.descripcion,
+            cat,
+            unidad: it.unidad||'un',
             stock: 0, stockMin: 0,
-            proveedores: precio ? [{nombre:'', precio, esMejor:true}] : []
+            proveedores: precio ? [{ nombre: provNombre, precio, esMejor:true }] : []
           };
-          (state.inventario||[]).push(newProd);
-          orden.items.push({ prodId:newProd.id, qty, precio, prov:'' });
+          if (!state.inventario) state.inventario = [];
+          state.inventario.push(newProd);
+          orden.items.push({ prodId:newProd.id, qty, precio, prov: provNombre });
           added++;
         }
       });
