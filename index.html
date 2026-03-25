@@ -7169,7 +7169,256 @@ function iaGuardarKey() {
   const key = document.getElementById('ia-key-central')?.value.trim() || '';
   if (!key) { notify('⚠ Ingresa tu API key'); return; }
   iaSyncKey(key);
-  notify('🔑 API key guardada — lista para usar en Facturas e Inventario');
+  notify('🔑 API key guardada');
+}
+
+// ── IA SCANNER UNIVERSAL ──
+let _iaScanCtx = null; // 'sac' | 'facturas'
+let _iaScanResults = [];
+
+function iaAbrirScanner(ctx) {
+  _iaScanCtx    = ctx;
+  _iaScanResults = [];
+  // Load saved key
+  iaLoadSavedKey();
+  // Reset state
+  const prog   = document.getElementById('ia-prog-wrap');
+  const prev   = document.getElementById('ia-preview');
+  const impBtn = document.getElementById('ia-import-btn');
+  const impRow = document.getElementById('ia-import-row');
+  const dropT  = document.getElementById('ia-drop-title');
+  const dropS  = document.getElementById('ia-drop-sub');
+  const fileInp= document.getElementById('ia-file-input');
+  if (prog)   { prog.classList.remove('show'); document.getElementById('ia-prog-bar').style.width='0%'; }
+  if (prev)   prev.innerHTML = '';
+  if (impBtn) impBtn.style.display = 'none';
+  if (impRow) impRow.style.display = '';
+  if (dropT)  dropT.textContent = 'Toca para subir archivo o sacar foto';
+  if (dropS)  dropS.textContent = 'PDF · JPG · PNG · foto de cámara';
+  if (fileInp) fileInp.value = '';
+  // Set title based on context
+  const titulo = document.getElementById('ia-scan-titulo');
+  const sub    = document.getElementById('ia-scan-sub');
+  if (ctx === 'sac') {
+    if (titulo) titulo.textContent = '📸 Leer boleta / factura';
+    if (sub)    sub.textContent    = 'Claude extrae el monto y descripción como carga de la semana';
+  } else {
+    if (titulo) titulo.textContent = '📸 Importar documento';
+    if (sub)    sub.textContent    = 'Claude extrae los datos automáticamente';
+  }
+  document.getElementById('ia-scan-overlay').classList.add('show');
+}
+
+function iaCerrarScanner() {
+  document.getElementById('ia-scan-overlay').classList.remove('show');
+  _iaScanCtx     = null;
+  _iaScanResults = [];
+}
+
+function iaHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('ia-drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) iaHandleFile(file);
+}
+
+function iaHandleFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  document.getElementById('ia-drop-title').textContent = `📎 ${file.name}`;
+  document.getElementById('ia-drop-sub').textContent   = `${(file.size/1024).toFixed(1)} KB · ${ext.toUpperCase()}`;
+  if (['jpg','jpeg','png'].includes(ext)) iaProcessImage(file, ext);
+  else if (ext === 'pdf')                 iaProcessPdf(file);
+  else notify('⚠ Formato no soportado. Usa PDF, JPG o PNG.');
+}
+
+function iaSetProgress(pct, msg) {
+  const wrap = document.getElementById('ia-prog-wrap');
+  const bar  = document.getElementById('ia-prog-bar');
+  const txt  = document.getElementById('ia-prog-msg');
+  if (wrap) wrap.classList.add('show');
+  if (bar)  bar.style.width = pct + '%';
+  if (txt)  txt.textContent = msg;
+}
+
+function iaBuildPromptSac() {
+  return `Eres un asistente contable chileno. Analiza esta boleta o factura.
+Extrae un JSON con:
+- proveedor: nombre del emisor
+- monto: monto total a pagar en pesos (con IVA si corresponde), entero
+- descripcion: descripción breve del gasto (máximo 40 caracteres)
+- fecha: fecha del documento DD-MM-YYYY
+- confianza: "ok" | "duda"
+- nota: observación si hay duda
+
+Responde SOLO con un objeto JSON válido. Sin texto ni markdown.
+Ejemplo: {"proveedor":"LIDER","monto":45990,"descripcion":"Compras varias","fecha":"25-03-2026","confianza":"ok","nota":""}`;
+}
+
+async function iaToBase64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload  = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function iaCallClaude(messages) {
+  const apiKey = iaGetKey();
+  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return null; }
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'anthropicProxy', apiKey,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1000,
+      messages
+    })
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Error del proxy');
+  return data.content.map(c=>c.text||'').join('');
+}
+
+async function iaProcessImage(file, ext) {
+  const apiKey = iaGetKey();
+  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
+  iaSetProgress(20, 'Leyendo imagen…');
+  try {
+    const base64 = await iaToBase64(file);
+    const mtype  = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const prompt = _iaScanCtx === 'sac' ? iaBuildPromptSac() : aiPromptTexto();
+    iaSetProgress(50, 'Enviando a Claude…');
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'anthropicProxy', apiKey,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        messages: [{ role:'user', content:[
+          { type:'image', source:{ type:'base64', media_type:mtype, data:base64 } },
+          { type:'text',  text: prompt }
+        ]}]
+      })
+    });
+    iaSetProgress(80, 'Procesando…');
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Error del proxy');
+    const text = data.content.map(c=>c.text||'').join('');
+    iaShowResults(text);
+  } catch(e) {
+    document.getElementById('ia-prog-wrap').classList.remove('show');
+    notify('⚠ Error: ' + e.message);
+  }
+}
+
+async function iaProcessPdf(file) {
+  const apiKey = iaGetKey();
+  if (!apiKey) { notify('⚠ Ingresa tu API key de Anthropic primero'); return; }
+  iaSetProgress(10, 'Subiendo PDF…');
+  try {
+    const base64 = await iaToBase64(file);
+    const uploadRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'subirPDF', nombre:file.name, base64, mtype:'application/pdf' })
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo');
+    iaSetProgress(40, 'Google leyendo el PDF con OCR…');
+    const prompt = _iaScanCtx === 'sac' ? iaBuildPromptSac() : aiPromptTexto();
+    const procRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'procesarFactura', fileId:uploadData.fileId, apiKey, prompt })
+    });
+    iaSetProgress(80, 'Procesando…');
+    const procData = await procRes.json();
+    if (!procData.ok) throw new Error(procData.error || 'Error procesando');
+    const text = procData.content.map(c=>c.text||'').join('');
+    iaShowResults(text);
+  } catch(e) {
+    document.getElementById('ia-prog-wrap').classList.remove('show');
+    notify('⚠ Error: ' + e.message);
+  }
+}
+
+function iaShowResults(rawText) {
+  iaSetProgress(100, '✓ Listo');
+  const prev   = document.getElementById('ia-preview');
+  const impBtn = document.getElementById('ia-import-btn');
+  if (!prev) return;
+
+  try {
+    const clean = rawText.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+
+    if (_iaScanCtx === 'sac') {
+      // Single expense object
+      const item = Array.isArray(parsed) ? parsed[0] : parsed;
+      _iaScanResults = [item];
+      prev.innerHTML = `
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px;">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">Carga detectada</div>
+          <div style="display:grid;gap:8px;">
+            <div>
+              <label style="font-size:9px;color:#94a3b8;font-weight:700;display:block;margin-bottom:3px;">Descripción</label>
+              <input id="ia-res-desc" type="text" value="${esc(item.descripcion||item.proveedor||'')}"
+                style="width:100%;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:9px;color:#94a3b8;font-weight:700;display:block;margin-bottom:3px;">Monto ($)</label>
+                <input id="ia-res-monto" type="text" inputmode="numeric" value="${item.monto||''}"
+                  style="width:100%;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:inherit;font-size:14px;font-weight:700;color:var(--danger);background:transparent;">
+              </div>
+              <div>
+                <label style="font-size:9px;color:#94a3b8;font-weight:700;display:block;margin-bottom:3px;">Proveedor</label>
+                <input id="ia-res-prov" type="text" value="${esc(item.proveedor||'')}"
+                  style="width:100%;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+              </div>
+            </div>
+            ${item.confianza==='duda'?`<div style="font-size:10px;color:var(--warning);background:rgba(245,158,11,.08);padding:6px 8px;border-radius:5px;">⚠ ${esc(item.nota||'Revisar datos')}</div>`:''}
+          </div>
+        </div>`;
+      if (impBtn) { impBtn.style.display = ''; impBtn.textContent = '✦ Agregar como carga'; }
+    } else {
+      // Multiple invoices — show summary
+      const rows = Array.isArray(parsed) ? parsed : [parsed];
+      _iaScanResults = rows;
+      prev.innerHTML = `<div style="font-size:12px;color:var(--success);font-weight:700;">✓ ${rows.length} documento${rows.length!==1?'s':''} detectado${rows.length!==1?'s':''}</div>`;
+      if (impBtn) { impBtn.style.display = ''; impBtn.textContent = '✦ Importar'; }
+    }
+  } catch(e) {
+    prev.innerHTML = `<div style="color:var(--danger);font-size:11px;">⚠ No se pudo interpretar la respuesta. Intenta con mejor resolución.<br><small>${rawText.slice(0,200)}</small></div>`;
+  }
+}
+
+function iaImportarResultados() {
+  if (!_iaScanResults.length) return;
+
+  if (_iaScanCtx === 'sac') {
+    const item   = _iaScanResults[0];
+    const desc   = document.getElementById('ia-res-desc')?.value.trim()  || item.descripcion || 'Gasto';
+    const monto  = parseInt((document.getElementById('ia-res-monto')?.value||'0').replace(/[^\d]/g,''),10)||0;
+    const prov   = document.getElementById('ia-res-prov')?.value.trim()  || item.proveedor || '';
+    if (!monto) { notify('⚠ El monto es 0 — verifica la imagen'); return; }
+    const w = sacCurrentWeek();
+    pushUndo();
+    sacGetCargas(w).push({
+      id:       'sc_'+Date.now(),
+      nombre:   desc,
+      cat:      'Compra',
+      monto,
+      montoReal: null,
+      estado:   'nopagado',
+      resp:     prov,
+      nota:     item.fecha||''
+    });
+    iaCerrarScanner();
+    sacRenderCargas(w);
+    sacCalcBalance(w);
+    notify(`✅ "${desc}" agregado — ${fmt(monto)}`);
+  }
 }
 
 function iaGetKey() {
@@ -7361,14 +7610,16 @@ Proveedores conocidos: ${known || '(ninguno aún)'}
 RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
 
 REGLAS DE PRECIOS — MUY IMPORTANTE:
-1. Verifica matemáticamente si los precios son netos o brutos:
-   - Suma (cantidad × precioUnit de cada línea)
-   - Si esa suma ≈ monto total de la factura → precios YA incluyen IVA → úsalos directamente
-   - Si esa suma × 1.19 ≈ monto total → precios son NETOS → multiplica cada precioUnit por 1.19
-   - Si ninguno coincide (puede haber descuentos, ILA u otros impuestos) → usa confianza "duda" y explica en observacion
-2. precioUnit siempre debe ser CON IVA incluido en el resultado final
-3. Para bebidas alcohólicas (vino, cerveza, pisco, licores): el ILA es un impuesto adicional al IVA. Si detectas ILA en la factura, inclúyelo en el precio final y marca eraNetoIVA:true con observacion explicando el ILA
-4. Si la factura muestra precio por caja, calcula precio unitario dividiendo por las unidades por caja
+1. Verifica matemáticamente si los precios son netos o brutos usando el MONTO NETO (no el total final):
+   - Suma (cantidad × precioUnit de cada línea) = esto debe dar el Monto Neto
+   - Si suma ≈ Monto Neto → precios son NETOS → multiplica cada precioUnit × 1.19 para obtener precio con IVA
+   - Si suma ≈ SubTotal (Neto + IVA) → precios YA incluyen IVA → úsalos directamente
+   - IMPORTANTE: el "Monto Total" puede incluir Retención (RET 5%) u otros descuentos — NO uses el Monto Total para verificar, usa el Monto Neto o SubTotal
+2. precioUnit en el resultado siempre debe ser CON IVA incluido (precio neto × 1.19)
+3. La Retención (RET) es un descuento al pago, NO afecta el precio del producto — ignórala para calcular precios unitarios
+4. monto en el JSON debe ser el SubTotal (Neto + IVA) SIN restar la retención — es lo que realmente vale la mercadería
+5. Para bebidas alcohólicas: el ILA es impuesto adicional. Si aparece, inclúyelo en precioUnit
+6. Si la factura muestra precio por caja, divide por las unidades para obtener precio unitario
 
 Para CADA documento extrae un JSON con:
 - tipoDoc: "factura" | "nc" | "nd" | "guia" | "otro"
@@ -7602,7 +7853,7 @@ function aiShowPreview(rows) {
 
       let ivaWarning = '';
       if (docConIVAAplicado > 0)
-        ivaWarning = `<div style="font-size:10px;color:#059669;margin-bottom:6px;">✓ IVA aplicado automáticamente — precios con IVA incluido</div>`;
+        ivaWarning = `<div style="font-size:10px;color:#059669;background:rgba(16,185,129,.08);padding:5px 8px;border-radius:5px;margin-bottom:6px;">✅ Precios con IVA incluido — verificado matemáticamente</div>`;
       else if (docNeto > 0)
         ivaWarning = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
           <span style="font-size:10px;color:var(--danger);font-weight:700;">⚠ Precios NETOS detectados — sin IVA incluido</span>
@@ -7647,8 +7898,8 @@ function aiShowPreview(rows) {
                 <input type="text" value="${it.cantidad}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
                 <span style="color:#94a3b8;font-size:10px;text-align:center;">${esc(it.unidad||'un')}</span>
                 <input type="text" value="${it.precioUnit||''}" placeholder="$ unit" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-price-${i}">
-                <button onclick="aiAplicarIVAItem(${i})" title="Aplicar IVA 19% a este precio"
-                  style="font-size:9px;background:#f1f5f9;border:1px solid var(--border);border-radius:4px;padding:2px 5px;cursor:pointer;font-family:inherit;color:#64748b;white-space:nowrap;">+IVA</button>
+                ${(docNeto > 0 || docSinIVAInfo > 0) ? `<button onclick="aiAplicarIVAItem(${i})" title="Aplicar IVA 19% a este precio"
+                  style="font-size:9px;background:#f1f5f9;border:1px solid var(--border);border-radius:4px;padding:2px 5px;cursor:pointer;font-family:inherit;color:#64748b;white-space:nowrap;">+IVA</button>` : ''}
               </div>`;
             }).join('')}
           </div>
