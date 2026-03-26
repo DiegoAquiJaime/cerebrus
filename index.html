@@ -1362,6 +1362,66 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
   .vs-table table{min-width:400px;}
   .vs-inp{width:80px;}
 }
+
+/* ============================================================
+   TABLET / iPAD OPTIMIZATIONS
+   ============================================================ */
+@media (max-width: 1024px) and (min-width: 601px) {
+  .nav { gap: 2px; padding: 0 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-item { padding: 10px 10px; font-size: 11px; white-space: nowrap; }
+  .nav-item .ni { font-size: 16px; }
+  .content { padding: 14px; }
+  .section-table th, .section-table td { padding: 8px 6px; font-size: 12px; }
+  .btn, .fac-btn { padding: 8px 12px; font-size: 12px; }
+  .sac-carga-row { padding: 10px 12px; }
+  .inv-kpi { padding: 12px; }
+  .inv-kpi-val { font-size: 22px; }
+  .ai-modal { width: 96vw !important; }
+  .fac-prov-panel { min-width: 260px; }
+}
+
+/* ── iPAD / MÓVIL ── */
+@media (max-width: 600px) {
+  .nav { gap: 0; padding: 0 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
+  .nav-item { padding: 8px 8px; font-size: 10px; white-space: nowrap; flex-shrink: 0; }
+  .nav-item .ni { font-size: 15px; display: block; margin-bottom: 1px; }
+  .content { padding: 10px; }
+  .topbar { padding: 8px 10px; gap: 6px; flex-wrap: wrap; }
+  .topbar .logo { font-size: 14px; }
+  .btn-group { gap: 4px; flex-wrap: wrap; }
+  .btn, .fac-btn { padding: 7px 10px; font-size: 11px; }
+  .btn-save { min-width: unset; }
+  /* SAC mobile */
+  .sac-cargas-wrap { gap: 8px; }
+  .sac-carga-row { padding: 8px 10px; font-size: 12px; grid-template-columns: 28px 1fr auto auto; }
+  .sac-nombre { font-size: 12px; }
+  .sac-monto { font-size: 13px; }
+  .sac-estado-btn { font-size: 10px; padding: 3px 8px; }
+  /* Inventory mobile */
+  .inv-kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
+  .inv-kpi-val { font-size: 20px; }
+  .inv-cat-tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .inv-cat-btn { white-space: nowrap; flex-shrink: 0; }
+  table { font-size: 11px; }
+  table th, table td { padding: 6px 8px; }
+  /* Modals full screen on mobile */
+  .ai-modal { width: 100vw !important; max-width: 100vw !important; border-radius: 14px 14px 0 0 !important; margin-top: auto; }
+  .ai-modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+  /* Movimientos */
+  .mov-btns { flex-direction: column !important; }
+  /* Hide some columns on mobile */
+  .inv-table-hide-mobile { display: none; }
+}
+
+/* Touch-friendly: bigger tap targets on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .nav-item { min-height: 44px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+  .btn, .fac-btn, button { min-height: 36px; }
+  .sac-estado-btn { min-height: 32px; min-width: 70px; }
+  input[type="text"], input[type="number"], input[type="date"], select { min-height: 38px; font-size: 16px !important; } /* 16px prevents iOS zoom */
+  .inv-cat-btn { min-height: 36px; padding: 6px 14px; }
+}
+
 </style>
 </head>
 <body>
@@ -2278,9 +2338,15 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
       <div id="fac-nc-panel" style="display:none;"></div>
 
       <!-- Alerta vencimientos próximos -->
-      <div id="fac-venc-banner" class="fac-venc-banner">
-        <strong style="font-size:12px;color:#991b1b;display:block;margin-bottom:8px;">🔔 Facturas próximas a vencer o vencidas</strong>
-        <div id="fac-venc-list"></div>
+      <!-- Vencimientos: solo botón discreto, lista desplegable al hacer click -->
+      <div id="fac-venc-banner" style="display:none;margin-bottom:10px;">
+        <button onclick="document.getElementById('fac-venc-detail').style.display=document.getElementById('fac-venc-detail').style.display==='none'?'block':'none'"
+          style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;color:#991b1b;cursor:pointer;font-family:inherit;">
+          🔔 <span id="fac-venc-count">0</span> factura(s) por vencer — ver detalle ▾
+        </button>
+        <div id="fac-venc-detail" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 14px;">
+          <div id="fac-venc-list"></div>
+        </div>
       </div>
 
       <!-- Alerta conflictos RUT -->
@@ -2650,9 +2716,18 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
         <button class="inv-subtab active" id="ist-inventario" onclick="invSubTab('inventario')">📦 Inventario</button>
         <button class="inv-subtab" id="ist-pedido" onclick="invSubTab('pedido')">🛒 Pedido Semanal</button>
         <button class="inv-subtab" id="ist-consumo" onclick="invSubTab('consumo')">📊 Consumo histórico</button>
+        <button class="inv-subtab" id="ist-movimientos" onclick="invSubTab('movimientos')">🔄 Movimientos</button>
       </div>
 
       <!-- ── PANEL INVENTARIO ── -->
+      <!-- Alerta stock bajo — discreta, solo en Inventario -->
+      <div id="inv-stock-alerta" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:11px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:700;color:#c2410c;">⚠ Productos con stock bajo mínimo</span>
+          <button onclick="this.closest('#inv-stock-alerta').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;">✕</button>
+        </div>
+        <div id="inv-stock-alerta-lista" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
       <div id="inv-panel-inventario">
         <div class="inv-kpi-grid">
           <div class="inv-kpi" style="border-left:4px solid var(--accent);">
@@ -2798,10 +2873,103 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
         </div>
       </div>
 
+      <!-- ======= PANEL MOVIMIENTOS ======= -->
+      <div id="inv-panel-movimientos" style="display:none;">
+
+        <!-- KPIs resumen -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;">
+          <div style="background:var(--white);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-left:4px solid #6366f1;">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Hoy · Despachos</div>
+            <div style="font-size:24px;font-weight:900;color:#6366f1;" id="mov-kpi-despachos">0</div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-left:4px solid var(--success);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Hoy · Devoluciones</div>
+            <div style="font-size:24px;font-weight:900;color:var(--success);" id="mov-kpi-dev">0</div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-left:4px solid var(--danger);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">Semana · Merma</div>
+            <div style="font-size:24px;font-weight:900;color:var(--danger);" id="mov-kpi-merma">0</div>
+          </div>
+          <div style="background:var(--white);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-left:4px solid var(--accent2);">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">En Preelaboración</div>
+            <div style="font-size:24px;font-weight:900;color:var(--accent2);" id="mov-kpi-prelab">0 kg</div>
+          </div>
+        </div>
+
+        <!-- Dashboard semanal -->
+        <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:16px;" id="mov-chart-semanal"></div>
+
+        <!-- Botones acción -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+          <button onclick="movAbrirModal('despacho')" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">→ Despachar a destino</button>
+          <button onclick="movAbrirModal('devolucion')" style="background:var(--success);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">← Recibir devolución</button>
+          <button onclick="movAbrirModal('preelaboracion')" style="background:var(--accent2);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">⚗ Cerrar preelaboración</button>
+        </div>
+
+
+        <!-- Resumen merma mensual -->
+        <div id="mov-merma-resumen" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 20px;margin-bottom:16px;display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="font-size:13px;font-weight:800;">📊 Reporte de Merma</div>
+            <button onclick="document.getElementById('mov-merma-resumen').style.display='none'"
+              style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;">✕</button>
+          </div>
+          <div id="mov-merma-content"></div>
+        </div>
+
+        <!-- Botón reporte merma -->
+        <div style="margin-bottom:16px;">
+          <button onclick="movMostrarReporteMerma()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;color:#64748b;">
+            📊 Ver reporte de merma mensual
+          </button>
+        </div>
+        <!-- Filtros -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <select id="mov-f-tipo" onchange="movRender()" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
+            <option value="">Todos los tipos</option>
+            <option value="despacho">Despachos</option>
+            <option value="devolucion">Devoluciones</option>
+            <option value="preelaboracion">Preelaboración</option>
+            <option value="merma">Mermas</option>
+          </select>
+          <select id="mov-f-dest" onchange="movRender()" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
+            <option value="">Todos los destinos</option>
+            <option value="Cocina">Cocina</option>
+            <option value="Salón">Salón</option>
+            <option value="Preelaboración">Preelaboración</option>
+            <option value="Bodega">Bodega</option>
+            <option value="Otro">Otro</option>
+          </select>
+          <input type="date" id="mov-f-fecha" onchange="movRender()"
+            style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
+          <button onclick="movLimpiarFiltros()"
+            style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;cursor:pointer;color:#94a3b8;">✕ Limpiar</button>
+        </div>
+
+        <!-- Tabla historial -->
+        <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid var(--border);">
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">FECHA/HORA</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">TIPO</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">PRODUCTO</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;">CANTIDAD</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">DESTINO</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">RESPONSABLE</th>
+                <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">NOTA</th>
+                <th style="padding:10px 12px;"></th>
+              </tr>
+            </thead>
+            <tbody id="mov-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- ======= TAB PROPINAS ======= -->
+  <!-- ======= TAB DETALLE ======= -->
   <div id="propinas" class="tab-content">
     <div class="content">
       <div class="prop-wrap" id="prop-content"></div>
@@ -2948,6 +3116,16 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
         <span class="search-icon">🔍</span>
         <input type="text" id="search-input" placeholder="Buscar ítem en todas las secciones…" oninput="doSearch(this.value)">
         <span class="search-count" id="search-count"></span>
+      </div>
+
+      <!-- CATEGORÍAS DE INVENTARIO -->
+      <div class="section-title" id="sec-cat-inv" style="cursor:default;">
+        <span>🏷 Categorías de Inventario</span>
+        <button onclick="catInvAgregar()" style="background:var(--accent);color:white;border:none;border-radius:6px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;">+ Nueva categoría</button>
+      </div>
+      <div class="table-wrap" style="margin-bottom:20px;">
+        <div id="cat-inv-lista" style="display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);min-height:50px;align-items:center;">
+        </div>
       </div>
 
       <!-- 1. INGRESOS -->
@@ -3391,6 +3569,10 @@ function makeDefaultState() {
       {id:uid(), name:'Tarjetas y Créditos',          amount:0, freq:4},
       {id:uid(), name:'Créditos Bancarios y Auto',    amount:0, freq:1},
     ],
+    // Módulo Movimientos de Inventario
+    movimientos: [],
+    catInventario: ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos',
+                    'Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'],
   };
 }
 
@@ -4546,7 +4728,7 @@ function showTab(tabId) {
   if (tabId==='propinas')   propRender();
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
-  if (tabId==='detalle')    setTimeout(mercRenderSemanas, 100);
+  if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
@@ -8302,6 +8484,8 @@ function _postLoadSetup() {
   if (!state.creditos)    state.creditos    = makeDefaultCreditos();
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
   if (!state.inventario)       state.inventario       = [];
+  if (!state.movimientos)      state.movimientos      = [];
+  if (!state.catInventario)    state.catInventario    = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
   if (!state.provRuts)         state.provRuts         = {};
   if (!state.rutMap)           state.rutMap           = {};
   if (!state.calMultOverrides)          state.calMultOverrides          = {};
@@ -8331,6 +8515,7 @@ function _postLoadSetup() {
     if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
     iaLoadSavedKey();
     setTimeout(wxFetch, 2000); // Fetch weather after load
+    startAutoSave(); // Guardado automático cada 5 min
   }, 800);
   infInit();
 }
@@ -8364,7 +8549,7 @@ function facCheckVencimientos() {
   const banner = document.getElementById('fac-venc-banner');
   const list   = document.getElementById('fac-venc-list');
   if (!banner || !list) return;
-  if (!items.length) { banner.classList.remove('show'); return; }
+  if (!items.length) { banner.style.display='none'; return; }
 
   list.innerHTML = items.map(i => {
     const color = i.diff <= 1 ? 'var(--danger)' : 'var(--warning)';
@@ -8384,7 +8569,9 @@ function facCheckVencimientos() {
       </div>
     </div>`;
   }).join('');
-  banner.classList.add('show');
+  banner.style.display = 'block';
+  const countEl = document.getElementById('fac-venc-count');
+  if (countEl) countEl.textContent = items.length;
 }
 
 // ============================================================
@@ -8488,6 +8675,7 @@ function invCheckKpis() {
   set('inv-kpi-cats',    cats+' categoría'+(cats!==1?'s':''));
   set('inv-kpi-critico', critico);
   set('inv-kpi-vinc',    vinc);
+  set('inv-kpi-valor',   fmt(invValorTotal()));
 
   // Actualizar label del KPI si hay multiplicador
   const kpiEl = document.querySelector('#inv-kpi-critico')?.closest('.inv-kpi')?.querySelector('.inv-kpi-label');
@@ -8495,6 +8683,25 @@ function invCheckKpis() {
     kpiEl.textContent = calMult > 1.0
       ? `🔴 Stock crítico (×${calMult.toFixed(2)} ${calReason})`
       : '🔴 Stock crítico';
+  }
+  // Mostrar alerta discreta de stock bajo
+  const alertaEl  = document.getElementById('inv-stock-alerta');
+  const alertaLst = document.getElementById('inv-stock-alerta-lista');
+  if (alertaEl && alertaLst) {
+    const criticos = state.inventario.filter(p => {
+      const efectivMin = Math.ceil((p.minimo||0) * calMult);
+      return (p.stock||0) <= efectivMin && efectivMin > 0;
+    });
+    if (criticos.length) {
+      alertaEl.style.display = 'block';
+      alertaLst.innerHTML = criticos.map(p =>
+        `<span onclick="invEditProd('${p.id}')" style="background:#fed7aa;color:#c2410c;border-radius:12px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;" title="Click para editar">
+          ${esc(p.nombre)} — ${p.stock||0}/${p.minimo||0} ${p.unidad||'u'}
+        </span>`
+      ).join('');
+    } else {
+      alertaEl.style.display = 'none';
+    }
   }
 }
 
@@ -8534,10 +8741,10 @@ function invRenderTable() {
         ${esc(x.prov.length>10?x.prov.slice(0,10)+'…':x.prov)} ${isBest?'★':''} ${fmt(x.precio)}
       </span>`;
     }).join('');
-    return `<tr>
-      <td style="font-weight:600;">${esc(p.nombre||'')}</td>
-      <td style="font-size:10px;color:#94a3b8;">${esc(p.cat||'—')}</td>
-      <td style="font-size:11px;">${esc(p.unidad||'u')}</td>
+    return `<tr id="inv-row-${p.id}">
+      <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">${esc(p.nombre||'')}</td>
+      <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
+      <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
       <td style="text-align:right;font-weight:700;">${p.stock||0}</td>
       <td style="text-align:right;color:#94a3b8;">${p.minimo||0}</td>
       <td style="text-align:center;"><span class="inv-semaforo ${(p.stock||0)<=0?'inv-sem-rojo':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'inv-sem-amarillo':'inv-sem-verde'}"></span></td>
@@ -8545,7 +8752,10 @@ function invRenderTable() {
         <button onclick="invAddPrecio('${p.id}')" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;color:#94a3b8;margin-left:2px;">+ precio</button>
       </td>
       <td class="inv-precio-col inv-mejor-precio" style="text-align:right;">${best?fmt(best.precio):'—'}</td>
-      <td><button onclick="invDelete('${p.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;">✕</button></td>
+      <td style="display:flex;gap:4px;align-items:center;">
+        <button onclick="invEditProd('${p.id}')" title="Editar producto" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='#94a3b8'">✏</button>
+        <button onclick="invDelete('${p.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -8555,12 +8765,13 @@ function invRenderTable() {
 // ============================================================
 
 function invSubTab(panel) {
-  ['inventario','pedido','consumo'].forEach(p => {
+  ['inventario','pedido','consumo','movimientos'].forEach(p => {
     const el = document.getElementById('inv-panel-'+p); if(el) el.style.display = p===panel?'':'none';
     const btn = document.getElementById('ist-'+p); if(btn) btn.classList.toggle('active', p===panel);
   });
-  if (panel==='pedido')  invRenderPedido();
-  if (panel==='consumo') invRenderConsumo();
+  if (panel==='pedido')       invRenderPedido();
+  if (panel==='consumo')      invRenderConsumo();
+  if (panel==='movimientos')  { movRender(); movRenderDashSemanal(); }
 }
 
 function invGetSemana() { return state.semanaActiva||null; }
@@ -9052,6 +9263,536 @@ function invDelete(id) {
   const p=state.inventario.find(x=>x.id===id);
   if(!p||!confirm('¿Eliminar "'+p.nombre+'"?')) return;
   pushUndo(); state.inventario=state.inventario.filter(x=>x.id!==id); invRender();
+}
+
+// ============================================================
+//  MÓDULO MOVIMIENTOS DE INVENTARIO
+// ============================================================
+
+const MOV_TIPOS = {
+  despacho:       { label:'Despacho',        color:'#6366f1', icon:'→' },
+  devolucion:     { label:'Devolución',       color:'#10b981', icon:'←' },
+  preelaboracion: { label:'Preelaboración',   color:'#8b5cf6', icon:'⚗' },
+  merma:          { label:'Merma',            color:'#ef4444', icon:'⚠' },
+};
+
+const MOV_DESTINOS = ['Cocina','Salón','Preelaboración','Bodega','Otro'];
+
+function movGetAll() {
+  if (!state.movimientos) state.movimientos = [];
+  return state.movimientos;
+}
+
+function movFechaHoy() {
+  return new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function movHoraAhora() {
+  return new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── Render tabla historial + KPIs ──
+function movRender() {
+  const tbody  = document.getElementById('mov-tbody');
+  if (!tbody) return;
+
+  const tipo   = document.getElementById('mov-f-tipo')?.value  || '';
+  const dest   = document.getElementById('mov-f-dest')?.value  || '';
+  const fecha  = document.getElementById('mov-f-fecha')?.value || '';
+
+  const movs   = movGetAll();
+  const hoy    = movFechaHoy();
+
+  // KPIs
+  const despachoHoy = movs.filter(m=>m.tipo==='despacho'&&m.fecha===hoy).length;
+  const devHoy      = movs.filter(m=>m.tipo==='devolucion'&&m.fecha===hoy).length;
+  // Merma esta semana
+  const ahora = new Date();
+  const lunes = new Date(ahora); lunes.setDate(ahora.getDate()-((ahora.getDay()+6)%7)); lunes.setHours(0,0,0,0);
+  const mermaKg = movs.filter(m=>m.tipo==='merma'&&new Date(m.ts||0)>=lunes)
+    .reduce((s,m)=>s+(m.cantidad||0),0);
+  // En preelaboración (despachos a Preelaboración sin cierre aún)
+  const prelabKg = movs.filter(m=>m.tipo==='despacho'&&m.destino==='Preelaboración'&&!m._cerrado)
+    .reduce((s,m)=>s+(m.cantidad||0),0);
+
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('mov-kpi-despachos', despachoHoy);
+  set('mov-kpi-dev',       devHoy);
+  set('mov-kpi-merma',     mermaKg > 0 ? mermaKg.toFixed(2)+' kg' : '0');
+  set('mov-kpi-prelab',    prelabKg > 0 ? prelabKg.toFixed(2)+' kg' : '0');
+
+  // Filtrar
+  let filtered = [...movs].reverse();
+  if (tipo)  filtered = filtered.filter(m=>m.tipo===tipo);
+  if (dest)  filtered = filtered.filter(m=>m.destino===dest||m.origen===dest);
+  if (fecha) {
+    const fd = new Date(fecha).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    filtered = filtered.filter(m=>m.fecha===fd);
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Sin movimientos con estos filtros.</td></tr>';
+    return;
+  }
+
+  const tiposBadge = {
+    despacho:       '<span style="background:#6366f122;color:#6366f1;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">→ DESPACHO</span>',
+    devolucion:     '<span style="background:#10b98122;color:#10b981;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">← DEVOLUCIÓN</span>',
+    preelaboracion: '<span style="background:#8b5cf622;color:#8b5cf6;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">⚗ PREELABORACIÓN</span>',
+    merma:          '<span style="background:#ef444422;color:#ef4444;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">⚠ MERMA</span>',
+  };
+
+  tbody.innerHTML = filtered.map(m => `
+    <tr style="border-bottom:1px solid var(--border);transition:.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+      <td style="padding:10px 12px;color:#64748b;font-size:11px;">${m.fecha||''} ${m.hora||''}</td>
+      <td style="padding:10px 12px;">${tiposBadge[m.tipo]||m.tipo}</td>
+      <td style="padding:10px 12px;font-weight:600;">${esc(m.producto||'')}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:700;">${m.cantidad||''} ${esc(m.unidad||'')}</td>
+      <td style="padding:10px 12px;color:#64748b;">${esc(m.destino||m.origen||'')}</td>
+      <td style="padding:10px 12px;color:#64748b;">${esc(m.responsable||'')}</td>
+      <td style="padding:10px 12px;color:#94a3b8;font-style:italic;max-width:160px;">${esc(m.nota||'')}</td>
+      <td style="padding:10px 12px;">
+        <button onclick="movEliminar('${m.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;"
+          onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+function invValorTotal() {
+  return (state.inventario||[]).reduce((s,p) => {
+    const precio = invBestPrice(p) || 0;
+    return s + (p.stock||0) * precio;
+  }, 0);
+}
+
+function movLimpiarFiltros() {
+  ['mov-f-tipo','mov-f-dest','mov-f-fecha'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  movRender();
+}
+
+function movEliminar(id) {
+  if (!confirm('¿Eliminar este movimiento?')) return;
+  pushUndo();
+  state.movimientos = movGetAll().filter(m=>m.id!==id);
+  movRender();
+  markUnsaved();
+}
+
+// ── Modal genérico de movimiento ──
+function movAbrirModal(tipo) {
+  const prods = (state.inventario||[]).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+  const prodOpts = prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} (${p.stock||0} ${p.unidad||'u'})</option>`).join('');
+  const destOpts = MOV_DESTINOS.map(d=>`<option value="${d}" ${tipo==='devolucion'&&d==='Bodega'?'selected':tipo==='despacho'&&d==='Cocina'?'selected':tipo==='preelaboracion'&&d==='Preelaboración'?'selected':''}>${d}</option>`).join('');
+
+  const cfg = {
+    despacho:       { titulo:'→ Despachar a destino',     color:'#6366f1', destLabel:'Destino' },
+    devolucion:     { titulo:'← Recibir devolución',      color:'#10b981', destLabel:'Origen' },
+    preelaboracion: { titulo:'⚗ Cerrar preelaboración',   color:'#8b5cf6', destLabel:'Destino final' },
+  }[tipo] || { titulo:'Movimiento', color:'#64748b', destLabel:'Destino' };
+
+  // Extra fields for preelaboracion
+  const extraPrelab = tipo === 'preelaboracion' ? `
+    <div>
+      <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CANTIDAD QUE REGRESA PROCESADA</label>
+      <input id="mov-qty-regresa" type="text" inputmode="decimal" placeholder="ej: 15"
+        style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;box-sizing:border-box;background:transparent;color:var(--primary);">
+    </div>
+    <div>
+      <label style="font-size:10px;font-weight:700;color:var(--danger);display:block;margin-bottom:4px;">MERMA (cantidad perdida)</label>
+      <input id="mov-qty-merma" type="text" inputmode="decimal" placeholder="ej: 5"
+        style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;box-sizing:border-box;background:transparent;color:var(--primary);">
+    </div>` : '';
+
+  // Extra for devolucion — estado
+  const extraDev = tipo === 'devolucion' ? `
+    <div>
+      <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">ESTADO DEL PRODUCTO</label>
+      <select id="mov-estado-dev" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
+        <option value="bueno">✅ Bueno — regresa a inventario</option>
+        <option value="danado">⚠ Dañado — va a merma</option>
+      </select>
+    </div>` : '';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:14px;width:440px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+      <div style="background:linear-gradient(135deg,${cfg.color},${cfg.color}cc);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;">
+        <div style="font-size:14px;font-weight:800;color:white;">${cfg.titulo}</div>
+        <button id="mov-modal-close" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">PRODUCTO</label>
+          <select id="mov-prod-sel" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
+            ${prodOpts}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CANTIDAD ${tipo==='preelaboracion'?'QUE ENTRA':''}</label>
+            <input id="mov-cantidad" type="text" inputmode="decimal" placeholder="ej: 20"
+              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;font-weight:700;box-sizing:border-box;background:transparent;color:var(--primary);">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">${cfg.destLabel.toUpperCase()}</label>
+            <select id="mov-destino" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
+              ${destOpts}
+            </select>
+          </div>
+        </div>
+        ${extraPrelab}
+        ${extraDev}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">RESPONSABLE</label>
+            <input id="mov-resp" type="text" placeholder="Nombre"
+              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">FECHA</label>
+            <input id="mov-fecha-inp" type="date" value="${new Date().toISOString().slice(0,10)}"
+              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">NOTA</label>
+          <input id="mov-nota" type="text" placeholder="Observación opcional"
+            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
+          <button id="mov-modal-cancel" style="background:none;border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;color:#64748b;">Cancelar</button>
+          <button id="mov-modal-save" style="background:${cfg.color};color:white;border:none;border-radius:7px;padding:8px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">💾 Registrar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const close = () => document.body.removeChild(overlay);
+  document.getElementById('mov-modal-close').onclick  = close;
+  document.getElementById('mov-modal-cancel').onclick = close;
+  overlay.onclick = e => { if (e.target===overlay) close(); };
+
+  document.getElementById('mov-modal-save').onclick = () => {
+    const prodId   = document.getElementById('mov-prod-sel').value;
+    const prod     = (state.inventario||[]).find(p=>p.id===prodId);
+    if (!prod) { notify('⚠ Selecciona un producto'); return; }
+
+    const cantidad = parseFloat(document.getElementById('mov-cantidad').value)||0;
+    if (!cantidad) { notify('⚠ Ingresa una cantidad'); return; }
+
+    const destino  = document.getElementById('mov-destino').value;
+    const resp     = document.getElementById('mov-resp').value.trim() || currentUser;
+    const nota     = document.getElementById('mov-nota').value.trim();
+    const fechaInp = document.getElementById('mov-fecha-inp').value;
+    const fechaStr = fechaInp
+      ? new Date(fechaInp+'T12:00:00').toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})
+      : movFechaHoy();
+
+    pushUndo();
+    const movs = movGetAll();
+
+    if (tipo === 'despacho') {
+      if (cantidad > (prod.stock||0)) {
+        if (!confirm(`⚠ Stock insuficiente.\nStock actual: ${prod.stock||0} ${prod.unidad||'u'}\nQuieres despachar: ${cantidad}\n¿Continuar de todas formas?`)) return;
+      }
+      prod.stock = Math.max(0, (prod.stock||0) - cantidad);
+      movs.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', destino, responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+
+    } else if (tipo === 'devolucion') {
+      const estadoDev = document.getElementById('mov-estado-dev')?.value || 'bueno';
+      const origen    = destino;
+      if (estadoDev === 'bueno') {
+        prod.stock = (prod.stock||0) + cantidad;
+        movs.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', origen, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        notify(`✅ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} devueltos a inventario`);
+      } else {
+        movs.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', origen, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        notify(`⚠ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} registrados como merma`);
+      }
+
+    } else if (tipo === 'preelaboracion') {
+      const regresa = parseFloat(document.getElementById('mov-qty-regresa')?.value)||0;
+      const merma   = parseFloat(document.getElementById('mov-qty-merma')?.value)||0;
+
+      // Descontar del stock los que entran a preelaboración
+      prod.stock = Math.max(0, (prod.stock||0) - cantidad);
+      // Registrar entrada a preelaboración
+      const idPrelab = 'mov_'+Date.now();
+      movs.push({ id:idPrelab, tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now(), _cerrado:true });
+      // Registrar regreso a bodega
+      if (regresa > 0) {
+        prod.stock = (prod.stock||0) + regresa;
+        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:prod.unidad||'u', origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${prod.unidad||'u'}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true });
+      }
+      // Registrar merma
+      if (merma > 0) {
+        movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:prod.unidad||'u', origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+2 });
+      }
+      notify(`⚗ Preelaboración registrada: ${cantidad} entran, ${regresa} regresan, ${merma} merma`);
+    }
+
+    invRender(); // Update inventory table
+    close();
+    movRender();
+    markUnsaved();
+
+    if (tipo === 'despacho') notify(`→ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} despachados a ${destino}`);
+  };
+}
+// ============================================================
+//  GESTIÓN DE CATEGORÍAS DE INVENTARIO
+// ============================================================
+
+function catInvGetAll() {
+  if (!state.catInventario || !state.catInventario.length)
+    state.catInventario = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
+  return state.catInventario;
+}
+
+function catInvRender() {
+  const lista = document.getElementById('cat-inv-lista');
+  if (!lista) return;
+  const cats = catInvGetAll();
+  lista.innerHTML = cats.map((cat,i) => {
+    const color = provColor(cat);
+    return `<div style="display:inline-flex;align-items:center;gap:6px;background:${color}18;border:1px solid ${color}44;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;color:${color};">
+      <span onclick="catInvEditar(${i})" style="cursor:pointer;" title="Click para editar">${esc(cat)}</span>
+      ${cat !== 'Sin categoría' ? `<button onclick="catInvEliminar(${i})" style="background:none;border:none;cursor:pointer;color:${color};font-size:11px;padding:0;line-height:1;" title="Eliminar">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function catInvAgregar() {
+  const nombre = prompt('Nombre de la nueva categoría:','');
+  if (!nombre || !nombre.trim()) return;
+  const cats = catInvGetAll();
+  if (cats.includes(nombre.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+  pushUndo();
+  cats.push(nombre.trim());
+  catInvRender();
+  invRenderCatTabs();
+  markUnsaved();
+  notify(`✓ Categoría "${nombre.trim()}" agregada`);
+}
+
+function catInvEditar(idx) {
+  const cats = catInvGetAll();
+  const actual = cats[idx];
+  if (actual === 'Sin categoría') { notify('⚠ Esta categoría no se puede editar'); return; }
+  const nuevo = prompt('Editar categoría:', actual);
+  if (!nuevo || !nuevo.trim() || nuevo.trim() === actual) return;
+  if (cats.includes(nuevo.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+  pushUndo();
+  (state.inventario||[]).forEach(p => { if (p.cat === actual) p.cat = nuevo.trim(); });
+  cats[idx] = nuevo.trim();
+  catInvRender(); invRenderCatTabs(); invRenderTable(); markUnsaved();
+  notify(`✓ Categoría renombrada a "${nuevo.trim()}"`);
+}
+
+function catInvEliminar(idx) {
+  const cats  = catInvGetAll();
+  const cat   = cats[idx];
+  if (cat === 'Sin categoría') { notify('⚠ Esta categoría no se puede eliminar'); return; }
+  const prods = (state.inventario||[]).filter(p=>p.cat===cat).length;
+  const msg   = prods > 0
+    ? `¿Eliminar "${cat}"?\n${prods} producto${prods!==1?'s':''} pasarán a "Sin categoría".`
+    : `¿Eliminar la categoría "${cat}"?`;
+  if (!confirm(msg)) return;
+  pushUndo();
+  (state.inventario||[]).forEach(p => { if (p.cat === cat) p.cat = 'Sin categoría'; });
+  cats.splice(idx, 1);
+  catInvRender(); invRenderCatTabs(); invRenderTable(); markUnsaved();
+  notify(`✓ Categoría "${cat}" eliminada`);
+}
+
+// ============================================================
+//  DASHBOARD SEMANAL DE MOVIMIENTOS
+// ============================================================
+
+function movRenderDashSemanal() {
+  const chart = document.getElementById('mov-chart-semanal');
+  if (!chart) return;
+  const movs  = movGetAll();
+  const ahora = new Date();
+  const dias  = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(ahora);
+    d.setDate(ahora.getDate() - i);
+    const label    = d.toLocaleDateString('es-CL',{weekday:'short',day:'numeric'});
+    const fechaStr = d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    dias.push({
+      label,
+      despachos:   movs.filter(m=>m.tipo==='despacho'  &&m.fecha===fechaStr).length,
+      devoluciones:movs.filter(m=>m.tipo==='devolucion'&&m.fecha===fechaStr).length,
+      mermas:      movs.filter(m=>m.tipo==='merma'     &&m.fecha===fechaStr).length,
+    });
+  }
+  const maxVal = Math.max(1, ...dias.map(d=>d.despachos+d.devoluciones+d.mermas));
+  chart.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:#94a3b8;margin-bottom:10px;">ÚLTIMOS 7 DÍAS</div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:80px;">
+      ${dias.map(d => {
+        const total = d.despachos+d.devoluciones+d.mermas;
+        const pct   = Math.round((total/maxVal)*100);
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
+          <div style="font-size:10px;font-weight:700;color:#64748b;">${total||''}</div>
+          <div style="width:100%;border-radius:4px;background:#f1f5f9;height:50px;display:flex;flex-direction:column;justify-content:flex-end;">
+            <div style="height:${pct}%;background:linear-gradient(180deg,#6366f1,#8b5cf6);border-radius:4px;min-height:${total>0?2:0}px;"></div>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;text-align:center;">${d.label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;">
+      <span style="font-size:10px;color:#6366f1;">→ Despachos: ${dias.reduce((s,d)=>s+d.despachos,0)}</span>
+      <span style="font-size:10px;color:#10b981;">← Devoluciones: ${dias.reduce((s,d)=>s+d.devoluciones,0)}</span>
+      <span style="font-size:10px;color:#ef4444;">⚠ Mermas: ${dias.reduce((s,d)=>s+d.mermas,0)}</span>
+    </div>`;
+}
+
+
+// ── Reporte de merma mensual ──
+function movMostrarReporteMerma() {
+  const wrap = document.getElementById('mov-merma-resumen');
+  const cont = document.getElementById('mov-merma-content');
+  if (!wrap || !cont) return;
+
+  const movs  = movGetAll().filter(m=>m.tipo==='merma');
+  if (!movs.length) {
+    cont.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Sin mermas registradas aún.</div>';
+    wrap.style.display = 'block';
+    return;
+  }
+
+  // Group by month
+  const byMonth = {};
+  movs.forEach(m => {
+    const key = m.fecha ? m.fecha.slice(3) : 'Sin fecha'; // MM/YYYY
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(m);
+  });
+
+  // Group by product within each month
+  let html = '';
+  Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0])).forEach(([mes, items]) => {
+    const byProd = {};
+    items.forEach(m => {
+      const k = m.producto || 'Desconocido';
+      if (!byProd[k]) byProd[k] = { cantidad:0, unidad:m.unidad||'u', items:[] };
+      byProd[k].cantidad += m.cantidad||0;
+      byProd[k].items.push(m);
+    });
+    const totalItems = Object.keys(byProd).length;
+    html += `<div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;">${mes} · ${totalItems} producto${totalItems!==1?'s':''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${Object.entries(byProd).sort((a,b)=>b[1].cantidad-a[1].cantidad).map(([prod,data]) => {
+          const prod_inv = (state.inventario||[]).find(p=>p.nombre===prod);
+          const precio   = prod_inv ? invBestPrice(prod_inv) : 0;
+          const costo    = precio > 0 ? fmt(data.cantidad * precio) : '—';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#fef2f2;border-radius:6px;">
+            <span style="font-weight:600;font-size:12px;">${esc(prod)}</span>
+            <div style="display:flex;gap:16px;align-items:center;">
+              <span style="font-size:11px;color:#ef4444;font-weight:700;">${data.cantidad.toFixed(2)} ${data.unidad}</span>
+              ${precio>0?`<span style="font-size:11px;color:#64748b;">≈ ${costo}</span>`:''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  });
+
+  cont.innerHTML = html;
+  wrap.style.display = 'block';
+}
+
+function invEditProd(id) {
+  const p = (state.inventario||[]).find(x=>x.id===id);
+  if (!p) return;
+
+  const CATS = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Sin categoría','Otro'];
+  const UNIDADES = ['kg','g','L','ml','un','caja','paquete','bolsa','lata','botella'];
+
+  const catOpts = CATS.map(c=>`<option value="${c}" ${(p.cat||'')=== c?'selected':''}>${c}</option>`).join('');
+  const unOpts  = UNIDADES.map(u=>`<option value="${u}" ${(p.unidad||'')=== u?'selected':''}>${u}</option>`).join('');
+
+  // Build a simple modal inline
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:14px;width:420px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:14px;font-weight:800;color:white;">✏ Editar producto</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">Modifica los datos del producto</div>
+        </div>
+        <button id="inv-edit-close" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">NOMBRE</label>
+          <input id="inv-ep-nombre" type="text" value="${esc(p.nombre||'')}"
+            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CATEGORÍA</label>
+            <select id="inv-ep-cat" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:var(--white);">
+              ${catOpts}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD</label>
+            <select id="inv-ep-unidad" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:var(--white);">
+              ${unOpts}
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">STOCK ACTUAL</label>
+            <input id="inv-ep-stock" type="text" inputmode="numeric" value="${p.stock||0}"
+              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">STOCK MÍNIMO</label>
+            <input id="inv-ep-minimo" type="text" inputmode="numeric" value="${p.minimo||0}"
+              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
+          <button id="inv-edit-cancel" style="background:none;border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;color:#64748b;">Cancelar</button>
+          <button id="inv-edit-save" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+  document.getElementById('inv-ep-nombre').focus();
+
+  const close = () => document.body.removeChild(overlay);
+  document.getElementById('inv-edit-close').onclick  = close;
+  document.getElementById('inv-edit-cancel').onclick = close;
+  overlay.onclick = e => { if (e.target===overlay) close(); };
+
+  document.getElementById('inv-edit-save').onclick = () => {
+    const nombre = document.getElementById('inv-ep-nombre').value.trim();
+    if (!nombre) { alert('El nombre no puede estar vacío'); return; }
+    pushUndo();
+    p.nombre = nombre;
+    p.cat    = document.getElementById('inv-ep-cat').value;
+    p.unidad = document.getElementById('inv-ep-unidad').value;
+    p.stock  = parseFloat(document.getElementById('inv-ep-stock').value)||0;
+    p.minimo = parseFloat(document.getElementById('inv-ep-minimo').value)||0;
+    close();
+    invRender();
+    markUnsaved();
+    notify(`✓ "${nombre}" actualizado`);
+  };
 }
 
 function invAddPrecio(id) {
@@ -11473,8 +12214,15 @@ function sacRenderCargas(w) {
     const col     = sacCatColor(c.cat);
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '◑ Parcial' : '○ No pagado';
-    const montoEf = c.montoReal != null ? c.montoReal : c.monto;
-    const diffTxt = c.montoReal != null && c.montoReal !== c.monto
+    const pagadoParcial = c.pagadoParcial || 0;
+    const pendienteParcial = c.monto - pagadoParcial;
+    const montoEf = c._esPago ? c.monto :
+                    c.estado === 'parcial' && pagadoParcial > 0 ? pendienteParcial :
+                    c.montoReal != null ? c.montoReal : c.monto;
+    const diffTxt = c._esPago ? `<div style="font-size:9px;color:var(--success);">✓ Abono registrado</div>` :
+                    c.estado === 'parcial' && pagadoParcial > 0
+                      ? `<div style="font-size:9px;color:var(--accent2);">Abonado: ${fmt(pagadoParcial)}</div>`
+                      : c.montoReal != null && c.montoReal !== c.monto
       ? `<div style="font-size:9px;${c.montoReal>c.monto?'color:var(--danger)':'color:var(--success)'};">${c.montoReal>c.monto?'+':''}${fmt(Math.abs(c.montoReal-c.monto))}</div>`
       : '';
 
@@ -11495,7 +12243,7 @@ function sacRenderCargas(w) {
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
         <button class="sac-estado-btn ${esCls}" onclick="sacCycleEstado(${w},'${c.id}')">${esTxt}</button>
-        <button onclick="sacEditMonto(${w},'${c.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">≠ Monto real</button>
+        ${!c._esPago ? `<button onclick="sacPagarParcial(${w},'${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
         <button onclick="sacDelCarga(${w},'${c.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;transition:.15s;"
@@ -11510,16 +12258,18 @@ function sacRenderCargas(w) {
 
 function sacCalcCargasTotals(w) {
   const cargas   = sacGetCargas(w);
-  const total    = cargas.reduce((s,c)=>s+(c.monto||0),0);
-  const pagado   = cargas.reduce((s,c)=>{
-    if (c.estado==='pagado')  return s+(c.montoReal??c.monto);
-    if (c.estado==='parcial') return s+(c.montoReal||0);
+  // Exclude auto-generated payment records from totals (they're subsets of originals)
+  const base     = cargas.filter(c => !c._esPago);
+  const total    = base.reduce((s,c)=>s+(c.monto||0),0);
+  const pagado   = base.reduce((s,c)=>{
+    if (c.estado==='pagado')  return s+(c.monto||0);
+    if (c.estado==='parcial') return s+(c.pagadoParcial||0);
     return s;
   },0);
-  const pendiente= cargas.reduce((s,c)=>{
+  const pendiente= base.reduce((s,c)=>{
     if (c.estado==='pagado')  return s;
-    if (c.estado==='parcial') return s+(c.monto-(c.montoReal||0));
-    return s+c.monto;
+    if (c.estado==='parcial') return s+(c.monto-(c.pagadoParcial||0));
+    return s+(c.monto||0);
   },0);
   // Add mercadería
   const mercMonto = sacGetMercMonto(w);
@@ -11669,6 +12419,59 @@ function sacEditMonto(w, id) {
   notify(`✓ Monto real: ${fmt(real)}`);
 }
 
+// ── Pago parcial con registro automático ──
+// Al registrar un pago parcial de X sobre una carga de Y:
+// 1. La carga original queda en Y-X (pendiente)
+// 2. Se crea automáticamente una carga nueva de X con estado "pagado"
+function sacPagarParcial(w, id) {
+  const cargas = sacGetCargas(w);
+  const c = cargas.find(x=>x.id===id); if(!c) return;
+
+  const pendiente = c.monto - (c.pagadoParcial||0);
+  const v = prompt(
+    `Pago parcial para "${c.nombre}"\n` +
+    `Total: ${fmt(c.monto)}  |  Ya pagado: ${fmt(c.pagadoParcial||0)}  |  Pendiente: ${fmt(pendiente)}\n\n` +
+    `¿Cuánto pagaste ahora?`,
+    ''
+  );
+  if (v === null) return;
+  const abono = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
+  if (!abono) { notify('⚠ Ingresa un monto válido'); return; }
+  if (abono > pendiente) { notify(`⚠ El abono ($${abono.toLocaleString('es-CL')}) supera el pendiente (${fmt(pendiente)})`); return; }
+
+  pushUndo();
+
+  // Actualizar la carga original
+  c.pagadoParcial = (c.pagadoParcial||0) + abono;
+  const nuevoPendiente = c.monto - c.pagadoParcial;
+
+  if (nuevoPendiente <= 0) {
+    // Saldada completamente
+    c.estado    = 'pagado';
+    c.montoReal = c.monto;
+    notify(`✅ "${c.nombre}" — ¡Saldado completamente! ${fmt(c.monto)}`);
+  } else {
+    c.estado = 'parcial';
+    // Crear registro del abono pagado
+    cargas.push({
+      id:       'sc_pago_'+Date.now(),
+      nombre:   `✓ Pago parcial — ${c.nombre}`,
+      cat:      c.cat,
+      monto:    abono,
+      montoReal: abono,
+      estado:   'pagado',
+      resp:     c.resp || '',
+      nota:     `Abono ${fmt(abono)} de ${fmt(c.monto)} total · Pendiente: ${fmt(nuevoPendiente)}`,
+      _esPago:  true  // marca para no mostrar botón de pago parcial en este registro
+    });
+    notify(`◑ Abono de ${fmt(abono)} registrado · Pendiente: ${fmt(nuevoPendiente)}`);
+  }
+
+  sacRenderCargas(w);
+  sacCalcBalance(w);
+  markUnsaved();
+}
+
 function sacEditCarga(w, id) {
   const c = sacGetCargas(w).find(x=>x.id===id); if(!c) return;
   const CAT_LIST = ['Crédito','TC','Retiro','Proveedor','Impuesto','Servicio','Bono','Arriendo','Compra','RRHH','Otro'];
@@ -11781,6 +12584,18 @@ function markSaved() {
 window.addEventListener('beforeunload', function(e) {
   if (_unsaved) { e.preventDefault(); e.returnValue = '¿Seguro que quieres salir? Tienes cambios sin guardar.'; return e.returnValue; }
 });
+
+// ── Guardado automático cada 5 minutos (solo si hay cambios) ──
+let _autoSaveTimer = null;
+function startAutoSave() {
+  if (_autoSaveTimer) clearInterval(_autoSaveTimer);
+  _autoSaveTimer = setInterval(() => {
+    if (_unsaved && typeof saveState === 'function') {
+      console.log('[CEREBRUS] Guardado automático…');
+      saveState(true); // true = silencioso (sin notify)
+    }
+  }, 5 * 60 * 1000); // cada 5 minutos
+}
 
 // ── CLOUD LOAD ──
 async function loadFromCloud() {
