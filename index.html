@@ -903,9 +903,10 @@ body.user-bodega #nav-sebas,
 body.user-bodega #nav-detalle,
 body.user-bodega .nav-sep:last-of-type,
 body.user-bodega .nav-item[onclick*="goto"] { display:none!important; }
-body.user-bodega .btn-save,
-body.user-bodega .btn-export,
 body.user-bodega .export-menu { display:none!important; }
+body.user-bodega .startup-alert,
+body.user-bodega .cred-alert-banner,
+body.user-bodega .fac-venc-banner { display:none!important; }
 body.user-bodega #nav-inventario { font-weight:800!important; color:var(--accent)!important; }
 .seb-locked{text-align:center;padding:60px 20px;color:#94a3b8;}
 .seb-locked-icon{font-size:48px;margin-bottom:12px;}
@@ -3122,11 +3123,12 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               </div>
             </div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Unidad</label>
-              <select id="inv-f-unidad" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
-                <option value="kg">kg</option><option value="g">g</option><option value="L">L</option>
-                <option value="ml">ml</option><option value="unidad">unidad</option><option value="caja">caja</option>
-                <option value="bolsa">bolsa</option><option value="docena">docena</option><option value="otro">otro</option>
-              </select></div>
+              <div style="display:flex;gap:4px;">
+                <select id="inv-f-unidad" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+                </select>
+                <button onclick="invAddUnitGlobal()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nueva unidad">+ Nueva</button>
+              </div>
+            </div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Stock actual</label>
               <input type="text" inputmode="numeric" id="inv-f-stock" placeholder="0" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;text-align:right;"></div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Stock mínimo</label>
@@ -4833,8 +4835,8 @@ function checkCreditAlerts() {
     }).join('');
   }
 
-  // ── Popup al inicio: SOLO si NO es recarga desde nube ──
-  if (_suppressAlerts) { _suppressAlerts = false; return; }
+  // ── Popup al inicio: SOLO si NO es recarga desde nube y NO es Bodega ──
+  if (_suppressAlerts || currentUser === 'Bodega') { _suppressAlerts = false; return; }
   const payAlerts = getPaymentAlerts();
   if (!payAlerts.length) return;
 
@@ -9123,6 +9125,7 @@ function _postLoadSetup() {
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.provDocumentos)             state.provDocumentos             = {};
+  if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
@@ -9907,15 +9910,37 @@ function invToggleForm() {
       const cats = catInvGetAll();
       catSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
     }
+    // Populate unit dropdown
+    const unitSel = document.getElementById('inv-f-unidad');
+    if (unitSel) {
+      if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
+      unitSel.innerHTML = state.unidadesInventario.map(u => `<option value="${u}">${u}</option>`).join('');
+    }
     // Populate provider dropdown
     const provSel = document.getElementById('inv-f-prov');
     if (provSel && state.facturas) {
-      const provs = [...new Set(state.facturas.map(f=>f.proveedor).filter(Boolean))].sort();
+      const provs = Object.keys(state.facturas).sort();
       provSel.innerHTML = '<option value="">— sin vincular —</option>' +
         provs.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
     }
     document.getElementById('inv-f-nombre').focus();
   }
+}
+
+// Add a new unit globally (from the new product form)
+function invAddUnitGlobal() {
+  const nombre = prompt('Nombre de la nueva unidad de medida:\n(Ej: bandeja, trozo, pote, atado, etc.)','');
+  if (!nombre || !nombre.trim()) return;
+  if (!state.unidadesInventario) state.unidadesInventario = [];
+  if (state.unidadesInventario.includes(nombre.trim())) { notify('⚠ Esa unidad ya existe'); return; }
+  pushUndo();
+  state.unidadesInventario.push(nombre.trim());
+  const sel = document.getElementById('inv-f-unidad');
+  if (sel) {
+    sel.innerHTML = state.unidadesInventario.map(u => `<option value="${u}" ${u===nombre.trim()?'selected':''}>${u}</option>`).join('');
+  }
+  markUnsaved();
+  notify(`✓ Unidad "${nombre.trim()}" creada`);
 }
 
 // Create a new provider inline from the inventory form
@@ -10676,74 +10701,189 @@ function invEditProd(id) {
   const p = (state.inventario||[]).find(x=>x.id===id);
   if (!p) return;
 
-  const CATS = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Sin categoría','Otro'];
-  const UNIDADES = ['kg','g','L','ml','un','caja','paquete','bolsa','lata','botella'];
+  // Dynamic categories from state
+  const CATS = catInvGetAll();
+  // Dynamic units — base + any custom ones saved
+  if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
+  const UNIDADES = state.unidadesInventario;
+
+  // Ensure current values are in lists
+  if (p.cat && !CATS.includes(p.cat)) CATS.push(p.cat);
+  if (p.unidad && !UNIDADES.includes(p.unidad)) UNIDADES.push(p.unidad);
 
   const catOpts = CATS.map(c=>`<option value="${c}" ${(p.cat||'')=== c?'selected':''}>${c}</option>`).join('');
   const unOpts  = UNIDADES.map(u=>`<option value="${u}" ${(p.unidad||'')=== u?'selected':''}>${u}</option>`).join('');
 
-  // Build a simple modal inline
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.innerHTML = `
-    <div style="background:var(--white);border-radius:14px;width:420px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
-      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="background:var(--white);border-radius:14px;width:460px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;max-height:90vh;overflow-y:auto;">
+      <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1;">
         <div>
           <div style="font-size:14px;font-weight:800;color:white;">✏ Editar producto</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">Modifica los datos del producto</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">${esc(p.nombre||'')}</div>
         </div>
-        <button id="inv-edit-close" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;">✕</button>
+        <button id="inv-edit-close" style="background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
       </div>
-      <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
         <div>
-          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">NOMBRE</label>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">NOMBRE</label>
           <input id="inv-ep-nombre" type="text" value="${esc(p.nombre||'')}"
-            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;">
+            style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:14px;color:var(--primary);background:transparent;box-sizing:border-box;">
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
-            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CATEGORÍA</label>
-            <select id="inv-ep-cat" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:var(--white);">
-              ${catOpts}
-            </select>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">FAMILIA / CATEGORÍA</label>
+            <div style="display:flex;gap:4px;">
+              <select id="inv-ep-cat" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--primary);background:var(--white);min-height:42px;">
+                ${catOpts}
+              </select>
+              <button id="inv-ep-add-cat" title="Nueva categoría"
+                style="background:var(--accent);color:white;border:none;border-radius:8px;padding:0 12px;font-size:16px;font-weight:800;cursor:pointer;min-height:42px;">+</button>
+            </div>
           </div>
           <div>
-            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD</label>
-            <select id="inv-ep-unidad" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:var(--white);">
-              ${unOpts}
-            </select>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">STOCK ACTUAL</label>
-            <input id="inv-ep-stock" type="text" inputmode="numeric" value="${p.stock||0}"
-              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">STOCK MÍNIMO</label>
-            <input id="inv-ep-minimo" type="text" inputmode="numeric" value="${p.minimo||0}"
-              style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">UNIDAD DE MEDIDA</label>
+            <div style="display:flex;gap:4px;">
+              <select id="inv-ep-unidad" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--primary);background:var(--white);min-height:42px;">
+                ${unOpts}
+              </select>
+              <button id="inv-ep-add-unit" title="Nueva unidad"
+                style="background:var(--accent2);color:white;border:none;border-radius:8px;padding:0 12px;font-size:16px;font-weight:800;cursor:pointer;min-height:42px;">+</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
-          <button id="inv-edit-cancel" style="background:none;border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;color:#64748b;">Cancelar</button>
-          <button id="inv-edit-save" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">💾 Guardar</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">STOCK ACTUAL</label>
+            <input id="inv-ep-stock" type="text" inputmode="decimal" value="${p.stock||0}"
+              style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:15px;font-weight:700;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">STOCK MÍNIMO</label>
+            <input id="inv-ep-minimo" type="text" inputmode="decimal" value="${p.minimo||0}"
+              style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:15px;font-weight:700;color:var(--primary);background:transparent;box-sizing:border-box;text-align:right;">
+          </div>
+        </div>
+
+        <!-- Category management -->
+        <details style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+          <summary style="padding:10px 14px;font-size:11px;font-weight:700;color:#94a3b8;cursor:pointer;background:#f8fafc;user-select:none;">⚙ Gestionar categorías y unidades</summary>
+          <div style="padding:12px 14px;">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;">CATEGORÍAS DISPONIBLES</div>
+            <div id="inv-ep-cat-list" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;"></div>
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;">UNIDADES DISPONIBLES</div>
+            <div id="inv-ep-unit-list" style="display:flex;flex-wrap:wrap;gap:4px;"></div>
+          </div>
+        </details>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:6px;">
+          <button id="inv-edit-cancel" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:10px 18px;font-family:inherit;font-size:13px;cursor:pointer;color:#64748b;min-height:42px;">Cancelar</button>
+          <button id="inv-edit-save" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;min-height:42px;">💾 Guardar</button>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(overlay);
-  document.getElementById('inv-ep-nombre').focus();
+  setTimeout(() => document.getElementById('inv-ep-nombre')?.focus(), 80);
 
-  const close = () => document.body.removeChild(overlay);
+  const close = () => { try { document.body.removeChild(overlay); } catch(e){} };
   document.getElementById('inv-edit-close').onclick  = close;
   document.getElementById('inv-edit-cancel').onclick = close;
   overlay.onclick = e => { if (e.target===overlay) close(); };
 
+  // Render tag lists for manage section
+  function renderCatTags() {
+    const el = document.getElementById('inv-ep-cat-list'); if(!el) return;
+    el.innerHTML = catInvGetAll().map((c,i) => {
+      const col = provColor(c);
+      return `<span style="display:inline-flex;align-items:center;gap:4px;background:${col}15;border:1px solid ${col}33;border-radius:14px;padding:4px 10px;font-size:11px;font-weight:600;color:${col};">
+        ${esc(c)}
+        ${c!=='Sin categoría'?`<button data-cat-del="${i}" style="background:none;border:none;cursor:pointer;color:${col};font-size:11px;padding:0;line-height:1;">✕</button>`:''}
+      </span>`;
+    }).join('');
+    el.querySelectorAll('[data-cat-del]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.catDel);
+        catInvEliminar(idx);
+        renderCatTags();
+        // Refresh dropdown
+        const sel = document.getElementById('inv-ep-cat');
+        const val = sel.value;
+        sel.innerHTML = catInvGetAll().map(c=>`<option value="${c}" ${c===val?'selected':''}>${c}</option>`).join('');
+      };
+    });
+  }
+  function renderUnitTags() {
+    const el = document.getElementById('inv-ep-unit-list'); if(!el) return;
+    if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
+    el.innerHTML = state.unidadesInventario.map((u,i) => {
+      return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:14px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--accent2);">
+        ${esc(u)}
+        <button data-unit-del="${i}" style="background:none;border:none;cursor:pointer;color:var(--accent2);font-size:11px;padding:0;line-height:1;">✕</button>
+      </span>`;
+    }).join('');
+    el.querySelectorAll('[data-unit-del]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.unitDel);
+        const removed = state.unidadesInventario[idx];
+        // Check if any product uses this unit
+        const usados = (state.inventario||[]).filter(pr=>pr.unidad===removed);
+        if (usados.length && !confirm(`"${removed}" está en uso por ${usados.length} producto(s). ¿Eliminar de todas formas?`)) return;
+        pushUndo();
+        state.unidadesInventario.splice(idx,1);
+        renderUnitTags();
+        const sel = document.getElementById('inv-ep-unidad');
+        const val = sel.value;
+        sel.innerHTML = state.unidadesInventario.map(uu=>`<option value="${uu}" ${uu===val?'selected':''}>${uu}</option>`).join('');
+        markUnsaved();
+      };
+    });
+  }
+  renderCatTags();
+  renderUnitTags();
+
+  // Add new category inline
+  document.getElementById('inv-ep-add-cat').onclick = () => {
+    const nombre = prompt('Nombre de la nueva categoría:','');
+    if (!nombre || !nombre.trim()) return;
+    const cats = catInvGetAll();
+    if (cats.includes(nombre.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+    pushUndo();
+    cats.push(nombre.trim());
+    // Add to dropdown and select it
+    const sel = document.getElementById('inv-ep-cat');
+    const opt = document.createElement('option');
+    opt.value = nombre.trim(); opt.textContent = nombre.trim(); opt.selected = true;
+    sel.appendChild(opt);
+    renderCatTags();
+    invRenderCatTabs();
+    markUnsaved();
+    notify(`✓ Categoría "${nombre.trim()}" creada`);
+  };
+
+  // Add new unit inline
+  document.getElementById('inv-ep-add-unit').onclick = () => {
+    const nombre = prompt('Nombre de la nueva unidad de medida:\n(Ej: bandeja, trozo, pote, atado, etc.)','');
+    if (!nombre || !nombre.trim()) return;
+    if (!state.unidadesInventario) state.unidadesInventario = [];
+    if (state.unidadesInventario.includes(nombre.trim())) { notify('⚠ Esa unidad ya existe'); return; }
+    pushUndo();
+    state.unidadesInventario.push(nombre.trim());
+    // Add to dropdown and select it
+    const sel = document.getElementById('inv-ep-unidad');
+    const opt = document.createElement('option');
+    opt.value = nombre.trim(); opt.textContent = nombre.trim(); opt.selected = true;
+    sel.appendChild(opt);
+    renderUnitTags();
+    markUnsaved();
+    notify(`✓ Unidad "${nombre.trim()}" creada`);
+  };
+
+  // Save
   document.getElementById('inv-edit-save').onclick = () => {
-    const nombre = document.getElementById('inv-ep-nombre').value.trim();
-    if (!nombre) { alert('El nombre no puede estar vacío'); return; }
+    const nombre = (document.getElementById('inv-ep-nombre').value||'').trim();
+    if (!nombre) { notify('⚠ El nombre no puede estar vacío'); return; }
     pushUndo();
     p.nombre = nombre;
     p.cat    = document.getElementById('inv-ep-cat').value;
