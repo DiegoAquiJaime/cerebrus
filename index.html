@@ -888,6 +888,25 @@ body.dark-mode .fac-venc-banner{background:#2d1a1a;border-color:#7f1d1d;}
 
 /* ---- FINANZAS SEBAS ---- */
 body.user-alberto .sebas-only{display:none!important;}
+
+/* ── BODEGA: solo ve Inventario y sus submódulos ── */
+body.user-bodega #nav-resumen,
+body.user-bodega #nav-sac,
+body.user-bodega #nav-semanas,
+body.user-bodega #nav-venta,
+body.user-bodega #nav-historial,
+body.user-bodega #nav-creditos,
+body.user-bodega #nav-facturas,
+body.user-bodega #nav-informe,
+body.user-bodega #nav-propinas,
+body.user-bodega #nav-sebas,
+body.user-bodega #nav-detalle,
+body.user-bodega .nav-sep:last-of-type,
+body.user-bodega .nav-item[onclick*="goto"] { display:none!important; }
+body.user-bodega .btn-save,
+body.user-bodega .btn-export,
+body.user-bodega .export-menu { display:none!important; }
+body.user-bodega #nav-inventario { font-weight:800!important; color:var(--accent)!important; }
 .seb-locked{text-align:center;padding:60px 20px;color:#94a3b8;}
 .seb-locked-icon{font-size:48px;margin-bottom:12px;}
 .seb-subtab-bar{display:flex;gap:0;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px;flex-wrap:wrap;}
@@ -1794,6 +1813,10 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <button class="login-user-btn" onclick="selectUser('Diego','Subgerente','#e67e22','DP')">
           <div class="login-avatar" style="background:#e67e22">DP</div>
           <div><div class="login-user-name">Diego</div><div class="login-user-role">Subgerente</div></div>
+        </button>
+        <button class="login-user-btn" onclick="selectUser('Bodega','Bodega / Inventario','#16a085','BO')">
+          <div class="login-avatar" style="background:#16a085">BO</div>
+          <div><div class="login-user-name">Bodega</div><div class="login-user-role">Bodega / Inventario</div></div>
         </button>
       </div>
     </div>
@@ -5092,6 +5115,10 @@ function closeNav() {
 }
 
 function showTab(tabId) {
+  // Bodega solo puede acceder a inventario
+  if (currentUser === 'Bodega' && tabId !== 'inventario') {
+    tabId = 'inventario';
+  }
   closeNav();
   ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
@@ -8945,7 +8972,7 @@ let _loginAttempts  = 0;
 let _pendingUser    = '';
 const MAX_ATTEMPTS  = 5;
 
-const USER_COLORS = {'Sebastián':'#2980b9','Alberto':'#27ae60','Diego':'#e67e22'};
+const USER_COLORS = {'Sebastián':'#2980b9','Alberto':'#27ae60','Diego':'#e67e22','Bodega':'#16a085'};
 function userColor(u)    { return USER_COLORS[u] || '#8e44ad'; }
 function userInitials(u) { return (u||'?').slice(0,2).toUpperCase(); }
 
@@ -9051,6 +9078,12 @@ function _finishLogin() {
   } else {
     document.body.classList.remove('user-alberto');
   }
+  // Bodega: solo ve Inventario
+  if (currentUser === 'Bodega') {
+    document.body.classList.add('user-bodega');
+  } else {
+    document.body.classList.remove('user-bodega');
+  }
   if (IS_CLOUD) {
     document.getElementById('mode-badge').textContent = '☁ NUBE';
     document.getElementById('mode-badge').className   = 'mode-badge mode-cloud';
@@ -9104,7 +9137,12 @@ function _postLoadSetup() {
   _calMap = buildCalMap(_calYear);
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
-  showTab('sac'); // Abre Semana Actual por defecto
+  // Bodega solo ve inventario, los demás abren Semana Actual
+  if (currentUser === 'Bodega') {
+    showTab('inventario');
+  } else {
+    showTab('sac'); // Abre Semana Actual por defecto
+  }
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
     if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
