@@ -1664,6 +1664,58 @@ body.dark-mode textarea:focus{
   .inv-cat-btn { min-height: 36px; padding: 6px 14px; }
 }
 
+/* ---- INVENTARIO TABLET/iPAD OPTIMIZATION ---- */
+@media (max-width: 1024px) and (min-width: 601px) {
+  .inv-table th { padding: 12px 14px; font-size: 10px; letter-spacing: .6px; }
+  .inv-table td { padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+  .inv-table { font-size: 13px; }
+  .inv-kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 12px; }
+  .inv-kpi { padding: 16px 18px; }
+  .inv-kpi-val { font-size: 24px; }
+  .inv-kpi-label { font-size: 10px; }
+  .inv-search { padding: 10px 14px; font-size: 14px; min-height: 44px; }
+  .inv-cat-btn { padding: 8px 16px; font-size: 12px; min-height: 40px; }
+  .inv-toolbar { gap: 10px; }
+  .inv-table-wrap { border-radius: 12px; }
+  #inv-form { padding: 20px 22px; }
+  #inv-form input, #inv-form select { min-height: 42px; font-size: 14px !important; padding: 9px 12px; }
+  #inv-form label { font-size: 11px; margin-bottom: 5px; }
+}
+@media (max-width: 600px) {
+  .inv-table th { padding: 10px 10px; font-size: 9px; }
+  .inv-table td { padding: 10px 10px; font-size: 12px; line-height: 1.4; }
+  .inv-kpi { padding: 14px 16px; }
+  .inv-kpi-val { font-size: 22px; }
+  .inv-search { min-height: 42px; font-size: 14px; }
+  #inv-form { padding: 16px; }
+  #inv-form input, #inv-form select { min-height: 40px; font-size: 14px !important; }
+}
+@media (hover: none) and (pointer: coarse) {
+  .inv-table td { padding: 14px 12px; }
+  .inv-table input[type="text"], .inv-table input[type="number"] { min-height: 40px; font-size: 15px !important; padding: 8px 10px; }
+  .inv-table select { min-height: 40px; font-size: 15px !important; }
+  .inv-cat-btn { min-height: 40px; padding: 8px 16px; font-size: 13px; }
+  .inv-toolbar .fac-btn, .inv-toolbar .ai-import-btn { min-height: 42px; font-size: 13px; }
+}
+
+/* ---- FACTURAS "A PAGAR EN SEMANA" ---- */
+.fac-semana-panel { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; overflow: hidden; border: 2px solid rgba(99,102,241,.2); }
+.fac-semana-head { padding: 12px 16px; background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(99,102,241,.04)); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.fac-semana-head-title { font-size: 12px; font-weight: 800; color: var(--accent2); }
+.fac-semana-total { font-size: 16px; font-weight: 900; color: var(--accent2); }
+.fac-semana-item { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+.fac-semana-item:last-child { border-bottom: none; }
+.fac-semana-item.fsi-pagado { opacity: .55; }
+.fac-semana-item .fsi-nombre { font-weight: 600; }
+.fac-semana-item .fsi-prov { font-size: 9px; color: #94a3b8; }
+.fac-semana-item .fsi-monto { font-weight: 700; text-align: right; white-space: nowrap; }
+.fac-semana-btn { background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 7px; font-size: 9px; font-weight: 700; cursor: pointer; font-family: inherit; color: #64748b; transition: .1s; white-space: nowrap; }
+.fac-semana-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.fac-semana-btn.paid { border-color: var(--success); color: var(--success); }
+.fac-semana-btn.del:hover { border-color: var(--danger); color: var(--danger); }
+body.dark-mode .fac-semana-panel { background: #1e293b; border-color: rgba(99,102,241,.3); }
+body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
+
 </style>
 </head>
 <body>
@@ -2098,6 +2150,11 @@ body.dark-mode textarea:focus{
           <div class="sac-kpi-lbl">⚡ Balance estimado semana</div>
           <div class="sac-kpi-val" id="sac-balance" style="color:var(--accent);">$0</div>
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-balance-sub"></div>
+        </div>
+        <div class="sac-kpi" style="border-left:4px solid var(--success);">
+          <div class="sac-kpi-lbl">📈 Venta real acumulada</div>
+          <div class="sac-kpi-val" id="sac-vreal-acum" style="color:var(--success);">$0</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-vreal-acum-sub">Ya ingresada a caja/banco</div>
         </div>
       </div>
 
@@ -2629,6 +2686,27 @@ body.dark-mode textarea:focus{
         </div>
       </div>
 
+      <!-- #13: FACTURAS A PAGAR EN SEMANA -->
+      <div class="fac-semana-panel" id="fac-semana-panel">
+        <div class="fac-semana-head">
+          <div>
+            <div class="fac-semana-head-title">📋 Facturas a pagar esta semana</div>
+            <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="fac-sem-count">0 facturas seleccionadas</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="fac-semana-total" id="fac-sem-total">$0</div>
+            <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end;">
+              <div style="font-size:9px;color:var(--success);font-weight:700;" id="fac-sem-pagado-lbl"></div>
+              <div style="font-size:9px;color:var(--danger);font-weight:700;" id="fac-sem-pendiente-lbl"></div>
+            </div>
+          </div>
+        </div>
+        <div id="fac-sem-lista"></div>
+        <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="fac-btn" onclick="facSemLimpiar()" style="font-size:10px;">🗑 Limpiar lista</button>
+        </div>
+      </div>
+
       <!-- Toolbar dashboard -->
       <div class="fac-toolbar" id="fac-toolbar-dashboard">
         <input class="fac-search" id="fac-search-prov" placeholder="🔍 Buscar proveedor…" oninput="facRenderDashboard()">
@@ -3012,9 +3090,13 @@ body.dark-mode textarea:focus{
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px;">
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Nombre</label>
               <input type="text" id="inv-f-nombre" placeholder="Ej: Lomo de res" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;"></div>
-            <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Categoría</label>
-              <input type="text" id="inv-f-cat" placeholder="Ej: Carnes" list="inv-cats-list" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
-              <datalist id="inv-cats-list"></datalist></div>
+            <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Familia / Categoría</label>
+              <div style="display:flex;gap:4px;">
+                <select id="inv-f-cat" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+                </select>
+                <button onclick="catInvAgregar()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nueva categoría">+ Nueva</button>
+              </div>
+            </div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Unidad</label>
               <select id="inv-f-unidad" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
                 <option value="kg">kg</option><option value="g">g</option><option value="L">L</option>
@@ -3026,9 +3108,13 @@ body.dark-mode textarea:focus{
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Stock mínimo</label>
               <input type="text" inputmode="numeric" id="inv-f-minimo" placeholder="0" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;text-align:right;"></div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Proveedor principal</label>
-              <select id="inv-f-prov" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
-                <option value="">— sin vincular —</option>
-              </select></div>
+              <div style="display:flex;gap:4px;">
+                <select id="inv-f-prov" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+                  <option value="">— sin vincular —</option>
+                </select>
+                <button onclick="invCrearProveedorInline()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nuevo proveedor">+ Nuevo</button>
+              </div>
+            </div>
           </div>
           <div style="display:flex;gap:8px;">
             <button class="fac-btn primary" onclick="invSave()">💾 Guardar</button>
@@ -3240,6 +3326,12 @@ body.dark-mode textarea:focus{
     <div class="content">
       <div class="inf-wrap">
 
+        <!-- Informes guardados -->
+        <div class="inf-block" id="inf-historial-block">
+          <div class="inf-block-title">Informes guardados</div>
+          <div id="inf-historial-list" style="max-height:160px;overflow-y:auto;"></div>
+        </div>
+
         <div class="inf-block">
           <div class="inf-block-title">Datos del día</div>
           <div class="inf-fields">
@@ -3250,6 +3342,24 @@ body.dark-mode textarea:focus{
           </div>
         </div>
 
+        <!-- Propina rápida -->
+        <div class="inf-block">
+          <div class="inf-block-title">Propina del día</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">
+            <button onclick="infSetPropina(5000)" class="fac-btn" style="font-size:11px;">$5.000</button>
+            <button onclick="infSetPropina(10000)" class="fac-btn" style="font-size:11px;">$10.000</button>
+            <button onclick="infSetPropina(15000)" class="fac-btn" style="font-size:11px;">$15.000</button>
+            <button onclick="infSetPropina(20000)" class="fac-btn" style="font-size:11px;">$20.000</button>
+            <button onclick="infSetPropina(25000)" class="fac-btn" style="font-size:11px;">$25.000</button>
+            <button onclick="infSetPropina(30000)" class="fac-btn" style="font-size:11px;">$30.000</button>
+            <button onclick="infSetPropina(40000)" class="fac-btn" style="font-size:11px;">$40.000</button>
+            <button onclick="infSetPropina(50000)" class="fac-btn" style="font-size:11px;">$50.000</button>
+          </div>
+          <div class="inf-fields">
+            <div class="inf-field inf-full"><label>Monto propina ($)</label><input type="number" id="inf-propina" placeholder="0"></div>
+          </div>
+        </div>
+
         <div class="inf-block">
           <div class="inf-block-title">Ingresos</div>
           <div id="inf-ingresos-list"></div>
@@ -3257,7 +3367,9 @@ body.dark-mode textarea:focus{
         </div>
 
         <div class="inf-block">
-          <div class="inf-block-title">Cargas</div>
+          <div class="inf-block-title" style="justify-content:flex-start;gap:12px;">Cargas
+            <button class="fac-btn" onclick="infLoadFromEgresos()" style="font-size:10px;padding:4px 10px;">📋 Cargar desde egresos</button>
+          </div>
           <div id="inf-cargas-list"></div>
           <button class="inf-add-btn" onclick="infAddItem('cargas')">+ Agregar carga</button>
         </div>
@@ -4284,22 +4396,15 @@ let _undoDebounceTimer = null;
 let _undoPendingSnapshot = false;
 
 function pushUndo() {
-  // Debounce: espera 400ms antes de hacer el JSON.stringify completo
-  // Evita bloquear el hilo principal en cada keystroke
-  _undoPendingSnapshot = true;
+  // Capture snapshot IMMEDIATELY before any state change
   if (typeof markUnsaved === 'function') markUnsaved();
   const btn = document.getElementById('btn-undo');
   if (btn) btn.disabled = false;
-  clearTimeout(_undoDebounceTimer);
-  _undoDebounceTimer = setTimeout(() => {
-    if (!_undoPendingSnapshot) return;
-    _undoPendingSnapshot = false;
-    try {
-      const snap = JSON.stringify({state, nid:_nid});
-      _undoStack.push(snap);
-      if (_undoStack.length > MAX_UNDO) _undoStack.shift();
-    } catch(e) { console.warn('[CEREBRUS] pushUndo error:', e); }
-  }, 400);
+  try {
+    const snap = JSON.stringify({state, nid:_nid});
+    _undoStack.push(snap);
+    if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+  } catch(e) { console.warn('[CEREBRUS] pushUndo error:', e); }
 }
 
 function undo() {
@@ -4311,6 +4416,12 @@ function undo() {
   renderAll();
   calc();
   renderHistorial();
+  // Refresh SAC views
+  try { sacRenderCargas(sacCurrentWeek()); sacCalcAll(sacCurrentWeek()); } catch(e){}
+  // Refresh inventory
+  try { invRender(); movRender(); } catch(e){}
+  // Refresh weekly view
+  try { vsLoadWeekIntoTable(); renderWeeks(); } catch(e){}
   const btn = document.getElementById('btn-undo');
   if (btn) btn.disabled = _undoStack.length === 0;
   notify('↩ Cambio deshecho');
@@ -4674,6 +4785,7 @@ function ingConfirmar() {
 }
 
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
+let _suppressAlerts = false;
 function checkCreditAlerts() {
   if (!state.creditos) return;
 
@@ -4696,7 +4808,8 @@ function checkCreditAlerts() {
     }).join('');
   }
 
-  // ── Popup al inicio: SOLO pagos con fecha próxima (no créditos de Alberto/Pancho) ──
+  // ── Popup al inicio: SOLO si NO es recarga desde nube ──
+  if (_suppressAlerts) { _suppressAlerts = false; return; }
   const payAlerts = getPaymentAlerts();
   if (!payAlerts.length) return;
 
@@ -6813,12 +6926,189 @@ function facRender() {
   facCheckAllRutConflicts();
   facRenderNcPanel();
   facRenderDashboard();
+  facSemRender(); // #13 render facturas a pagar en semana
   // Show dashboard, hide detail
   document.getElementById('fac-dashboard').style.display = '';
   document.getElementById('fac-toolbar-dashboard').style.display = '';
   const det = document.getElementById('fac-detail');
   if (det) det.classList.remove('open');
   _facCurrentProv = null;
+}
+
+// ============================================================
+//  #13 — FACTURAS A PAGAR EN SEMANA
+// ============================================================
+function facSemInit() {
+  if (!state.facSemana) state.facSemana = [];
+}
+
+function facEnviarASemana(prov, facId) {
+  facSemInit();
+  const facs = (state.facturas||{})[prov] || [];
+  const fac = facs.find(f=>f.id===facId);
+  if (!fac) { notify('⚠ Factura no encontrada'); return; }
+  // Check if already in list
+  if (state.facSemana.find(s=>s.facId===facId && s.prov===prov)) {
+    notify('⚠ Esa factura ya está en la lista semanal');
+    return;
+  }
+  pushUndo();
+  state.facSemana.push({
+    id: 'fs_'+Date.now(),
+    prov: prov,
+    facId: facId,
+    nro: fac.nro,
+    monto: fac.monto,
+    estado: 'pendiente', // pendiente | pagado
+    montoReal: null,
+    fecha: ''
+  });
+  facSemRender();
+  markUnsaved();
+  notify(`✅ Factura ${fac.nro} de ${prov} agregada a pagar en semana`);
+}
+
+function facSemRender() {
+  facSemInit();
+  const lista = document.getElementById('fac-sem-lista');
+  const items = state.facSemana || [];
+  if (!lista) return;
+
+  if (!items.length) {
+    lista.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:11px;font-style:italic;">Sin facturas seleccionadas — usa el botón "→ Sem" en cada factura para agregarlas aquí</div>';
+  } else {
+    lista.innerHTML = items.map((s,i) => {
+      const isPagado = s.estado === 'pagado';
+      return `<div class="fac-semana-item ${isPagado?'fsi-pagado':''}">
+        <div>
+          <div class="fsi-nombre">${esc(s.nro)} — ${esc(s.prov)}</div>
+        </div>
+        <div class="fsi-monto" style="color:${isPagado?'var(--success)':'var(--danger)'};">
+          ${isPagado && s.montoReal != null ? fmt(s.montoReal) : fmt(s.monto)}
+          ${isPagado && s.montoReal != null && s.montoReal !== s.monto ? `<div style="font-size:9px;text-decoration:line-through;color:#94a3b8;">${fmt(s.monto)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;">
+          ${!isPagado ? `
+            <button class="fac-semana-btn paid" onclick="facSemPagar(${i})">✓ Pagado</button>
+            <button class="fac-semana-btn" onclick="facSemPagoParcial(${i})">◑ Parcial</button>
+          ` : `
+            <button class="fac-semana-btn" onclick="facSemReabrir(${i})">↩</button>
+          `}
+          <button class="fac-semana-btn del" onclick="facSemQuitar(${i})">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Update totals
+  const total = items.reduce((s,f) => s + (f.monto||0), 0);
+  const pagado = items.filter(f=>f.estado==='pagado').reduce((s,f) => s + (f.montoReal ?? f.monto), 0);
+  const pendiente = total - pagado;
+  const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  set2('fac-sem-total', fmt(total));
+  set2('fac-sem-count', `${items.length} factura${items.length!==1?'s':''} seleccionada${items.length!==1?'s':''}`);
+  set2('fac-sem-pagado-lbl', pagado > 0 ? `✓ Pagado: ${fmt(pagado)}` : '');
+  set2('fac-sem-pendiente-lbl', pendiente > 0 ? `Pendiente: ${fmt(pendiente)}` : '');
+}
+
+function facSemPagar(i) {
+  facSemInit();
+  if (!state.facSemana[i]) return;
+  pushUndo();
+  state.facSemana[i].estado = 'pagado';
+  state.facSemana[i].montoReal = state.facSemana[i].monto;
+  // Also update the original factura
+  const s = state.facSemana[i];
+  const facs = (state.facturas||{})[s.prov] || [];
+  const fac = facs.find(f=>f.id===s.facId);
+  if (fac) { fac.estado = 'inactiva'; }
+  facSemRender();
+  facCalcKpis();
+  facRenderDetail();
+  markUnsaved();
+  notify('✓ Factura marcada como pagada');
+}
+
+function facSemPagoParcial(i) {
+  facSemInit();
+  if (!state.facSemana[i]) return;
+  const s = state.facSemana[i];
+  const v = prompt(`Monto pagado para factura ${s.nro}:\n(Total: ${fmt(s.monto)})`, '');
+  if (v === null) return;
+  const real = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
+  if (!real) { notify('⚠ Ingresa un monto válido'); return; }
+  pushUndo();
+  s.estado = 'pagado';
+  s.montoReal = real;
+  // Update original factura
+  const facs = (state.facturas||{})[s.prov] || [];
+  const fac = facs.find(f=>f.id===s.facId);
+  if (fac) {
+    if (real >= fac.monto) { fac.estado = 'inactiva'; }
+    else { fac.estado = 'parcial'; }
+  }
+  facSemRender();
+  facCalcKpis();
+  facRenderDetail();
+  markUnsaved();
+  notify(`✓ Pago de ${fmt(real)} registrado`);
+}
+
+function facSemReabrir(i) {
+  facSemInit();
+  if (!state.facSemana[i]) return;
+  pushUndo();
+  state.facSemana[i].estado = 'pendiente';
+  state.facSemana[i].montoReal = null;
+  facSemRender();
+  markUnsaved();
+}
+
+function facSemQuitar(i) {
+  facSemInit();
+  if (!state.facSemana[i]) return;
+  const s = state.facSemana[i];
+  if (!confirm(`¿Quitar factura ${s.nro} de la lista semanal?\nLa factura seguirá en Facturas generales.`)) return;
+  pushUndo();
+  // Si fue marcada como pagada/parcial desde aquí, restaurar estado original en facturas
+  if (s.estado === 'pagado') {
+    const facs = (state.facturas||{})[s.prov] || [];
+    const fac = facs.find(f=>f.id===s.facId);
+    if (fac && (fac.estado === 'inactiva' || fac.estado === 'parcial')) {
+      fac.estado = 'activa';
+    }
+  }
+  state.facSemana.splice(i, 1);
+  facSemRender();
+  facCalcKpis();
+  try { facRenderDetail(); } catch(e) {}
+  try { facRenderDashboard(); } catch(e) {}
+  markUnsaved();
+  notify('✓ Factura quitada de la lista semanal — permanece en Facturas');
+}
+
+function facSemLimpiar() {
+  facSemInit();
+  if (!state.facSemana.length) return;
+  if (!confirm('¿Limpiar toda la lista de facturas a pagar en semana?\nLas facturas seguirán en Facturas generales.')) return;
+  pushUndo();
+  // Restaurar estado original de todas las que fueron pagadas desde aquí
+  state.facSemana.forEach(s => {
+    if (s.estado === 'pagado') {
+      const facs = (state.facturas||{})[s.prov] || [];
+      const fac = facs.find(f=>f.id===s.facId);
+      if (fac && (fac.estado === 'inactiva' || fac.estado === 'parcial')) {
+        fac.estado = 'activa';
+      }
+    }
+  });
+  state.facSemana = [];
+  facSemRender();
+  facCalcKpis();
+  try { facRenderDetail(); } catch(e) {}
+  try { facRenderDashboard(); } catch(e) {}
+  markUnsaved();
+  notify('✓ Lista semanal vaciada — facturas restauradas en Facturas');
 }
 
 function facDashFilter(f) {
@@ -6996,7 +7286,10 @@ function facRenderDetail() {
       <td style="text-align:left;font-size:11px;color:${isVencida?'var(--danger)':''};">${esc(f.vence)||'—'}</td>
       <td style="text-align:left;">${badge}</td>
       <td style="text-align:left;" class="fac-comment" title="${esc(f.comentario)}">${esc(f.comentario)||'—'}</td>
-      <td style="text-align:center;"><button onclick="event.stopPropagation();facDeleteFac('${esc(_facCurrentProv)}','${f.id}')" style="background:none;border:none;cursor:pointer;color:#9aacb8;font-size:14px;" title="Eliminar factura">✕</button></td>
+      <td style="text-align:center;">
+        ${f.estado !== 'inactiva' ? `<button onclick="event.stopPropagation();facEnviarASemana('${esc(_facCurrentProv)}','${f.id}')" style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);border-radius:4px;cursor:pointer;color:var(--accent2);font-size:9px;padding:3px 6px;font-weight:700;font-family:inherit;white-space:nowrap;margin-right:4px;" title="Agregar a pagar en semana">→ Sem</button>` : ''}
+        <button onclick="event.stopPropagation();facDeleteFac('${esc(_facCurrentProv)}','${f.id}')" style="background:none;border:none;cursor:pointer;color:#9aacb8;font-size:14px;" title="Eliminar factura">✕</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -8792,6 +9085,9 @@ function _postLoadSetup() {
   if (!state.mercaderiaSemanasSimple)   state.mercaderiaSemanasSimple   = [];
   if (!state.pagosSemanales)            state.pagosSemanales            = {};
   if (!state.sacCargas)                 state.sacCargas                 = {};
+  if (!state.facSemana)                  state.facSemana                  = [];
+  if (!state.informesDiarios)            state.informesDiarios            = [];
+  if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
@@ -8810,6 +9106,7 @@ function _postLoadSetup() {
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
     if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
+    if (typeof facSemRender === 'function') facSemRender();
     iaLoadSavedKey();
     setTimeout(wxFetch, 2000); // Fetch weather after load
     startAutoSave(); // Guardado automático cada 5 min
@@ -9552,7 +9849,49 @@ function invUpdateQty(id,val){const p=state.inventario.find(x=>x.id===id);if(!p)
 function invToggleForm() {
   const f = document.getElementById('inv-form');
   f.style.display = f.style.display==='none'?'block':'none';
-  if (f.style.display==='block') document.getElementById('inv-f-nombre').focus();
+  if (f.style.display==='block') {
+    // Populate category dropdown
+    const catSel = document.getElementById('inv-f-cat');
+    if (catSel) {
+      const cats = catInvGetAll();
+      catSel.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+    // Populate provider dropdown
+    const provSel = document.getElementById('inv-f-prov');
+    if (provSel && state.facturas) {
+      const provs = [...new Set(state.facturas.map(f=>f.proveedor).filter(Boolean))].sort();
+      provSel.innerHTML = '<option value="">— sin vincular —</option>' +
+        provs.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+    }
+    document.getElementById('inv-f-nombre').focus();
+  }
+}
+
+// Create a new provider inline from the inventory form
+function invCrearProveedorInline() {
+  const nombre = prompt('Nombre del nuevo proveedor:','');
+  if (!nombre || !nombre.trim()) return;
+  const tipoDoc = prompt(
+    `¿Qué documento emite "${nombre.trim()}"?\n\n` +
+    `1 = Factura\n2 = Boleta\n3 = Guía\n4 = Manual (sin documento)\n\n` +
+    `Escribe el número:`, '1'
+  );
+  const docMap = {'1':'factura','2':'boleta','3':'guia','4':'manual'};
+  const doc = docMap[tipoDoc] || 'factura';
+  // Add to providers
+  if (!state.provDocumentos) state.provDocumentos = {};
+  state.provDocumentos[nombre.trim()] = doc;
+  // Add option to select
+  const provSel = document.getElementById('inv-f-prov');
+  if (provSel) {
+    const opt = document.createElement('option');
+    opt.value = nombre.trim();
+    opt.textContent = nombre.trim();
+    opt.selected = true;
+    provSel.appendChild(opt);
+  }
+  markUnsaved();
+  notify(`✅ Proveedor "${nombre.trim()}" creado (${doc})`);
 }
 
 function invSave() {
@@ -9687,10 +10026,113 @@ function movLimpiarFiltros() {
 }
 
 function movEliminar(id) {
-  if (!confirm('¿Eliminar este movimiento?')) return;
+  const mov = movGetAll().find(m=>m.id===id);
+  if (!mov) return;
+  if (!confirm(`¿Eliminar este movimiento de ${mov.producto}?`)) return;
   pushUndo();
+
+  // Ask about stock recovery with 3 options
+  const prod = (state.inventario||[]).find(p=>p.id===mov.prodId);
+  if (prod) {
+    let accion = null; // 'todo' | 'parcial' | 'nada'
+
+    if (mov.tipo === 'despacho') {
+      // Producto salió del inventario → ¿devolver?
+      accion = prompt(
+        `El producto "${prod.nombre}" fue despachado (${mov.cantidad} ${mov.unidad||'u'}).\n` +
+        `Stock actual: ${prod.stock||0} ${prod.unidad||'u'}\n\n` +
+        `¿Qué hacer con el stock?\n` +
+        `1 = Devolver todo (${mov.cantidad} ${mov.unidad||'u'})\n` +
+        `2 = Devolver parcialmente (indicar cuánto)\n` +
+        `3 = No devolver nada\n\n` +
+        `Escribe 1, 2 o 3:`, '1'
+      );
+      if (accion === '1') {
+        prod.stock = (prod.stock||0) + (mov.cantidad||0);
+        notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
+      } else if (accion === '2') {
+        const val = prompt(`¿Cuánto devolver al stock? (máx: ${mov.cantidad})`, '');
+        const qty = parseFloat(val)||0;
+        if (qty > 0) {
+          prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
+          notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
+        }
+      }
+      // accion === '3' o null → no hacer nada
+
+    } else if (mov.tipo === 'devolucion' && mov.destino === 'Bodega') {
+      // Producto entró al inventario → ¿descontar?
+      accion = prompt(
+        `El producto "${prod.nombre}" fue devuelto a bodega (${mov.cantidad} ${mov.unidad||'u'}).\n` +
+        `Stock actual: ${prod.stock||0} ${prod.unidad||'u'}\n\n` +
+        `¿Qué hacer con el stock?\n` +
+        `1 = Descontar todo (${mov.cantidad} ${mov.unidad||'u'})\n` +
+        `2 = Descontar parcialmente (indicar cuánto)\n` +
+        `3 = No descontar nada\n\n` +
+        `Escribe 1, 2 o 3:`, '1'
+      );
+      if (accion === '1') {
+        prod.stock = Math.max(0, (prod.stock||0) - (mov.cantidad||0));
+        notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} descontados del stock`);
+      } else if (accion === '2') {
+        const val = prompt(`¿Cuánto descontar del stock? (máx: ${mov.cantidad})`, '');
+        const qty = parseFloat(val)||0;
+        if (qty > 0) {
+          prod.stock = Math.max(0, (prod.stock||0) - Math.min(qty, mov.cantidad));
+          notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} descontados del stock`);
+        }
+      }
+
+    } else if (mov.tipo === 'merma') {
+      // Producto se perdió → ¿recuperar?
+      accion = prompt(
+        `Se registró merma de "${prod.nombre}" (${mov.cantidad} ${mov.unidad||'u'}).\n` +
+        `Stock actual: ${prod.stock||0} ${prod.unidad||'u'}\n\n` +
+        `¿Qué hacer con el stock?\n` +
+        `1 = Recuperar todo (${mov.cantidad} ${mov.unidad||'u'})\n` +
+        `2 = Recuperar parcialmente (indicar cuánto)\n` +
+        `3 = No recuperar nada\n\n` +
+        `Escribe 1, 2 o 3:`, '1'
+      );
+      if (accion === '1') {
+        prod.stock = (prod.stock||0) + (mov.cantidad||0);
+        notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} recuperados al stock`);
+      } else if (accion === '2') {
+        const val = prompt(`¿Cuánto recuperar al stock? (máx: ${mov.cantidad})`, '');
+        const qty = parseFloat(val)||0;
+        if (qty > 0) {
+          prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
+          notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} recuperados al stock`);
+        }
+      }
+
+    } else if (mov.tipo === 'preelaboracion') {
+      accion = prompt(
+        `Se procesaron ${mov.cantidad} ${mov.unidad||'u'} de "${prod.nombre}".\n` +
+        `Stock actual: ${prod.stock||0} ${prod.unidad||'u'}\n\n` +
+        `¿Qué hacer con el stock?\n` +
+        `1 = Devolver todo (${mov.cantidad} ${mov.unidad||'u'})\n` +
+        `2 = Devolver parcialmente (indicar cuánto)\n` +
+        `3 = No devolver nada\n\n` +
+        `Escribe 1, 2 o 3:`, '1'
+      );
+      if (accion === '1') {
+        prod.stock = (prod.stock||0) + (mov.cantidad||0);
+        notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
+      } else if (accion === '2') {
+        const val = prompt(`¿Cuánto devolver al stock? (máx: ${mov.cantidad})`, '');
+        const qty = parseFloat(val)||0;
+        if (qty > 0) {
+          prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
+          notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
+        }
+      }
+    }
+  }
+
   state.movimientos = movGetAll().filter(m=>m.id!==id);
   movRender();
+  invRender();
   markUnsaved();
 }
 
@@ -9707,6 +10149,17 @@ function movAbrirModal(tipo) {
   }[tipo] || { titulo:'Movimiento', color:'#64748b', destLabel:'Destino' };
 
   // Extra fields for preelaboracion
+  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','docena','porción','filete','otro']
+    .map(u=>`<option value="${u}">${u}</option>`).join('');
+  const extraUnidad = (tipo === 'devolucion' || tipo === 'preelaboracion') ? `
+    <div>
+      <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD DE MEDIDA (puede diferir del formato bruto)</label>
+      <select id="mov-unidad-override" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
+        <option value="">— Usar la misma del producto —</option>
+        ${unidadOpts}
+      </select>
+    </div>` : '';
+
   const extraPrelab = tipo === 'preelaboracion' ? `
     <div>
       <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CANTIDAD QUE REGRESA PROCESADA</label>
@@ -9759,6 +10212,7 @@ function movAbrirModal(tipo) {
         </div>
         ${extraPrelab}
         ${extraDev}
+        ${extraUnidad}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
             <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">RESPONSABLE</label>
@@ -9801,6 +10255,8 @@ function movAbrirModal(tipo) {
     const destino  = document.getElementById('mov-destino').value;
     const resp     = document.getElementById('mov-resp').value.trim() || currentUser;
     const nota     = document.getElementById('mov-nota').value.trim();
+    const unidadOverride = document.getElementById('mov-unidad-override')?.value || '';
+    const unidadFinal = unidadOverride || prod.unidad || 'u';
     const fechaInp = document.getElementById('mov-fecha-inp').value;
     const fechaStr = fechaInp
       ? new Date(fechaInp+'T12:00:00').toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})
@@ -9814,18 +10270,18 @@ function movAbrirModal(tipo) {
         if (!confirm(`⚠ Stock insuficiente.\nStock actual: ${prod.stock||0} ${prod.unidad||'u'}\nQuieres despachar: ${cantidad}\n¿Continuar de todas formas?`)) return;
       }
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
-      movs.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', destino, responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+      movs.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino, responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
 
     } else if (tipo === 'devolucion') {
       const estadoDev = document.getElementById('mov-estado-dev')?.value || 'bueno';
       const origen    = destino;
       if (estadoDev === 'bueno') {
         prod.stock = (prod.stock||0) + cantidad;
-        movs.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', origen, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
-        notify(`✅ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} devueltos a inventario`);
+        movs.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        notify(`✅ ${cantidad} ${unidadFinal} de ${prod.nombre} devueltos a inventario`);
       } else {
-        movs.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', origen, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
-        notify(`⚠ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} registrados como merma`);
+        movs.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        notify(`⚠ ${cantidad} ${unidadFinal} de ${prod.nombre} registrados como merma`);
       }
 
     } else if (tipo === 'preelaboracion') {
@@ -9836,15 +10292,15 @@ function movAbrirModal(tipo) {
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
       // Registrar entrada a preelaboración
       const idPrelab = 'mov_'+Date.now();
-      movs.push({ id:idPrelab, tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad:prod.unidad||'u', destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now(), _cerrado:true });
+      movs.push({ id:idPrelab, tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now(), _cerrado:true });
       // Registrar regreso a bodega
       if (regresa > 0) {
         prod.stock = (prod.stock||0) + regresa;
-        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:prod.unidad||'u', origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${prod.unidad||'u'}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true });
+        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:unidadFinal, origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${unidadFinal}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true });
       }
       // Registrar merma
       if (merma > 0) {
-        movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:prod.unidad||'u', origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+2 });
+        movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:unidadFinal, origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+2 });
       }
       notify(`⚗ Preelaboración registrada: ${cantidad} entran, ${regresa} regresan, ${merma} merma`);
     }
@@ -9854,7 +10310,7 @@ function movAbrirModal(tipo) {
     movRender();
     markUnsaved();
 
-    if (tipo === 'despacho') notify(`→ ${cantidad} ${prod.unidad||'u'} de ${prod.nombre} despachados a ${destino}`);
+    if (tipo === 'despacho') notify(`→ ${cantidad} ${unidadFinal} de ${prod.nombre} despachados a ${destino}`);
   };
 }
 // ============================================================
@@ -10382,6 +10838,116 @@ function infInit() {
   const dd    = String(today.getDate()).padStart(2,'0');
   const fEl   = document.getElementById('inf-fecha');
   if (fEl && !fEl.value) fEl.value = `${yyyy}-${mm}-${dd}`;
+  // Initialize storage
+  if (!state.informesDiarios) state.informesDiarios = [];
+  infRenderHistorial();
+}
+
+// Load cargas from egresos (sacCargas) into the informe
+function infLoadFromEgresos() {
+  const w = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+  const cargas = (state.sacCargas && state.sacCargas[w]) ? state.sacCargas[w] : [];
+  if (!cargas.length) { notify('⚠ No hay cargas en la semana actual'); return; }
+  // Filter only unpaid or partial
+  const pendientes = cargas.filter(c => c.estado !== 'pagado' && !c._esPago);
+  if (!pendientes.length) { notify('⚠ Todas las cargas están pagadas'); return; }
+  pendientes.forEach(c => {
+    const monto = c.estado === 'parcial' ? (c.monto - (c.pagadoParcial||0)) : c.monto;
+    infAddItem('cargas', c.nombre, monto);
+  });
+  notify(`✅ ${pendientes.length} carga${pendientes.length!==1?'s':''} cargada${pendientes.length!==1?'s':''} desde egresos`);
+}
+
+// Set propina amount from button clicks
+function infSetPropina(monto) {
+  const el = document.getElementById('inf-propina');
+  if (el) el.value = monto;
+}
+
+// Save informe to state for persistence
+function infGuardarEnState() {
+  if (!state.informesDiarios) state.informesDiarios = [];
+  const d = _infData;
+  if (!d) return;
+  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
+  // Check if already exists for this date
+  const existIdx = state.informesDiarios.findIndex(i => i.fecha === d.fecha);
+  const registro = {
+    id: existIdx >= 0 ? state.informesDiarios[existIdx].id : 'inf_'+Date.now(),
+    fecha: d.fecha, banco: d.banco, venta: d.venta, caja: d.caja,
+    propina: propina,
+    ingNombres: d.ingNombres, ingMontos: d.ingMontos, totalIng: d.totalIng,
+    carNombres: d.carNombres, carMontos: d.carMontos, totalCar: d.totalCar,
+    saldo: d.saldo, notas: d.notas,
+    ts: Date.now(), user: typeof currentUser !== 'undefined' ? currentUser : ''
+  };
+  if (existIdx >= 0) {
+    state.informesDiarios[existIdx] = registro;
+  } else {
+    state.informesDiarios.push(registro);
+  }
+  // Keep only last 60 informes
+  if (state.informesDiarios.length > 60) state.informesDiarios = state.informesDiarios.slice(-60);
+  markUnsaved();
+  infRenderHistorial();
+}
+
+// Render historial of saved informes
+function infRenderHistorial() {
+  const list = document.getElementById('inf-historial-list');
+  if (!list) return;
+  const informes = (state.informesDiarios||[]).slice().reverse();
+  if (!informes.length) {
+    list.innerHTML = '<div style="padding:10px;text-align:center;color:#94a3b8;font-size:11px;font-style:italic;">Sin informes guardados aún</div>';
+    return;
+  }
+  list.innerHTML = informes.map(inf => {
+    const fechaStr = infFechaLegible(inf.fecha);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--border);gap:8px;cursor:pointer;transition:.15s;"
+      onmouseover="this.style.background='rgba(249,115,22,.04)'" onmouseout="this.style.background=''"
+      onclick="infCargarGuardado('${inf.id}')">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${fechaStr}</div>
+        <div style="font-size:9px;color:#94a3b8;">Saldo: ${infFmt(inf.saldo)} · ${inf.user||''}</div>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button onclick="event.stopPropagation();infEliminarGuardado('${inf.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px;" title="Eliminar">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Load a saved informe back into the form for editing
+function infCargarGuardado(id) {
+  const inf = (state.informesDiarios||[]).find(i=>i.id===id);
+  if (!inf) return;
+  document.getElementById('inf-fecha').value = inf.fecha || '';
+  document.getElementById('inf-banco').value = inf.banco || '';
+  document.getElementById('inf-venta').value = inf.venta || '';
+  document.getElementById('inf-caja').value  = inf.caja || '';
+  document.getElementById('inf-notas').value = inf.notas || '';
+  const propEl = document.getElementById('inf-propina');
+  if (propEl) propEl.value = inf.propina || '';
+  // Clear and reload ingresos
+  document.getElementById('inf-ingresos-list').innerHTML = '';
+  (inf.ingNombres||[]).forEach((n,i) => {
+    if (n || inf.ingMontos[i]) infAddItem('ingresos', n, inf.ingMontos[i]);
+  });
+  // Clear and reload cargas
+  document.getElementById('inf-cargas-list').innerHTML = '';
+  (inf.carNombres||[]).forEach((n,i) => {
+    if (n || inf.carMontos[i]) infAddItem('cargas', n, inf.carMontos[i]);
+  });
+  notify('📋 Informe cargado — puedes editarlo y regenerar');
+}
+
+function infEliminarGuardado(id) {
+  if (!confirm('¿Eliminar este informe guardado?')) return;
+  pushUndo();
+  state.informesDiarios = (state.informesDiarios||[]).filter(i=>i.id!==id);
+  infRenderHistorial();
+  markUnsaved();
+  notify('✓ Informe eliminado');
 }
 
 function infAddItem(tipo, nombre='', monto='') {
@@ -10416,6 +10982,7 @@ function infRecolectar() {
   const banco = parseFloat(document.getElementById('inf-banco').value)||0;
   const venta = parseFloat(document.getElementById('inf-venta').value)||0;
   const caja  = parseFloat(document.getElementById('inf-caja').value)||0;
+  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
   const notas = document.getElementById('inf-notas').value.trim();
   const ingNombres = [...document.querySelectorAll('.inf-ingresos-nombre')].map(i=>i.value.trim());
   const ingMontos  = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseFloat(i.value)||0);
@@ -10423,7 +10990,7 @@ function infRecolectar() {
   const carMontos  = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseFloat(i.value)||0);
   const totalIng = ingMontos.reduce((a,b)=>a+b,0);
   const totalCar = carMontos.reduce((a,b)=>a+b,0);
-  return { fecha, banco, venta, caja, ingNombres, ingMontos, totalIng,
+  return { fecha, banco, venta, caja, propina, ingNombres, ingMontos, totalIng,
            carNombres, carMontos, totalCar, saldo: banco+totalIng-totalCar, notas };
 }
 
@@ -10493,6 +11060,9 @@ function infGenerar() {
   document.getElementById('inf-btn-txt').textContent = '💬 Copiar WhatsApp';
 
   setTimeout(() => document.getElementById('inf-preview').scrollIntoView({behavior:'smooth',block:'start'}), 120);
+
+  // #5: Auto-save to state for persistence
+  infGuardarEnState();
 }
 
 function infGuardarImagen() {
@@ -10539,7 +11109,9 @@ function infCopiarTexto() {
   t += `📅 ${infFechaLegible(d.fecha)}\n\n`;
   t += `🏦 Banco inicial:  ${infFmt(d.banco)}\n`;
   t += `📊 Venta de ayer:  ${infFmt(d.venta)}\n`;
-  t += `🗃 Caja:           ${infFmt(d.caja)}\n\n`;
+  t += `🗃 Caja:           ${infFmt(d.caja)}\n`;
+  if (d.propina) t += `💵 Propina:        ${infFmt(d.propina)}\n`;
+  t += `\n`;
   t += `💚 *INGRESOS*\n`;
   if (!hayIng) t += `Sin ingresos registrados\n`;
   else d.ingNombres.forEach((n,i)=>{ if(!n&&!d.ingMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.ingMontos[i])}\n`; });
@@ -12393,6 +12965,7 @@ function sacVChange(dayIdx, field, rawVal) {
   const val = parseInt((rawVal||'0').replace(/[^\d]/g,''),10)||0;
   if (dayIdx === 'extra') {
     if (field === 'est') vsGetExtra(w).monto = val;
+    if (field === 'real') vsGetExtra(w).realExtra = val;
   } else {
     const days = vsGetWeek(w);
     days[dayIdx][field] = val;
@@ -12522,9 +13095,17 @@ function sacRenderCargas(w) {
     return;
   }
 
+  // #12: Ordenar por estatus: nopagado → parcial → pagado
+  const statusOrder = { 'nopagado': 0, 'parcial': 1, 'pagado': 2 };
+  const sortedCargas = [...cargas].sort((a, b) => {
+    const oa = statusOrder[a.estado] ?? 0;
+    const ob = statusOrder[b.estado] ?? 0;
+    return oa - ob;
+  });
+
   const CAT_LIST = ['Crédito','TC','Retiro','Proveedor','Impuesto','Servicio','Bono','Arriendo','Compra','RRHH','Otro'];
 
-  list.innerHTML = cargas.map((c,i) => {
+  list.innerHTML = sortedCargas.map((c,i) => {
     const col     = sacCatColor(c.cat);
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '◑ Parcial' : '○ No pagado';
@@ -12627,25 +13208,66 @@ function sacCalcBalance(w) {
     return s;
   },0));
 
-  // Hybrid ventas
-  const hybrid = vsHybridTotal(w);
-  const ventas = Math.round(hybrid.total||0);
+  // #10 — Balance estimado:
+  // Solo considerar ventas ESTIMADAS de días que NO tienen venta real
+  // La venta real ya pasó a caja/banco, por lo tanto no se suma de nuevo
+  const days     = vsGetWeek(w);
+  const extra    = vsGetExtra(w);
+  let ventasEstPendientes = 0;
+  let ventaRealAcum = 0;
+  days.forEach(d => {
+    if (d.real > 0) {
+      // Este día ya tiene venta real → ya está en caja/banco, NO sumar al balance
+      ventaRealAcum += d.real;
+    } else if (d.est > 0) {
+      // Día sin venta real → sumar la estimada al balance
+      ventasEstPendientes += d.est;
+    }
+  });
+  // Extra: si tiene real, ya pasó a caja; si no, sumar estimado
+  if (extra.realExtra > 0) {
+    ventaRealAcum += extra.realExtra;
+  } else if (extra.monto > 0) {
+    ventasEstPendientes += extra.monto;
+  }
+  ventasEstPendientes = Math.round(ventasEstPendientes);
+  ventaRealAcum = Math.round(ventaRealAcum);
 
-  const balance = Math.round(disponible + ventas - porPagar);
+  // Ingresos por ingresar (confirmed=false en ingresos)
+  const ingresosPorIngresar = Math.round((state.ingresos||[]).reduce((s,i) => {
+    return s + (!i.confirmed ? (i.amount||0) : 0);
+  }, 0));
+
+  // Balance = disponible (banco+efectivo) + ventas estimadas pendientes + ingresos por ingresar - egresos pendientes
+  const balance = Math.round(disponible + ventasEstPendientes + ingresosPorIngresar - porPagar);
 
   const set2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set2('sac-total-disp', fmt(disponible));
   set2('sac-por-pagar',  fmt(porPagar));
   const plbl = document.getElementById('sac-pagado-lbl');
   if (plbl) plbl.textContent = pagado>0 ? `✓ Pagado: ${fmt(pagado)}` : '';
+
+  // Venta real acumulada
+  set2('sac-vreal-acum', fmt(ventaRealAcum));
+  const vrSub = document.getElementById('sac-vreal-acum-sub');
+  if (vrSub) {
+    const diasReal = days.filter(d=>d.real>0).length;
+    vrSub.textContent = diasReal > 0 ? `${diasReal} día${diasReal!==1?'s':''} confirmado${diasReal!==1?'s':''} · ya en caja/banco` : 'Sin ventas reales aún';
+  }
+
   const balEl  = document.getElementById('sac-balance');
   const subEl  = document.getElementById('sac-balance-sub');
   if (balEl) balEl.style.color = balance >= 0 ? 'var(--success)' : 'var(--danger)';
   if (balEl) balEl.textContent = (balance<0?'-':'')+fmt(Math.abs(balance));
-  if (subEl) subEl.textContent = `Disp. ${fmt(disponible)} + Ventas ${fmt(ventas)} − Cargas ${fmt(porPagar)}`;
+  if (subEl) {
+    let subTxt = `Disp. ${fmt(disponible)} + Vta.Est. ${fmt(ventasEstPendientes)}`;
+    if (ingresosPorIngresar > 0) subTxt += ` + Ing.Pend. ${fmt(ingresosPorIngresar)}`;
+    subTxt += ` − Cargas ${fmt(porPagar)}`;
+    subEl.textContent = subTxt;
+  }
 
   // Update dashboard SAC widget
-  updateDashSac(w, disponible, porPagar, pagado, ventas, balance);
+  updateDashSac(w, disponible, porPagar, pagado, ventasEstPendientes, balance);
 }
 
 function updateDashSac(w, disponible, porPagar, pagado, ventas, balance) {
@@ -12682,7 +13304,7 @@ function sacAddCargaManual() {
   pushUndo();
   sacGetCargas(w).push({
     id:       'sc_'+Date.now(),
-    nombre:   'Nuevo pago',
+    nombre:   '',
     cat:      'Otro',
     monto:    0,
     montoReal: null,
@@ -12745,40 +13367,49 @@ function sacPagarParcial(w, id) {
   const v = prompt(
     `Pago parcial para "${c.nombre}"\n` +
     `Total: ${fmt(c.monto)}  |  Ya pagado: ${fmt(c.pagadoParcial||0)}  |  Pendiente: ${fmt(pendiente)}\n\n` +
-    `¿Cuánto pagaste ahora?`,
+    `¿Cuánto pagaste ahora?\n(Si el monto real es mayor al pendiente, se ajustará el total)`,
     ''
   );
   if (v === null) return;
   const abono = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
   if (!abono) { notify('⚠ Ingresa un monto válido'); return; }
-  if (abono > pendiente) { notify(`⚠ El abono ($${abono.toLocaleString('es-CL')}) supera el pendiente (${fmt(pendiente)})`); return; }
 
   pushUndo();
 
-  // Actualizar la carga original
-  c.pagadoParcial = (c.pagadoParcial||0) + abono;
-  const nuevoPendiente = c.monto - c.pagadoParcial;
-
-  if (nuevoPendiente <= 0) {
-    // Saldada completamente
-    c.estado    = 'pagado';
-    c.montoReal = c.monto;
-    notify(`✅ "${c.nombre}" — ¡Saldado completamente! ${fmt(c.monto)}`);
+  if (abono > pendiente) {
+    // El monto real supera el saldo pendiente → ajustar monto original y marcar como pagado
+    const nuevoTotal = (c.pagadoParcial||0) + abono;
+    c.monto         = nuevoTotal;
+    c.pagadoParcial = nuevoTotal;
+    c.montoReal     = nuevoTotal;
+    c.estado        = 'pagado';
+    notify(`✅ "${c.nombre}" ajustado a ${fmt(nuevoTotal)} y saldado completamente`);
   } else {
-    c.estado = 'parcial';
-    // Crear registro del abono pagado
-    cargas.push({
-      id:       'sc_pago_'+Date.now(),
-      nombre:   `✓ Pago parcial — ${c.nombre}`,
-      cat:      c.cat,
-      monto:    abono,
-      montoReal: abono,
-      estado:   'pagado',
-      resp:     c.resp || '',
-      nota:     `Abono ${fmt(abono)} de ${fmt(c.monto)} total · Pendiente: ${fmt(nuevoPendiente)}`,
-      _esPago:  true  // marca para no mostrar botón de pago parcial en este registro
-    });
-    notify(`◑ Abono de ${fmt(abono)} registrado · Pendiente: ${fmt(nuevoPendiente)}`);
+    // Actualizar la carga original
+    c.pagadoParcial = (c.pagadoParcial||0) + abono;
+    const nuevoPendiente = c.monto - c.pagadoParcial;
+
+    if (nuevoPendiente <= 0) {
+      // Saldada completamente
+      c.estado    = 'pagado';
+      c.montoReal = c.monto;
+      notify(`✅ "${c.nombre}" — ¡Saldado completamente! ${fmt(c.monto)}`);
+    } else {
+      c.estado = 'parcial';
+      // Crear registro del abono pagado
+      cargas.push({
+        id:       'sc_pago_'+Date.now(),
+        nombre:   `✓ Pago parcial — ${c.nombre}`,
+        cat:      c.cat,
+        monto:    abono,
+        montoReal: abono,
+        estado:   'pagado',
+        resp:     c.resp || '',
+        nota:     `Abono ${fmt(abono)} de ${fmt(c.monto)} total · Pendiente: ${fmt(nuevoPendiente)}`,
+        _esPago:  true  // marca para no mostrar botón de pago parcial en este registro
+      });
+      notify(`◑ Abono de ${fmt(abono)} registrado · Pendiente: ${fmt(nuevoPendiente)}`);
+    }
   }
 
   sacRenderCargas(w);
@@ -13015,7 +13646,7 @@ function compressStateForSave(st) {
   }
 }
 
-async function reloadFromCloud() { dismissConflict(); await loadFromCloud(); }
+async function reloadFromCloud() { dismissConflict(); _suppressAlerts = true; await loadFromCloud(); }
 
 // ── CONFLICT DETECTION ──
 async function checkVersion() {
