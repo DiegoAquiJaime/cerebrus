@@ -8,20 +8,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
-  --primary:#1a2535;
+  --primary:#e5e7eb;
   --accent:#f97316;
   --accent2:#6366f1;
   --success:#10b981;
   --danger:#ef4444;
   --warning:#f59e0b;
-  --bg:#f1f5f9;
-  --white:#ffffff;
-  --border:#e2e8f0;
-  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.06);
-  --shadow-lg:0 4px 6px rgba(0,0,0,0.05),0 10px 40px rgba(0,0,0,0.1);
-  --radius:12px;
-  --radius-sm:8px;
-  --nav-width:240px;
+  --bg:#020617;
+  --white:#020817;
+  --border:#1e293b;
+  --shadow:0 18px 45px rgba(15,23,42,0.65);
+  --shadow-lg:0 28px 80px rgba(15,23,42,0.9);
+  --radius:14px;
+  --radius-sm:10px;
+  --nav-width:260px;
 }
 body.dark-mode {
   --primary:#e2e8f0; --accent:#fb923c; --accent2:#818cf8;
@@ -56,13 +56,49 @@ body.dark-mode .breakdown-card,.dark-mode .wfall-card,.dark-mode .table-wrap,.da
 body.dark-mode .notif{background:var(--success);}
 body.dark-mode .meta-card{background:linear-gradient(135deg,#1e293b 0%,#1a2744 100%);}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);display:flex;height:100vh;color:var(--primary);font-size:14px;}
+body{
+  font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  background:radial-gradient(circle at top left,#0b1120 0%,#020617 40%,#000000 100%);
+  display:flex;
+  min-height:100vh;
+  color:var(--primary);
+  font-size:14px;
+}
 
 /* ---- NAV ---- */
-nav{width:var(--nav-width);min-width:var(--nav-width);background:var(--primary);color:white;display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.05);}
-.nav-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.08);}
+nav{
+  width:var(--nav-width);
+  min-width:var(--nav-width);
+  background:radial-gradient(circle at top,#020617 0%,#020617 40%,#020617 100%);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
+  border-right:1px solid rgba(148,163,184,0.35);
+  box-shadow:12px 0 40px rgba(15,23,42,0.7);
+  position:relative;
+  z-index:30;
+}
+.nav-logo{
+  padding:20px 18px 18px;
+  border-bottom:1px solid rgba(148,163,184,0.28);
+  position:relative;
+  overflow:hidden;
+}
+.nav-logo::after{
+  content:'';
+  position:absolute;
+  inset:-40px;
+  opacity:0.45;
+  background:radial-gradient(circle at 0 0,rgba(248,250,252,0.12),transparent 60%);
+  pointer-events:none;
+}
 .nav-logo h1{font-size:14px;font-weight:800;color:var(--accent);letter-spacing:2px;background:linear-gradient(90deg,var(--accent),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .nav-logo p{font-size:10px;color:rgba(255,255,255,0.35);margin-top:3px;letter-spacing:0.5px;}
+.nav-logo-brand{display:flex;align-items:center;gap:10px;position:relative;z-index:2;}
+.nav-logo-img{width:44px;height:44px;object-fit:contain;border-radius:10px;background:rgba(255,255,255,0.04);padding:5px;border:1px solid rgba(148,163,184,0.35);box-shadow:0 8px 24px rgba(15,23,42,0.5);}
+.nav-logo-text{display:flex;flex-direction:column;}
+.nav-logo-note{position:relative;z-index:2;}
 .nav-sep{padding:16px 18px 5px;font-size:9px;color:rgba(255,255,255,0.25);font-weight:700;letter-spacing:2px;text-transform:uppercase;}
 .nav-item{padding:9px 18px;cursor:pointer;font-size:12px;color:rgba(255,255,255,0.6);border-left:3px solid transparent;transition:.15s;display:flex;align-items:center;gap:9px;border-radius:0;}
 .nav-item:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.9);}
@@ -70,8 +106,28 @@ nav{width:var(--nav-width);min-width:var(--nav-width);background:var(--primary);
 .nav-item .ni{width:16px;text-align:center;font-size:13px;}
 
 /* ---- MAIN ---- */
-main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
-.topbar{position:sticky;top:0;z-index:20;background:rgba(241,245,249,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+main{
+  flex:1;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  background:radial-gradient(circle at top,#020617 0%,#020617 45%,#020617 100%);
+}
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:rgba(15,23,42,0.96);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border-bottom:1px solid rgba(30,64,175,0.45);
+  padding:11px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
 .topbar h2{font-size:14px;font-weight:700;letter-spacing:-.2px;}
 .btn-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .btn{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;letter-spacing:-.1px;}
@@ -83,7 +139,12 @@ main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
 .btn-undo:disabled{opacity:.4;cursor:not-allowed;}
 .dark-toggle{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px;transition:.15s;}
 .dark-toggle:hover{background:rgba(249,115,22,.08);border-color:var(--accent);}
-.content{padding:22px 26px 60px;}
+.content{
+  padding:22px min(26px,4vw) 60px;
+  max-width:1440px;
+  margin:0 auto;
+  width:100%;
+}
 .btn-group{display:flex;gap:8px;}
 .btn{border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;padding:8px 14px;display:flex;align-items:center;gap:5px;transition:.15s;font-family:inherit;}
 .btn:hover{opacity:.88;}
@@ -96,7 +157,7 @@ main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
 .content{padding:20px 24px 50px;}
 
 /* ---- KPI CARDS ---- */
-.kpi-grid-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;}
+.kpi-grid-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px;}
 .kpi-grid-mid{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px;}
 .kpi-grid-bot{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-bottom:20px;}
 .kpi-card{background:var(--white);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--border);cursor:pointer;transition:.2s;position:relative;overflow:hidden;}
@@ -136,7 +197,7 @@ main{flex:1;overflow-y:auto;display:flex;flex-direction:column;min-width:0;}
 .section-total{font-size:13px;font-weight:800;color:var(--primary);}
 
 /* ---- TABLE ---- */
-.table-wrap{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;}
+.table-wrap{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow-x:auto;overflow-y:hidden;}
 table{width:100%;border-collapse:collapse;font-size:12px;}
 th{background:#f8fafc;font-weight:700;color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);}
 td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
@@ -268,6 +329,34 @@ tr.esperado td{color:#9aacb8 !important;font-style:italic;}
 tr.esperado td input{color:#9aacb8;}
 tr.esperado .impact-cell{color:#9aacb8 !important;}
 .esperado-label{font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-left:4px;vertical-align:middle;}
+
+/* ---- RESPONSIVE / TABLET & MOBILE ---- */
+@media (max-width:1024px){
+  :root{ --nav-width:220px; }
+  body{font-size:13px;}
+  nav{position:fixed;inset:0 auto 0 0;z-index:40;}
+  main{margin-left:var(--nav-width);}
+  .topbar{padding-inline:16px;}
+  .content{padding-inline:16px;}
+  .kpi-grid-top{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hist-kpi-row{grid-template-columns:repeat(2,1fr);}
+}
+@media (max-width:768px){
+  nav{
+    position:fixed;
+    transform:translateX(-100%);
+    transition:transform .25s ease-out;
+  }
+  nav.nav-open{transform:translateX(0);}
+  main{margin-left:0;}
+  .topbar{gap:4px;}
+  .btn-group{flex-wrap:wrap;justify-content:flex-end;}
+  .kpi-grid-top{grid-template-columns:1fr;}
+  .kpi-grid-bot{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .hist-kpi-row{grid-template-columns:1fr;}
+  table{font-size:11px;}
+  th,td{padding-inline:6px;}
+}
 
 /* ---- ALERT BANNER CRÉDITOS ---- */
 .cred-alert-banner{display:none;background:var(--white);border-radius:10px;box-shadow:var(--shadow);border-left:4px solid var(--danger);padding:14px 18px;margin-bottom:16px;}
@@ -1446,9 +1535,14 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
 
 <nav id="mainNav">
   <div class="nav-logo">
-    <h1>CEREBRUS</h1>
-    <p style="color:rgba(255,255,255,0.55);font-size:10px;margin-top:2px;letter-spacing:.4px;">GESTIÓN AQUÍ JAIME</p>
-    <p style="color:rgba(255,255,255,0.28);font-size:9px;margin-top:6px;line-height:1.5;letter-spacing:0;">Desarrollado por Palacios-Brockhaus<br>para Aquí Jaime restaurante<br>Códigos de Gemini (Google) &amp; Claude Sonnet (Anthropic)</p>
+    <div class="nav-logo-brand">
+      <img class="nav-logo-img" src="data:image/png;base64,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" alt="Logo Aquí Jaime">
+      <div class="nav-logo-text">
+        <h1>CEREBRUS</h1>
+        <p style="color:rgba(255,255,255,0.55);font-size:10px;margin-top:2px;letter-spacing:.4px;">GESTIÓN AQUÍ JAIME</p>
+      </div>
+    </div>
+    <p class="nav-logo-note" style="color:rgba(255,255,255,0.28);font-size:9px;margin-top:6px;line-height:1.5;letter-spacing:0;">Desarrollado por Palacios-Brockhaus<br>para Aquí Jaime restaurante<br>Códigos de Gemini (Google) &amp; Claude Sonnet (Anthropic)</p>
   </div>
   <div class="nav-sep">Vistas</div>
   <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
@@ -4030,13 +4124,29 @@ function removeItem(key, id) {
 // ============================================================
 const _undoStack = [];
 const MAX_UNDO = 20;
+// ── Safe math helpers (evitan desfases por coma flotante) ──
+const round2 = v => Math.round((v + Number.EPSILON) * 100) / 100;
+const roundCLP = v => Math.round(v); // pesos enteros
+let _undoDebounceTimer = null;
+let _undoPendingSnapshot = false;
 
 function pushUndo() {
-  _undoStack.push(JSON.stringify({state, nid:_nid}));
-  if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+  // Debounce: espera 400ms antes de hacer el JSON.stringify completo
+  // Evita bloquear el hilo principal en cada keystroke
+  _undoPendingSnapshot = true;
+  if (typeof markUnsaved === 'function') markUnsaved();
   const btn = document.getElementById('btn-undo');
   if (btn) btn.disabled = false;
-  if (typeof markUnsaved === 'function') markUnsaved();
+  clearTimeout(_undoDebounceTimer);
+  _undoDebounceTimer = setTimeout(() => {
+    if (!_undoPendingSnapshot) return;
+    _undoPendingSnapshot = false;
+    try {
+      const snap = JSON.stringify({state, nid:_nid});
+      _undoStack.push(snap);
+      if (_undoStack.length > MAX_UNDO) _undoStack.shift();
+    } catch(e) { console.warn('[CEREBRUS] pushUndo error:', e); }
+  }, 400);
 }
 
 function undo() {
@@ -5490,7 +5600,7 @@ function vsHybridTotal(w) {
     if (d.real > 0) { total += d.real;  realDays++; }
     else if (d.est > 0) { total += d.est; estDays++; }
   });
-  return { total: total + extra, realDays, estDays, extra };
+  return { total: roundCLP(total + extra), realDays, estDays, extra };
 }
 
 function vsUpdateWeekButtons() {
@@ -7685,7 +7795,9 @@ Para CADA documento extrae un objeto JSON con:
 - confianza: "ok" | "duda" | "ilegible"
 - observacion: qué no quedó claro
 - items: array de líneas de detalle del documento. Para CADA línea extrae:
-  * descripcion: nombre del producto o servicio (string)
+  * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
+  * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
+  * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide o servicio (string)
   * cantidad: número (float, puede ser kg, litros, unidades)
   * unidad: "kg" | "L" | "un" | "caja" | "bolsa" | u otra que aparezca
   * precioUnit: precio unitario en pesos (entero, 0 si no aparece)
@@ -7758,15 +7870,28 @@ async function processAiPdf(file) {
     setAiProgress(40, 'Google está leyendo el PDF con OCR…');
 
     // Paso 2: Apps Script hace OCR + Claude interpreta
-    const procRes = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action:  'procesarFactura',
-        fileId:  uploadData.fileId,
-        apiKey,
-        prompt:  aiPromptTexto()
-      })
-    });
+    let procRes;
+    try {
+      procRes = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action:  'procesarFactura',
+          fileId:  uploadData.fileId,
+          apiKey,
+          prompt:  aiPromptTexto()
+        })
+      });
+    } catch (netErr) {
+      document.getElementById('ai-progress').classList.remove('show');
+      const msg = String(netErr?.message || '');
+      const isMixed = /mixed content|blocked|insecure/i.test(msg);
+      const isNet   = /failed to fetch|networkerror|load failed/i.test(msg);
+      if (isMixed || isNet) {
+        notify('⚠ El proxy local no responde. Avisa a la o al encargado, o a los jefes de comedor.', 7000);
+        return;
+      }
+      throw netErr;
+    }
 
     setAiProgress(80, 'Procesando resultado…');
     const procData = await procRes.json();
@@ -7779,7 +7904,11 @@ async function processAiPdf(file) {
 
   } catch(e) {
     document.getElementById('ai-progress').classList.remove('show');
-    notify('⚠ Error: ' + e.message);
+    if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed'))) {
+      notify('⚠ El proxy local no responde. Avisa a la o al encargado, o a los jefes de comedor.', 7000);
+    } else {
+      notify('⚠ Error: ' + e.message);
+    }
   }
 }
 
@@ -7788,18 +7917,36 @@ function aiPromptTexto() {
   facInit();
   const known = Object.keys(state.facturas).sort().join(', ');
   const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
+  // Inyectar categorías exactas del estado para que la IA no invente categorías
+  const cats = (state.catInventario||['Carnes','Pescados y Mariscos','Frutas y Verduras',
+    'Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría']).join(' | ');
+  // Inyectar nombres exactos del inventario para fuzzy matching
+  const prodNombres = (state.inventario||[]).map(p=>p.nombre).filter(Boolean).join(', ');
   return `Eres un asistente experto en contabilidad chilena.
+Contexto de catálogo del restaurante: cortes premium de corral y abastecimiento gastronómico.
 Analiza el siguiente TEXTO extraído de documentos tributarios chilenos mediante OCR.
-El texto puede tener problemas de formato — interpreta con sentido común.
+El texto puede tener errores tipográficos por el OCR (letras confundidas, manchas, números invertidos, acentos mal leídos, espacios extras). 
+Aplica coincidencia difusa (fuzzy matching): si un texto se parece a un producto conocido del inventario, usa el nombre exacto del inventario.
+Asume errores de OCR agresivos (manchas, dígitos como letras y viceversa) y corrige por contexto semántico de restaurante.
+Ejemplos: "REINETS" → "REINETA", "F1LETE" → "FILETE", "C0RRAL" → "CORRAL", "LOINO" → "LOMO".
+Corrige errores de OCR usando el contexto del documento (tipo de proveedor, categoría esperada, etc.).
 
 RUT propio del restaurante (NO es proveedor): 77.912.330-8
 Proveedores conocidos: ${known || '(ninguno aún)'}
 RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
 
+CATEGORÍAS EXACTAS DEL SISTEMA (usa SOLO estas, sin inventar otras):
+${cats}
+Cada item DEBE clasificarse obligatoriamente en exactamente una categoría de la lista anterior.
+Si hay ambigüedad, elige la categoría más probable de la lista; nunca inventes categorías nuevas.
+
+PRODUCTOS YA EN INVENTARIO (para fuzzy matching — asocia productos del OCR a estos nombres si coinciden):
+${prodNombres || '(inventario vacío)'}
+
 REGLAS DE PRECIOS — MUY IMPORTANTE:
 1. Verifica matemáticamente si los precios son netos o brutos usando el MONTO NETO (no el total final):
    - Suma (cantidad × precioUnit de cada línea) = esto debe dar el Monto Neto
-   - Si suma ≈ Monto Neto → precios son NETOS → multiplica cada precioUnit × 1.19 para obtener precio con IVA
+   - Si suma ≈ Monto Neto → precios son NETOS → multiplica cada precioUnit × 1.19 y redondea al entero más cercano
    - Si suma ≈ SubTotal (Neto + IVA) → precios YA incluyen IVA → úsalos directamente
    - IMPORTANTE: el "Monto Total" puede incluir Retención (RET 5%) u otros descuentos — NO uses el Monto Total para verificar, usa el Monto Neto o SubTotal
 2. precioUnit en el resultado siempre debe ser CON IVA incluido (precio neto × 1.19)
@@ -7822,10 +7969,12 @@ Para CADA documento extrae un JSON con:
 - observacion: si hay dudas sobre IVA u otros datos
 - tieneIVA: true si detectaste que los precios de línea incluyen IVA, false si son netos, null si no puedes determinarlo
 - items: array de líneas con:
-  * descripcion: nombre del producto
+  * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
+  * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
+  * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide
   * cantidad: número (kg, litros, unidades)
   * unidad: "kg" | "L" | "un" | "caja" u otra
-  * precioUnit: precio unitario CON IVA incluido (entero en pesos)
+  * precioUnit: precio unitario CON IVA incluido — SIEMPRE entero en pesos, sin decimales, usa Math.round()
   * subtotal: subtotal de la línea CON IVA (entero en pesos)
   * precioOriginal: precio como aparece en la factura (antes de aplicar IVA si era neto)
   * eraNetoIVA: true si tuviste que multiplicar por 1.19
@@ -8265,19 +8414,10 @@ function aiConfirmImport() {
           const existing = orden.items.find(x=>x.prodId===prod.id);
           if (existing) { existing.qty += qty; if (precio) existing.precio = precio; }
           else orden.items.push({ prodId:prod.id, qty, precio, prov:'' });
-          // Save price to BOTH precios (used by invRender) AND proveedores
+          // Guardar precio en fuente unificada
           if (precio) {
             const provNombreExist = it._provNombre || 'Importado';
-            // Update precios array (what invRender reads)
-            if (!prod.precios) prod.precios = [];
-            const precioExist = prod.precios.find(p=>p.prov===provNombreExist||p.prov===''||p.prov==='Importado');
-            if (precioExist) { precioExist.precio = precio; precioExist.prov = provNombreExist; }
-            else prod.precios.push({ prov: provNombreExist, precio });
-            // Also update proveedores array
-            if (!prod.proveedores) prod.proveedores = [];
-            const provExist = prod.proveedores.find(p=>p.nombre===provNombreExist||p.nombre===''||p.nombre==='Importado');
-            if (provExist) { provExist.precio = precio; provExist.nombre = provNombreExist; }
-            else prod.proveedores.push({ nombre: provNombreExist, precio, esMejor:true });
+            invUpsertPrecioProveedor(prod.id, provNombreExist, precio);
           }
           added++;
         } else {
@@ -8300,13 +8440,11 @@ function aiConfirmImport() {
             nombre: it.descripcion,
             cat,
             unidad: it.unidad||'un',
-            stock: 0, stockMin: 0,
-            // Save to BOTH precios (invRender reads this) AND proveedores
-            precios:    precio ? [{ prov: provNombre, precio }] : [],
-            proveedores: precio ? [{ nombre: provNombre, precio, esMejor:true }] : []
+            stock: 0, stockMin: 0
           };
           if (!state.inventario) state.inventario = [];
           state.inventario.push(newProd);
+          if (precio) invUpsertPrecioProveedor(newProd.id, provNombre, precio);
           orden.items.push({ prodId:newProd.id, qty, precio, prov: provNombre });
           added++;
         }
@@ -8490,6 +8628,7 @@ function _postLoadSetup() {
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
   if (!state.inventario)       state.inventario       = [];
   if (!state.movimientos)      state.movimientos      = [];
+  if (!state.preciosProveedor) state.preciosProveedor = {}; // {prodId: [{prov,precio}]}
   if (!state.catInventario)    state.catInventario    = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
   if (!state.provRuts)         state.provRuts         = {};
   if (!state.rutMap)           state.rutMap           = {};
@@ -8627,16 +8766,33 @@ function invInit() { if (!state.inventario) state.inventario = []; }
 
 let _invCatFilter = 'todas';
 
+function _getPreciosUnified(prod) {
+  // Fuente única: state.preciosProveedor[id] > proveedores > precios (legacy)
+  if (prod?.id && state.preciosProveedor?.[prod.id]?.length)
+    return state.preciosProveedor[prod.id];
+  if (prod?.proveedores?.length) return prod.proveedores.map(p=>({prov:p.nombre||p.prov||'',precio:p.precio}));
+  return (prod?.precios||[]);
+}
+function invUpsertPrecioProveedor(prodId, prov, precio) {
+  if (!prodId || !prov) return;
+  if (!state.preciosProveedor) state.preciosProveedor = {};
+  if (!state.preciosProveedor[prodId]) state.preciosProveedor[prodId] = [];
+  const lista = state.preciosProveedor[prodId];
+  const idx = lista.findIndex(x => (x.prov||'') === prov);
+  if (precio <= 0) {
+    if (idx >= 0) lista.splice(idx, 1);
+    return;
+  }
+  if (idx >= 0) lista[idx].precio = precio;
+  else lista.push({ prov, precio });
+}
 function invBestPrice(prod) {
-  // Read from proveedores (used by AI import) or precios (legacy)
-  const lista = prod.proveedores?.length ? prod.proveedores : (prod.precios||[]);
-  const valid  = lista.filter(p=>p.precio>0);
-  return valid.length ? Math.min(...valid.map(p=>p.precio)) : 0;
+  const lista = _getPreciosUnified(prod).filter(p=>p.precio>0);
+  return lista.length ? Math.min(...lista.map(p=>p.precio)) : 0;
 }
 function invBestProvider(prod) {
-  const lista = prod.proveedores?.length ? prod.proveedores : (prod.precios||[]);
-  const valid  = lista.filter(p=>p.precio>0).sort((a,b)=>a.precio-b.precio);
-  return valid.length ? (valid[0].nombre||valid[0].prov||'') : (prod.prov||'');
+  const lista = _getPreciosUnified(prod).filter(p=>p.precio>0).sort((a,b)=>a.precio-b.precio);
+  return lista.length ? (lista[0].nombre||lista[0].prov||'') : (prod?.prov||'');
 }
 function invGetCategories() {
   invInit();
@@ -8737,7 +8893,7 @@ function invRenderTable() {
   }
 
   tbody.innerHTML = filtered.map(p => {
-    const precios = (p.precios||[]).filter(x=>x.precio>0).sort((a,b)=>a.precio-b.precio);
+    const precios = _getPreciosUnified(p).filter(x=>x.precio>0).sort((a,b)=>a.precio-b.precio);
     const best    = precios[0];
     const provTags = precios.map(x => {
       const color  = provColor(x.prov);
@@ -8884,7 +9040,7 @@ function invFindOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.i
 function invFindItem(orden,prodId){return orden?.items.find(it=>it.prodId===prodId);}
 
 function invSetOrdenQty(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.qty=parseFloat((val||'0').replace(/[^\d.]/g,''))||0;invUpdateSemKpis();}
-function invSetOrdenProv(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.prov=val;const prod=state.inventario.find(p=>p.id===prodId);const pe=(prod?.precios||[]).find(x=>x.prov===val);if(pe&&pe.precio)it.precio=pe.precio;invRenderPedido();}
+function invSetOrdenProv(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.prov=val;const prod=state.inventario.find(p=>p.id===prodId);const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===val);if(pe&&pe.precio)it.precio=pe.precio;invRenderPedido();}
 function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
 function invToggleRecibido(semId,ordenId,prodId){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.recibido=!it.recibido;if(it.recibido&&!it.qtyRecibida)it.qtyRecibida=it.qty;invRenderPedido();}
 function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
@@ -9809,9 +9965,8 @@ function invAddPrecio(id) {
   const ps=prompt('Precio por '+(p.unidad||'unidad')+' en '+prov+' ($):','0');
   if(ps===null) return;
   const precio=parseInt((ps||'0').replace(/[^\d]/g,''),10)||0;
-  pushUndo(); if(!p.precios)p.precios=[];
-  const ei=p.precios.findIndex(x=>x.prov===prov);
-  if(ei>=0)p.precios[ei].precio=precio; else p.precios.push({prov,precio});
+  pushUndo();
+  invUpsertPrecioProveedor(p.id, prov, precio);
   if(!p.prov)p.prov=prov;
   invRender(); notify('✓ Precio guardado');
 }
@@ -9819,13 +9974,14 @@ function invAddPrecio(id) {
 function invEditPrecio(id,prov) {
   invInit();
   const p=state.inventario.find(x=>x.id===id); if(!p) return;
-  const ex=(p.precios||[]).find(x=>x.prov===prov);
+  const ex=_getPreciosUnified(p).find(x=>(x.prov||x.nombre)===prov);
   const ps=prompt('Precio de "'+p.nombre+'" en '+prov+' ('+(p.unidad||'u')+').\n0 = eliminar:',ex?ex.precio:0);
   if(ps===null) return;
   const precio=parseInt((ps||'0').replace(/[^\d]/g,''),10)||0;
   pushUndo();
-  if(precio===0){p.precios=(p.precios||[]).filter(x=>x.prov!==prov);if(p.prov===prov)p.prov=p.precios[0]?.prov||'';}
-  else{const idx=(p.precios||[]).findIndex(x=>x.prov===prov);if(idx>=0)p.precios[idx].precio=precio;else{if(!p.precios)p.precios=[];p.precios.push({prov,precio});}}
+  invUpsertPrecioProveedor(p.id, prov, precio);
+  const left=_getPreciosUnified(p);
+  if(precio===0&&p.prov===prov)p.prov=left[0]?.prov||'';
   invRender();
 }
 
@@ -9837,7 +9993,7 @@ function invImportFromFacs() {
   if(!nuevos.length){notify('Todos los proveedores ya están vinculados');return;}
   if(!confirm(`Se crearán ${nuevos.length} productos:\n${nuevos.slice(0,8).join(', ')}${nuevos.length>8?'…':''}\n¿Continuar?`)) return;
   pushUndo();
-  nuevos.forEach(pn=>state.inventario.push({id:'inv_imp_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),nombre:pn,cat:'Importado',unidad:'unidad',stock:0,minimo:0,qty:0,prov:pn,precios:[{prov:pn,precio:0}]}));
+  nuevos.forEach(pn=>state.inventario.push({id:'inv_imp_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),nombre:pn,cat:'Importado',unidad:'unidad',stock:0,minimo:0,qty:0,prov:pn}));
   invRender(); notify('✅ '+nuevos.length+' productos importados');
 }
 
@@ -12102,8 +12258,8 @@ function sacVBlur(inp) {
 function sacCalcVentas(w) {
   const days      = vsGetWeek(w);
   const extraEst  = vsGetExtra(w).monto || 0;
-  const totalEst  = days.reduce((s,d)=>s+d.est,0) + extraEst;
-  const totalReal = days.reduce((s,d)=>s+d.real,0);
+  const totalEst  = Math.round(days.reduce((s,d)=>s+d.est,0) + extraEst);
+  const totalReal = Math.round(days.reduce((s,d)=>s+d.real,0));
 
   // Hybrid: days with real > 0 use real, rest use estimated
   const hybrid = vsHybridTotal(w);
@@ -12119,7 +12275,7 @@ function sacCalcVentas(w) {
   if (tr) {
     if (hasReal && hybrid.estDays > 0) {
       // Hybrid: some real, some estimated
-      tr.textContent = fmt(hybrid.total);
+      tr.textContent = fmt(Math.round(hybrid.total||0));
       tr.title = `${hybrid.realDays} día${hybrid.realDays!==1?'s':''} real + ${hybrid.estDays} estimado`;
       tr.style.color = 'var(--accent2)'; // purple = hybrid
     } else if (hasReal) {
@@ -12265,21 +12421,21 @@ function sacCalcCargasTotals(w) {
   const cargas   = sacGetCargas(w);
   // Exclude auto-generated payment records from totals (they're subsets of originals)
   const base     = cargas.filter(c => !c._esPago);
-  const total    = base.reduce((s,c)=>s+(c.monto||0),0);
-  const pagado   = base.reduce((s,c)=>{
+  const total    = Math.round(base.reduce((s,c)=>s+(c.monto||0),0));
+  const pagado   = Math.round(base.reduce((s,c)=>{
     if (c.estado==='pagado')  return s+(c.monto||0);
     if (c.estado==='parcial') return s+(c.pagadoParcial||0);
     return s;
-  },0);
-  const pendiente= base.reduce((s,c)=>{
+  },0));
+  const pendiente= Math.round(base.reduce((s,c)=>{
     if (c.estado==='pagado')  return s;
     if (c.estado==='parcial') return s+(c.monto-(c.pagadoParcial||0));
     return s+(c.monto||0);
-  },0);
+  },0));
   // Add mercadería
-  const mercMonto = sacGetMercMonto(w);
-  const grandTotal= total + mercMonto;
-  const grandPend = pendiente + (mercMonto>0?mercMonto:0); // mercadería always pending
+  const mercMonto = Math.round(sacGetMercMonto(w));
+  const grandTotal= Math.round(total + mercMonto);
+  const grandPend = Math.round(pendiente + (mercMonto>0?mercMonto:0)); // mercadería always pending
 
   const set2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set2('sac-foot-total',    fmt(grandTotal));
@@ -12302,27 +12458,27 @@ function sacCalcBalance(w) {
   const banco     = state.cajaEmpresa?.banco || 0;
   const efectivo  = state.sacEfectivo || 0;
   const propPend  = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
-  const bancoReal = banco - propPend;
-  const disponible= bancoReal + efectivo;
+  const bancoReal = Math.round(banco - propPend);
+  const disponible= Math.round(bancoReal + efectivo);
 
   const cargas    = sacGetCargas(w);
-  const mercMonto = sacGetMercMonto(w);
-  const porPagar  = cargas.reduce((s,c)=>{
+  const mercMonto = Math.round(sacGetMercMonto(w));
+  const porPagar  = Math.round(cargas.reduce((s,c)=>{
     if (c.estado==='pagado')  return s;
     if (c.estado==='parcial') return s+(c.monto-(c.montoReal||0));
     return s+c.monto;
-  },0) + mercMonto;
-  const pagado    = cargas.reduce((s,c)=>{
+  },0) + mercMonto);
+  const pagado    = Math.round(cargas.reduce((s,c)=>{
     if (c.estado==='pagado')  return s+(c.montoReal??c.monto);
     if (c.estado==='parcial') return s+(c.montoReal||0);
     return s;
-  },0);
+  },0));
 
   // Hybrid ventas
   const hybrid = vsHybridTotal(w);
-  const ventas = hybrid.total;
+  const ventas = Math.round(hybrid.total||0);
 
-  const balance = disponible + ventas - porPagar;
+  const balance = Math.round(disponible + ventas - porPagar);
 
   const set2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set2('sac-total-disp', fmt(disponible));
@@ -12627,7 +12783,7 @@ async function loadFromCloud() {
 }
 
 // ── CLOUD SAVE ──
-async function saveToCloud(description) {
+async function saveToCloud(description, silent) {
   setSyncStatus('⏳ Guardando…', '');
   try {
     // Compress state: remove zero/empty vsData entries to reduce payload size
@@ -12775,9 +12931,9 @@ function setSyncStatus(msg, cls) {
 }
 
 // ── SAVE / LOAD ──
-function saveState(description) {
-  if (IS_CLOUD && currentUser) { saveToCloud(description); }
-  else { saveLocalRaw(); markSaved(); notify('✓ Guardado localmente'); }
+function saveState(description, silent) {
+  if (IS_CLOUD && currentUser) { saveToCloud(description, silent); }
+  else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }
 }
 
 function saveLocalRaw() {
@@ -12798,7 +12954,7 @@ function loadLocalRaw() {
 // Legacy alias
 function loadFromStorage() { return loadLocalRaw(); }
 
-function notify(msg) {
+function notify(msg, duration) {
   const el = document.getElementById('notif');
   el.textContent = msg;
   el.style.opacity = '1';
