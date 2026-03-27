@@ -1695,7 +1695,9 @@ body.dark-mode textarea:focus{
   .inv-table input[type="text"], .inv-table input[type="number"] { min-height: 40px; font-size: 15px !important; padding: 8px 10px; }
   .inv-table select { min-height: 40px; font-size: 15px !important; }
   .inv-cat-btn { min-height: 40px; padding: 8px 16px; font-size: 13px; }
-  .inv-toolbar .fac-btn, .inv-toolbar .ai-import-btn { min-height: 42px; font-size: 13px; }
+  .inv-toolbar .fac-btn { min-height: 42px; font-size: 13px; }
+  /* Quick movement buttons bigger on touch */
+  .inv-table td button[onclick*="invQuickMov"] { min-height: 34px; padding: 6px 10px !important; font-size: 11px !important; }
 }
 
 /* ---- FACTURAS "A PAGAR EN SEMANA" ---- */
@@ -2278,7 +2280,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div style="display:flex;gap:7px;flex-wrap:wrap;">
               <button onclick="sacOpenConfigSel()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">☑ Gastos fijos</button>
               <button onclick="sacAddCargaManual()" style="background:var(--accent);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ Agregar</button>
-              <button onclick="iaAbrirScanner('sac')" class="ia-scan-btn">📸 Leer boleta/factura</button>
             </div>
           </div>
           <div id="sac-cargas-list">
@@ -3130,6 +3131,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <th style="text-align:center;">Estado</th>
               <th>Proveedor(es)</th>
               <th style="text-align:right;">Mejor precio</th>
+              <th style="text-align:center;">Movimientos</th>
               <th></th>
             </tr></thead>
             <tbody id="inv-tbody"></tbody>
@@ -9338,7 +9340,7 @@ function invRenderTable() {
   });
 
   if (!filtered.length) {
-    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Sin productos — agrega uno o importa desde facturas.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Sin productos — agrega uno o importa desde facturas.</td></tr>';
     return;
   }
 
@@ -9352,17 +9354,28 @@ function invRenderTable() {
         ${esc(x.prov.length>10?x.prov.slice(0,10)+'…':x.prov)} ${isBest?'★':''} ${fmt(x.precio)}
       </span>`;
     }).join('');
+    const stockColor = (p.stock||0)<=0?'var(--danger)':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'var(--warning)':'var(--success)';
     return `<tr id="inv-row-${p.id}">
       <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">${esc(p.nombre||'')}</td>
       <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
       <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
-      <td style="text-align:right;font-weight:700;">${p.stock||0}</td>
+      <td style="text-align:right;font-weight:700;color:${stockColor};">${p.stock||0}</td>
       <td style="text-align:right;color:#94a3b8;">${p.minimo||0}</td>
       <td style="text-align:center;"><span class="inv-semaforo ${(p.stock||0)<=0?'inv-sem-rojo':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'inv-sem-amarillo':'inv-sem-verde'}"></span></td>
       <td style="max-width:220px;">${provTags||'<span style="color:#94a3b8;font-size:10px;">Sin precios</span>'}
         <button onclick="invAddPrecio('${p.id}')" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;color:#94a3b8;margin-left:2px;">+ precio</button>
       </td>
       <td class="inv-precio-col inv-mejor-precio" style="text-align:right;">${best?fmt(best.precio):'—'}</td>
+      <td style="text-align:center;white-space:nowrap;">
+        <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="invQuickMov('${p.id}','despacho')" title="Despachar a cocina/salón"
+            style="background:#6366f122;border:1px solid #6366f144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6366f1;white-space:nowrap;">→ Enviar</button>
+          <button onclick="invQuickMov('${p.id}','devolucion')" title="Recibir devolución"
+            style="background:#10b98122;border:1px solid #10b98144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#10b981;white-space:nowrap;">← Devol.</button>
+          <button onclick="invQuickMov('${p.id}','merma')" title="Registrar merma"
+            style="background:#ef444422;border:1px solid #ef444444;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#ef4444;white-space:nowrap;">⚠ Merma</button>
+        </div>
+      </td>
       <td style="display:flex;gap:4px;align-items:center;">
         <button onclick="invEditProd('${p.id}')" title="Editar producto" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='#94a3b8'">✏</button>
         <button onclick="invDelete('${p.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
@@ -9916,6 +9929,147 @@ function invDelete(id) {
   const p=state.inventario.find(x=>x.id===id);
   if(!p||!confirm('¿Eliminar "'+p.nombre+'"?')) return;
   pushUndo(); state.inventario=state.inventario.filter(x=>x.id!==id); invRender();
+}
+
+// ============================================================
+//  MOVIMIENTO RÁPIDO DESDE PRODUCTO EN INVENTARIO
+// ============================================================
+function invQuickMov(prodId, tipo) {
+  const prod = (state.inventario||[]).find(p=>p.id===prodId);
+  if (!prod) { notify('⚠ Producto no encontrado'); return; }
+
+  const cfg = {
+    despacho:   { titulo:`→ Despachar "${prod.nombre}"`, color:'#6366f1', destDefault:'Cocina', verb:'despachado' },
+    devolucion: { titulo:`← Devolución "${prod.nombre}"`, color:'#10b981', destDefault:'Bodega', verb:'devuelto' },
+    merma:      { titulo:`⚠ Merma "${prod.nombre}"`, color:'#ef4444', destDefault:'Merma', verb:'registrado como merma' },
+    preelaboracion: { titulo:`⚗ Preelaboración "${prod.nombre}"`, color:'#8b5cf6', destDefault:'Preelaboración', verb:'procesado' },
+  }[tipo] || { titulo:'Movimiento', color:'#64748b', destDefault:'Cocina', verb:'movido' };
+
+  const destOpts = ['Cocina','Salón','Preelaboración','Bodega','Barra','Otro'].map(d =>
+    `<option value="${d}" ${d===cfg.destDefault?'selected':''}>${d}</option>`
+  ).join('');
+
+  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','docena','porción','filete','otro']
+    .map(u=>`<option value="${u}" ${u===(prod.unidad||'unidad')?'selected':''}>${u}</option>`).join('');
+
+  // Extra devolucion estado
+  const extraDev = tipo === 'devolucion' ? `
+    <div style="grid-column:1/-1;">
+      <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">ESTADO</label>
+      <select id="qm-estado" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;background:var(--white);color:var(--primary);">
+        <option value="bueno">✅ Bueno — regresa a inventario</option>
+        <option value="danado">⚠ Dañado — va a merma</option>
+      </select>
+    </div>` : '';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:14px;width:400px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+      <div style="background:${cfg.color};padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:white;">${cfg.titulo}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">Stock actual: ${prod.stock||0} ${prod.unidad||'u'}</div>
+        </div>
+        <button id="qm-close" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:20px;cursor:pointer;">✕</button>
+      </div>
+      <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CANTIDAD</label>
+          <input id="qm-qty" type="text" inputmode="decimal" placeholder="ej: 5" autofocus
+            style="width:100%;border:2px solid ${cfg.color};border-radius:7px;padding:10px 12px;font-family:inherit;font-size:16px;font-weight:800;box-sizing:border-box;background:transparent;color:var(--primary);text-align:center;">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD</label>
+          <select id="qm-unidad" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:inherit;font-size:13px;background:var(--white);color:var(--primary);">
+            ${unidadOpts}
+          </select>
+        </div>
+        ${tipo !== 'merma' ? `<div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">${tipo==='devolucion'?'ORIGEN':'DESTINO'}</label>
+          <select id="qm-dest" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:inherit;font-size:13px;background:var(--white);color:var(--primary);">
+            ${destOpts}
+          </select>
+        </div>` : '<div></div>'}
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">RESPONSABLE</label>
+          <input id="qm-resp" type="text" value="${typeof currentUser!=='undefined'?currentUser:''}" placeholder="Nombre"
+            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+        </div>
+        ${extraDev}
+        <div style="grid-column:1/-1;">
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">NOTA (opcional)</label>
+          <input id="qm-nota" type="text" placeholder="Observación…"
+            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+        </div>
+        <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
+          <button id="qm-cancel" style="background:none;border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;color:#64748b;">Cancelar</button>
+          <button id="qm-save" style="background:${cfg.color};color:white;border:none;border-radius:7px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">💾 Registrar</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  const close = () => { try { document.body.removeChild(overlay); } catch(e){} };
+  document.getElementById('qm-close').onclick  = close;
+  document.getElementById('qm-cancel').onclick = close;
+  overlay.onclick = e => { if (e.target === overlay) close(); };
+
+  // Auto focus qty
+  setTimeout(() => { const q = document.getElementById('qm-qty'); if(q) q.focus(); }, 100);
+
+  // Enter key to submit
+  overlay.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('qm-save').click(); });
+
+  document.getElementById('qm-save').onclick = () => {
+    const cantidad = parseFloat(document.getElementById('qm-qty').value) || 0;
+    if (!cantidad) { notify('⚠ Ingresa una cantidad'); return; }
+    const unidad   = document.getElementById('qm-unidad').value || prod.unidad || 'u';
+    const destino  = document.getElementById('qm-dest')?.value || cfg.destDefault;
+    const resp     = (document.getElementById('qm-resp').value || '').trim() || (typeof currentUser!=='undefined'?currentUser:'');
+    const nota     = (document.getElementById('qm-nota').value || '').trim();
+    const fechaStr = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora     = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+
+    pushUndo();
+    if (!state.movimientos) state.movimientos = [];
+
+    if (tipo === 'despacho') {
+      if (cantidad > (prod.stock||0)) {
+        if (!confirm(`⚠ Stock insuficiente (${prod.stock||0} ${prod.unidad||'u'}).\n¿Despachar ${cantidad} de todas formas?`)) return;
+      }
+      prod.stock = Math.max(0, (prod.stock||0) - cantidad);
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad, destino, responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+      notify(`→ ${cantidad} ${unidad} de ${prod.nombre} despachados a ${destino}`);
+
+    } else if (tipo === 'devolucion') {
+      const estadoDev = document.getElementById('qm-estado')?.value || 'bueno';
+      if (estadoDev === 'bueno') {
+        prod.stock = (prod.stock||0) + cantidad;
+        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+        notify(`← ${cantidad} ${unidad} de ${prod.nombre} devueltos a inventario`);
+      } else {
+        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora, ts:Date.now() });
+        notify(`⚠ ${cantidad} ${unidad} de ${prod.nombre} registrados como merma`);
+      }
+
+    } else if (tipo === 'merma') {
+      prod.stock = Math.max(0, (prod.stock||0) - cantidad);
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:'Bodega', destino:'Merma', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+      notify(`⚠ ${cantidad} ${unidad} de ${prod.nombre} registrados como merma`);
+
+    } else if (tipo === 'preelaboracion') {
+      prod.stock = Math.max(0, (prod.stock||0) - cantidad);
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now(), _cerrado:false });
+      notify(`⚗ ${cantidad} ${unidad} de ${prod.nombre} enviados a preelaboración`);
+    }
+
+    close();
+    invRender();
+    try { movRender(); } catch(e) {}
+    markUnsaved();
+  };
 }
 
 // ============================================================
