@@ -3519,6 +3519,58 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </div>
       </div>
 
+      <!-- MANTENIMIENTO Y ARCHIVADO -->
+      <div class="section-title" id="sec-archivo" style="cursor:default;border-left-color:var(--danger);">
+        <span>🗄 Mantenimiento y Archivado</span>
+      </div>
+      <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:20px;">
+        <!-- Estado actual del sistema -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;" id="arch-kpis"></div>
+
+        <!-- Barra de uso -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px;">
+            <span>Uso del almacenamiento</span>
+            <span id="arch-size-label">Calculando…</span>
+          </div>
+          <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
+            <div id="arch-size-bar" style="height:100%;border-radius:4px;background:var(--success);width:0%;transition:width .4s;"></div>
+          </div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Límite: ~45 KB para sincronización en nube</div>
+        </div>
+
+        <!-- Opciones de archivado -->
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Archivar datos antiguos</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-fac" checked> <span>🧾 Facturas pagadas (más de <select id="arch-fac-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option><option value="24">24</option></select> semanas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-fac-count">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-mov" checked> <span>🔄 Movimientos de inventario (más de <select id="arch-mov-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select> semanas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-mov-count">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-inf" checked> <span>📋 Informes diarios (más de <select id="arch-inf-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select> semanas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-inf-count">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-sac"> <span>⚡ Cargas semanales pasadas (semanas cerradas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-sac-count">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-fsem"> <span>📋 Facturas a pagar en semana (ya pagadas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-fsem-count">0</span>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="archCalcPreview()" class="fac-btn" style="font-size:11px;">🔍 Previsualizar</button>
+          <button onclick="archDownloadBackup()" class="fac-btn" style="font-size:11px;">💾 Descargar respaldo JSON</button>
+          <button onclick="archExecute()" class="fac-btn danger" style="font-size:11px;">🗑 Archivar seleccionados</button>
+        </div>
+        <div id="arch-preview" style="margin-top:12px;display:none;"></div>
+      </div>
+
       <!-- 1. INGRESOS -->
       <div class="section-title" id="sec-ingresos">
         <span>💰 1. Ingresos e Inyecciones</span>
@@ -5140,7 +5192,7 @@ function showTab(tabId) {
   if (tabId==='propinas')   propRender();
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
-  if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); }
+  if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
@@ -10597,6 +10649,319 @@ function catInvEliminar(idx) {
 }
 
 // ============================================================
+//  MANTENIMIENTO Y ARCHIVADO
+// ============================================================
+
+function archGetStateSize() {
+  try { return JSON.stringify(state).length; } catch(e) { return 0; }
+}
+
+function archWeeksAgo(weeks) {
+  const d = new Date();
+  d.setDate(d.getDate() - weeks * 7);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function archParseDate(str) {
+  if (!str) return null;
+  // Handle dd-mm-yyyy
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const [d,m,y] = str.split('-');
+    return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  }
+  // Handle yyyy-mm-dd
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(str)) {
+    return new Date(str);
+  }
+  // Handle timestamp
+  if (typeof str === 'number') return new Date(str);
+  return null;
+}
+
+function archCountOldFacturas(weeks) {
+  const cutoff = archWeeksAgo(weeks);
+  let count = 0;
+  Object.values(state.facturas||{}).forEach(facs => {
+    facs.forEach(f => {
+      if (f.estado === 'inactiva') {
+        const d = archParseDate(f.emision) || archParseDate(f.vence);
+        if (d && d < cutoff) count++;
+      }
+    });
+  });
+  return count;
+}
+
+function archCountOldMovimientos(weeks) {
+  const cutoff = archWeeksAgo(weeks);
+  return (state.movimientos||[]).filter(m => {
+    const d = m.ts ? new Date(m.ts) : archParseDate(m.fecha);
+    return d && d < cutoff;
+  }).length;
+}
+
+function archCountOldInformes(weeks) {
+  const cutoff = archWeeksAgo(weeks);
+  return (state.informesDiarios||[]).filter(inf => {
+    const d = inf.ts ? new Date(inf.ts) : archParseDate(inf.fecha);
+    return d && d < cutoff;
+  }).length;
+}
+
+function archCountOldSacCargas() {
+  const currentW = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+  let count = 0;
+  Object.entries(state.sacCargas||{}).forEach(([w, arr]) => {
+    if (parseInt(w) !== currentW && Array.isArray(arr) && arr.length) count += arr.length;
+  });
+  return count;
+}
+
+function archCountOldFacSemana() {
+  return (state.facSemana||[]).filter(f => f.estado === 'pagado').length;
+}
+
+function archRenderStats() {
+  const size   = archGetStateSize();
+  const limit  = 45000;
+  const pct    = Math.min(100, Math.round(size / limit * 100));
+
+  // KPIs
+  const kpiWrap = document.getElementById('arch-kpis');
+  if (kpiWrap) {
+    const totalFacs = Object.values(state.facturas||{}).reduce((s,arr)=>s+arr.length, 0);
+    const facPagadas = Object.values(state.facturas||{}).reduce((s,arr)=>s+arr.filter(f=>f.estado==='inactiva').length, 0);
+    const movCount = (state.movimientos||[]).length;
+    const infCount = (state.informesDiarios||[]).length;
+
+    kpiWrap.innerHTML = `
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent);">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">TAMAÑO STATE</div>
+        <div style="font-size:16px;font-weight:800;color:${pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'};">${(size/1024).toFixed(1)} KB</div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #6366f1;">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">FACTURAS</div>
+        <div style="font-size:16px;font-weight:800;">${totalFacs}</div>
+        <div style="font-size:9px;color:var(--success);">${facPagadas} pagadas</div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #10b981;">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">MOVIMIENTOS</div>
+        <div style="font-size:16px;font-weight:800;">${movCount}</div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent2);">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">INFORMES</div>
+        <div style="font-size:16px;font-weight:800;">${infCount}</div>
+      </div>`;
+  }
+
+  // Size bar
+  const bar   = document.getElementById('arch-size-bar');
+  const label = document.getElementById('arch-size-label');
+  const note  = document.getElementById('arch-size-note');
+  if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
+  if (label) label.textContent = `${(size/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%)`;
+  if (note && pct > 70) note.textContent = '⚠ Se recomienda archivar datos antiguos para evitar problemas de sincronización';
+
+  // Update counts
+  archUpdateCounts();
+
+  // Attach listeners to week selectors (once)
+  ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el._archBound) { el._archBound = true; el.addEventListener('change', archUpdateCounts); }
+  });
+}
+
+function archUpdateCounts() {
+  const facWeeks = parseInt(document.getElementById('arch-fac-weeks')?.value||'8');
+  const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
+  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+
+  const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  set2('arch-fac-count',  archCountOldFacturas(facWeeks));
+  set2('arch-mov-count',  archCountOldMovimientos(movWeeks));
+  set2('arch-inf-count',  archCountOldInformes(infWeeks));
+  set2('arch-sac-count',  archCountOldSacCargas());
+  set2('arch-fsem-count', archCountOldFacSemana());
+}
+
+function archCalcPreview() {
+  archUpdateCounts();
+  const facN  = parseInt(document.getElementById('arch-fac-count')?.textContent||'0');
+  const movN  = parseInt(document.getElementById('arch-mov-count')?.textContent||'0');
+  const infN  = parseInt(document.getElementById('arch-inf-count')?.textContent||'0');
+  const sacN  = parseInt(document.getElementById('arch-sac-count')?.textContent||'0');
+  const fsemN = parseInt(document.getElementById('arch-fsem-count')?.textContent||'0');
+
+  const doFac  = document.getElementById('arch-fac')?.checked;
+  const doMov  = document.getElementById('arch-mov')?.checked;
+  const doInf  = document.getElementById('arch-inf')?.checked;
+  const doSac  = document.getElementById('arch-sac')?.checked;
+  const doFsem = document.getElementById('arch-fsem')?.checked;
+
+  let total = 0;
+  let lines = [];
+  if (doFac  && facN)  { total+=facN;  lines.push(`🧾 ${facN} facturas pagadas`); }
+  if (doMov  && movN)  { total+=movN;  lines.push(`🔄 ${movN} movimientos`); }
+  if (doInf  && infN)  { total+=infN;  lines.push(`📋 ${infN} informes diarios`); }
+  if (doSac  && sacN)  { total+=sacN;  lines.push(`⚡ ${sacN} cargas semanales pasadas`); }
+  if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
+
+  const el = document.getElementById('arch-preview');
+  if (!el) return;
+  if (!total) {
+    el.style.display = 'block';
+    el.innerHTML = '<div style="padding:10px;text-align:center;color:var(--success);font-size:12px;font-weight:600;">✓ No hay datos que archivar con estos filtros. ¡Todo limpio!</div>';
+    return;
+  }
+
+  // Estimate size savings
+  const currentSize = archGetStateSize();
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--danger);margin-bottom:6px;">Se eliminarán ${total} registros:</div>
+      ${lines.map(l=>`<div style="font-size:11px;padding:2px 0;">${l}</div>`).join('')}
+      <div style="font-size:10px;color:#94a3b8;margin-top:8px;">💡 Recomendación: descarga un respaldo JSON antes de archivar.</div>
+    </div>`;
+}
+
+function archDownloadBackup() {
+  try {
+    const data = JSON.stringify({
+      exportDate: new Date().toISOString(),
+      user: typeof currentUser!=='undefined'?currentUser:'',
+      state: state
+    }, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `cerebrus-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    notify('💾 Respaldo descargado');
+  } catch(e) {
+    notify('⚠ Error al generar respaldo: ' + e.message);
+  }
+}
+
+function archExecute() {
+  const doFac  = document.getElementById('arch-fac')?.checked;
+  const doMov  = document.getElementById('arch-mov')?.checked;
+  const doInf  = document.getElementById('arch-inf')?.checked;
+  const doSac  = document.getElementById('arch-sac')?.checked;
+  const doFsem = document.getElementById('arch-fsem')?.checked;
+
+  const facWeeks = parseInt(document.getElementById('arch-fac-weeks')?.value||'8');
+  const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
+  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+
+  let totalRemoved = 0;
+  const sizeBefore = archGetStateSize();
+
+  // Confirm
+  archCalcPreview();
+  const facN  = doFac  ? archCountOldFacturas(facWeeks) : 0;
+  const movN  = doMov  ? archCountOldMovimientos(movWeeks) : 0;
+  const infN  = doInf  ? archCountOldInformes(infWeeks) : 0;
+  const sacN  = doSac  ? archCountOldSacCargas() : 0;
+  const fsemN = doFsem ? archCountOldFacSemana() : 0;
+  const totalPlan = facN + movN + infN + sacN + fsemN;
+
+  if (!totalPlan) { notify('✓ Nada que archivar'); return; }
+  if (!confirm(`¿Archivar ${totalPlan} registros?\n\nEsto es irreversible. Asegúrate de haber descargado un respaldo JSON primero.`)) return;
+
+  pushUndo();
+
+  // 1. Facturas pagadas antiguas
+  if (doFac && facN > 0) {
+    const cutoff = archWeeksAgo(facWeeks);
+    Object.keys(state.facturas||{}).forEach(prov => {
+      const before = state.facturas[prov].length;
+      state.facturas[prov] = state.facturas[prov].filter(f => {
+        if (f.estado !== 'inactiva') return true;
+        const d = archParseDate(f.emision) || archParseDate(f.vence);
+        return !(d && d < cutoff);
+      });
+      totalRemoved += before - state.facturas[prov].length;
+      // Remove empty provider
+      if (state.facturas[prov].length === 0) delete state.facturas[prov];
+    });
+  }
+
+  // 2. Movimientos antiguos
+  if (doMov && movN > 0) {
+    const cutoff = archWeeksAgo(movWeeks);
+    const before = (state.movimientos||[]).length;
+    state.movimientos = (state.movimientos||[]).filter(m => {
+      const d = m.ts ? new Date(m.ts) : archParseDate(m.fecha);
+      return !(d && d < cutoff);
+    });
+    totalRemoved += before - state.movimientos.length;
+  }
+
+  // 3. Informes diarios antiguos
+  if (doInf && infN > 0) {
+    const cutoff = archWeeksAgo(infWeeks);
+    const before = (state.informesDiarios||[]).length;
+    state.informesDiarios = (state.informesDiarios||[]).filter(inf => {
+      const d = inf.ts ? new Date(inf.ts) : archParseDate(inf.fecha);
+      return !(d && d < cutoff);
+    });
+    totalRemoved += before - state.informesDiarios.length;
+  }
+
+  // 4. Cargas semanales pasadas
+  if (doSac && sacN > 0) {
+    const currentW = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+    Object.keys(state.sacCargas||{}).forEach(w => {
+      if (parseInt(w) !== currentW) {
+        totalRemoved += (state.sacCargas[w]||[]).length;
+        delete state.sacCargas[w];
+      }
+    });
+  }
+
+  // 5. Facturas semanales pagadas
+  if (doFsem && fsemN > 0) {
+    const before = (state.facSemana||[]).length;
+    state.facSemana = (state.facSemana||[]).filter(f => f.estado !== 'pagado');
+    totalRemoved += before - state.facSemana.length;
+  }
+
+  const sizeAfter = archGetStateSize();
+  const saved     = sizeBefore - sizeAfter;
+
+  archRenderStats();
+  markUnsaved();
+
+  const el = document.getElementById('arch-preview');
+  if (el) {
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:12px 14px;">
+        <div style="font-size:13px;font-weight:800;color:var(--success);margin-bottom:4px;">✅ Archivado completado</div>
+        <div style="font-size:11px;color:#64748b;">
+          ${totalRemoved} registros eliminados · ${(saved/1024).toFixed(1)} KB liberados
+          <br>Tamaño actual: ${(sizeAfter/1024).toFixed(1)} KB
+        </div>
+      </div>`;
+  }
+
+  notify(`✅ ${totalRemoved} registros archivados · ${(saved/1024).toFixed(1)} KB liberados`);
+}
+
+// Auto-warning when state gets large (called on save)
+function archCheckSize() {
+  const size = archGetStateSize();
+  if (size > 40000) {
+    notify('⚠ Almacenamiento al ' + Math.round(size/450) + '% — considera archivar datos antiguos en ⚙ Configuración');
+  }
+}
+
+// ============================================================
 //  DASHBOARD SEMANAL DE MOVIMIENTOS
 // ============================================================
 
@@ -14050,6 +14415,8 @@ function setSyncStatus(msg, cls) {
 function saveState(description, silent) {
   if (IS_CLOUD && currentUser) { saveToCloud(description, silent); }
   else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }
+  // Check if state is getting large
+  if (!silent && typeof archCheckSize === 'function') archCheckSize();
 }
 
 function saveLocalRaw() {
