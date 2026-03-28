@@ -9053,7 +9053,7 @@ function aiConfirmImport() {
 //  CONFIGURACIÓN MULTIUSUARIO — Apps Script
 //  Pega aquí la URL de tu Google Apps Script Web App
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxo1BPAFrW8p3aS4Bo3NxfxSKT1n-SDmkjKU6aeQzdHV6HO1It4voHszX-wPtoHpbLzyA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxnLZQBGo2XPBjbVnExioRQAGZgKl3vIC3_edLg0bVTIv2S0vXgOTBlKd_secS6XicYig/exec';
 const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = API_URL !== '__APPS_SCRIPT_URL__' && API_URL.startsWith('https://');
 
@@ -10762,9 +10762,11 @@ function archCountOldFacSemana() {
 }
 
 function archRenderStats() {
-  const size   = archGetStateSize();
-  const limit  = 45000;
-  const pct    = Math.min(100, Math.round(size / limit * 100));
+  const rawSize = archGetStateSize();
+  let compSize = rawSize;
+  try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch(e){}
+  const limit  = 42000;
+  const pct    = Math.min(100, Math.round(compSize / limit * 100));
 
   // KPIs
   const kpiWrap = document.getElementById('arch-kpis');
@@ -10776,8 +10778,9 @@ function archRenderStats() {
 
     kpiWrap.innerHTML = `
       <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent);">
-        <div style="font-size:9px;color:#94a3b8;font-weight:700;">TAMAÑO STATE</div>
-        <div style="font-size:16px;font-weight:800;color:${pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'};">${(size/1024).toFixed(1)} KB</div>
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">TAMAÑO COMPRIMIDO</div>
+        <div style="font-size:16px;font-weight:800;color:${pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'};">${(compSize/1024).toFixed(1)} KB</div>
+        <div style="font-size:9px;color:#94a3b8;">Raw: ${(rawSize/1024).toFixed(1)} KB</div>
       </div>
       <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #6366f1;">
         <div style="font-size:9px;color:#94a3b8;font-weight:700;">FACTURAS</div>
@@ -10799,7 +10802,7 @@ function archRenderStats() {
   const label = document.getElementById('arch-size-label');
   const note  = document.getElementById('arch-size-note');
   if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
-  if (label) label.textContent = `${(size/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%)`;
+  if (label) label.textContent = `${(compSize/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%) — comprimido de ${(rawSize/1024).toFixed(1)} KB`;
   if (note && pct > 70) note.textContent = '⚠ Se recomienda archivar datos antiguos para evitar problemas de sincronización';
 
   // Update counts
@@ -10994,10 +10997,31 @@ function archExecute() {
 
 // Auto-warning when state gets large (called on save)
 function archCheckSize() {
-  const size = archGetStateSize();
-  if (size > 40000) {
-    notify('⚠ Almacenamiento al ' + Math.round(size/450) + '% — considera archivar datos antiguos en ⚙ Configuración');
-  }
+  try {
+    const compressed = compressStateForSave(state);
+    const size = JSON.stringify(compressed).length;
+    const limit = 42000;
+    const pct = Math.round(size / limit * 100);
+    if (pct > 85) {
+      notify(`⚠ Almacenamiento al ${pct}% (${(size/1024).toFixed(1)}KB) — archiva datos antiguos en ⚙ Configuración`);
+    }
+  } catch(e) {}
+}
+
+// Diagnostic: show what's taking up space
+function archDiagnostic() {
+  const parts = {};
+  const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
+    'sacCargas','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
+    'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
+  keys.forEach(k => {
+    if (state[k]) parts[k] = JSON.stringify(state[k]).length;
+  });
+  // Sort by size descending
+  const sorted = Object.entries(parts).sort((a,b)=>b[1]-a[1]);
+  const total  = sorted.reduce((s,e)=>s+e[1], 0);
+  console.table(sorted.map(([k,v])=>({key:k, bytes:v, KB:(v/1024).toFixed(1), pct:Math.round(v/total*100)+'%'})));
+  return sorted;
 }
 
 // ============================================================
@@ -14502,8 +14526,15 @@ async function loadFromCloud() {
     const res  = await fetch(API_URL + '?action=getState&_=' + Date.now());
     const json = await res.json();
     if (json.ok && json.data) {
-      state = json.data.state || makeDefaultState();
-      _nid  = json.data.nid  || 200;
+      // Handle chunked data: if data comes as string, parse it
+      let parsed = json.data;
+      if (typeof json.data === 'string') {
+        try { parsed = JSON.parse(json.data); } catch(e) { parsed = json.data; }
+      }
+      state = parsed.state || makeDefaultState();
+      _nid  = parsed.nid  || 200;
+      // Decompress short keys from cloud
+      decompressVsData(state);
       cloudVersion = json.meta?.version || '0';
       if (json.meta?.lastUser && json.meta.lastUser !== currentUser)
         notify('📥 Datos de ' + json.meta.lastUser + ' · ' + json.meta.lastDate);
@@ -14523,42 +14554,87 @@ async function loadFromCloud() {
 async function saveToCloud(description, silent) {
   setSyncStatus('⏳ Guardando…', '');
   try {
-    // Compress state: remove zero/empty vsData entries to reduce payload size
     const stateToSave = compressStateForSave(state);
-    const payload     = JSON.stringify({ action:'save', user:currentUser, data:{state:stateToSave, nid:_nid}, description: description||'Guardó cambios' });
-    // Warn if payload is large
-    if (payload.length > 45000) console.warn('Payload grande:', payload.length, 'bytes');
-    const res  = await fetch(API_URL, { method:'POST', body: payload });
-    const json = await res.json();
-    if (json.ok) {
-      cloudVersion = json.version || cloudVersion;
-      setSyncStatus('✓ Guardado en nube', 'ok');
-      markSaved(); dismissConflict();
-      notify('☁ Guardado por ' + currentUser);
-    } else throw new Error(json.error);
+    const dataStr     = JSON.stringify({state:stateToSave, nid:_nid});
+    const CHUNK_SIZE  = 42000; // safe limit per cell
+
+    if (dataStr.length <= CHUNK_SIZE) {
+      // Single-cell save (standard)
+      const payload = JSON.stringify({ action:'save', user:currentUser, data:JSON.parse(dataStr), description: description||'Guardó cambios', chunks:1 });
+      const res  = await fetch(API_URL, { method:'POST', body: payload });
+      const json = await res.json();
+      if (json.ok) {
+        cloudVersion = json.version || cloudVersion;
+        setSyncStatus('✓ Guardado en nube', 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify('☁ Guardado por ' + currentUser);
+      } else throw new Error(json.error);
+    } else {
+      // Multi-chunk save: split data across multiple cells
+      const totalChunks = Math.ceil(dataStr.length / CHUNK_SIZE);
+      console.log(`[CEREBRUS] Estado grande (${(dataStr.length/1024).toFixed(1)}KB) — dividiendo en ${totalChunks} partes`);
+
+      const payload = JSON.stringify({
+        action: 'saveChunked',
+        user: currentUser,
+        chunks: totalChunks,
+        data: dataStr, // full string, Apps Script will split
+        description: description || 'Guardó cambios (chunked)'
+      });
+
+      const res  = await fetch(API_URL, { method:'POST', body: payload });
+      const json = await res.json();
+      if (json.ok) {
+        cloudVersion = json.version || cloudVersion;
+        setSyncStatus(`✓ Nube (${totalChunks} partes)`, 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify(`☁ Guardado en ${totalChunks} partes por ${currentUser}`);
+      } else throw new Error(json.error || 'Error guardando chunks');
+    }
   } catch(e) {
     saveLocalRaw(); setSyncStatus('⚠ Error al guardar', 'err');
-    notify('⚠ Error nube — guardado local como respaldo. ' + (e.message||''));
+    if (!silent) notify('⚠ Error nube — guardado local como respaldo. ' + (e.message||''));
   }
 }
 
-// Remove empty/zero entries from vsData to reduce JSON size
+// Remove empty/zero entries and aggressively compress state to minimize JSON size
 function compressStateForSave(st) {
   try {
     const s = JSON.parse(JSON.stringify(st)); // deep clone
 
-    // Compress vsData: only keep weeks that have actual data
+    // ── AUTO-PURGE old data before saving ──
+    const weeksAgo = (n) => { const d=new Date(); d.setDate(d.getDate()-n*7); return d; };
+    const cutoff8w = weeksAgo(8);
+
+    // Purge old movimientos (>8 weeks)
+    if (s.movimientos && s.movimientos.length > 50) {
+      s.movimientos = s.movimientos.filter(m => {
+        const d = m.ts ? new Date(m.ts) : null;
+        return !d || d >= cutoff8w;
+      });
+    }
+
+    // Purge old informesDiarios (keep last 30)
+    if (s.informesDiarios && s.informesDiarios.length > 30) {
+      s.informesDiarios = s.informesDiarios.slice(-30);
+    }
+
+    // Purge paid facSemana items
+    if (s.facSemana) {
+      s.facSemana = s.facSemana.filter(f => f.estado !== 'pagado');
+    }
+
+    // ── COMPRESS vsData: only keep weeks with actual data ──
     if (s.vsData) {
       const compressed = {};
       Object.entries(s.vsData).forEach(([w, days]) => {
         if (Array.isArray(days) && days.some(d => d.est || d.real || d.caja || d.cerrado)) {
-          // Only keep non-zero fields per day
           compressed[w] = days.map(d => {
             const out = {};
-            if (d.est)     out.est     = d.est;
-            if (d.real)    out.real    = d.real;
-            if (d.caja)    out.caja    = d.caja;
-            if (d.cerrado) out.cerrado = d.cerrado;
+            if (d.est)     out.e = d.est;      // shortened keys
+            if (d.real)    out.r = d.real;
+            if (d.caja)    out.c = d.caja;
+            if (d.cerrado) out.x = 1;
             return out;
           });
         }
@@ -14570,9 +14646,9 @@ function compressStateForSave(st) {
     if (s.vsExtraData) {
       const ce = {};
       Object.entries(s.vsExtraData).forEach(([w, v]) => {
-        if (v && v.monto) ce[w] = v;
+        if (v && (v.monto || v.realExtra)) ce[w] = v;
       });
-      s.vsExtraData = ce;
+      s.vsExtraData = Object.keys(ce).length ? ce : undefined;
     }
 
     // Compress sacCargas: remove empty weeks
@@ -14581,7 +14657,7 @@ function compressStateForSave(st) {
       Object.entries(s.sacCargas).forEach(([w, arr]) => {
         if (Array.isArray(arr) && arr.length) cc[w] = arr;
       });
-      s.sacCargas = cc;
+      s.sacCargas = Object.keys(cc).length ? cc : undefined;
     }
 
     // Compress pagosSemanales: remove empty weeks
@@ -14590,13 +14666,88 @@ function compressStateForSave(st) {
       Object.entries(s.pagosSemanales).forEach(([w, arr]) => {
         if (Array.isArray(arr) && arr.length) cp[w] = arr;
       });
-      s.pagosSemanales = cp;
+      s.pagosSemanales = Object.keys(cp).length ? cp : undefined;
     }
+
+    // ── STRIP facturas: remove paid facturas older than 8 weeks ──
+    if (s.facturas) {
+      Object.keys(s.facturas).forEach(prov => {
+        s.facturas[prov] = s.facturas[prov].filter(f => {
+          if (f.estado !== 'inactiva') return true; // keep active/parcial
+          // Keep paid facturas only if recent
+          const d = f.emision ? (f.emision.includes('-') && f.emision.split('-')[0].length===4
+            ? new Date(f.emision) : (() => { const [dd,mm,yy]=f.emision.split('-'); return new Date(yy,mm-1,dd); })())
+            : null;
+          return !d || d >= cutoff8w;
+        });
+        if (s.facturas[prov].length === 0) delete s.facturas[prov];
+      });
+    }
+
+    // ── STRIP nulls, empty strings, zero defaults from ALL objects ──
+    function stripDefaults(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) return obj.map(stripDefaults);
+      const out = {};
+      for (const [k,v] of Object.entries(obj)) {
+        if (v === null || v === undefined || v === '' || v === 0 || v === false) continue;
+        if (k === 'note' && v === '') continue;
+        if (k === 'montoReal' && v === null) continue;
+        if (k === 'pagadoParcial' && v === 0) continue;
+        if (typeof v === 'object') {
+          const stripped = stripDefaults(v);
+          if (stripped !== null && stripped !== undefined &&
+              !(typeof stripped === 'object' && !Array.isArray(stripped) && Object.keys(stripped).length === 0)) {
+            out[k] = stripped;
+          }
+        } else {
+          out[k] = v;
+        }
+      }
+      return Object.keys(out).length ? out : undefined;
+    }
+
+    // Strip defaults from heavy arrays
+    if (s.movimientos) s.movimientos = s.movimientos.map(stripDefaults).filter(Boolean);
+    if (s.creditos) s.creditos = s.creditos.map(stripDefaults).filter(Boolean);
+    if (s.inventario) s.inventario = s.inventario.map(stripDefaults).filter(Boolean);
+    if (s.propinas) s.propinas = s.propinas.map(stripDefaults).filter(Boolean);
+    if (s.informesDiarios) s.informesDiarios = s.informesDiarios.map(stripDefaults).filter(Boolean);
+
+    // Remove empty top-level keys
+    Object.keys(s).forEach(k => {
+      const v = s[k];
+      if (v === null || v === undefined || v === '' || v === 0 || v === false) delete s[k];
+      if (Array.isArray(v) && v.length === 0) delete s[k];
+      if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) delete s[k];
+    });
 
     return s;
   } catch(e) {
+    console.warn('[CEREBRUS] compress error:', e);
     return st; // fallback: save as-is
   }
+}
+
+// Decompress vsData short keys back to full names (called after loadFromCloud)
+function decompressVsData(s) {
+  if (!s.vsData) return;
+  const expanded = {};
+  Object.entries(s.vsData).forEach(([w, days]) => {
+    if (!Array.isArray(days)) { expanded[w] = days; return; }
+    expanded[w] = days.map(d => {
+      // If already has full keys, leave as is
+      if ('est' in d || 'real' in d || 'caja' in d || 'cerrado' in d) return d;
+      // Expand short keys
+      const out = {};
+      if (d.e) out.est = d.e;
+      if (d.r) out.real = d.r;
+      if (d.c) out.caja = d.c;
+      if (d.x) out.cerrado = true;
+      return out;
+    });
+  });
+  s.vsData = expanded;
 }
 
 async function reloadFromCloud() { dismissConflict(); _suppressAlerts = true; await loadFromCloud(); }
