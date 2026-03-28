@@ -3412,7 +3412,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <div style="font-size:18px;font-weight:800;color:var(--success);" id="inf-live-entrada">$0</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Total cargas</div>
+              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Cargas + Propina</div>
               <div style="font-size:18px;font-weight:800;color:var(--danger);" id="inf-live-cargas">$0</div>
             </div>
             <div style="text-align:center;">
@@ -3574,7 +3574,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
             <div id="arch-size-bar" style="height:100%;border-radius:4px;background:var(--success);width:0%;transition:width .4s;"></div>
           </div>
-          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Límite: ~45 KB para sincronización en nube</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Capacidad: ~250 KB con guardado en múltiples celdas</div>
         </div>
 
         <!-- Opciones de archivado -->
@@ -10765,7 +10765,7 @@ function archRenderStats() {
   const rawSize = archGetStateSize();
   let compSize = rawSize;
   try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch(e){}
-  const limit  = 42000;
+  const limit  = 250000; // 6 chunks × 42KB
   const pct    = Math.min(100, Math.round(compSize / limit * 100));
 
   // KPIs
@@ -11000,8 +11000,8 @@ function archCheckSize() {
   try {
     const compressed = compressStateForSave(state);
     const size = JSON.stringify(compressed).length;
-    const limit = 42000;
-    const pct = Math.round(size / limit * 100);
+    const chunkLimit = 250000; // 6 chunks × 42KB
+    const pct = Math.round(size / chunkLimit * 100);
     if (pct > 85) {
       notify(`⚠ Almacenamiento al ${pct}% (${(size/1024).toFixed(1)}KB) — archiva datos antiguos en ⚙ Configuración`);
     }
@@ -11815,16 +11815,18 @@ function infOpenEgresosSelector() {
 // Real-time balance calculation as user fills the form
 function infCalcLive() {
   const banco   = parseFloat(document.getElementById('inf-banco')?.value)||0;
+  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
   const ingMontos = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseFloat(i.value)||0);
   const carMontos = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseFloat(i.value)||0);
   const totalIng  = ingMontos.reduce((a,b)=>a+b, 0);
   const totalCar  = carMontos.reduce((a,b)=>a+b, 0);
   const entrada   = banco + totalIng;
-  const saldo     = entrada - totalCar;
+  const salidas   = totalCar + propina;
+  const saldo     = entrada - salidas;
 
   const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   set2('inf-live-entrada', infFmt(entrada));
-  set2('inf-live-cargas',  infFmt(totalCar));
+  set2('inf-live-cargas',  infFmt(salidas));
 
   const saldoEl = document.getElementById('inf-live-saldo');
   if (saldoEl) {
@@ -11833,7 +11835,7 @@ function infCalcLive() {
   }
   const barEl = document.getElementById('inf-live-bar');
   if (barEl) {
-    const pct = entrada > 0 ? Math.min(100, Math.round(totalCar / entrada * 100)) : 0;
+    const pct = entrada > 0 ? Math.min(100, Math.round(salidas / entrada * 100)) : 0;
     barEl.style.width = pct + '%';
     barEl.style.background = pct > 90 ? 'var(--danger)' : pct > 70 ? 'var(--warning)' : 'var(--success)';
   }
@@ -11968,7 +11970,7 @@ function infRecolectar() {
   const totalIng = ingMontos.reduce((a,b)=>a+b,0);
   const totalCar = carMontos.reduce((a,b)=>a+b,0);
   return { fecha, banco, venta, caja, propina, ingNombres, ingMontos, totalIng,
-           carNombres, carMontos, totalCar, saldo: banco+totalIng-totalCar, notas };
+           carNombres, carMontos, totalCar, saldo: banco+totalIng-totalCar-propina, notas };
 }
 
 function infRowsHTML(nombres, montos) {
