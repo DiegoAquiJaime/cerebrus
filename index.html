@@ -1515,6 +1515,7 @@ tr{transition:background .15s ease;}
 /* Print-friendly */
 @media print{nav,.topbar,.btn-group{display:none!important;}main{overflow:visible!important;}.content{padding:10px!important;}}
 .notif{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(28,28,30,0.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:white;padding:12px 24px;border-radius:100px;font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;letter-spacing:-.01em;}
+.notif.notif-long{max-width:min(94vw,560px);white-space:normal;border-radius:14px;padding:14px 18px;font-size:12px;font-weight:500;line-height:1.4;pointer-events:auto;max-height:70vh;overflow-y:auto;}
 .tip{font-size:10px;color:#9aacb8;margin-top:6px;padding-left:2px;}
 
 /* ---- INPUT VALIDATION ---- */
@@ -8493,14 +8494,14 @@ async function iaProcessPdf(file) {
       method: 'POST',
       body: JSON.stringify({ action:'subirPDF', nombre:file.name, base64, mtype:'application/pdf' })
     });
-    const uploadData = await uploadRes.json();
+    const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo');
     iaSetProgress(35, 'Google extrayendo texto (OCR)…');
     const ocrRes = await fetch(API_URL, {
       method: 'POST',
       body: JSON.stringify({ action:'ocrFile', fileId: uploadData.fileId })
     });
-    const ocrData = await ocrRes.json();
+    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
     if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
     var texto = (ocrData.text || '').trim();
     if (texto.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o una imagen.');
@@ -8517,13 +8518,14 @@ async function iaProcessPdf(file) {
       })
     });
     iaSetProgress(85, 'Procesando…');
-    const procData = await procRes.json();
+    const procData = await cerebrusReadJson(procRes, 'Claude API');
     if (!procData.ok) throw new Error(procData.error || 'Error procesando');
     const text = procData.content.map(c=>c.text||'').join('');
     iaShowResults(text);
   } catch(e) {
     document.getElementById('ia-prog-wrap').classList.remove('show');
-    notify('⚠ Error: ' + e.message);
+    console.error('[Cerebrus escáner PDF]', e);
+    notify('⚠ Error: ' + e.message, 22000);
   }
 }
 
@@ -8752,7 +8754,7 @@ async function processAiPdf(file) {
         mtype:   'application/pdf'
       })
     });
-    const uploadData = await uploadRes.json();
+    const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo PDF');
 
     setAiProgress(35, 'Google extrayendo texto (OCR)…');
@@ -8761,7 +8763,7 @@ async function processAiPdf(file) {
       method: 'POST',
       body: JSON.stringify({ action: 'ocrFile', fileId: uploadData.fileId })
     });
-    const ocrData = await ocrRes.json();
+    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
     if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
     var textoOcr = (ocrData.text || '').trim();
     if (textoOcr.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o exporta como imagen.');
@@ -8793,7 +8795,7 @@ async function processAiPdf(file) {
     }
 
     setAiProgress(80, 'Procesando resultado…');
-    const procData = await procRes.json();
+    const procData = await cerebrusReadJson(procRes, 'Claude API');
     if (!procData.ok) throw new Error(procData.error || 'Error procesando');
 
     const text = procData.content.map(c=>c.text||'').join('');
@@ -8803,10 +8805,11 @@ async function processAiPdf(file) {
 
   } catch(e) {
     document.getElementById('ai-progress').classList.remove('show');
+    console.error('[Cerebrus facturas PDF]', e);
     if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed'))) {
       notify('⚠ Sin conexión al servidor. Comprueba que el proxy Cerebrus esté en marcha (puerto 7532) o usa ?api=direct si abres desde HTTPS.', 9000);
     } else {
-      notify('⚠ Error: ' + e.message);
+      notify('⚠ Error: ' + e.message, 22000);
     }
   }
 }
@@ -11889,7 +11892,7 @@ async function processAiInvFile(file, ext) {
       method: 'POST',
       body: JSON.stringify({ action:'subirPDF', nombre: file.name, base64, mtype })
     });
-    const uploadData = await uploadRes.json();
+    const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo archivo');
 
     // PASO 2: Google hace OCR — extrae texto del archivo
@@ -11899,7 +11902,7 @@ async function processAiInvFile(file, ext) {
       method: 'POST',
       body: JSON.stringify({ action:'ocrFile', fileId: uploadData.fileId })
     });
-    const ocrData = await ocrRes.json();
+    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
     if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
 
     const textoExtraido = ocrData.text || '';
@@ -11943,7 +11946,7 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
     clearTimeout(timeout);
 
     setInvProgress(90, 'Procesando respuesta…');
-    const aiData = await aiRes.json();
+    const aiData = await cerebrusReadJson(aiRes, 'Claude API');
     if (!aiData.ok) throw new Error(aiData.error || 'Error de Claude');
 
     const text = aiData.content.map(c=>c.text||'').join('');
@@ -11971,10 +11974,11 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
 
   } catch(e) {
     document.getElementById('ai-inv-progress').classList.remove('show');
+    console.error('[Cerebrus inventario IA]', e);
     if (e.name === 'AbortError') {
-      notify('⚠ Timeout: intenta con un documento más corto');
+      notify('⚠ Timeout: intenta con un documento más corto', 8000);
     } else {
-      notify('⚠ ' + e.message);
+      notify('⚠ ' + e.message, 22000);
     }
   }
 }
@@ -15234,10 +15238,24 @@ function loadFromStorage() { return loadLocalRaw(); }
 
 function notify(msg, duration) {
   const el = document.getElementById('notif');
+  if (!el) return;
   el.textContent = msg;
+  const ms = (typeof duration === 'number' && duration > 0) ? duration : 2800;
+  const long = String(msg).length > 90 || /error|ocr|api|falló|fallo/i.test(String(msg));
+  el.classList.toggle('notif-long', long);
   el.style.opacity = '1';
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.style.opacity='0', 2800);
+  el._t = setTimeout(() => { el.style.opacity = '0'; el.classList.remove('notif-long'); }, ms);
+}
+
+/** Respuesta del Web App como JSON; si no es JSON, muestra trozo del error (p. ej. HTML de Google). */
+async function cerebrusReadJson(res, label) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error((label || 'Servidor') + ' — HTTP ' + res.status + ': ' + (text ? text.replace(/\s+/g, ' ').trim().slice(0, 900) : '(respuesta vacía)'));
+  }
 }
 
 // ============================================================
