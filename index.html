@@ -118,7 +118,7 @@ nav{
 .nav-logo h1{font-size:15px;font-weight:800;color:var(--accent);letter-spacing:1.5px;background:linear-gradient(135deg,var(--accent),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 .nav-logo p{font-size:10px;color:var(--text-muted);margin-top:3px;letter-spacing:0.3px;font-weight:500;}
 .nav-logo-brand{display:flex;align-items:center;gap:12px;position:relative;z-index:2;}
-.nav-logo-brand::before{content:'';width:48px;height:48px;display:block;border-radius:14px;background:#0b0f1a url('cerebrus-logo.png') center/contain no-repeat;border:1px solid rgba(148,163,184,0.2);box-shadow:0 4px 16px rgba(0,0,0,0.12);flex-shrink:0;}
+.nav-logo-brand::before{display:none;}
 .nav-logo-img{display:none;}
 .nav-logo-text{display:flex;flex-direction:column;}
 .nav-logo-note{position:relative;z-index:2;}
@@ -684,7 +684,7 @@ td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{co
 .login-selected{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(0,0,0,0.03);border-radius:14px;margin-bottom:16px;text-align:left;}
 .login-pass-wrap{position:relative;margin-bottom:10px;}
 .login-pass-wrap input{width:100%;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:14px 16px;font-family:inherit;font-size:16px;color:var(--primary);background:rgba(0,0,0,0.02);letter-spacing:4px;transition:all .2s ease;}
-.login-pass-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.1);background:white;}
+.login-pass-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(249,115,22,.1);background:white;color:#1d1d1f;}
 .login-pass-wrap input.error{border-color:var(--danger);animation:shake .3s;}
 .login-err{font-size:11px;color:var(--danger);min-height:16px;margin-bottom:6px;font-weight:500;}
 .login-attempts{font-size:10px;color:var(--text-soft);margin-bottom:10px;}
@@ -729,6 +729,18 @@ body.dark-mode .log-panel{background:#1c1c1e;}
 body.dark-mode .login-box{background:rgba(28,28,30,0.95);}
 body.dark-mode .login-user-btn{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.08);}
 body.dark-mode .login-selected{background:rgba(255,255,255,0.06);}
+
+/* Dark mode: login password always visible */
+body.dark-mode .login-pass-wrap input{color:#f5f5f7!important;background:rgba(255,255,255,0.08)!important;border-color:rgba(255,255,255,0.15)!important;}
+body.dark-mode .login-pass-wrap input:focus{background:rgba(255,255,255,0.12)!important;color:#f5f5f7!important;border-color:var(--accent)!important;}
+body.dark-mode .login-pass-wrap input::placeholder{color:rgba(255,255,255,0.35)!important;}
+body.dark-mode .login-user-name{color:#f5f5f7!important;}
+body.dark-mode .login-user-role{color:#b0b0b5!important;}
+body.dark-mode .login-logo{-webkit-text-fill-color:var(--accent)!important;}
+body.dark-mode .login-sub{color:#b0b0b5!important;}
+body.dark-mode .login-err{color:#ff6961!important;}
+body.dark-mode .login-back{color:#b0b0b5!important;}
+body.dark-mode .login-pass-btn{background:var(--accent)!important;}
 
 /* ══════════════════════════════════════════════════════════════
    DARK MODE — HIGH CONTRAST OVERRIDES
@@ -874,6 +886,25 @@ body.dark-mode div[style*="color:#9aacb8"],
 body.dark-mode span[style*="color:#9aacb8"],
 body.dark-mode button[style*="color:#94a3b8"],
 body.dark-mode button[style*="color:#64748b"]{color:#b0b0b5!important;}
+
+/* GLOBAL: All inputs/selects must have visible text in dark mode */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="date"],
+body.dark-mode input[type="password"],
+body.dark-mode select,
+body.dark-mode textarea{color:#f5f5f7!important;background:#2c2c2e!important;border-color:rgba(255,255,255,0.12)!important;}
+body.dark-mode input:focus,
+body.dark-mode select:focus,
+body.dark-mode textarea:focus{background:#3a3a3c!important;color:#f5f5f7!important;border-color:var(--accent)!important;}
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder{color:rgba(255,255,255,0.35)!important;}
+
+/* GLOBAL: Force all labels, small text, descriptions visible */
+body.dark-mode label{color:#c5c5ca!important;}
+body.dark-mode .tip{color:#8e8e93!important;}
+body.dark-mode p[style*="color:var(--text-soft)"]{color:#b0b0b5!important;}
+body.dark-mode p[style*="color:var(--text-muted)"]{color:#b0b0b5!important;}
 
 /* ---- CALENDARIO CHILENO ---- */
 .cal-widget{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:8px 12px;margin-bottom:14px;}
@@ -2050,7 +2081,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <p style="color:var(--text-muted);font-size:10px;margin-top:2px;letter-spacing:.4px;">GESTIÓN AQUÍ JAIME</p>
       </div>
     </div>
-    <p class="nav-logo-note" style="color:var(--text-soft);font-size:9px;margin-top:6px;line-height:1.5;letter-spacing:0;">Desarrollado por Palacios-Brockhaus<br>para Aquí Jaime restaurante<br>Códigos de Gemini (Google) &amp; Claude Sonnet (Anthropic)</p>
+    <p class="nav-logo-note" style="color:var(--text-soft);font-size:9px;margin-top:6px;line-height:1.5;letter-spacing:0;">Diego Palacios Brockhaus<br>para Aquí Jaime Restaurante. 2026</p>
   </div>
   <div class="nav-sep">Vistas</div>
   <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
