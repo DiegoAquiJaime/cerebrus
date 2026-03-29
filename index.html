@@ -8495,13 +8495,28 @@ async function iaProcessPdf(file) {
     });
     const uploadData = await uploadRes.json();
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo');
-    iaSetProgress(40, 'Google leyendo el PDF con OCR…');
-    const prompt = _iaScanCtx === 'sac' ? iaBuildPromptSac() : aiPromptTexto();
-    const procRes = await fetch(API_URL, {
+    iaSetProgress(35, 'Google extrayendo texto (OCR)…');
+    const ocrRes = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({ action:'procesarFactura', fileId:uploadData.fileId, apiKey, prompt })
+      body: JSON.stringify({ action:'ocrFile', fileId: uploadData.fileId })
     });
-    iaSetProgress(80, 'Procesando…');
+    const ocrData = await ocrRes.json();
+    if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
+    var texto = (ocrData.text || '').trim();
+    if (texto.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o una imagen.');
+    iaSetProgress(55, 'Claude analizando texto…');
+    var basePrompt = _iaScanCtx === 'sac' ? iaBuildPromptSac() : aiPromptTexto();
+    var prompt = basePrompt + '\n\nTEXTO EXTRAÍDO (OCR de Google):\n' + texto;
+    var procRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'anthropicProxy', apiKey,
+        model: _iaScanCtx === 'sac' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514',
+        max_tokens: _iaScanCtx === 'sac' ? 1000 : 4000,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    iaSetProgress(85, 'Procesando…');
     const procData = await procRes.json();
     if (!procData.ok) throw new Error(procData.error || 'Error procesando');
     const text = procData.content.map(c=>c.text||'').join('');
@@ -8740,18 +8755,29 @@ async function processAiPdf(file) {
     const uploadData = await uploadRes.json();
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo PDF');
 
-    setAiProgress(40, 'Google está leyendo el PDF con OCR…');
+    setAiProgress(35, 'Google extrayendo texto (OCR)…');
 
-    // Paso 2: Apps Script hace OCR + Claude interpreta
+    const ocrRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'ocrFile', fileId: uploadData.fileId })
+    });
+    const ocrData = await ocrRes.json();
+    if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
+    var textoOcr = (ocrData.text || '').trim();
+    if (textoOcr.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o exporta como imagen.');
+
+    setAiProgress(55, 'Claude analizando texto…');
+
     let procRes;
     try {
       procRes = await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
-          action:  'procesarFactura',
-          fileId:  uploadData.fileId,
+          action: 'anthropicProxy',
           apiKey,
-          prompt:  aiPromptTexto()
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: aiPromptTexto() + '\n\nTEXTO EXTRAÍDO (OCR de Google):\n' + textoOcr }]
         })
       });
     } catch (netErr) {
@@ -8760,7 +8786,7 @@ async function processAiPdf(file) {
       const isMixed = /mixed content|blocked|insecure/i.test(msg);
       const isNet   = /failed to fetch|networkerror|load failed/i.test(msg);
       if (isMixed || isNet) {
-        notify('⚠ El proxy local no responde. Avisa a la o al encargado, o a los jefes de comedor.', 7000);
+        notify('⚠ Sin conexión al servidor (¿proxy en http://127.0.0.1:7532 o red?). Revisa el inicio automático de Cerebrus o abre index con ?api=direct si usas la app publicada en HTTPS.', 9000);
         return;
       }
       throw netErr;
@@ -8778,7 +8804,7 @@ async function processAiPdf(file) {
   } catch(e) {
     document.getElementById('ai-progress').classList.remove('show');
     if (e.message && (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('Load failed'))) {
-      notify('⚠ El proxy local no responde. Avisa a la o al encargado, o a los jefes de comedor.', 7000);
+      notify('⚠ Sin conexión al servidor. Comprueba que el proxy Cerebrus esté en marcha (puerto 7532) o usa ?api=direct si abres desde HTTPS.', 9000);
     } else {
       notify('⚠ Error: ' + e.message);
     }
@@ -9356,12 +9382,29 @@ function aiConfirmImport() {
 }
 
 // ============================================================
-//  CONFIGURACIÓN MULTIUSUARIO — Apps Script
-//  Pega aquí la URL de tu Google Apps Script Web App
+//  CONFIGURACIÓN MULTIUSUARIO — Apps Script + proxy local
+//  APPS_SCRIPT_EXEC: URL publicada del Web App (Script → Implementar).
+//
+//  • GitHub Pages / dominio HTTPS → siempre Apps Script directo (mismo OCR
+//    Google + Claude que el resto del equipo). No necesitas proxy en tu Mac.
+//  • file:// o http://localhost → proxy 127.0.0.1:7532 (ver proxy.py).
+//  • Forzar: ?api=direct  |  ?api=proxy
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbzuICFPRwtELyBL4oOmcQXfc_JuFpulUF0MhaeCDrEw2q1IwnmyxkeCe40AtnleVNkZgQ/exec';
+const APPS_SCRIPT_EXEC = 'https://script.google.com/macros/s/AKfycbzuICFPRwtELyBL4oOmcQXfc_JuFpulUF0MhaeCDrEw2q1IwnmyxkeCe40AtnleVNkZgQ/exec';
+const CEREBRUS_LOCAL_PROXY = 'http://127.0.0.1:7532';
+const API_URL = (function () {
+  try {
+    var q = new URLSearchParams(window.location.search || '');
+    if (q.get('api') === 'direct') return APPS_SCRIPT_EXEC;
+    if (q.get('api') === 'proxy') return CEREBRUS_LOCAL_PROXY;
+  } catch (e) {}
+  var proto = (typeof location !== 'undefined' && location.protocol) || '';
+  var host = (typeof location !== 'undefined' && location.hostname) || '';
+  if (proto === 'file:' || host === 'localhost' || host === '127.0.0.1') return CEREBRUS_LOCAL_PROXY;
+  return APPS_SCRIPT_EXEC;
+})();
 const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
-const IS_CLOUD = API_URL !== '__APPS_SCRIPT_URL__' && API_URL.startsWith('https://');
+const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIPT_EXEC).startsWith('https://');
 
 let currentUser     = '';
 let cloudVersion    = '0';
