@@ -11823,6 +11823,12 @@ async function processAiInvFile(file, ext) {
   const apiKey = document.getElementById('ai-inv-api-key').value.trim();
   if (!apiKey) { notify('⚠ Ingresa tu API key primero'); return; }
 
+  // Check file size (max ~4MB for base64 through Apps Script)
+  if (file.size > 4 * 1024 * 1024) {
+    notify('⚠ Archivo muy grande (máx 4MB). Usa un PDF más liviano o una imagen JPG.');
+    return;
+  }
+
   setInvProgress(20, 'Leyendo archivo…');
 
   // Build list of known products to help Claude match names
@@ -11865,7 +11871,7 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
       r.readAsDataURL(file);
     });
 
-    setInvProgress(45, 'Enviando a Claude…');
+    setInvProgress(45, 'Enviando a Claude… (puede tomar 15-30 seg)');
 
     if (isPdf) {
       content = [
@@ -11880,10 +11886,16 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
       ];
     }
 
-    const res  = await fetch(API_URL, {
+    // Use AbortController for timeout (90 seconds)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
+    const res = await fetch(API_URL, {
       method: 'POST',
-      body: JSON.stringify({ action:'anthropicProxy', apiKey, model:'claude-opus-4-6', max_tokens:4000, messages:[{role:'user',content}] })
+      signal: controller.signal,
+      body: JSON.stringify({ action:'anthropicProxy', apiKey, model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user',content}] })
     });
+    clearTimeout(timeout);
 
     setInvProgress(80, 'Procesando respuesta…');
     const data = await res.json();
@@ -11897,7 +11909,11 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
 
   } catch(e) {
     document.getElementById('ai-inv-progress').classList.remove('show');
-    notify('⚠ Error: ' + e.message);
+    if (e.name === 'AbortError') {
+      notify('⚠ Timeout: el archivo tardó demasiado. Intenta con una imagen JPG más liviana.');
+    } else {
+      notify('⚠ Error: ' + e.message);
+    }
   }
 }
 
