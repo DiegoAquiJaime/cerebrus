@@ -357,20 +357,12 @@ tr.esperado .impact-cell{color:#9aacb8 !important;}
 @media (max-width:1024px){
   :root{ --nav-width:220px; }
   body{font-size:13px;}
-  nav{position:fixed;inset:0 auto 0 0;z-index:40;}
-  main{margin-left:var(--nav-width);}
   .topbar{padding-inline:16px;}
   .content{padding-inline:16px;}
   .kpi-grid-top{grid-template-columns:repeat(2,minmax(0,1fr));}
   .hist-kpi-row{grid-template-columns:repeat(2,1fr);}
 }
 @media (max-width:768px){
-  nav{
-    position:fixed;
-    transform:translateX(-100%);
-    transition:transform .25s ease-out;
-  }
-  nav.nav-open{transform:translateX(0);}
   main{margin-left:0;}
   .topbar{gap:4px;}
   .btn-group{flex-wrap:wrap;justify-content:flex-end;}
@@ -2162,7 +2154,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio (Ctrl+Z)">↩ Deshacer</button>
       <button class="dark-toggle" onclick="toggleDark()" id="dark-btn" title="Modo oscuro">🌙</button>
       <button class="btn btn-save" id="btn-save-indicator" onclick="saveState()">💾 Guardar</button>
-      <button class="btn" onclick="openMobileDash()" title="Vista móvil" style="background:var(--accent2);color:white;border:none;font-size:13px;padding:6px 10px;border-radius:6px;">📱</button>
       <div class="export-menu" id="exportMenu">
         <button class="btn btn-export" onclick="toggleExportMenu()">📤 Exportar ▾</button>
         <div class="export-menu-list" id="exportList">
