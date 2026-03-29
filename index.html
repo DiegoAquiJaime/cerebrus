@@ -6643,8 +6643,8 @@ function makeDefaultCreditos() {
 let _credFilter = 'todos';
 let _credModal  = null;
 
-function credSaldo(c)   { return Math.max(0, c.valorPagar - c.totalPagado); }
-function credCuotaVal(c){ return c.totalCuotas > 0 ? Math.round(c.valorPagar / c.totalCuotas) : CRED_CUOTA_STD; }
+function credSaldo(c)   { return Math.max(0, (c.valorPagar||0) - (c.totalPagado||0)); }
+function credCuotaVal(c){ return (c.totalCuotas||0) > 0 ? Math.round((c.valorPagar||0) / c.totalCuotas) : CRED_CUOTA_STD; }
 function credPaid(c)    { return credSaldo(c) <= 0; }
 
 function calcCredKpis() {
@@ -6653,8 +6653,8 @@ function calcCredKpis() {
   const pagados = state.creditos.filter(c =>  credPaid(c));
   const totA = activos.filter(c=>c.otorgado==='alberto').reduce((s,c)=>s+credSaldo(c),0);
   const totM = activos.filter(c=>c.otorgado==='pancho' ).reduce((s,c)=>s+credSaldo(c),0);
-  const cuotasA = activos.filter(c=>c.otorgado==='alberto').reduce((s,c)=>s+c.cuotasRest,0);
-  const cuotasM = activos.filter(c=>c.otorgado==='pancho' ).reduce((s,c)=>s+c.cuotasRest,0);
+  const cuotasA = activos.filter(c=>c.otorgado==='alberto').reduce((s,c)=>s+(c.cuotasRest||0),0);
+  const cuotasM = activos.filter(c=>c.otorgado==='pancho' ).reduce((s,c)=>s+(c.cuotasRest||0),0);
   const cuotaSem = activos.reduce((s,c)=>s+credCuotaVal(c),0);
   set('cred-total-a',    fmt(totA));
   set('cred-cuotas-a',   cuotasA + ' cuotas pendientes');
@@ -6696,24 +6696,24 @@ function renderCreditos() {
   tbody.innerHTML = visible.map(c => {
     const saldo   = credSaldo(c);
     const paid    = credPaid(c);
-    const progPct = Math.min(100, Math.round(c.totalPagado / c.valorPagar * 100));
+    const progPct = Math.min(100, Math.round((c.totalPagado||0) / (c.valorPagar||1) * 100));
     const barColor= paid ? 'var(--success)' : progPct >= 75 ? 'var(--accent)' : '#2980b9';
     const nroClass= c.otorgado==='alberto' ? 'alberto' : c.otorgado==='pancho' ? 'pancho' : '';
     const acrLabel= c.otorgado==='alberto' ? '🔵 Alberto' : c.otorgado==='pancho' ? '🟣 Schele/Pancho' : '🟠 ' + c.otorgado;
     const badge   = paid
       ? '<span class="cred-badge paid">✓ Pagado</span>'
-      : c.cuotasRest <= 3
-        ? `<span class="cred-badge danger">⚠ ${c.cuotasRest} cuota${c.cuotasRest!==1?'s':''}</span>`
-        : `<span class="cred-badge active">${c.cuotasRest} cuotas</span>`;
+      : (c.cuotasRest||0) <= 3
+        ? `<span class="cred-badge danger">⚠ ${c.cuotasRest||0} cuota${(c.cuotasRest||0)!==1?'s':''}</span>`
+        : `<span class="cred-badge active">${c.cuotasRest||0} cuotas</span>`;
     const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')">💸 Pagar</button>`;
     return `<tr class="${paid?'cred-paid':''}">
       <td><span class="cred-nro ${nroClass}">${c.id}</span></td>
       <td style="font-size:11px;font-weight:600;">${acrLabel}</td>
-      <td>${fmt(c.valorOtorgado)}</td>
-      <td>${fmt(c.valorPagar)}</td>
-      <td style="color:var(--success)">${fmt(c.totalPagado)}</td>
+      <td>${fmt(c.valorOtorgado||0)}</td>
+      <td>${fmt(c.valorPagar||0)}</td>
+      <td style="color:var(--success)">${fmt(c.totalPagado||0)}</td>
       <td style="color:${paid?'var(--success)':'var(--danger)'};font-weight:700;">${fmt(saldo)}</td>
-      <td style="text-align:center;">${c.cuotasRest}</td>
+      <td style="text-align:center;">${c.cuotasRest||0}</td>
       <td>
         <div class="cred-bar-wrap">
           <div class="cred-bar-track"><div class="cred-bar-fill" style="width:${progPct}%;background:${barColor};"></div></div>
@@ -15018,9 +15018,8 @@ function compressStateForSave(st) {
       return Object.keys(out).length ? out : undefined;
     }
 
-    // Strip defaults from heavy arrays
+    // Strip defaults from heavy arrays (but NOT creditos — zeros are meaningful there)
     if (s.movimientos) s.movimientos = s.movimientos.map(stripDefaults).filter(Boolean);
-    if (s.creditos) s.creditos = s.creditos.map(stripDefaults).filter(Boolean);
     if (s.inventario) s.inventario = s.inventario.map(stripDefaults).filter(Boolean);
     if (s.propinas) s.propinas = s.propinas.map(stripDefaults).filter(Boolean);
     if (s.informesDiarios) s.informesDiarios = s.informesDiarios.map(stripDefaults).filter(Boolean);
