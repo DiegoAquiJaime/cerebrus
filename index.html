@@ -1017,6 +1017,8 @@ body.dark-mode .inv-cons-table th,.dark-mode .inv-orden-table th{background:#0f1
 
 /* ---- INVENTARIO ---- */
 .inv-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.inv-filter-row{display:flex;gap:8px;margin:-4px 0 14px;flex-wrap:wrap;align-items:center;font-size:11px;}
+.inv-filter-select{border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;max-width:100%;}
 .inv-search{flex:1;min-width:140px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;}
 .inv-search:focus{outline:none;border-color:var(--accent);}
 .inv-category-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
@@ -3417,12 +3419,32 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
         </div>
         <div class="inv-toolbar">
-          <input class="inv-search" id="inv-search" placeholder="🔍 Buscar producto…" oninput="invRender()">
+          <input class="inv-search" id="inv-search" placeholder="🔍 Nombre, categoría o unidad…" oninput="invRender()">
           <button class="fac-btn primary" onclick="invToggleForm()">+ Agregar producto</button>
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
           </button>
           <button class="fac-btn" onclick="invImportFromFacs()">🔗 Desde facturas</button>
+        </div>
+        <div class="inv-filter-row">
+          <span style="color:#94a3b8;font-weight:600;">Stock</span>
+          <select id="inv-filter-stock" class="inv-filter-select" onchange="invRender()" title="Filtrar por nivel de stock">
+            <option value="todos">Todos</option>
+            <option value="critico">Crítico (≤ mínimo)</option>
+            <option value="agotado">Sin stock (= 0)</option>
+            <option value="con_stock">Con stock (&gt; 0)</option>
+            <option value="ok">Por encima del mínimo</option>
+            <option value="sin_prov">Sin proveedor</option>
+          </select>
+          <span style="color:#94a3b8;font-weight:600;">Orden</span>
+          <select id="inv-filter-sort" class="inv-filter-select" onchange="invRender()" title="Ordenar la tabla">
+            <option value="cat_nombre">Categoría, luego nombre (A→Z)</option>
+            <option value="nombre">Nombre (A→Z)</option>
+            <option value="stock_desc">Stock (mayor → menor)</option>
+            <option value="stock_asc">Stock (menor → mayor)</option>
+            <option value="minimo_desc">Mínimo (mayor → menor)</option>
+          </select>
+          <span id="inv-filter-count" style="margin-left:auto;color:#64748b;font-size:11px;"></span>
         </div>
         <div id="inv-cat-tabs" class="inv-category-tabs"></div>
         <div id="inv-form" style="display:none;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;border:2px dashed var(--accent);">
@@ -9714,6 +9736,16 @@ function invInit() { if (!state.inventario) state.inventario = []; }
 
 let _invCatFilter = 'todas';
 
+function invCalMultNow_() {
+  const today = new Date();
+  return (typeof calMultiplierForWeek === 'function')
+    ? calMultiplierForWeek(today).mult
+    : 1.0;
+}
+function invEfectivMin_(p) {
+  return Math.ceil((p.minimo || 0) * invCalMultNow_());
+}
+
 function _getPreciosUnified(prod) {
   // Fuente única: state.preciosProveedor[id] > proveedores > precios (legacy)
   if (prod?.id && state.preciosProveedor?.[prod.id]?.length)
@@ -9824,19 +9856,54 @@ function invSetCat(cat) { _invCatFilter=cat; invRenderCatTabs(); invRenderTable(
 
 function invRenderTable() {
   invInit();
-  const q     = (document.getElementById('inv-search').value||'').toLowerCase();
+  const q     = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
+  const stockF = document.getElementById('inv-filter-stock')?.value || 'todos';
+  const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
   const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
   const filtered = state.inventario.filter(p => {
-    if (_invCatFilter!=='todas' && (p.cat||'Sin categoría')!==_invCatFilter) return false;
-    if (q && !(p.nombre||'').toLowerCase().includes(q)) return false;
+    if (_invCatFilter !== 'todas' && (p.cat || 'Sin categoría') !== _invCatFilter) return false;
+    if (q) {
+      const n = (p.nombre || '').toLowerCase();
+      const c = (p.cat || '').toLowerCase();
+      const u = (p.unidad || '').toLowerCase();
+      if (!n.includes(q) && !c.includes(q) && !u.includes(q)) return false;
+    }
+    const st = p.stock || 0;
+    const em = invEfectivMin_(p);
+    if (stockF === 'critico') {
+      if (!(st <= em && em > 0)) return false;
+    } else if (stockF === 'agotado') {
+      if (st > 0) return false;
+    } else if (stockF === 'con_stock') {
+      if (st <= 0) return false;
+    } else if (stockF === 'ok') {
+      if (em > 0 && st <= em) return false;
+    } else if (stockF === 'sin_prov') {
+      if ((p.prov || '').trim()) return false;
+    }
     return true;
-  }).sort((a,b) => {
-    if ((a.cat||'')!==(b.cat||'')) return (a.cat||'').localeCompare(b.cat||'');
-    return (a.nombre||'').localeCompare(b.nombre||'');
+  }).sort((a, b) => {
+    if (sortF === 'nombre') return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+    if (sortF === 'stock_desc') return (b.stock || 0) - (a.stock || 0);
+    if (sortF === 'stock_asc') return (a.stock || 0) - (b.stock || 0);
+    if (sortF === 'minimo_desc') return (b.minimo || 0) - (a.minimo || 0);
+    if ((a.cat || '') !== (b.cat || '')) return (a.cat || '').localeCompare(b.cat || '', 'es');
+    return (a.nombre || '').localeCompare(b.nombre || '', 'es');
   });
 
+  const cntEl = document.getElementById('inv-filter-count');
+  if (cntEl) {
+    const tot = state.inventario.length;
+    cntEl.textContent = filtered.length === tot
+      ? tot + ' producto' + (tot !== 1 ? 's' : '')
+      : 'Mostrando ' + filtered.length + ' de ' + tot;
+  }
+
   if (!filtered.length) {
-    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Sin productos — agrega uno o importa desde facturas.</td></tr>';
+    const emptyMsg = state.inventario.length
+      ? 'Ningún producto coincide con búsqueda o filtros.'
+      : 'Sin productos — agrega uno o importa desde facturas.';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">' + emptyMsg + '</td></tr>';
     return;
   }
 
