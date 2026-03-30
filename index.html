@@ -1286,8 +1286,13 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
 .sac-kpi-inp:focus{border-color:var(--accent);}
 .sac-main{display:flex;flex-direction:column;gap:16px;align-items:stretch;}
-.sac-row-ing-cargas{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.sac-row-ing-cargas{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:16px;align-items:start;}
 @media(max-width:900px){.sac-row-ing-cargas{grid-template-columns:1fr;}}
+.sac-ingresos-list-wrap{max-height:132px;overflow-y:auto;}
+.sac-ingresos-card .sac-cargas-head{padding:7px 12px;}
+.sac-ingresos-card .sac-carga-row{padding:6px 10px;font-size:11px;}
+.sac-ingresos-card .sac-footer{padding:6px 10px;}
+.sac-ingresos-card .sac-foot-kpi{padding:4px 0;}
 .sac-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;padding:10px 12px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);}
 .sac-toolbar-lbl{font-size:12px;font-weight:700;color:var(--primary);}
 .sac-toolbar-sub{font-size:10px;color:#64748b;margin-top:2px;}
@@ -2684,11 +2689,11 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <!-- OTROS INGRESOS (semana) -->
         <div class="sac-ingresos-card">
           <div class="sac-cargas-head sac-ingresos-head">
-            <div style="font-size:13px;font-weight:800;">💰 Otros ingresos (esta semana)</div>
-            <button type="button" onclick="sacAddIngresoManual()" style="background:var(--success);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ Ingreso</button>
+            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos</div>
+            <button type="button" onclick="sacAddIngresoManual()" style="background:var(--success);color:white;border:none;border-radius:6px;padding:4px 9px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">+ Ingreso</button>
           </div>
-          <p style="font-size:10px;color:#64748b;padding:8px 14px 0;margin:0;line-height:1.45;">Aportes, transferencias u otros montos fuera de la venta diaria. <b>Pendiente</b> suma al balance estimado abajo; <b>Recibido</b> = ya ingresó (actualiza banco/caja arriba para reflejarlo).</p>
-          <div id="sac-ingresos-list" style="min-height:8px;"></div>
+          <p style="font-size:9px;color:#64748b;padding:5px 12px 0;margin:0;line-height:1.35;">Aportes fuera de venta diaria · Pendiente suma al balance; Recibido = ya en caja (actualizá banco/caja).</p>
+          <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
           <div class="sac-footer" style="border-top:1px solid var(--border);">
             <div class="sac-foot-kpi">
               <div class="sac-foot-lbl">Pendiente de ingresar</div>
@@ -15606,7 +15611,7 @@ function sacRenderHistorialCierres() {
   if (!body) return;
   const arr = state.sacCierresHistorial || [];
   if (!arr.length) {
-    body.innerHTML = '<div style="padding:14px;color:#94a3b8;font-size:12px;">Sin cierres aún. «Cerrar semana» guarda el balance en esta tabla y te deja elegir la próxima semana en limpio.</div>';
+    body.innerHTML = '<div style="padding:12px;color:#94a3b8;font-size:11px;">Sin cierres aún. «Cerrar semana» guarda el balance y el nombre del período; tus datos siguen en cada semana.</div>';
     return;
   }
   const rows = arr.map(h => {
@@ -15661,7 +15666,7 @@ function sacCerrarSemanaClick() {
   const w = sacActiveWeek();
   const B = sacGetBalanceEstimado(w);
   const lbl = sacWeekPeriodLabel(w);
-  if (!confirm(`¿Cerrar la semana (${lbl})?\n\nSe guardará en el historial el balance estimado (${fmt(B.balance)}). Después elegís con cuál semana seguir (podés dejarla en blanco).`)) return;
+  if (!confirm(`¿Cerrar el período ${lbl}?\n\nSe guardará en el historial el balance estimado (${fmt(B.balance)}). Los datos de esta semana (ventas, cargas, ingresos, registros) quedan guardados.`)) return;
   pushUndo();
   if (!state.sacCierresHistorial) state.sacCierresHistorial = [];
   state.sacCierresHistorial.unshift({
@@ -15672,18 +15677,13 @@ function sacCerrarSemanaClick() {
     balanceEstimado: B.balance
   });
   if (state.sacCierresHistorial.length > 48) state.sacCierresHistorial = state.sacCierresHistorial.slice(0, 48);
-  _sacModalPickW = w >= 4 ? 1 : w + 1;
-  const t = document.getElementById('sac-cierre-title');
-  if (t) t.textContent = '✅ Cierre guardado — elegí la semana a trabajar';
-  const cb = document.getElementById('sac-cierre-limpiar');
-  if (cb) cb.checked = true;
-  sacCierreModalBuildBody();
-  const o = document.getElementById('sac-cierre-overlay');
-  if (o) o.classList.add('show');
+  state.sacSemanaTrabajo = null;
   sacRenderHistorialCierres();
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
   markUnsaved();
   if (typeof saveState === 'function') saveState('Cierre semana SAC', true);
-  notify('✅ Cierre registrado en historial');
+  notify(`✅ Cierre guardado: ${lbl}. Usá «Cambiar semana» para abrir otra.`);
 }
 
 function sacCierreModalAplicar() {
@@ -16040,7 +16040,7 @@ function sacRenderIngresos(w) {
   if (!list) return;
   const arr = sacGetIngresos(w);
   if (!arr.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic;">Sin ingresos extra — usa <b>+ Ingreso</b> para registrar aportes o transferencias.</div>';
+    list.innerHTML = '<div style="padding:8px 10px;text-align:center;color:#94a3b8;font-size:10px;font-style:italic;">Sin ítems · <b>+ Ingreso</b></div>';
     sacCalcIngresosTotals(w);
     return;
   }
