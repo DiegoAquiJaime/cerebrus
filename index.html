@@ -3225,7 +3225,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="ai-modal-head" style="background:linear-gradient(135deg,#10b981,#059669);">
         <div>
           <h3>✦ Importar ficha de inventario con IA</h3>
-          <p>Claude lee la ficha escaneada y actualiza el stock automáticamente</p>
+          <p>Sube un PDF o una foto de la ficha: Google hace OCR y Claude estructura el inventario</p>
         </div>
       </div>
       <div class="ai-modal-body">
@@ -3250,10 +3250,10 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           ondragover="event.preventDefault();this.classList.add('drag-over')"
           ondragleave="this.classList.remove('drag-over')"
           ondrop="handleAiInvDrop(event)">
-          <input type="file" id="ai-inv-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleAiInvFile(this.files[0])">
+          <input type="file" id="ai-inv-file" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,image/*" onchange="handleAiInvFile(this.files[0])">
           <div class="ai-drop-icon">📋</div>
           <div class="ai-drop-title">Arrastra la ficha aquí o haz clic</div>
-          <div class="ai-drop-sub">Acepta PDF, JPG o PNG · Ficha escaneada o foto clara</div>
+          <div class="ai-drop-sub">PDF o imagen (JPG, PNG, WebP, GIF, HEIC, TIFF…) · Foto clara o escaneo</div>
         </div>
         <div class="ai-progress" id="ai-inv-progress">
           <div class="ai-progress-bar-wrap"><div class="ai-progress-bar" id="ai-inv-prog-bar"></div></div>
@@ -3269,8 +3269,10 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <table style="width:100%;border-collapse:collapse;font-size:11px;">
               <thead><tr style="background:#f0fdf4;">
                 <th style="padding:7px 10px;text-align:left;color:#10b981;font-size:9px;text-transform:uppercase;">Producto</th>
-                <th style="padding:7px 10px;text-align:right;color:#10b981;font-size:9px;text-transform:uppercase;">Stock leído</th>
+                <th style="padding:7px 10px;text-align:right;color:#10b981;font-size:9px;text-transform:uppercase;">Stock</th>
                 <th style="padding:7px 10px;text-align:left;color:#10b981;font-size:9px;text-transform:uppercase;">Unidad</th>
+                <th style="padding:7px 10px;text-align:right;color:#10b981;font-size:9px;text-transform:uppercase;">Precio</th>
+                <th style="padding:7px 10px;text-align:left;color:#10b981;font-size:9px;text-transform:uppercase;">Cat.</th>
                 <th style="padding:7px 10px;text-align:left;color:#10b981;font-size:9px;text-transform:uppercase;">Estado</th>
                 <th style="padding:7px 10px;"></th>
               </tr></thead>
@@ -3279,7 +3281,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
           <div id="ai-inv-alerts" style="margin-top:10px;"></div>
         </div>
-        <div class="ai-api-note">Los productos existentes actualizarán su stock. Los nuevos se agregarán solo en modo completo.</div>
+        <div class="ai-api-note">Cantidades como 0,3 kg o 1.234,5 se interpretan al importar. Puedes editarlas con coma o punto. Los productos existentes actualizan stock; los nuevos solo en modo completo.</div>
       </div>
       <div class="ai-modal-footer">
         <button class="fac-btn" onclick="closeAiInvModalBtn()">Cancelar</button>
@@ -8513,7 +8515,7 @@ async function iaProcessPdf(file) {
       body: JSON.stringify({
         action: 'anthropicProxy', apiKey,
         model: _iaScanCtx === 'sac' ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-20250514',
-        max_tokens: _iaScanCtx === 'sac' ? 1000 : 4000,
+        max_tokens: _iaScanCtx === 'sac' ? 1000 : 8192,
         messages: [{ role:'user', content: prompt }]
       })
     });
@@ -8536,8 +8538,13 @@ function iaShowResults(rawText) {
   if (!prev) return;
 
   try {
-    const clean = rawText.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(clean);
+    let parsed;
+    try {
+      parsed = cerebrusParseJsonAny(rawText, 'Escáner');
+    } catch (pe) {
+      const clean = rawText.replace(/```json|```/g,'').trim();
+      parsed = JSON.parse(clean);
+    }
 
     if (_iaScanCtx === 'sac') {
       // Single expense object
@@ -8688,7 +8695,7 @@ Para CADA documento extrae un objeto JSON con:
   * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
   * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
   * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide o servicio (string)
-  * cantidad: número (float, puede ser kg, litros, unidades)
+  * cantidad: número decimal si aplica (ej. 0,3 kg → JSON cantidad 0.3 y unidad "kg"). Solo número en cantidad; coma decimal solo en string si no puedes usar número, el sistema la interpreta
   * unidad: "kg" | "L" | "un" | "caja" | "bolsa" | u otra que aparezca
   * precioUnit: precio unitario en pesos (entero, 0 si no aparece)
   * subtotal: subtotal de la línea en pesos (entero, 0 si no aparece)
@@ -8778,7 +8785,7 @@ async function processAiPdf(file) {
           action: 'anthropicProxy',
           apiKey,
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 4000,
+          max_tokens: 8192,
           messages: [{ role: 'user', content: aiPromptTexto() + '\n\nTEXTO EXTRAÍDO (OCR de Google):\n' + textoOcr }]
         })
       });
@@ -8799,7 +8806,7 @@ async function processAiPdf(file) {
     if (!procData.ok) throw new Error(procData.error || 'Error procesando');
 
     const text = procData.content.map(c=>c.text||'').join('');
-    const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
+    const rows = cerebrusParseJsonArray(text, 'Facturas PDF');
     aiShowPreview(rows);
     setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
 
@@ -8874,7 +8881,7 @@ Para CADA documento extrae un JSON con:
   * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
   * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
   * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide
-  * cantidad: número (kg, litros, unidades)
+  * cantidad: número (decimales con punto en JSON: 0.3 para 300 g en kg; no pongas "kg" dentro de cantidad)
   * unidad: "kg" | "L" | "un" | "caja" u otra
   * precioUnit: precio unitario CON IVA incluido — SIEMPRE entero en pesos, sin decimales, usa Math.round()
   * subtotal: subtotal de la línea CON IVA (entero en pesos)
@@ -8914,7 +8921,7 @@ async function processAiImage(file, ext) {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content.map(c=>c.text||'').join('');
-    const rows = JSON.parse(text.replace(/```json|```/g,'').trim());
+    const rows = cerebrusParseJsonArray(text, 'Facturas imagen');
     aiShowPreview(rows);
     setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
   } catch(e) {
@@ -8944,7 +8951,7 @@ async function processAiText(file, ext) {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Error del proxy');
     const text  = data.content.map(c=>c.text||'').join('');
-    const rows  = JSON.parse(text.replace(/```json|```/g,'').trim());
+    const rows  = cerebrusParseJsonArray(text, 'Facturas Excel/CSV');
     aiShowPreview(rows);
     setAiProgress(100, `✓ ${rows.length} facturas encontradas`);
   } catch(e) {
@@ -8955,6 +8962,7 @@ async function processAiText(file, ext) {
 
 function aiShowPreview(rows) {
   facInit();
+  rows = cerebrusNormalizeDocItems(rows);
   _aiParsedRows = rows.map((r,i) => ({...r, tipoDoc: r.tipoDoc||'factura', _keep:true, _idx:i}));
   const known   = Object.keys(state.facturas);
 
@@ -9133,7 +9141,7 @@ function aiShowPreview(rows) {
                   <span style="font-weight:600;">${esc(it.descripcion)}</span>${impuestoBadge}
                   ${matched?`<span style="font-size:9px;color:var(--success);margin-left:4px;">→ ${esc(matched.nombre)}</span>`:'<span style="font-size:9px;color:#94a3b8;margin-left:4px;">sin match</span>'}
                 </div>
-                <input type="text" value="${it.cantidad}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
+                <input type="text" value="${esc(cerebrusFormatQtyForInput(it.cantidad))}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
                 <span style="color:#94a3b8;font-size:10px;text-align:center;">${esc(it.unidad||'un')}</span>
                 <input type="text" value="${it.precioUnit||''}" placeholder="$ unit" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-price-${i}">
                 ${(docNeto > 0 || docSinIVAInfo > 0) ? `<button onclick="aiAplicarIVAItem(${i})" title="Aplicar IVA 19% a este precio"
@@ -9302,7 +9310,7 @@ function aiConfirmImport() {
         // Check individual product checkbox
         const chkProd = document.querySelector(`.ai-chk-prod[data-idx="${i}"]`);
         if (chkProd && !chkProd.checked) return; // skip unchecked products
-        const qty    = parseFloat(document.getElementById('ai-inv-qty-'+i)?.value||it.cantidad)||0;
+        const qty    = cerebrusParseQuantity(document.getElementById('ai-inv-qty-'+i)?.value ?? it.cantidad) || 0;
         const precio = parseInt((document.getElementById('ai-inv-price-'+i)?.value||it.precioUnit||'0').toString().replace(/[^\d]/g,''),10)||0;
         if (!qty) return;
         // Try to match by invProdId first, then by name
@@ -11832,7 +11840,7 @@ function openAiInvImport() {
   document.getElementById('ai-inv-confirm').style.display   = 'none';
   document.getElementById('ai-inv-progress').classList.remove('show');
   document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-title').textContent = 'Arrastra la ficha aquí o haz clic';
-  document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-sub').textContent   = 'Acepta PDF, JPG o PNG · Ficha escaneada o foto clara';
+  document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-sub').textContent   = 'PDF o imagen (JPG, PNG, WebP, HEIC…) · Ficha escaneada o foto clara';
   document.getElementById('aiInvModal').classList.add('open');
 }
 function closeAiInvModal(e) { if (e.target===document.getElementById('aiInvModal')) closeAiInvModalBtn(); }
@@ -11850,11 +11858,24 @@ function handleAiInvDrop(e) {
   if (f) handleAiInvFile(f);
 }
 
+/** MIME para subir a Drive / OCR (Google acepta formatos habituales de imagen). */
+function aiInvMimeType(file, ext) {
+  const t = (file && file.type) ? String(file.type).trim() : '';
+  if (t && t !== 'application/octet-stream') return t;
+  const map = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+    gif: 'image/gif', bmp: 'image/bmp', tif: 'image/tiff', tiff: 'image/tiff',
+    heic: 'image/heic', heif: 'image/heif'
+  };
+  return map[ext] || 'image/jpeg';
+}
+
 function handleAiInvFile(file) {
   if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
   document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-title').textContent = `📎 ${file.name}`;
-  document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-sub').textContent   = `${(file.size/1024).toFixed(1)} KB`;
+  document.getElementById('ai-inv-drop-zone').querySelector('.ai-drop-sub').textContent   = `${(file.size/1024).toFixed(1)} KB · ${aiInvMimeType(file, ext)}`;
   processAiInvFile(file, ext);
 }
 
@@ -11884,9 +11905,13 @@ async function processAiInvFile(file, ext) {
     });
 
     const isPdf = ext === 'pdf';
-    const isImg = ['jpg','jpeg','png'].includes(ext);
-    if (!isPdf && !isImg) { notify('⚠ Usa PDF, JPG o PNG'); return; }
-    const mtype = isPdf ? 'application/pdf' : ext==='png' ? 'image/png' : 'image/jpeg';
+    const imgExts = ['jpg','jpeg','png','webp','gif','bmp','tif','tiff','heic','heif'];
+    const isImg = imgExts.indexOf(ext) >= 0 || (file.type && String(file.type).indexOf('image/') === 0);
+    if (!isPdf && !isImg) {
+      notify('⚠ Usa PDF o una imagen (JPG, PNG, WebP, GIF, HEIC, TIFF…)');
+      return;
+    }
+    const mtype = isPdf ? 'application/pdf' : aiInvMimeType(file, ext);
 
     const uploadRes = await fetch(API_URL, {
       method: 'POST',
@@ -11924,7 +11949,7 @@ Categorías existentes: ${(state.catInventario||[]).join(', ')}
 
 Para cada producto que veas, extrae un objeto JSON con:
 - nombre: nombre del producto tal como aparece
-- stock: cantidad numérica (número). 0 si no aparece
+- stock: cantidad numérica. En JSON usa punto decimal (ej. 0.3 para "0,3 kg" o 300 g en kg). La unidad va aparte, no dentro de stock
 - unidad: unidad de medida si aparece (kg, L, unidad, caja, g, ml, bolsa, docena, etc.)
 - precio: precio unitario si aparece (número). 0 si no se ve
 - categoria: categoría que mejor le corresponda de las existentes. Si no encaja, sugiere una
@@ -11932,16 +11957,17 @@ Para cada producto que veas, extrae un objeto JSON con:
 - confianza: "ok" si se lee claramente, "duda" si algo es incierto
 - observacion: qué no quedó claro (solo si confianza es "duda")
 
-Responde SOLO con un array JSON válido. Sin texto antes ni después. Sin markdown.
-Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"Carnes","nombreMatch":"","confianza":"ok","observacion":""}]`;
+IMPORTANTE: Responde ÚNICAMENTE con un array JSON (empieza con [ y termina con ]).
+Usa comillas dobles " en claves y valores de texto. Sin comentarios // dentro del JSON. Sin markdown ni texto antes o después del array.
+Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"Carnes","nombreMatch":"","confianza":"ok","observacion":""},{"nombre":"Mantequilla","stock":0.3,"unidad":"kg","precio":0,"categoria":"Lácteos","nombreMatch":"","confianza":"ok","observacion":""}]`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
 
     const aiRes = await fetch(API_URL, {
       method: 'POST',
       signal: controller.signal,
-      body: JSON.stringify({ action:'anthropicProxy', apiKey, model:'claude-sonnet-4-20250514', max_tokens:4000, messages:[{role:'user', content: prompt}] })
+      body: JSON.stringify({ action:'anthropicProxy', apiKey, model:'claude-sonnet-4-20250514', max_tokens:8192, messages:[{role:'user', content: prompt}] })
     });
     clearTimeout(timeout);
 
@@ -11950,23 +11976,28 @@ Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"
     if (!aiData.ok) throw new Error(aiData.error || 'Error de Claude');
 
     const text = aiData.content.map(c=>c.text||'').join('');
-    // Limpiar respuesta: quitar markdown, espacios, etc
-    const clean = text.replace(/```json/g,'').replace(/```/g,'').trim();
-    
+    console.log('[Cerebrus inventario IA] longitud respuesta Claude:', text.length);
     let rows;
     try {
-      rows = JSON.parse(clean);
-    } catch(parseErr) {
-      // Intentar extraer el array JSON si hay texto extra
-      const match = clean.match(/\[[\s\S]*\]/);
-      if (match) {
-        rows = JSON.parse(match[0]);
-      } else {
-        throw new Error('Claude no devolvió JSON válido. Intenta de nuevo.');
-      }
+      rows = cerebrusParseJsonArray(text, 'Inventario IA');
+    } catch (parseErr) {
+      console.error('[Cerebrus inventario IA] respuesta cruda (primeros 2000 chars):', text.slice(0, 2000));
+      throw parseErr;
     }
 
-    if (!Array.isArray(rows)) throw new Error('Respuesta inesperada de Claude');
+    if (!Array.isArray(rows)) throw new Error('Respuesta inesperada de Claude (no es array)');
+
+    rows = rows.map(r => {
+      const pq = cerebrusParseQuantity(r.stock);
+      const stock = isNaN(pq) ? 0 : pq;
+      let confianza = r.confianza;
+      let observacion = r.observacion || '';
+      if (isNaN(pq) && r.stock != null && String(r.stock).trim() !== '') {
+        if (confianza === 'ok') confianza = 'duda';
+        observacion = (observacion ? observacion + ' — ' : '') + 'cantidad no interpretada: ' + String(r.stock).slice(0, 48);
+      }
+      return { ...r, stock, confianza, observacion };
+    });
 
     _aiInvRows = rows.map((r,i) => ({...r, _keep:true, _idx:i}));
     aiInvShowPreview(rows);
@@ -12012,7 +12043,7 @@ function aiInvShowPreview(rows) {
       ? `<span title="${esc(r.observacion||'')}" style="cursor:help;font-size:11px;">⚠</span>` : '';
     return `<tr id="ai-inv-row-${i}" ${rowBg}>
       <td style="padding:5px 8px;">${flag} <input class="ai-inp-sm" style="width:130px;" value="${esc(r.nombre||'')}" oninput="_aiInvRows[${i}].nombre=this.value"></td>
-      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:60px;text-align:right;" inputmode="decimal" value="${r.stock||0}" oninput="_aiInvRows[${i}].stock=parseFloat(this.value)||0"></td>
+      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:72px;text-align:right;" inputmode="decimal" value="${esc(cerebrusFormatQtyForInput(r.stock))}" oninput="(function(el,idx){var n=cerebrusParseQuantity(el.value);_aiInvRows[idx].stock=isNaN(n)?0:n})(this,${i})" onblur="this.value=cerebrusFormatQtyForInput(_aiInvRows[${i}].stock)"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:45px;" value="${esc(r.unidad||'')}" oninput="_aiInvRows[${i}].unidad=this.value" placeholder="kg/u"></td>
       <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:65px;text-align:right;" inputmode="numeric" value="${r.precio||''}" oninput="_aiInvRows[${i}].precio=parseInt(this.value)||0" placeholder="$"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:80px;" value="${esc(r.categoria||'')}" oninput="_aiInvRows[${i}].categoria=this.value" placeholder="Cat."></td>
@@ -12042,6 +12073,8 @@ function aiInvConfirm() {
 
   toImport.forEach(r => {
     const targetName = r.nombreMatch || r.nombre;
+    const stockNum = cerebrusParseQuantity(r.stock);
+    const stock = isNaN(stockNum) ? 0 : stockNum;
     // Try to match existing product
     const existing = state.inventario.find(p =>
       p.nombre.toLowerCase() === targetName.toLowerCase() ||
@@ -12049,7 +12082,7 @@ function aiInvConfirm() {
     );
 
     if (existing) {
-      existing.stock = r.stock;
+      existing.stock = stock;
       if (r.unidad && !existing.unidad) existing.unidad = r.unidad;
       if (r.categoria && (!existing.cat || existing.cat === 'Sin categoría' || existing.cat === 'Importado')) existing.cat = r.categoria;
       // Save price if present
@@ -12064,7 +12097,7 @@ function aiInvConfirm() {
         nombre: r.nombre||'Sin nombre',
         cat:    r.categoria || 'Importado',
         unidad: r.unidad||'unidad',
-        stock:  r.stock||0,
+        stock:  stock,
         minimo: 0,
         qty:    0,
         prov:   '',
@@ -15255,6 +15288,189 @@ async function cerebrusReadJson(res, label) {
     return JSON.parse(text);
   } catch (err) {
     throw new Error((label || 'Servidor') + ' — HTTP ' + res.status + ': ' + (text ? text.replace(/\s+/g, ' ').trim().slice(0, 900) : '(respuesta vacía)'));
+  }
+}
+
+/**
+ * Convierte cantidades desde OCR/IA: "0,3 kg", "1.234,5", 0.3, etc. → número.
+ * Acepta coma o punto como decimal (formato Chile: 1.234,56) y quita unidades al final.
+ */
+function cerebrusParseQuantity(val) {
+  if (val == null || val === '') return NaN;
+  if (typeof val === 'number') return isFinite(val) ? val : NaN;
+  if (typeof val === 'boolean') return NaN;
+  let s = String(val).trim().replace(/\u00a0/g, ' ');
+  s = s.replace(/\s*(kg|kgs|g|gr|grs|grm|lt|l|litros?|ml|cl|unidades?|un\.?|uds?\.?|cajas?|bolsas?|docenas?|dz|paquetes?|packs?|pzs?)\s*$/i, '');
+  s = s.trim().replace(/\s/g, '');
+  if (!s || /^[a-z]+$/i.test(s)) return NaN;
+  const neg = s.startsWith('-');
+  if (neg) s = s.slice(1).trim();
+  const hasComma = s.indexOf(',') >= 0;
+  const hasDot = s.indexOf('.') >= 0;
+  let n;
+  if (hasComma && hasDot) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastComma > lastDot) n = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+    else n = parseFloat(s.replace(/,/g, ''));
+  } else if (hasComma) {
+    const parts = s.split(',');
+    if (parts.length === 2 && parts[1].length <= 4 && /^\d+$/.test(parts[0].replace(/\./g, '')) && /^\d+$/.test(parts[1]))
+      n = parseFloat(parts[0].replace(/\./g, '') + '.' + parts[1]);
+    else n = parseFloat(s.replace(/,/g, ''));
+  } else {
+    n = parseFloat(s);
+  }
+  if (neg && !isNaN(n)) n = -n;
+  return n;
+}
+
+/** Muestra cantidad en inputs con coma decimal (Chile), sin forzar decimales innecesarios. */
+function cerebrusFormatQtyForInput(n) {
+  if (n == null || n === '' || (typeof n === 'number' && !isFinite(n))) return '';
+  const x = Number(n);
+  if (!isFinite(x)) return '';
+  let t = String(x);
+  if (t.indexOf('e') >= 0 || t.indexOf('E') >= 0) return t;
+  return t.replace('.', ',');
+}
+
+/** Normaliza cantidades en líneas de factura/guía tras Claude (strings "0,3", etc.). */
+function cerebrusNormalizeDocItems(rows) {
+  if (!Array.isArray(rows)) return rows;
+  return rows.map(doc => {
+    if (!doc.items || !doc.items.length) return doc;
+    return {
+      ...doc,
+      items: doc.items.map(it => {
+        const q = cerebrusParseQuantity(it.cantidad);
+        const cantidad = isNaN(q) ? 0 : q;
+        return { ...it, cantidad };
+      })
+    };
+  });
+}
+
+/**
+ * Extrae y parsea un array JSON desde la respuesta de Claude (markdown, texto previo, comas finales).
+ * Evita fallos cuando el modelo envuelve el JSON en ``` o comenta antes del '['.
+ */
+function cerebrusParseJsonArray(rawText, contextLabel) {
+  let s = String(rawText || '').replace(/\uFEFF/g, '').trim();
+  s = s.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  const first = s.indexOf('[');
+  if (first > 0) s = s.slice(first);
+
+  function extractBalancedArray(src) {
+    const st = src.indexOf('[');
+    if (st < 0) return null;
+    let depth = 0, inStr = false, esc = false, quote = '';
+    for (let i = st; i < src.length; i++) {
+      const ch = src[i];
+      if (inStr) {
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === quote) { inStr = false; continue; }
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        inStr = true;
+        quote = ch;
+        continue;
+      }
+      if (ch === '[') depth++;
+      else if (ch === ']') {
+        depth--;
+        if (depth === 0) return src.slice(st, i + 1);
+      }
+    }
+    return null;
+  }
+
+  let chunk = extractBalancedArray(s);
+  if (!chunk) chunk = s;
+
+  function stripTrailingCommas(jsonStr) {
+    return jsonStr.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+  }
+
+  try {
+    const arr = JSON.parse(stripTrailingCommas(chunk));
+    if (!Array.isArray(arr)) throw new Error('La respuesta no es un array');
+    return arr;
+  } catch (e1) {
+    try {
+      const chunk2 = extractBalancedArray(s);
+      if (chunk2 && chunk2 !== chunk) return JSON.parse(stripTrailingCommas(chunk2));
+    } catch (e2) {}
+    const tail = s.length > 800 ? s.slice(-600) : s;
+    throw new Error(
+      (contextLabel || 'Claude') + ' no devolvió JSON válido (' + (e1.message || 'parse') + '). ' +
+      'Si el documento es muy largo, divide la importación o reduce filas. ' +
+      'Revisa F12 → Consola. Final de la respuesta: ' + tail.replace(/\s+/g, ' ').slice(0, 400)
+    );
+  }
+}
+
+/** Igual que el array pero para un objeto { ... } (p. ej. escáner S.A.C.). */
+function cerebrusParseJsonObject(rawText, contextLabel) {
+  let s = String(rawText || '').replace(/\uFEFF/g, '').trim();
+  s = s.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  const first = s.indexOf('{');
+  if (first > 0) s = s.slice(first);
+
+  function extractBalancedObject(src) {
+    const st = src.indexOf('{');
+    if (st < 0) return null;
+    let depth = 0, inStr = false, esc = false, quote = '';
+    for (let i = st; i < src.length; i++) {
+      const ch = src[i];
+      if (inStr) {
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === quote) { inStr = false; continue; }
+        continue;
+      }
+      if (ch === '"' || ch === "'") {
+        inStr = true;
+        quote = ch;
+        continue;
+      }
+      if (ch === '{') depth++;
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0) return src.slice(st, i + 1);
+      }
+    }
+    return null;
+  }
+
+  function stripTrailingCommas(jsonStr) {
+    return jsonStr.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+  }
+
+  const chunk = extractBalancedObject(s) || s;
+  try {
+    return JSON.parse(stripTrailingCommas(chunk));
+  } catch (e1) {
+    throw new Error((contextLabel || 'Claude') + ': ' + (e1.message || 'JSON objeto inválido'));
+  }
+}
+
+/** Array u objeto según lo que devuelva Claude. */
+function cerebrusParseJsonAny(rawText, contextLabel) {
+  const t = String(rawText || '').trim();
+  const a = t.indexOf('['), b = t.indexOf('{');
+  if (a >= 0 && (b < 0 || a < b)) {
+    try { return cerebrusParseJsonArray(t, contextLabel); } catch (e) { /* fall through */ }
+  }
+  if (b >= 0) {
+    try { return cerebrusParseJsonObject(t, contextLabel); } catch (e) { /* fall through */ }
+  }
+  try {
+    return JSON.parse(t.replace(/```json\s*/gi, '').replace(/```/g, '').trim().replace(/,\s*]/g, ']').replace(/,\s*}/g, '}'));
+  } catch (e) {
+    throw new Error((contextLabel || 'Claude') + ' no devolvió JSON reconocible.');
   }
 }
 
