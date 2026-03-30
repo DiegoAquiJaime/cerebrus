@@ -8498,6 +8498,8 @@ async function iaProcessPdf(file) {
     });
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo');
+    iaSetProgress(32, 'Pausa breve (cuota Google Drive)…');
+    await cerebrusDelayBeforeOcr();
     iaSetProgress(35, 'Google extrayendo texto (OCR)…');
     const ocrRes = await fetch(API_URL, {
       method: 'POST',
@@ -8763,6 +8765,9 @@ async function processAiPdf(file) {
     });
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo PDF');
+
+    setAiProgress(32, 'Pausa breve (cuota Google Drive)…');
+    await cerebrusDelayBeforeOcr();
 
     setAiProgress(35, 'Google extrayendo texto (OCR)…');
 
@@ -11920,7 +11925,9 @@ async function processAiInvFile(file, ext) {
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo archivo');
 
-    // PASO 2: Google hace OCR — extrae texto del archivo
+    // PASO 2: Google hace OCR — extrae texto del archivo (pausa para no saturar cuota Drive)
+    setInvProgress(36, 'Pausa breve (cuota Google Drive)…');
+    await cerebrusDelayBeforeOcr();
     setInvProgress(40, 'Google extrayendo texto (OCR)…');
 
     const ocrRes = await fetch(API_URL, {
@@ -15279,6 +15286,12 @@ function notify(msg, duration) {
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.opacity = '0'; el.classList.remove('notif-long'); }, ms);
+}
+
+/** Pausa antes de llamar a ocrFile para no saturar la cuota por minuto de Google Drive. */
+function cerebrusDelayBeforeOcr(ms) {
+  const n = typeof ms === 'number' && ms > 0 ? ms : 4500;
+  return new Promise(function(resolve) { setTimeout(resolve, n); });
 }
 
 /** Respuesta del Web App como JSON; si no es JSON, muestra trozo del error (p. ej. HTML de Google). */
