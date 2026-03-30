@@ -428,6 +428,13 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-table tr:last-child td{border-bottom:none;}
 .cred-table tr:hover td{background:rgba(249,115,22,0.03);}
 .cred-table tr.cred-paid td{color:#9aacb8;}
+.cred-table tr.seb-comp-sel td{background:rgba(94,92,230,.08)!important;box-shadow:inset 3px 0 0 var(--accent2);}
+.seb-comp-table-wrap .cred-table th:nth-child(-n+3),
+.seb-comp-table-wrap .cred-table td:nth-child(-n+3){text-align:left;}
+.seb-comp-table-wrap .cred-table th:nth-child(n+4):not(:last-child),
+.seb-comp-table-wrap .cred-table td:nth-child(n+4):not(:last-child){text-align:right;}
+.seb-comp-table-wrap .cred-table th:last-child,
+.seb-comp-table-wrap .cred-table td:last-child{text-align:center;}
 .cred-nro{font-weight:700;font-family:'Courier New',monospace;font-size:11px;}
 .cred-nro.alberto{color:#2980b9;}
 .cred-nro.pancho{color:#8e44ad;}
@@ -1064,7 +1071,8 @@ body.dark-mode .inv-cat-btn{background:#1e293b;}
 body.dark-mode .fac-venc-banner{background:#2d1a1a;border-color:#7f1d1d;}
 
 /* ---- FINANZAS SEBAS ---- */
-body.user-alberto .sebas-only{display:none!important;}
+/* Finanzas Sebas: solo Diego y Sebastián (clase user-sebas-ok en login) */
+body:not(.user-sebas-ok) #nav-sebas{display:none!important;}
 
 /* ── BODEGA: solo ve Inventario y sus submódulos ── */
 body.user-bodega #nav-resumen,
@@ -1076,7 +1084,6 @@ body.user-bodega #nav-creditos,
 body.user-bodega #nav-facturas,
 body.user-bodega #nav-informe,
 body.user-bodega #nav-propinas,
-body.user-bodega #nav-sebas,
 body.user-bodega #nav-detalle,
 body.user-bodega .nav-sep:last-of-type,
 body.user-bodega .nav-item[onclick*="goto"] { display:none!important; }
@@ -1144,7 +1151,7 @@ body.dark-mode .seb-btn-del:hover{border-color:var(--danger)!important;color:var
 body.dark-mode .seb-add-form{background:#0f172a;border-color:#334155;}
 body.dark-mode .seb-add-form input,body.dark-mode .seb-add-form select{background:#1e293b;color:#e2e8f0;border-color:#334155;}
 /* Pago modal */
-.seb-pago-overlay{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px;}
+.seb-pago-overlay{display:none;position:fixed;inset:0;z-index:1400;background:rgba(0,0,0,.6);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:20px;}
 .seb-pago-overlay.show{display:flex;}
 .seb-pago-modal{background:var(--white);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:440px;overflow:hidden;}
 .seb-pago-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;}
@@ -1292,6 +1299,10 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-v-total{background:#f8fafc;border-top:2px solid var(--border);padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;}
 /* cargas */
 .sac-cargas-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.sac-ingresos-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border-top:3px solid rgba(16,185,129,.35);}
+.sac-ingresos-head{background:linear-gradient(135deg, rgba(16,185,129,.12), rgba(16,185,129,.04));}
+.sac-carga-row.ingreso-recibido{opacity:.65;}
+.sac-carga-row.ingreso-recibido .sac-nombre{text-decoration:line-through;}
 .sac-cargas-head{background:var(--primary);color:white;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
 .sac-carga-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-carga-row:last-child{border-bottom:none;}
@@ -1320,7 +1331,7 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-edit-inp{border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;width:100%;}
 .sac-edit-inp:focus{outline:none;border-color:var(--accent2);}
 /* dark */
-body.dark-mode .sac-kpi,.dark-mode .sac-ventas-card,.dark-mode .sac-cargas-card{background:#1e293b;}
+body.dark-mode .sac-kpi,.dark-mode .sac-ventas-card,.dark-mode .sac-cargas-card,.dark-mode .sac-ingresos-card{background:#1e293b;}
 body.dark-mode .sac-v-row,.dark-mode .sac-carga-row{border-color:#334155;}
 body.dark-mode .sac-v-total,.dark-mode .sac-footer,.dark-mode .sac-ventas-head+*{background:#0f172a;}
 body.dark-mode .sac-v-inp,.dark-mode .sac-edit-inp{color:#e2e8f0;border-color:#334155;}
@@ -2131,7 +2142,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
   <div class="nav-item" id="nav-inventario" onclick="showTab('inventario')"><span class="ni">📦</span> Inventario</div>
   <div class="nav-item" id="nav-creditos" onclick="showTab('creditos')"><span class="ni">💳</span> Créditos Informales</div>
-  <div class="nav-item sebas-only" id="nav-sebas" onclick="showTab('sebas')"><span class="ni">🔐</span> Finanzas Sebas</div>
+  <div class="nav-item" id="nav-sebas" onclick="showTab('sebas')"><span class="ni">🔐</span> Finanzas Sebas</div>
   <div class="nav-item" id="nav-detalle" onclick="showTab('detalle')"><span class="ni">⚙️</span> Configuración</div>
   <div class="nav-item" id="nav-semanas" onclick="showTab('semanas')"><span class="ni">📊</span> Proyección Mensual</div>
   <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;"><span class="ni">📈</span> Venta Semanal</div>
@@ -2536,6 +2547,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </div>
       </div>
 
+      <div id="sac-fin-panel-wrap" style="margin-bottom:14px;"></div>
+
       <div class="sac-main">
 
         <!-- VENTAS — tabla 100% estática con IDs fijos -->
@@ -2645,6 +2658,26 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <input class="sac-v-inp" id="sac-merc-val" type="text" inputmode="numeric" placeholder="0"
                 onchange="sacMercValChange(this.value)" onblur="sacVBlur(this)" style="width:100px;">
               <span id="sac-merc-result" style="font-size:11px;font-weight:700;color:var(--accent2);"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- OTROS INGRESOS (semana) -->
+        <div class="sac-ingresos-card">
+          <div class="sac-cargas-head sac-ingresos-head">
+            <div style="font-size:13px;font-weight:800;">💰 Otros ingresos (esta semana)</div>
+            <button type="button" onclick="sacAddIngresoManual()" style="background:var(--success);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ Ingreso</button>
+          </div>
+          <p style="font-size:10px;color:#64748b;padding:8px 14px 0;margin:0;line-height:1.45;">Aportes, transferencias u otros montos fuera de la venta diaria. <b>Pendiente</b> suma al balance estimado abajo; <b>Recibido</b> = ya ingresó (actualiza banco/caja arriba para reflejarlo).</p>
+          <div id="sac-ingresos-list" style="min-height:8px;"></div>
+          <div class="sac-footer" style="border-top:1px solid var(--border);">
+            <div class="sac-foot-kpi">
+              <div class="sac-foot-lbl">Pendiente de ingresar</div>
+              <div class="sac-foot-val" id="sac-ing-pend" style="color:var(--success);">$0</div>
+            </div>
+            <div class="sac-foot-kpi">
+              <div class="sac-foot-lbl">Marcado recibido</div>
+              <div class="sac-foot-val" id="sac-ing-recib" style="color:#94a3b8;">$0</div>
             </div>
           </div>
         </div>
@@ -3527,8 +3560,11 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </button>
           <button class="fac-btn" onclick="openInvImportFromFacsModal()">🔗 Desde facturas</button>
           <button class="fac-btn" onclick="invOpenRestoreFile()">♻ Restaurar inventario</button>
+          <button class="fac-btn" onclick="cereBackupNowAll()">💾 Respaldos JSON</button>
         </div>
         <input type="file" id="inv-restore-file" accept=".json,application/json" style="display:none;" onchange="invHandleRestoreFile(this.files && this.files[0])">
+        <input type="file" id="seb-comp-tsv-file" accept=".txt,.tsv,.csv,text/plain,text/tab-separated-values" style="display:none;" onchange="sebHandleCompTsvFile(this.files && this.files[0])">
+        <input type="file" id="seb-fm-pack-file" multiple accept=".tab,.txt,.tsv,.csv,text/plain,text/tab-separated-values" style="display:none;" onchange="sebHandleFmPackFiles(this.files)">
         <div class="inv-filter-bar" id="inv-filter-bar">
           <div class="inv-filter-bar-title">Filtrar y ordenar — lista general</div>
           <div class="inv-filter-row">
@@ -4971,7 +5007,7 @@ function undo() {
   calc();
   renderHistorial();
   // Refresh SAC views
-  try { sacRenderCargas(sacCurrentWeek()); sacCalcAll(sacCurrentWeek()); } catch(e){}
+  try { sacRender(); } catch(e){}
   // Refresh inventory
   try { invRender(); movRender(); } catch(e){}
   // Refresh weekly view
@@ -5643,10 +5679,18 @@ function closeNav() {
   document.getElementById('navOverlay').classList.remove('open');
 }
 
+function sebasModuleAllowed() {
+  return currentUser === 'Diego' || currentUser === 'Sebastián';
+}
+
 function showTab(tabId) {
   // Bodega solo puede acceder a inventario
   if (currentUser === 'Bodega' && tabId !== 'inventario') {
     tabId = 'inventario';
+  }
+  if (tabId === 'sebas' && !sebasModuleAllowed()) {
+    tabId = 'resumen';
+    notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
   closeNav();
   ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
@@ -7301,6 +7345,7 @@ function facInit() {
   if (!state.facturas) state.facturas = makeDefaultFacturas();
   ensureProvRuts();
   facAutoLearnRuts();
+  facSpreadProvRutToInvoices();
   facUnifyProvidersByRut();
 }
 
@@ -7945,7 +7990,7 @@ function facSaveNuevaFactura() {
   if (!nro||!monto||!em) { notify('⚠ Completa N° factura, fecha y monto'); return; }
 
   // Check duplicate
-  const dupWarn = facFindDuplicate(nro, monto, rut, _facCurrentProv);
+  const dupWarn = facFindDuplicate(nro, monto, rut, _facCurrentProv, em);
   if (dupWarn) {
     if (!confirm('⚠ Posible duplicado:\n' + dupWarn + '\n\n¿Guardar de todas formas?')) return;
   }
@@ -7992,7 +8037,7 @@ function facCheckDuplicate(nro) {
   const alert = document.getElementById('fn-dup-alert');
   if (!alert) return;
   if (!nro || nro.length < 3) { alert.style.display='none'; return; }
-  const warn = facFindDuplicate(nro, null, null, _facCurrentProv);
+  const warn = facFindDuplicate(nro, null, null, _facCurrentProv, null);
   if (warn) {
     alert.textContent = '🔁 ' + warn;
     alert.style.display = 'block';
@@ -8039,26 +8084,39 @@ function facFindProvByRut(rut) {
 }
 
 // ── BUSCAR DUPLICADO en todo el sistema ──
-function facFindDuplicate(nro, monto, rut, currentProv) {
+// emision = YYYY-MM-DD del formulario (requerida para comparar monto+fecha)
+function facFindDuplicate(nro, monto, rut, currentProv, emision) {
   if (!state.facturas) return null;
   const nroNorm = (nro||'').trim().toLowerCase();
+  const rkNew = rutKey(rut||'');
   for (const [pn, facs] of Object.entries(state.facturas)) {
     for (const f of facs) {
-      // Same N° de factura in same provider
+      // Mismo N° en el mismo proveedor
       if (pn === currentProv && f.nro && f.nro.trim().toLowerCase() === nroNorm && nroNorm.length > 1) {
         return `N° ${nro} ya existe en ${pn} (${f.emision} · ${fmt(f.monto)})`;
       }
-      // Same N° in different provider (weaker signal)
-      if (pn !== currentProv && f.nro && f.nro.trim().toLowerCase() === nroNorm && nroNorm.length > 3) {
-        return `N° ${nro} también aparece en "${pn}" (${f.emision} · ${fmt(f.monto)}) — ¿es el mismo documento?`;
+      // Mismo N° en otro proveedor: solo si es el mismo RUT (mismo emisor legal)
+      if (pn !== currentProv && f.nro && f.nro.trim().toLowerCase() === nroNorm && nroNorm.length > 1) {
+        const rkF = rutKey(f.rut||'');
+        if (rkNew && rkF && rkNew === rkF) {
+          return `N° ${nro} ya está en "${pn}" con el mismo RUT (${f.emision} · ${fmt(f.monto)})`;
+        }
       }
-      // Same monto + same date (suspicious regardless of provider)
-      if (monto && monto > 0 && f.monto === monto && f.emision) {
-        return `Monto ${fmt(monto)} ya existe en "${pn}" N° ${f.nro} (${f.emision})`;
+      // Mismo monto + misma fecha: solo si misma fecha de emisión (antes comparaba solo monto → falsos positivos)
+      if (monto && monto > 0 && emision && f.emision === emision && f.monto === monto) {
+        if (pn === currentProv && (f.nro||'').trim().toLowerCase() !== nroNorm) {
+          return `Mismo monto ${fmt(monto)} y fecha ${emision} en "${pn}" (N° ${f.nro})`;
+        }
+        const rkF = rutKey(f.rut||'');
+        if (pn !== currentProv && rkNew && rkF && rkNew === rkF) {
+          return `Mismo monto ${fmt(monto)} y fecha ${emision} en "${pn}" (N° ${f.nro}) — mismo RUT`;
+        }
       }
-      // Same RUT + same monto
-      if (rut && f.rut && normRut(f.rut) === rut && monto && f.monto === monto) {
-        return `RUT ${rut} con monto ${fmt(monto)} ya está registrado en "${pn}" como factura ${f.nro}`;
+      // Mismo RUT + mismo monto + distinto N° (posible doble registro)
+      if (rut && f.rut && normRut(f.rut) === rut && monto && f.monto === monto && emision && f.emision === emision) {
+        if ((f.nro||'').trim().toLowerCase() !== nroNorm) {
+          return `RUT ${rut} · ${fmt(monto)} el ${emision} ya en "${pn}" como N° ${f.nro}`;
+        }
       }
     }
   }
@@ -8066,58 +8124,62 @@ function facFindDuplicate(nro, monto, rut, currentProv) {
 }
 
 // ── SCAN GLOBAL DE DUPLICADOS ──
+// N° factura: solo es único por proveedor (o por RUT si hay varios nombres con mismo emisor).
+// Monto+fecha: mismo mismo día en distintos proveedores es muy común → solo alerta dentro del mismo proveedor.
 function facCheckAllDuplicates() {
   if (!state.facturas) return;
-  // Build lookup maps
-  const byNro   = {};  // nro → [{pn, f}]
-  const byMonto = {};  // monto+emision → [{pn, f}]
-  const byRut   = {};  // rut+monto → [{pn, f}]
+  const byNro   = {};
+  const byMonto = {};
+  const byRut   = {};
   const dups    = [];
 
-  // Clear old flags
   Object.values(state.facturas).forEach(facs => facs.forEach(f => { f._dupFlag = false; }));
 
   Object.entries(state.facturas).forEach(([pn, facs]) => {
     facs.forEach(f => {
       if (f.nro && f.nro !== '?') {
-        const k = f.nro.trim().toLowerCase();
+        const n = f.nro.trim().toLowerCase();
+        const rk = rutKey(f.rut||'');
+        const k = rk ? ('R' + rk + '|' + n) : ('P' + pn + '|' + n);
         if (!byNro[k]) byNro[k] = [];
         byNro[k].push({pn, f});
       }
       if (f.monto > 0 && f.emision) {
-        const k = f.monto + '|' + f.emision;
+        const k = pn + '|' + f.monto + '|' + f.emision;
         if (!byMonto[k]) byMonto[k] = [];
         byMonto[k].push({pn, f});
       }
       if (f.rut && f.monto > 0) {
-        const k = normRut(f.rut) + '|' + f.monto;
+        const k = rutKey(f.rut) + '|' + f.monto;
         if (!byRut[k]) byRut[k] = [];
         byRut[k].push({pn, f});
       }
     });
   });
 
-  // Flag duplicates by N°
-  Object.entries(byNro).forEach(([nro, items]) => {
+  Object.entries(byNro).forEach(([k, items]) => {
     if (items.length > 1) {
       items.forEach(({f}) => { f._dupFlag = true; });
-      dups.push(`🔁 N° ${nro}: ${items.map(i=>`${i.f.emision} en "${i.pn}" (${fmt(i.f.monto)})`).join(' — ')}`);
+      const nro = items[0].f.nro;
+      dups.push(`🔁 N° ${nro} (mismo RUT o mismo proveedor): ${items.map(i=>`${i.f.emision} "${i.pn}" (${fmt(i.f.monto)})`).join(' — ')}`);
     }
   });
-  // Flag duplicates by monto+fecha (same day same amount → very suspicious)
   Object.entries(byMonto).forEach(([k, items]) => {
-    if (items.length > 1 && !items.every(i => i.pn === items[0].pn)) {
-      items.forEach(({f}) => { f._dupFlag = true; });
-      const [monto, fecha] = k.split('|');
-      dups.push(`🔁 ${fmt(parseInt(monto))} el ${fecha}: ${items.map(i=>`N° ${i.f.nro} en "${i.pn}"`).join(' — ')}`);
-    }
-  });
-  // Flag by RUT+monto
-  Object.entries(byRut).forEach(([k, items]) => {
     if (items.length > 1) {
       items.forEach(({f}) => { f._dupFlag = true; });
-      const [rut, monto] = k.split('|');
-      dups.push(`🔁 RUT ${rut} · ${fmt(parseInt(monto))}: ${items.map(i=>`N° ${i.f.nro} en "${i.pn}"`).join(' — ')}`);
+      const segs = k.split('|');
+      const fecha = segs.pop();
+      const monto = segs.pop();
+      const pname = segs.join('|');
+      dups.push(`🔁 ${fmt(parseInt(monto,10))} el ${fecha} en "${pname}" (${items.length} veces)`);
+    }
+  });
+  Object.entries(byRut).forEach(([k, items]) => {
+    const pns = [...new Set(items.map(i => i.pn))];
+    if (items.length > 1 && pns.length > 1) {
+      items.forEach(({f}) => { f._dupFlag = true; });
+      const monto = k.slice(k.lastIndexOf('|') + 1);
+      dups.push(`🔁 Mismo RUT y monto ${fmt(parseInt(monto,10))} en varios proveedores: ${items.map(i=>`N° ${i.f.nro} "${i.pn}"`).join(' — ')}`);
     }
   });
 
@@ -8249,9 +8311,22 @@ function facAutoLearnRuts() {
   });
 }
 
-function facUnifyProvidersByRut() {
+// Copia el RUT del proveedor a facturas que vengan sin RUT (ayuda a unificar por mismo rutKey)
+function facSpreadProvRutToInvoices() {
   ensureProvRuts();
   if (!state.facturas) return;
+  Object.entries(state.facturas).forEach(([pn, facs]) => {
+    const pr = state.provRuts[pn];
+    if (!pr) return;
+    const n = normRut(pr);
+    (facs||[]).forEach(f => { if (!f.rut) f.rut = n; });
+  });
+}
+
+function facUnifyProvidersByRut() {
+  ensureProvRuts();
+  if (!state.facturas) return 0;
+  let mergedPairs = 0;
   const byRut = {};
   Object.entries(state.facturas).forEach(([pn, facs]) => {
     const fromProv = rutKey(state.provRuts[pn] || '');
@@ -8278,15 +8353,19 @@ function facUnifyProvidersByRut() {
     if (!state.facturas[canonical]) state.facturas[canonical] = [];
     provs.forEach(p => {
       if (p === canonical || !state.facturas[p]) return;
+      mergedPairs++;
       state.facturas[canonical] = [...state.facturas[canonical], ...state.facturas[p]];
       delete state.facturas[p];
       delete state.provRuts[p];
       if (_facCurrentProv === p) _facCurrentProv = canonical;
     });
-    state.provRuts[canonical] = normRut(state.provRuts[canonical] || rk);
-    state.rutMap[rk] = canonical;
+    const rkStr = String(rk);
+    state.provRuts[canonical] = normRut(state.provRuts[canonical] || rkStr);
+    const rkCan = rutKey(state.provRuts[canonical]);
+    if (rkCan) state.rutMap[rkCan] = canonical;
     (state.facturas[canonical]||[]).forEach(f => { if (f.rut) f.rut = normRut(f.rut); });
   });
+  return mergedPairs;
 }
 
 function facDismissWarning(type) {
@@ -8316,12 +8395,17 @@ function facNormalizeAndUnifyProviders() {
     (facs||[]).forEach(f => { if (f.rut) f.rut = normRut(f.rut); });
   });
   facAutoLearnRuts();
-  facUnifyProvidersByRut();
+  facSpreadProvRutToInvoices();
+  const n = facUnifyProvidersByRut();
   facRefreshWarnings();
   facRenderDashboard();
   if (_facCurrentProv) facRenderDetail();
   facCalcKpis();
-  notify('✅ Proveedores normalizados/unificados por RUT');
+  if (n > 0) {
+    notify(`✅ Unificación: ${n} proveedor(es) fusionado(s) por mismo RUT.`);
+  } else {
+    notify('ℹ️ No se fusionó ningún proveedor: hace falta el mismo RUT en facturas o en 🪪 del proveedor (si un nombre no tiene RUT, asígnalo y vuelve a unificar).');
+  }
 }
 
 // ── Detectar conflictos RUT ──
@@ -9773,11 +9857,11 @@ function _finishLogin() {
   document.getElementById('login-overlay').style.display = 'none';
   set('user-chip', '👤 ' + currentUser);
   try { localStorage.setItem('cerebrus_user', currentUser); } catch(e){}
-  // Acceso restringido: Alberto no ve Finanzas Sebas
-  if (currentUser === 'Alberto') {
-    document.body.classList.add('user-alberto');
+  // Finanzas Sebas: solo Diego y Sebastián
+  if (currentUser === 'Diego' || currentUser === 'Sebastián') {
+    document.body.classList.add('user-sebas-ok');
   } else {
-    document.body.classList.remove('user-alberto');
+    document.body.classList.remove('user-sebas-ok');
   }
   // Bodega: solo ve Inventario
   if (currentUser === 'Bodega') {
@@ -9821,6 +9905,8 @@ function _postLoadSetup() {
   if (!state.mercaderiaSemanasSimple)   state.mercaderiaSemanasSimple   = [];
   if (!state.pagosSemanales)            state.pagosSemanales            = {};
   if (!state.sacCargas)                 state.sacCargas                 = {};
+  if (!state.sacIngresos)               state.sacIngresos               = {};
+  if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.provDocumentos)             state.provDocumentos             = {};
@@ -9850,6 +9936,7 @@ function _postLoadSetup() {
     if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
     if (typeof facSemRender === 'function') facSemRender();
     iaLoadSavedKey();
+    if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
     setTimeout(wxFetch, 2000); // Fetch weather after load
     startAutoSave(); // Guardado automático cada 5 min
   }, 800);
@@ -10003,6 +10090,99 @@ function invHandleRestoreFile(file) {
     }
   };
   reader.readAsText(file);
+}
+
+function _backupDateTag() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
+function _backupBlobDownload(name, obj) {
+  const data = JSON.stringify(obj, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function _backupWriteToPickedFolder(dirHandle, fileName, obj) {
+  if (!dirHandle) return false;
+  try {
+    const sub = await dirHandle.getDirectoryHandle('respaldos rescates inventario', { create: true });
+    const handle = await sub.getFileHandle(fileName, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(obj, null, 2));
+    await writable.close();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function cereBackupNowAll() {
+  try {
+    const tag = _backupDateTag();
+    const payloadInv = {
+      meta:{type:'inventario', date:new Date().toISOString(), count:(state.inventario||[]).length},
+      inventario: state.inventario || [],
+      preciosProveedor: state.preciosProveedor || {},
+      catInventario: state.catInventario || [],
+      unidadesInventario: state.unidadesInventario || []
+    };
+    const payloadFac = {
+      meta:{type:'facturas', date:new Date().toISOString(), proveedores:Object.keys(state.facturas||{}).length},
+      facturas: state.facturas || {},
+      provRuts: state.provRuts || {},
+      rutMap: state.rutMap || {}
+    };
+    const payloadState = {
+      meta:{type:'estado_completo', date:new Date().toISOString(), user: currentUser || ''},
+      state: state,
+      nid: _nid
+    };
+
+    const n1 = `rescate-inventario-${tag}.json`;
+    const n2 = `rescate-facturas-${tag}.json`;
+    const n3 = `rescate-estado-completo-${tag}.json`;
+
+    const useFolder = confirm('¿Guardar respaldos en carpeta "respaldos rescates inventario"?\n\nAceptar = elegir carpeta y guardar ahí.\nCancelar = descargar JSON al navegador.');
+    if (useFolder && window.showDirectoryPicker) {
+      const root = await window.showDirectoryPicker({ mode: 'readwrite' });
+      const ok1 = await _backupWriteToPickedFolder(root, n1, payloadInv);
+      const ok2 = await _backupWriteToPickedFolder(root, n2, payloadFac);
+      const ok3 = await _backupWriteToPickedFolder(root, n3, payloadState);
+      if (ok1 && ok2 && ok3) {
+        try { localStorage.setItem('cerebrus_last_weekly_backup', String(Date.now())); } catch(e){}
+        notify('✅ Respaldos guardados en carpeta "respaldos rescates inventario"');
+        return;
+      }
+    }
+    _backupBlobDownload(n1, payloadInv);
+    _backupBlobDownload(n2, payloadFac);
+    _backupBlobDownload(n3, payloadState);
+    try { localStorage.setItem('cerebrus_last_weekly_backup', String(Date.now())); } catch(e){}
+    notify('✅ Respaldos JSON descargados');
+  } catch (e) {
+    notify('⚠ Error creando respaldos: ' + (e.message || e));
+  }
+}
+
+function cereBackupWeeklyReminder() {
+  try {
+    const last = parseInt(localStorage.getItem('cerebrus_last_weekly_backup') || '0', 10) || 0;
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    if (!last || (Date.now() - last) > weekMs) {
+      setTimeout(() => {
+        if (confirm('Han pasado más de 7 días sin respaldo JSON.\n¿Crear respaldos de Inventario, Facturas y Estado completo ahora?')) {
+          cereBackupNowAll();
+        }
+      }, 1200);
+    }
+  } catch(e){}
 }
 
 let _invCatFilter = 'todas';
@@ -11667,6 +11847,12 @@ function archExecute() {
         delete state.sacCargas[w];
       }
     });
+    Object.keys(state.sacIngresos||{}).forEach(w => {
+      if (parseInt(w) !== currentW) {
+        totalRemoved += (state.sacIngresos[w]||[]).length;
+        delete state.sacIngresos[w];
+      }
+    });
   }
 
   // 5. Facturas semanales pagadas
@@ -11715,7 +11901,7 @@ function archCheckSize() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
+    'sacCargas','sacIngresos','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
   keys.forEach(k => {
     if (state[k]) parts[k] = JSON.stringify(state[k]).length;
@@ -13157,14 +13343,13 @@ function sebInit() {
 }
 
 let _sebSubtab = 'resumen';
-let _sebCompFilter = 'pendientes';
+let _sebCompFilter = 'todos';
 let _sebCompSearch = '';
 let _sebCompSelId  = null;
 
 function sebRender() {
   const el = document.getElementById('sebas-content'); if (!el) return;
-  // Access check
-  if (currentUser === 'Alberto') {
+  if (!sebasModuleAllowed()) {
     el.innerHTML = `<div class="seb-locked">
       <div class="seb-locked-icon">🔒</div>
       <div style="font-size:16px;font-weight:700;margin-bottom:8px;">Acceso restringido</div>
@@ -13189,7 +13374,7 @@ function sebRender() {
 function sebSubTab(tab) {
   _sebSubtab = tab;
   if (tab === 'compromisos') {
-    if (!_sebCompFilter) _sebCompFilter = 'pendientes';
+    if (!_sebCompFilter) _sebCompFilter = 'todos';
     if (_sebCompSearch == null) _sebCompSearch = '';
   }
   document.querySelectorAll('.seb-stab').forEach(b => b.classList.toggle('active', b.textContent.trim().includes(
@@ -13251,6 +13436,12 @@ function sebHtmlResumen(sf) {
         Disponible total: ${fmt(totalDisp)} · Deuda bancaria: ${fmt(totalDeuda)} · Compromisos obras: ${fmt(compActivos)}
       </div>
     </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);">
+    <div style="font-size:11px;color:#64748b;max-width:460px;line-height:1.45;">
+      <span style="font-weight:700;color:var(--primary);">Importar pack FileMaker</span> — selecciona los cinco <code style="font-size:10px;">.tab</code> (Cuentas corrientes, Tarjetas, Líneas de crédito, Gastos fijos, Export FM). Se reemplazan cuentas, tarjetas, líneas, gastos fijos y compromisos (puedes deshacer).
+    </div>
+    <button type="button" class="fac-btn" onclick="sebPickFmPack()" style="flex-shrink:0;">📥 Elegir archivos .tab</button>
   </div>
   <div class="seb-kpi-grid">
     <div class="seb-kpi cc"><div class="seb-kpi-label">🏦 Cuentas corrientes</div>
@@ -13527,7 +13718,7 @@ function sebDelLC(idx) {
   pushUndo(); sf.lineas.splice(idx,1); sebRenderPanel();
 }
 
-// ── COMPROMISOS ──
+// ── COMPROMISOS (misma línea visual que Créditos informales: KPIs + filtros + tabla + modal abono) ──
 function sebHtmlCompromisos(sf) {
   const activos   = sf.compromisos.filter(c=>c.estado==='activo');
   const creditos  = sf.compromisos.filter(c=>c.estado==='credito');
@@ -13552,85 +13743,121 @@ function sebHtmlCompromisos(sf) {
   if (!_sebCompSelId && visible.length) _sebCompSelId = visible[0].id;
   const sel = visible.find(c=>c.id===_sebCompSelId) || null;
 
-  const listHtml = visible.length ? visible.map(c => {
-    const saldoCol = c.saldo>0?'var(--danger)':c.saldo<0?'var(--success)':'#94a3b8';
-    const tagCls = c.estado==='activo'?'seb-tag-activo':c.estado==='credito'?'seb-tag-credito':'seb-tag-pagado';
-    const tagTxt = c.estado==='activo'?'Pendiente':c.estado==='credito'?'Crédito':'Pagado';
-    return `<div class="seb-comp-item ${_sebCompSelId===c.id?'sel':''}" onclick="sebCompSelect('${c.id}')">
-      <div class="seb-comp-item-left">
-        <div class="seb-comp-nro">${esc(c.nro||'')}</div>
-        <div class="seb-comp-emisor">${esc(c.emisor||'—')}</div>
-        <div class="seb-comp-concepto">${esc(c.concepto||'Sin concepto')}</div>
-      </div>
-      <div class="seb-comp-item-right">
-        <span class="seb-tag ${tagCls}">${tagTxt}</span>
-        <div class="seb-comp-saldo" style="color:${saldoCol};">${fmt(Math.abs(c.saldo||0))}</div>
-      </div>
-    </div>`;
-  }).join('') : `<div class="seb-comp-empty">Sin compromisos para este filtro.</div>`;
-
-  let detailHtml = `<div class="seb-comp-empty">Selecciona un compromiso para ver detalle.</div>`;
+  let detalleHtml = '';
   if (sel) {
     const saldoCol = sel.saldo>0?'var(--danger)':sel.saldo<0?'var(--success)':'#94a3b8';
     const tagCls = sel.estado==='activo'?'seb-tag-activo':sel.estado==='credito'?'seb-tag-credito':'seb-tag-pagado';
     const tagTxt = sel.estado==='activo'?'Pendiente':sel.estado==='credito'?'Crédito a favor':'Pagado';
     const pagosHist = (sel.pagos||[]).slice().reverse();
-    detailHtml = `
-      <div class="seb-comp-detail-head">
-        <div>
-          <div class="seb-comp-detail-title">${esc(sel.emisor||'—')} · ${esc(sel.concepto||sel.nro||'Compromiso')}</div>
-          <div class="seb-comp-detail-sub">Código ${esc(sel.nro||'—')} · Próximo pago: ${esc(sel.fechaProx||'—')}</div>
-        </div>
-        <span class="seb-tag ${tagCls}" style="font-size:9px;">${tagTxt}</span>
+    const saldoStr = sel.saldo<0 ? `−${fmt(Math.abs(sel.saldo||0))} a favor` : fmt(Math.abs(sel.saldo||0));
+    detalleHtml = `
+    <div class="cred-table-wrap" style="margin-top:4px;">
+      <div style="font-size:12px;font-weight:700;padding:12px 14px;border-bottom:1px solid var(--border);">📎 Detalle · ${esc(sel.emisor||'—')}</div>
+      <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;">
+        <div><div style="font-size:9px;font-weight:700;color:#9aacb8;">TOTAL</div><div style="font-size:15px;font-weight:800;">${fmt(sel.total||0)}</div></div>
+        <div><div style="font-size:9px;font-weight:700;color:#9aacb8;">PAGADO</div><div style="font-size:15px;font-weight:800;color:var(--success);">${fmt(sel.pagado||0)}</div></div>
+        <div><div style="font-size:9px;font-weight:700;color:#9aacb8;">SALDO</div><div style="font-size:15px;font-weight:800;color:${saldoCol};">${saldoStr}</div></div>
+        <div><div style="font-size:9px;font-weight:700;color:#9aacb8;">PRÓX. PAGO</div><div style="font-size:12px;font-weight:600;">${esc(sel.fechaProx||'—')}</div></div>
       </div>
-      <div class="seb-comp-kpis">
-        <div class="seb-comp-kpi"><div class="lbl">Total</div><div class="val">${fmt(sel.total||0)}</div></div>
-        <div class="seb-comp-kpi"><div class="lbl">Pagado</div><div class="val" style="color:var(--success);">${fmt(sel.pagado||0)}</div></div>
-        <div class="seb-comp-kpi"><div class="lbl">Saldo</div><div class="val" style="color:${saldoCol};">${fmt(Math.abs(sel.saldo||0))}</div></div>
-      </div>
-      <div class="seb-comp-actions">
-        ${sel.estado!=='pagado'&&sel.saldo>0?`<button class="seb-btn-accion" onclick="sebPagoAbrir('comp','${sel.id}')" style="border-color:var(--accent2);color:var(--accent2);font-weight:700;">💳 Abonar</button>`:''}
+      <div style="padding:0 16px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+        <span class="seb-tag ${tagCls}">${tagTxt}</span>
+        ${Math.max(0,sel.saldo||0)>0?`<button class="btn-pagar" onclick="sebPagoAbrir('comp','${sel.id}')">💸 Abonar</button>`:''}
         <button onclick="sebToggleCompEstado('${sel.id}')" class="seb-btn-accion" style="border-color:var(--success);color:var(--success);font-weight:700;">${sel.estado==='pagado'?'↩ Reabrir':'✓ Marcar pagado'}</button>
         <button class="seb-btn-accion seb-btn-del" onclick="sebDelComp('${sel.id}')" title="Eliminar">✕ Eliminar</button>
       </div>
-      <div class="seb-comp-hist">
-        <div class="seb-comp-hist-title">Historial de abonos</div>
+      <div style="padding:0 16px 16px;border-top:1px solid var(--border);">
+        <div style="font-size:9px;font-weight:700;color:#9aacb8;text-transform:uppercase;padding:10px 0 6px;">Historial de abonos</div>
         ${pagosHist.length
           ? pagosHist.map(p=>`<div class="seb-hist-item"><div><span style="font-weight:600;">${esc(p.fecha||'')}</span>${p.nota?`<span style="color:#94a3b8;margin-left:6px;">${esc(p.nota)}</span>`:''}</div><span style="font-weight:800;color:var(--success);">−${fmt(p.monto)}</span></div>`).join('')
           : `<div style="font-size:11px;color:#94a3b8;">Sin abonos registrados.</div>`
         }
-      </div>`;
+      </div>
+    </div>`;
   }
 
+  const tbodyRows = !visible.length
+    ? `<tr><td colspan="10" style="text-align:center;color:#9aacb8;padding:28px 12px;">No hay compromisos en esta categoría.</td></tr>`
+    : visible.map(c => {
+        const paid = c.estado === 'pagado';
+        const saldoPend = Math.max(0, c.saldo||0);
+        const tot = c.total||0;
+        const progPct = tot > 0 ? Math.min(100, Math.round(((c.pagado||0)/tot)*100)) : 0;
+        const barColor = paid ? 'var(--success)' : progPct >= 90 ? 'var(--accent)' : '#2980b9';
+        const saldoTxt = saldoPend > 0
+          ? `<span style="color:var(--danger);font-weight:700;">${fmt(saldoPend)}</span>`
+          : (c.saldo < 0
+              ? `<span style="color:var(--success);font-weight:700;">${fmt(Math.abs(c.saldo))} a favor</span>`
+              : `<span style="color:#94a3b8;">$0</span>`);
+        const badge = paid
+          ? '<span class="cred-badge paid">✓ Pagado</span>'
+          : c.estado === 'credito'
+            ? '<span class="cred-badge" style="background:#eafaf1;color:var(--success);">Saldo a favor</span>'
+            : `<span class="cred-badge active">Pendiente</span>`;
+        const pagarBtn = saldoPend > 0
+          ? `<button class="btn-pagar" onclick="event.stopPropagation();sebPagoAbrir('comp','${c.id}')">💸 Abonar</button>`
+          : '';
+        const trCls = ((paid ? 'cred-paid ' : '') + (_sebCompSelId===c.id ? 'seb-comp-sel' : '')).trim();
+        return `<tr class="${trCls}" onclick="sebCompSelect('${c.id}')">
+          <td><span class="cred-nro">${esc(c.nro||'—')}</span></td>
+          <td style="font-size:11px;font-weight:600;">${esc(c.emisor||'—')}</td>
+          <td style="font-size:11px;color:#64748b;max-width:220px;overflow:hidden;text-overflow:ellipsis;">${esc(c.concepto||'—')}</td>
+          <td>${fmt(c.total||0)}</td>
+          <td style="color:var(--success);">${fmt(c.pagado||0)}</td>
+          <td>${saldoTxt}</td>
+          <td>
+            <div class="cred-bar-wrap">
+              <div class="cred-bar-track"><div class="cred-bar-fill" style="width:${progPct}%;background:${barColor};"></div></div>
+              <span style="font-size:10px;color:#9aacb8;min-width:28px;text-align:right;">${progPct}%</span>
+            </div>
+          </td>
+          <td style="font-size:10px;color:#9aacb8;">${esc(c.fechaProx||'—')}</td>
+          <td>${badge}</td>
+          <td>${pagarBtn}</td>
+        </tr>`;
+      }).join('');
+
   return `
-  <div class="seb-kpi-grid" style="grid-template-columns:repeat(3,1fr);">
-    <div class="seb-kpi comp"><div class="seb-kpi-label">💰 Total invertido obras</div>
-      <div class="seb-kpi-val">${fmt(totalInv)}</div></div>
-    <div class="seb-kpi" style="border-left:4px solid var(--danger);"><div class="seb-kpi-label">🔴 Saldo pendiente</div>
-      <div class="seb-kpi-val" style="color:var(--danger)">${fmt(totalPend)}</div></div>
-    <div class="seb-kpi" style="border-left:4px solid var(--success);"><div class="seb-kpi-label">🟢 Crédito a favor</div>
-      <div class="seb-kpi-val" style="color:var(--success)">${fmt(totalCred)}</div></div>
-  </div>
-  <div class="seb-comp-layout">
-    <div class="seb-comp-list-wrap">
-      <div class="seb-comp-list-head">
-        <input id="seb-comp-search" class="seb-comp-search" placeholder="Buscar compromiso..." value="${esc(_sebCompSearch||'')}" oninput="sebCompSearch(this.value)">
-        <button class="seb-btn-accion" onclick="sebShowFormComp()">+ Agregar</button>
-      </div>
-      <div class="seb-comp-list-head" style="padding-top:8px;">
-        <button class="seb-comp-chip ${_sebCompFilter==='pendientes'?'active':''}" onclick="sebCompFilter('pendientes')">Pendientes</button>
-        <button class="seb-comp-chip ${_sebCompFilter==='activos'?'active':''}" onclick="sebCompFilter('activos')">Activos</button>
-        <button class="seb-comp-chip ${_sebCompFilter==='creditos'?'active':''}" onclick="sebCompFilter('creditos')">Créditos</button>
-        <button class="seb-comp-chip ${_sebCompFilter==='pagados'?'active':''}" onclick="sebCompFilter('pagados')">Pagados</button>
-        <button class="seb-comp-chip ${_sebCompFilter==='todos'?'active':''}" onclick="sebCompFilter('todos')">Todos</button>
-      </div>
-      <div class="seb-comp-list">${listHtml}</div>
+  <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:var(--primary);">🔨 Compromisos y obras</div>
+  <p style="font-size:11px;color:#9aacb8;margin:0 0 16px;line-height:1.5;">Misma idea que <b>Créditos informales</b>: tabla con montos y barra de avance; <b>Abonar</b> abre el modal de pago (como «Pagar» en créditos). <b>Import TAB/CSV:</b> primera fila = títulos. Reconoce columnas tipo FileMaker: <b>Numero, emisor, Monto, numero de cuota, fecha, comentario</b> (y otras: Total, Pagado, Saldo, etc.).</p>
+
+  <div class="cred-kpi-grid">
+    <div class="cred-kpi" style="border-left-color:var(--warning);">
+      <div class="cred-kpi-label">💰 Total invertido (obras)</div>
+      <div class="cred-kpi-val" style="color:var(--warning);">${fmt(totalInv)}</div>
+      <div class="cred-kpi-sub">${sf.compromisos.length} registros</div>
     </div>
-    <div class="seb-comp-detail">${detailHtml}</div>
+    <div class="cred-kpi" style="border-left-color:var(--danger);">
+      <div class="cred-kpi-label">🔴 Saldo pendiente</div>
+      <div class="cred-kpi-val" style="color:var(--danger);">${fmt(totalPend)}</div>
+      <div class="cred-kpi-sub">${activos.length} pendiente${activos.length!==1?'s':''}</div>
+    </div>
+    <div class="cred-kpi" style="border-left-color:var(--success);">
+      <div class="cred-kpi-label">🟢 Crédito a favor</div>
+      <div class="cred-kpi-val" style="color:var(--success);">${fmt(totalCred)}</div>
+      <div class="cred-kpi-sub">${creditos.length} ítem${creditos.length!==1?'s':''}</div>
+    </div>
+    <div class="cred-kpi" style="border-left-color:var(--accent);">
+      <div class="cred-kpi-label">📋 Estados</div>
+      <div class="cred-kpi-val" style="color:var(--accent);">${activos.length+creditos.length}</div>
+      <div class="cred-kpi-sub">${pagados.length} pagado${pagados.length!==1?'s':''}</div>
+    </div>
   </div>
-  <div class="seb-add-form" id="seb-form-comp">
-    <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:10px;">+ Nuevo compromiso</div>
-    <div class="seb-add-form-grid">
+
+  <div class="cred-filter">
+    <input type="text" class="fac-search" id="seb-comp-search" placeholder="Buscar por código, emisor, concepto…" value="${esc(_sebCompSearch||'')}" oninput="sebCompSearch(this.value)" style="max-width:280px;">
+    <button class="cred-filter-btn ${_sebCompFilter==='todos'?'active':''}"      onclick="sebCompFilter('todos')">Todos</button>
+    <button class="cred-filter-btn ${_sebCompFilter==='pendientes'?'active':''}" onclick="sebCompFilter('pendientes')">Pendientes</button>
+    <button class="cred-filter-btn ${_sebCompFilter==='activos'?'active':''}" onclick="sebCompFilter('activos')">Activos</button>
+    <button class="cred-filter-btn ${_sebCompFilter==='creditos'?'active':''}" onclick="sebCompFilter('creditos')">Créditos</button>
+    <button class="cred-filter-btn ${_sebCompFilter==='pagados'?'active':''}" onclick="sebCompFilter('pagados')">Pagados</button>
+    <button class="fac-btn" type="button" onclick="sebCompTsvPick('append')" style="font-size:10px;padding:6px 10px;margin-bottom:0;">📥 TAB/CSV añadir</button>
+    <button class="fac-btn" type="button" onclick="sebCompTsvPick('replace')" style="font-size:10px;padding:6px 10px;margin-bottom:0;">📥 TAB/CSV reemplazar</button>
+    <button class="btn-nueva-cred" onclick="sebShowFormComp()" style="margin-left:auto;margin-bottom:0;">+ Nuevo compromiso</button>
+  </div>
+
+  <div class="cred-nuevo-form" id="seb-form-comp">
+    <h3>➕ Registrar nuevo compromiso</h3>
+    <div class="cred-nuevo-grid">
       <div><label>N° / Código</label><input type="text" id="sco-nro" placeholder="Ej: B0007"></div>
       <div><label>Emisor</label><input type="text" id="sco-emisor" placeholder="Ej: Bezanilla"></div>
       <div><label>Concepto</label><input type="text" id="sco-concepto" placeholder="Descripción"></div>
@@ -13640,14 +13867,34 @@ function sebHtmlCompromisos(sf) {
       <div><label>Nota</label><input type="text" id="sco-nota" placeholder="Observación"></div>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="fac-btn primary" onclick="sebAddComp()" style="font-size:11px;">💾 Agregar</button>
-      <button class="fac-btn" onclick="document.getElementById('seb-form-comp').classList.remove('show')" style="font-size:11px;">Cancelar</button>
+      <button class="btn-nueva-cred" onclick="sebAddComp()" style="margin-bottom:0;">💾 Guardar</button>
+      <button onclick="sebShowFormComp(false)" style="background:none;border:1px solid var(--border);border-radius:6px;padding:8px 14px;font-size:12px;cursor:pointer;font-family:inherit;">Cancelar</button>
     </div>
-  </div>`;
+  </div>
+
+  <div class="cred-table-wrap seb-comp-table-wrap">
+    <table class="cred-table">
+      <thead><tr>
+        <th>Nro</th>
+        <th>Emisor</th>
+        <th>Concepto</th>
+        <th>Total</th>
+        <th>Pagado</th>
+        <th>Saldo</th>
+        <th>Progreso</th>
+        <th>Próx. pago</th>
+        <th>Estado</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${tbodyRows}</tbody>
+    </table>
+  </div>
+
+  ${detalleHtml}`;
 }
 
 function sebCompFilter(mode) {
-  _sebCompFilter = mode || 'pendientes';
+  _sebCompFilter = mode || 'todos';
   sebRenderPanel();
 }
 function sebCompSearch(val) {
@@ -13659,9 +13906,13 @@ function sebCompSelect(id) {
   sebRenderPanel();
 }
 
-function sebShowFormComp() {
+function sebShowFormComp(force) {
   const f = document.getElementById('seb-form-comp');
-  if (f) { f.classList.toggle('show'); if(f.classList.contains('show')) document.getElementById('sco-emisor').focus(); }
+  if (!f) return;
+  if (force === false) { f.classList.remove('open'); return; }
+  if (force === true) { f.classList.add('open'); const em = document.getElementById('sco-emisor'); if (em) em.focus(); return; }
+  f.classList.toggle('open');
+  if (f.classList.contains('open')) { const em = document.getElementById('sco-emisor'); if (em) em.focus(); }
 }
 
 function sebTogglePagados() {
@@ -13679,20 +13930,412 @@ function sebAddComp() {
   const pagado  = parseInt((document.getElementById('sco-pagado').value||'0').replace(/[^\d]/g,''),10)||0;
   pushUndo();
   const id = 'sco_'+Date.now();
+  const saldo = total - pagado;
+  let estado = 'activo';
+  if (saldo < 0) estado = 'credito';
+  else if (saldo === 0) estado = 'pagado';
   sebInit().compromisos.unshift({
     id,
     nro:       document.getElementById('sco-nro').value||'',
     emisor,
     concepto:  document.getElementById('sco-concepto').value||'',
-    total, pagado, saldo: total-pagado,
+    total, pagado, saldo,
     fechaProx: document.getElementById('sco-fecha').value||'',
     nota:      document.getElementById('sco-nota').value||'',
-    estado:    total<=pagado?'pagado':'activo'
+    estado
   });
   _sebCompSelId = id;
-  _sebCompFilter = 'pendientes';
+  _sebCompFilter = 'todos';
   _sebCompSearch = '';
+  const fc = document.getElementById('seb-form-comp');
+  if (fc) fc.classList.remove('open');
   sebRenderPanel(); notify('✅ Compromiso agregado');
+}
+
+let _sebCompTsvMode = 'append';
+
+function sebNormKeySeb(s) {
+  return String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'');
+}
+
+function sebDetectSep(line) {
+  const tab = (line.match(/\t/g) || []).length;
+  const semi = (line.match(/;/g) || []).length;
+  const coma = (line.match(/,/g) || []).length;
+  if (tab >= semi && tab >= coma && tab > 0) return '\t';
+  if (semi >= coma && semi > 0) return ';';
+  return ',';
+}
+
+function sebSplitDataLine(line, sep) {
+  if (sep !== ',') return line.split(sep).map(s => s.trim().replace(/^"|"$/g,''));
+  const out = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; continue; }
+    if (!inQ && c === ',') { out.push(cur.trim()); cur = ''; continue; }
+    cur += c;
+  }
+  out.push(cur.trim());
+  return out.map(s => s.replace(/^"|"$/g,''));
+}
+
+function sebFindColSeb(heads, candidates) {
+  const norm = heads.map(sebNormKeySeb);
+  for (const c of candidates) {
+    const nk = sebNormKeySeb(c);
+    const i = norm.indexOf(nk);
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+function sebParseMoneySeb(s) {
+  const n = parseInt(String(s||'').replace(/[^\d-]/g,''),10);
+  return isNaN(n) ? 0 : n;
+}
+
+function sebParseMoneyFm(s) {
+  const t = String(s || '').trim();
+  if (!t || t === '?' || t === '—') return 0;
+  const neg = t.startsWith('-') || /^\(-/.test(t);
+  const n = parseInt(t.replace(/[^\d]/g, ''), 10) || 0;
+  return neg ? -n : n;
+}
+
+function sebNormBanco(name) {
+  let b = String(name || '').trim();
+  if (/itaü|itau/i.test(b)) b = 'Itaú';
+  return b;
+}
+
+function sebReadFileText(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result || ''));
+    r.onerror = () => reject(r.error || new Error('read'));
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+function sebFmClassifyName(name) {
+  const n = String(name || '').toLowerCase();
+  if (n.includes('export')) return 'compromisos';
+  if (n.includes('gasto')) return 'gastos';
+  if (n.includes('cuenta') && n.includes('corriente')) return 'cuentas';
+  if (n.includes('tarjeta')) return 'tarjetas';
+  if (n.includes('linea')) return 'lineas';
+  return '';
+}
+
+function sebFmGuessGastoCat(item) {
+  const t = String(item || '').toLowerCase();
+  if (/colegio|educaci|escuela/.test(t)) return 'Educación';
+  if (/credito|crédito|caja|forum|itau|itaú|santander/.test(t)) return 'Créditos';
+  if (/porsche|ford|smarty|auto|seguro/.test(t)) return 'Autos';
+  if (/mesada|familia|mama|mamá|paty|erno|priscila|alvaro/.test(t)) return 'Familia';
+  if (/agua|luz|gas|comun|gastos comunes|starlink|telefono|teléfono/.test(t)) return 'Hogar';
+  return 'Otros';
+}
+
+function sebParseCuentasFmTab(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  const ts = Date.now();
+  const out = [];
+  lines.forEach((line, li) => {
+    const c = line.split('\t');
+    const banco = (c[1] || '').trim();
+    if (!banco) return;
+    const saldo = sebParseMoneyFm(c[0]);
+    if (!c[0] && saldo === 0) return;
+    out.push({ id: 'scc_fm_' + ts + '_' + li, banco: sebNormBanco(banco), saldo });
+  });
+  return out;
+}
+
+function sebParseTarjetasFmTab(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  const ts = Date.now();
+  const out = [];
+  lines.forEach((line, li) => {
+    const c = line.split('\t');
+    if (c.length < 16) return;
+    const banco = (c[8] || '').trim();
+    const tipo = (c[15] || '').trim();
+    if (!banco || !tipo) return;
+    out.push({
+      id: 'stc_fm_' + ts + '_' + li,
+      banco: sebNormBanco(banco),
+      tipo,
+      aprobado: sebParseMoneyFm(c[13]),
+      deuda: sebParseMoneyFm(c[14]),
+      pagodia: parseInt(String(c[12] || '10').replace(/\D/g, ''), 10) || 10,
+      nota: (c[10] || '').trim()
+    });
+  });
+  return out;
+}
+
+function sebParseLineasFmTab(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  const ts = Date.now();
+  const out = [];
+  lines.forEach((line, li) => {
+    const c = line.split('\t');
+    const banco = (c[1] || '').trim();
+    if (!banco) return;
+    out.push({
+      id: 'slc_fm_' + ts + '_' + li,
+      banco: sebNormBanco(banco),
+      aprobado: sebParseMoneyFm(c[0]),
+      deuda: sebParseMoneyFm(c[4])
+    });
+  });
+  return out;
+}
+
+function sebParseGastosFijosFmTab(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  const ts = Date.now();
+  const out = [];
+  lines.forEach((line, li) => {
+    const cells = line.split('\t').map(x => String(x || '').trim().replace(/\u000b/g, ''));
+    const moneys = [];
+    cells.forEach(cell => {
+      if (/\$[\d\.]+/.test(cell) || /^-?\$?[\d\.]+$/.test(cell.replace(/\./g, ''))) moneys.push(sebParseMoneyFm(cell));
+    });
+    if (!moneys.length) return;
+    const valor = moneys[moneys.length - 1];
+    let dia = 1;
+    for (const cell of cells) {
+      if (/^\d{1,2}$/.test(cell)) { dia = parseInt(cell, 10) || 1; break; }
+    }
+    let item = '';
+    for (const cell of cells) {
+      if (!cell || /^\$/.test(cell) || /^\d{1,2}$/.test(cell)) continue;
+      if (/^-?\$?[\d\.\s]+$/.test(cell) && !/[a-záéíóúñ]/i.test(cell)) continue;
+      if (cell.length >= 2) { item = cell; break; }
+    }
+    if (!item || !valor) return;
+    out.push({ id: 'sgf_fm_' + ts + '_' + li, cat: sebFmGuessGastoCat(item), item, valor, dia });
+  });
+  return out;
+}
+
+function sebFmParseCompromisosExport(text) {
+  const nroRe = /^[A-Z]\d{4}[a-z]?$/;
+  const fechaRe = /\b(\d{2}-\d{2}-\d{4})\b/;
+  const lines = text.split(/\r?\n/);
+  const baseTs = Date.now();
+  const seen = new Set();
+  const rows = [];
+  let rowIdx = 0;
+
+  for (const line of lines) {
+    const cells = line.split('\t').map(c => String(c || '').trim());
+    for (let i = 0; i < cells.length; i++) {
+      if (!nroRe.test(cells[i])) continue;
+      const emisor = (cells[i - 1] || '').trim();
+      if (!emisor || /^\$|^\d{2}-\d{2}-\d{4}$/.test(emisor)) continue;
+
+      let j = i + 1;
+      const vals = [];
+      while (j < cells.length && vals.length < 3) {
+        const s = (cells[j] || '').trim();
+        j++;
+        if (s === '') continue;
+        if (s === '?' || s === '—') { vals.push(0); continue; }
+        if (s.startsWith('$') || s.startsWith('-') || /^-?\d/.test(s.replace(/\./g, ''))) vals.push(sebParseMoneyFm(s));
+        else break;
+      }
+      if (vals.length < 3) continue;
+
+      const a = vals[0], b = vals[1], c = vals[2];
+      let total, pagado, saldo;
+      if (a > 0 && b > 0 && c > 0 && a < b && b < c) {
+        total = c; pagado = b; saldo = a;
+      } else if (a === b && a > 1e6 && c > 0 && c < a * 0.2) {
+        total = a; pagado = 0; saldo = a;
+      } else if (a === b && a > 1e6) {
+        total = a; pagado = 0; saldo = c;
+      } else {
+        total = a; pagado = b; saldo = c;
+      }
+
+      const c1 = (cells[1] || '').trim();
+      const c0 = (cells[0] || '').trim();
+      let concepto = emisor;
+      if (c1.length > 4 && !/^\d{1,3}$/.test(c1) && !c1.startsWith('$')) concepto = c1;
+      else if (c0.length > 6 && !/^\$/.test(c0)) concepto = c0.slice(0, 200);
+      if (concepto.length < 5 && c0.length > 10) concepto = c0.slice(0, 200);
+
+      const rest = cells.slice(i).join('\t');
+      const fm = rest.match(fechaRe);
+      const fechaProx = fm ? fm[1] : '';
+
+      const key = emisor + '|' + cells[i];
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      let estado = 'activo';
+      if (saldo < 0) estado = 'credito';
+      else if (saldo === 0 && (total > 0 || pagado > 0)) estado = 'pagado';
+
+      rows.push({
+        id: 'sco_fm_' + baseTs + '_' + (++rowIdx),
+        nro: cells[i], emisor, concepto, total, pagado, saldo,
+        fechaProx, estado, nota: '', pagos: []
+      });
+      break;
+    }
+  }
+  return rows;
+}
+
+function sebPickFmPack() {
+  if (!sebasModuleAllowed()) { notify('🔐 Solo Sebastián y Diego'); return; }
+  const inp = document.getElementById('seb-fm-pack-file');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+async function sebHandleFmPackFiles(fileList) {
+  if (!sebasModuleAllowed()) { notify('🔐 Solo Sebastián y Diego'); return; }
+  const files = fileList ? Array.from(fileList) : [];
+  if (!files.length) return;
+  if (!confirm('¿Reemplazar datos de Finanzas Sebas con los archivos seleccionados?\n\nSolo se actualizan las secciones cuyo archivo reconoce el nombre (p. ej. «Export» → compromisos).\n\nCancelar = no hacer nada.')) return;
+
+  const dict = { cuentas: null, tarjetas: null, lineas: null, gastos: null, compromisos: null };
+  const unknown = [];
+  try {
+  for (const f of files) {
+    const kind = sebFmClassifyName(f.name);
+    if (!kind) { unknown.push(f.name); continue; }
+    let text;
+    try {
+      text = await sebReadFileText(f);
+    } catch (e) {
+      notify('⚠ No se pudo leer: ' + f.name); return;
+    }
+    if (kind === 'cuentas') dict.cuentas = sebParseCuentasFmTab(text);
+    else if (kind === 'tarjetas') dict.tarjetas = sebParseTarjetasFmTab(text);
+    else if (kind === 'lineas') dict.lineas = sebParseLineasFmTab(text);
+    else if (kind === 'gastos') dict.gastos = sebParseGastosFijosFmTab(text);
+    else if (kind === 'compromisos') dict.compromisos = sebFmParseCompromisosExport(text);
+  }
+  const hasRows = (k) => dict[k] && dict[k].length;
+  const hasData = hasRows('cuentas') || hasRows('tarjetas') || hasRows('lineas') || hasRows('gastos') || hasRows('compromisos');
+  if (!hasData) {
+    if (unknown.length) notify('⚠ Sin clasificar (nombre): ' + unknown.join(', ') + '. Ajusta el nombre del archivo (p. ej. «Export», «Gastos», «Tarjetas»…).');
+    else notify('⚠ No se importó ninguna sección (archivos vacíos o sin filas válidas).');
+    return;
+  }
+  if (unknown.length) notify('⚠ Ignorados (nombre no reconocido): ' + unknown.join(', '));
+
+  const applied = [];
+  pushUndo();
+  const sf = sebInit();
+  if (hasRows('cuentas')) { sf.cuentas = dict.cuentas; applied.push('cuentas'); }
+  if (hasRows('tarjetas')) { sf.tarjetas = dict.tarjetas; applied.push('tarjetas'); }
+  if (hasRows('lineas')) { sf.lineas = dict.lineas; applied.push('líneas'); }
+  if (hasRows('gastos')) { sf.gastosFijos = dict.gastos; applied.push('gastos fijos'); }
+  if (hasRows('compromisos')) { sf.compromisos = dict.compromisos; applied.push('compromisos'); }
+
+  _sebCompSelId = null;
+  sebRenderPanel();
+  if (typeof saveState === 'function') saveState('Importación FileMaker Sebas', true);
+  notify('✅ Actualizado: ' + applied.join(', '));
+  } catch (e) {
+    notify('⚠ Error importación: ' + (e && e.message ? e.message : e));
+  }
+}
+
+function sebImportCompromisosFromText(text, mode) {
+  if (!sebasModuleAllowed()) { notify('🔐 Solo Sebastián y Diego'); return; }
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length);
+  if (lines.length < 2) { notify('⚠ El archivo debe tener una fila de títulos y al menos una fila de datos'); return; }
+  const sep = sebDetectSep(lines[0]);
+  const heads = sebSplitDataLine(lines[0], sep);
+  const H = (aliases) => sebFindColSeb(heads, aliases);
+  const ix = {
+    nro: H(['nro','codigo','numero','num','n°','code','id']),
+    emisor: H(['emisor','proveedor','contratista','acreedor']),
+    concepto: H(['concepto','descripcion','detalle','obra','item','glosa']),
+    cuota: H(['numerodecuota','numerocuota','cuota','ncuota','numero de cuota','numero cuota','n cuota']),
+    total: H(['monto','total','montototal','valor total','monto total']),
+    pagado: H(['pagado','abonado','total pagado','pagado acum']),
+    saldo: H(['saldo','pendiente','por pagar','deuda']),
+    fechaProx: H(['fecha','fechaprox','fecha prox','proximo pago','prox. pago','vencimiento','fecha pago','fecha cuota']),
+    estado: H(['estado','situacion','estatus']),
+    nota: H(['comentario','nota','obs','observaciones'])
+  };
+  if (ix.emisor < 0 && ix.concepto < 0 && ix.nro < 0) {
+    notify('⚠ Primera fila: títulos. Debe existir al menos «Emisor», «Concepto» o «Numero».');
+    return;
+  }
+  const rows = [];
+  const baseTs = Date.now();
+  for (let i = 1; i < lines.length; i++) {
+    const cells = sebSplitDataLine(lines[i], sep);
+    const get = (j) => (j >= 0 && j < cells.length ? cells[j] : '').trim();
+    const nro = ix.nro >= 0 ? get(ix.nro) : '';
+    const emisor = ix.emisor >= 0 ? get(ix.emisor) : '';
+    let concepto = ix.concepto >= 0 ? get(ix.concepto) : '';
+    if (ix.cuota >= 0) {
+      const cq = get(ix.cuota);
+      if (cq) concepto = concepto ? `${concepto} · Cuota ${cq}` : `Cuota ${cq}`;
+    }
+    if (!emisor && !concepto && !nro) continue;
+
+    const total = sebParseMoneySeb(ix.total >= 0 ? get(ix.total) : '0');
+    const pagado = sebParseMoneySeb(ix.pagado >= 0 ? get(ix.pagado) : '0');
+    let saldo = ix.saldo >= 0 ? sebParseMoneySeb(get(ix.saldo)) : (total - pagado);
+    const fechaProx = ix.fechaProx >= 0 ? get(ix.fechaProx) : '';
+    const nota = ix.nota >= 0 ? get(ix.nota) : '';
+    const estadoRaw = (ix.estado >= 0 ? get(ix.estado) : '').toLowerCase();
+
+    let estado = 'activo';
+    if (saldo < 0) estado = 'credito';
+    else if (saldo === 0 && (total > 0 || pagado > 0)) estado = 'pagado';
+    else if (estadoRaw.includes('pag')) estado = 'pagado';
+    else if (estadoRaw.includes('cred') || estadoRaw.includes('favor')) estado = 'credito';
+
+    rows.push({
+      id: 'sco_imp_'+baseTs+'_'+i,
+      nro, emisor, concepto, total, pagado, saldo,
+      fechaProx, nota, estado, pagos: []
+    });
+  }
+  if (!rows.length) { notify('⚠ No se importó ninguna fila válida'); return; }
+  pushUndo();
+  const sf = sebInit();
+  if (mode === 'replace') sf.compromisos = rows;
+  else sf.compromisos = rows.concat(sf.compromisos);
+  _sebCompSelId = rows[0].id;
+  _sebCompFilter = 'todos';
+  sebRenderPanel();
+  if (typeof saveState === 'function') saveState('Importación compromisos Sebas', true);
+  notify(`✅ ${rows.length} compromiso(s) importado(s) — ${mode === 'replace' ? 'lista reemplazada' : 'añadidos al inicio'}`);
+}
+
+function sebCompTsvPick(mode) {
+  if (!sebasModuleAllowed()) { notify('🔐 Solo Sebastián y Diego'); return; }
+  if (mode === 'replace' && !confirm('¿Reemplazar todos los compromisos por los del archivo?\n\nCancelar = no hacer nada.')) return;
+  _sebCompTsvMode = mode;
+  const inp = document.getElementById('seb-comp-tsv-file');
+  if (inp) { inp.value = ''; inp.click(); }
+}
+
+function sebHandleCompTsvFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      sebImportCompromisosFromText(String(reader.result || ''), _sebCompTsvMode);
+    } catch (e) {
+      notify('⚠ Error al importar: ' + (e.message || e));
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
 }
 
 function sebDelComp(id) {
@@ -13710,7 +14353,8 @@ function sebToggleCompEstado(id) {
   const c  = sf.compromisos.find(x=>x.id===id); if (!c) return;
   pushUndo();
   if (c.estado==='pagado') {
-    c.estado = 'activo';
+    c.saldo = (c.total||0) - (c.pagado||0);
+    c.estado = (c.saldo||0) < 0 ? 'credito' : 'activo';
   } else {
     if (!confirm(`¿Marcar "${c.emisor} — ${c.concepto}" como PAGADO?\nSaldo: ${fmt(c.saldo)}`)) return;
     c.estado = 'pagado';
@@ -13828,12 +14472,6 @@ function sebDelGF(idx) {
   pushUndo(); sf.gastosFijos.splice(idx,1); sebRenderPanel();
 }
 
-function sebDelGF(idx) {
-  const sf = sebInit();
-  if (!confirm(`¿Eliminar "${sf.gastosFijos[idx].item}"?`)) return;
-  pushUndo(); sf.gastosFijos.splice(idx,1); sebRenderPanel();
-}
-
 // ============================================================
 //  SISTEMA DE ABONOS — MÓDULO SEBAS
 // ============================================================
@@ -13867,7 +14505,7 @@ function sebPagoAbrir(tipo, idxOrId) {
     if (!c) return;
     titulo = `${c.emisor} — ${c.concepto||c.nro}`;
     sub    = `Compromiso · Saldo pendiente`;
-    deuda  = c.saldo;
+    deuda  = Math.max(0, c.saldo||0);
     if (!c.pagos) c.pagos = [];
     pagosHist = c.pagos;
     _sebPagoCtx = { tipo, id: idxOrId };
@@ -13909,7 +14547,7 @@ function sebPagoPreview(val) {
   let deudaActual = 0;
   if (ctx.tipo==='tc')   deudaActual = sf.tarjetas[ctx.idx]?.deuda || 0;
   if (ctx.tipo==='lc')   deudaActual = sf.lineas[ctx.idx]?.deuda   || 0;
-  if (ctx.tipo==='comp') deudaActual = sf.compromisos.find(x=>x.id===ctx.id)?.saldo || 0;
+  if (ctx.tipo==='comp') deudaActual = Math.max(0, sf.compromisos.find(x=>x.id===ctx.id)?.saldo || 0);
   const nueva = Math.max(0, deudaActual - monto);
   const el    = document.getElementById('seb-pago-deuda-nueva');
   if (el) {
@@ -13947,11 +14585,18 @@ function sebPagoConfirmar() {
     const c = sf.compromisos.find(x=>x.id===ctx.id);
     if (!c) return;
     if (!c.pagos) c.pagos = [];
+    const saldoAntes = Math.max(0, c.saldo||0);
+    if (monto > saldoAntes + 1) { notify('⚠ El monto supera el saldo pendiente de ' + fmt(saldoAntes)); return; }
     c.pagado = (c.pagado||0) + monto;
-    c.saldo  = Math.max(0, c.saldo - monto);
-    if (c.saldo === 0) c.estado = 'pagado';
+    c.saldo = (c.total||0) - (c.pagado||0);
+    if (c.saldo < 0) c.estado = 'credito';
+    else if (c.saldo === 0) c.estado = 'pagado';
+    else c.estado = 'activo';
     c.pagos.push(registro);
-    notify(`✅ Abono de ${fmt(monto)} registrado · Saldo nuevo: ${fmt(c.saldo)}${c.saldo===0?' · ¡COMPROMISO SALDADO! 🎉':''}`);
+    let msg = `✅ Abono de ${fmt(monto)} registrado · Pendiente: ${fmt(Math.max(0,c.saldo))}`;
+    if (c.saldo < 0) msg += ` · Saldo a favor: ${fmt(Math.abs(c.saldo))}`;
+    if (c.saldo === 0) msg += ' · ¡Saldado! 🎉';
+    notify(msg);
   }
 
   sebPagoClose();
@@ -14888,6 +15533,13 @@ function sacGetCargas(w) {
   return state.sacCargas[w];
 }
 
+function sacGetIngresos(w) {
+  w = w || sacCurrentWeek();
+  if (!state.sacIngresos) state.sacIngresos = {};
+  if (!state.sacIngresos[w]) state.sacIngresos[w] = [];
+  return state.sacIngresos[w];
+}
+
 // ── RENDER ──
 function sacRender() {
   const w = sacCurrentWeek();
@@ -14921,8 +15573,10 @@ function sacRender() {
   const mInp = document.getElementById('sac-merc-val');
   if (mInp && document.activeElement !== mInp) mInp.value = merc.val || '';
 
-  // Cargas
+  // Cargas + panel financiamiento (antes de sacCalcAll para que existan #sac-fin-balance-live)
   sacRenderCargas(w);
+  sacRenderIngresos(w);
+  sacRenderFinanciamientoPanel(w);
   sacCalcAll(w);
 }
 
@@ -15175,7 +15829,114 @@ function sacCalcCargasTotals(w) {
   }
 }
 
-function sacCalcBalance(w) {
+function sacCalcIngresosTotals(w) {
+  w = w || sacCurrentWeek();
+  const arr = sacGetIngresos(w);
+  const pend = Math.round(arr.filter(x => x.estado !== 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
+  const rec = Math.round(arr.filter(x => x.estado === 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
+  const set2 = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set2('sac-ing-pend', fmt(pend));
+  set2('sac-ing-recib', fmt(rec));
+}
+
+function sacRenderIngresos(w) {
+  w = w || sacCurrentWeek();
+  const list = document.getElementById('sac-ingresos-list');
+  if (!list) return;
+  const arr = sacGetIngresos(w);
+  if (!arr.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic;">Sin ingresos extra — usa <b>+ Ingreso</b> para registrar aportes o transferencias.</div>';
+    sacCalcIngresosTotals(w);
+    return;
+  }
+  list.innerHTML = arr.map(it => {
+    const esRec = it.estado === 'recibido';
+    return `<div class="sac-carga-row ingreso${esRec ? ' ingreso-recibido' : ''}" id="sac-ir-${it.id}">
+      <div><span class="sac-cat-badge" style="background:${esRec ? 'rgba(148,163,184,.2)' : 'rgba(16,185,129,.22)'};color:${esRec ? '#94a3b8' : 'var(--success)'};">${esRec ? 'Recibido' : 'Pendiente'}</span></div>
+      <div>
+        <div class="sac-nombre">${esc(it.nombre || '(sin nombre)')}</div>
+        ${it.nota ? `<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(it.nota)}</div>` : ''}
+      </div>
+      <div style="text-align:right;min-width:90px;">
+        <div class="sac-monto" style="color:${esRec ? '#94a3b8' : 'var(--success)'};">${fmt(it.monto || 0)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+        <button type="button" class="sac-estado-btn ${esRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado(${w},'${it.id}')">${esRec ? '✓ Recibido' : '○ Pendiente'}</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+        <button type="button" onclick="sacDelIngreso(${w},'${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
+        <button type="button" onclick="sacEditIngreso(${w},'${it.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
+      </div>
+    </div>`;
+  }).join('');
+  sacCalcIngresosTotals(w);
+}
+
+function sacAddIngresoManual() {
+  const w = sacCurrentWeek();
+  pushUndo();
+  const id = 'si_' + Date.now();
+  sacGetIngresos(w).push({
+    id, nombre: '', monto: 0, estado: 'pendiente', nota: ''
+  });
+  sacRenderIngresos(w);
+  sacCalcBalance(w);
+  markUnsaved();
+  sacEditIngreso(w, id);
+}
+
+function sacDelIngreso(w, id) {
+  const arr = sacGetIngresos(w);
+  const it = arr.find(x => x.id === id);
+  if (!it) return;
+  if (!confirm(`¿Eliminar ingreso "${it.nombre || id}" (${fmt(it.monto)})?`)) return;
+  pushUndo();
+  state.sacIngresos[w] = arr.filter(x => x.id !== id);
+  sacRenderIngresos(w);
+  sacCalcBalance(w);
+  markUnsaved();
+}
+
+function sacCycleIngresoEstado(w, id) {
+  const it = sacGetIngresos(w).find(x => x.id === id);
+  if (!it) return;
+  pushUndo();
+  it.estado = it.estado === 'recibido' ? 'pendiente' : 'recibido';
+  sacRenderIngresos(w);
+  sacCalcBalance(w);
+  markUnsaved();
+  notify(it.estado === 'recibido' ? '✓ Marcado como recibido — actualiza banco/caja si aplica' : '○ Pendiente otra vez (suma al balance estimado)');
+}
+
+function sacEditIngreso(w, id) {
+  const it = sacGetIngresos(w).find(x => x.id === id);
+  if (!it) return;
+  const row = document.getElementById('sac-ir-' + id);
+  if (!row) return;
+  row.innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;align-items:center;grid-column:1/-1;">
+      <input class="sac-edit-inp" type="text" value="${esc(it.nombre)}" placeholder="Concepto" id="sin-nombre-${id}" style="flex:2;min-width:140px;">
+      <input class="sac-edit-inp" type="text" inputmode="numeric" value="${it.monto || ''}" placeholder="Monto $" id="sin-monto-${id}" style="width:110px;text-align:right;">
+      <input class="sac-edit-inp" type="text" value="${esc(it.nota || '')}" placeholder="Nota (opcional)" id="sin-nota-${id}" style="flex:2;min-width:120px;">
+      <button type="button" onclick="sacSaveIngresoEdit(${w},'${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
+      <button type="button" onclick="sacRenderIngresos(${w})" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
+    </div>`;
+  document.getElementById('sin-nombre-' + id)?.focus();
+}
+
+function sacSaveIngresoEdit(w, id) {
+  const it = sacGetIngresos(w).find(x => x.id === id);
+  if (!it) return;
+  pushUndo();
+  it.nombre = (document.getElementById('sin-nombre-' + id)?.value || '').trim() || it.nombre;
+  it.monto = parseInt((document.getElementById('sin-monto-' + id)?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  it.nota = (document.getElementById('sin-nota-' + id)?.value || '').trim() || '';
+  sacRenderIngresos(w);
+  sacCalcBalance(w);
+  markUnsaved();
+}
+
+function sacGetBalanceEstimado(w) {
   w = w || sacCurrentWeek();
   const banco     = state.cajaEmpresa?.banco || 0;
   const efectivo  = state.sacEfectivo || 0;
@@ -15196,23 +15957,17 @@ function sacCalcBalance(w) {
     return s;
   },0));
 
-  // #10 — Balance estimado:
-  // Solo considerar ventas ESTIMADAS de días que NO tienen venta real
-  // La venta real ya pasó a caja/banco, por lo tanto no se suma de nuevo
   const days     = vsGetWeek(w);
   const extra    = vsGetExtra(w);
   let ventasEstPendientes = 0;
   let ventaRealAcum = 0;
   days.forEach(d => {
     if (d.real > 0) {
-      // Este día ya tiene venta real → ya está en caja/banco, NO sumar al balance
       ventaRealAcum += d.real;
     } else if (d.est > 0) {
-      // Día sin venta real → sumar la estimada al balance
       ventasEstPendientes += d.est;
     }
   });
-  // Extra: si tiene real, ya pasó a caja; si no, sumar estimado
   if (extra.realExtra > 0) {
     ventaRealAcum += extra.realExtra;
   } else if (extra.monto > 0) {
@@ -15221,13 +15976,27 @@ function sacCalcBalance(w) {
   ventasEstPendientes = Math.round(ventasEstPendientes);
   ventaRealAcum = Math.round(ventaRealAcum);
 
-  // Ingresos por ingresar (confirmed=false en ingresos)
   const ingresosPorIngresar = Math.round((state.ingresos||[]).reduce((s,i) => {
     return s + (!i.confirmed ? (i.amount||0) : 0);
   }, 0));
 
-  // Balance = disponible (banco+efectivo) + ventas estimadas pendientes + ingresos por ingresar - egresos pendientes
-  const balance = Math.round(disponible + ventasEstPendientes + ingresosPorIngresar - porPagar);
+  const otrosIngPend = Math.round(sacGetIngresos(w).reduce((s, x) => s + (x.estado === 'recibido' ? 0 : (x.monto || 0)), 0));
+
+  const balance = Math.round(disponible + ventasEstPendientes + ingresosPorIngresar + otrosIngPend - porPagar);
+
+  return {
+    w, balance, disponible, porPagar, pagado, ventasEstPendientes, ventaRealAcum,
+    ingresosPorIngresar, otrosIngPend, days, mercMonto
+  };
+}
+
+function sacCalcBalance(w) {
+  w = w || sacCurrentWeek();
+  const B = sacGetBalanceEstimado(w);
+  const {
+    balance, disponible, porPagar, ventasEstPendientes, ventaRealAcum,
+    ingresosPorIngresar, otrosIngPend, pagado, days
+  } = B;
 
   const set2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set2('sac-total-disp', fmt(disponible));
@@ -15250,12 +16019,129 @@ function sacCalcBalance(w) {
   if (subEl) {
     let subTxt = `Disp. ${fmt(disponible)} + Vta.Est. ${fmt(ventasEstPendientes)}`;
     if (ingresosPorIngresar > 0) subTxt += ` + Ing.Pend. ${fmt(ingresosPorIngresar)}`;
+    if (otrosIngPend > 0) subTxt += ` + Ing.extra ${fmt(otrosIngPend)}`;
     subTxt += ` − Cargas ${fmt(porPagar)}`;
     subEl.textContent = subTxt;
   }
 
   // Update dashboard SAC widget
   updateDashSac(w, disponible, porPagar, pagado, ventasEstPendientes, balance);
+  sacUpdateFinPanelBalance(w);
+}
+
+function sacUpdateFinPanelBalance(w) {
+  w = w || sacCurrentWeek();
+  const B = sacGetBalanceEstimado(w);
+  const el = document.getElementById('sac-fin-balance-live');
+  const hint = document.getElementById('sac-fin-neg-hint');
+  if (el) {
+    el.textContent = (B.balance < 0 ? '−' : '') + fmt(Math.abs(B.balance));
+    el.style.color = B.balance < 0 ? 'var(--danger)' : 'var(--success)';
+  }
+  if (hint) hint.style.display = B.balance < 0 ? 'inline' : 'none';
+}
+
+function sacRenderFinanciamientoPanel(w) {
+  w = w || sacCurrentWeek();
+  const wrap = document.getElementById('sac-fin-panel-wrap');
+  if (!wrap) return;
+  if (!state.sacFinanciamientoRegistro) state.sacFinanciamientoRegistro = [];
+  const B = sacGetBalanceEstimado(w);
+  const now = new Date();
+  const ranges = getCalWeekRanges();
+  const r = ranges[w - 1];
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const wlbl = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+  const balNeg = B.balance < 0;
+  const reg = [...state.sacFinanciamientoRegistro].sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const rows = reg.slice(0, 48).map(it => {
+    const fecha = it.ts ? new Date(it.ts).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    const balSnap = it.balanceNegativo != null ? it.balanceNegativo : 0;
+    const balCol = balSnap < 0 ? 'var(--danger)' : '#64748b';
+    const balTxt = balSnap < 0 ? '−' + fmt(Math.abs(balSnap)) : fmt(balSnap);
+    return `<tr>
+      <td style="font-size:11px;white-space:nowrap;">${esc(fecha)}</td>
+      <td style="font-size:11px;">${esc(it.periodoLabel || '—')}</td>
+      <td style="text-align:right;font-weight:700;color:${balCol};">${balTxt}</td>
+      <td style="text-align:right;font-weight:700;color:var(--success);">${fmt(it.montoFinanciado || 0)}</td>
+      <td style="font-size:11px;color:#64748b;max-width:180px;">${esc(it.detalle || '—')}</td>
+      <td><button type="button" onclick="sacEliminarFinanciamientoRegistro('${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:12px;padding:2px 4px;" title="Eliminar">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div style="padding:14px 16px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);border-left:4px solid ${balNeg ? 'var(--danger)' : '#94a3b8'};">
+      <div style="font-size:12px;font-weight:800;margin-bottom:6px;color:var(--primary);">📒 Registro — financiamiento Sebas (balance semanal negativo)</div>
+      <p style="font-size:10px;color:#64748b;line-height:1.45;margin-bottom:10px;">
+        Si el <b>balance estimado</b> de la semana <strong>${esc(wlbl)}</strong> está en rojo, dejá constancia de <b>cuánto aportó o con qué financió Sebastián</b> (plata que entró, transferencia, efectivo, tarjeta personal, etc.). Cada guardado queda en el historial con el déficit que había al momento.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:10px 12px;background:${balNeg ? '#fef2f2' : '#f8fafc'};border-radius:8px;">
+        <span style="font-size:11px;">Balance estimado ahora: <strong id="sac-fin-balance-live" style="color:${balNeg ? 'var(--danger)' : 'var(--success)'};">${B.balance < 0 ? '−' : ''}${fmt(Math.abs(B.balance))}</strong></span>
+        <span id="sac-fin-neg-hint" style="font-size:10px;color:#b91c1c;display:${balNeg ? 'inline' : 'none'};">Déficit — registrá abajo cómo se cubrió.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:8px;align-items:end;margin-bottom:10px;">
+        <div>
+          <label style="font-size:9px;font-weight:700;color:#94a3b8;">Monto que aportó / financió Sebas ($)</label>
+          <input id="sac-fin-monto" class="sac-edit-inp" type="text" inputmode="numeric" placeholder="0" style="width:100%;max-width:220px;">
+        </div>
+        <div>
+          <label style="font-size:9px;font-weight:700;color:#94a3b8;">Detalle (cómo: transferencia, efectivo, TC, préstamo…)</label>
+          <input id="sac-fin-detalle" class="sac-edit-inp" type="text" placeholder="Ej: Transferencia cuenta personal" style="width:100%;">
+        </div>
+        <div>
+          <button type="button" class="fac-btn primary" onclick="sacGuardarFinanciamientoRegistro()" style="padding:8px 16px;font-size:12px;">Guardar registro</button>
+        </div>
+      </div>
+      ${reg.length ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin:0 0 6px;">Historial</div>
+      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table style="font-size:11px;width:100%;border-collapse:collapse;"><thead><tr style="background:#f8fafc;text-align:left;"><th style="padding:6px 8px;">Fecha</th><th style="padding:6px 8px;">Periodo</th><th style="padding:6px 8px;text-align:right;">Balance al guardar</th><th style="padding:6px 8px;text-align:right;">Financió Sebas</th><th style="padding:6px 8px;">Detalle</th><th style="padding:6px 4px;"></th></tr></thead><tbody>${rows}</tbody></table>
+      </div>` : `<div style="font-size:11px;color:#94a3b8;font-style:italic;">Sin registros guardados aún.</div>`}
+    </div>`;
+}
+
+function sacGuardarFinanciamientoRegistro() {
+  const w = sacCurrentWeek();
+  const B = sacGetBalanceEstimado(w);
+  const monto = parseInt((document.getElementById('sac-fin-monto')?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  const detalle = (document.getElementById('sac-fin-detalle')?.value || '').trim();
+  if (!monto) { notify('⚠ Ingresa el monto que aportó o financió Sebas'); return; }
+  if (B.balance >= 0) {
+    if (!confirm('El balance estimado no está negativo ahora. ¿Guardar el registro igual (aporte o financiamiento extra)?')) return;
+  }
+  pushUndo();
+  if (!state.sacFinanciamientoRegistro) state.sacFinanciamientoRegistro = [];
+  const now = new Date();
+  const ranges = getCalWeekRanges();
+  const r = ranges[w - 1];
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const wlbl = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+  state.sacFinanciamientoRegistro.unshift({
+    id: 'sfin_' + Date.now(),
+    ts: Date.now(),
+    y: now.getFullYear(), mo: now.getMonth() + 1, w,
+    periodoLabel: wlbl,
+    balanceNegativo: B.balance,
+    montoFinanciado: monto,
+    detalle: detalle || ''
+  });
+  const mi = document.getElementById('sac-fin-monto');
+  const di = document.getElementById('sac-fin-detalle');
+  if (mi) mi.value = '';
+  if (di) di.value = '';
+  sacRenderFinanciamientoPanel(w);
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Registro financiamiento Sebas', true);
+  notify('✅ Registro guardado en historial');
+}
+
+function sacEliminarFinanciamientoRegistro(id) {
+  if (!confirm('¿Eliminar este registro del historial?')) return;
+  pushUndo();
+  state.sacFinanciamientoRegistro = (state.sacFinanciamientoRegistro || []).filter(x => x.id !== id);
+  sacRenderFinanciamientoPanel(sacCurrentWeek());
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Eliminó registro financiamiento', true);
+  notify('Registro eliminado');
 }
 
 function updateDashSac(w, disponible, porPagar, pagado, ventas, balance) {
@@ -15720,6 +16606,18 @@ function compressStateForSave(st) {
         if (Array.isArray(arr) && arr.length) cc[w] = arr;
       });
       s.sacCargas = Object.keys(cc).length ? cc : undefined;
+    }
+
+    if (s.sacIngresos) {
+      const ci = {};
+      Object.entries(s.sacIngresos).forEach(([w, arr]) => {
+        if (Array.isArray(arr) && arr.length) ci[w] = arr;
+      });
+      s.sacIngresos = Object.keys(ci).length ? ci : undefined;
+    }
+
+    if (s.sacFinanciamientoRegistro && s.sacFinanciamientoRegistro.length > 80) {
+      s.sacFinanciamientoRegistro = s.sacFinanciamientoRegistro.slice(0, 80);
     }
 
     // Compress pagosSemanales: remove empty weeks
@@ -16305,7 +17203,8 @@ window.onload = function() {
         <button onclick="cuadConfirmar()" class="fac-btn primary" style="font-size:12px;background:var(--success);border-color:var(--success);">⬛ Confirmar cierre de semana</button>
       </div>
     </div>
-</html>
+  </div>
+</div>
 <!-- ======= MODAL PAGO SEBAS ======= -->
 <div class="seb-pago-overlay" id="seb-pago-overlay" onclick="if(event.target===this)sebPagoClose()">
   <div class="seb-pago-modal">
