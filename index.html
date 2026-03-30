@@ -1307,6 +1307,7 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-v-inp:focus{outline:none;border-color:var(--accent);background:var(--white);}
 .sac-v-inp.real:focus{border-color:var(--success);}
 .sac-v-total{background:#f8fafc;border-top:2px solid var(--border);padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;}
+#sac-ventas-dias{max-height:min(52vh,520px);overflow-y:auto;}
 /* cargas */
 .sac-cargas-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
 .sac-ingresos-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border-top:3px solid rgba(16,185,129,.35);}
@@ -2563,11 +2564,11 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <div class="sac-toolbar">
         <div>
-          <div class="sac-toolbar-lbl">📅 Semana en edición</div>
+          <div class="sac-toolbar-lbl">📅 Período en edición</div>
           <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()" style="font-size:11px;padding:7px 12px;border:1px solid var(--border);background:var(--white);">📆 Cambiar semana</button>
+          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()" style="font-size:11px;padding:7px 12px;border:1px solid var(--border);background:var(--white);">📆 Cambiar período</button>
           <button type="button" class="fac-btn" onclick="sacCerrarSemanaClick()" style="font-size:11px;padding:7px 14px;font-weight:800;background:linear-gradient(135deg,var(--accent),#fb923c);color:white;border:none;">📋 Cerrar semana</button>
         </div>
       </div>
@@ -2585,69 +2586,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div></div>
             <div style="font-size:9px;font-weight:700;color:var(--success);text-transform:uppercase;text-align:right;">Real</div>
           </div>
-          <!-- Lunes -->
-          <div class="sac-v-row" id="sac-vrow-0">
-            <div class="sac-v-day">🟡 Lunes</div>
-            <input class="sac-v-inp" id="sac-vest-0" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(0,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-0" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(0,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Martes -->
-          <div class="sac-v-row" id="sac-vrow-1">
-            <div class="sac-v-day">🟡 Martes</div>
-            <input class="sac-v-inp" id="sac-vest-1" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(1,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-1" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(1,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Miércoles -->
-          <div class="sac-v-row" id="sac-vrow-2">
-            <div class="sac-v-day">🟡 Miércoles</div>
-            <input class="sac-v-inp" id="sac-vest-2" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(2,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-2" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(2,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Jueves -->
-          <div class="sac-v-row" id="sac-vrow-3">
-            <div class="sac-v-day">🟡 Jueves</div>
-            <input class="sac-v-inp" id="sac-vest-3" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(3,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-3" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(3,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Viernes -->
-          <div class="sac-v-row" id="sac-vrow-4">
-            <div class="sac-v-day" style="color:var(--danger);">🔴 Viernes</div>
-            <input class="sac-v-inp" id="sac-vest-4" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(4,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-4" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(4,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Sábado -->
-          <div class="sac-v-row" id="sac-vrow-5">
-            <div class="sac-v-day" style="color:var(--success);">🟢 Sábado</div>
-            <input class="sac-v-inp" id="sac-vest-5" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(5,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-5" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(5,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
-          <!-- Domingo -->
-          <div class="sac-v-row" id="sac-vrow-6">
-            <div class="sac-v-day" style="color:var(--success);">🟢 Domingo</div>
-            <input class="sac-v-inp" id="sac-vest-6" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(6,'est',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(249,115,22,.3);">
-            <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
-            <input class="sac-v-inp real" id="sac-vreal-6" type="text" inputmode="numeric" placeholder="$0"
-              onchange="sacVChange(6,'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
-          </div>
+          <div id="sac-ventas-dias"></div>
           <!-- Extra -->
           <div class="sac-v-row" style="background:rgba(99,102,241,.04);" id="sac-vrow-extra">
             <div class="sac-v-day" style="color:var(--accent2);">⭐ Extra</div>
@@ -2743,19 +2682,28 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
   <!-- Modal: elegir semana a trabajar (después de cierre o Cambiar semana) -->
   <div class="sac-sel-overlay" id="sac-cierre-overlay" onclick="if(event.target===this)sacCierreModalCerrar()">
-    <div class="sac-sel-modal" style="max-width:440px;" onclick="event.stopPropagation();">
+    <div class="sac-sel-modal" style="max-width:480px;" onclick="event.stopPropagation();">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:14px;font-weight:800;" id="sac-cierre-title">📆 ¿Qué semana querés trabajar?</div>
+        <div style="font-size:14px;font-weight:800;" id="sac-cierre-title">📆 Período a trabajar</div>
         <button type="button" onclick="sacCierreModalCerrar()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;">✕</button>
       </div>
-      <div class="sac-sel-body" id="sac-cierre-body" style="max-height:60vh;overflow-y:auto;"></div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#f8fafc;">
+        <div style="font-size:11px;font-weight:800;margin-bottom:8px;color:var(--primary);">📅 Rango de fechas (elegís vos: puede ser lunes–domingo u otra cantidad de días)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <label style="font-size:11px;">Desde <input type="date" id="sac-rango-desde" style="font-family:inherit;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;"></label>
+          <label style="font-size:11px;">Hasta <input type="date" id="sac-rango-hasta" style="font-family:inherit;font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;"></label>
+        </div>
+        <button type="button" class="fac-btn primary" onclick="sacModalAplicarRango()" style="margin-top:10px;width:100%;font-size:12px;padding:8px;">✓ Usar este rango</button>
+      </div>
+      <div style="padding:8px 16px 4px;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;">O bloques del mes actual</div>
+      <div class="sac-sel-body" id="sac-cierre-body" style="max-height:42vh;overflow-y:auto;"></div>
       <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;font-weight:600;">
           <input type="checkbox" id="sac-cierre-limpiar" checked>
-          Empezar en blanco (borra ventas/cargas/ingresos de esa semana en pantalla)
+          Empezar en blanco (borra ventas/cargas/ingresos de este período)
         </label>
         <div style="display:flex;gap:10px;">
-          <button type="button" class="fac-btn primary" onclick="sacCierreModalAplicar()" style="flex:1;">✓ Usar esta semana</button>
+          <button type="button" class="fac-btn primary" onclick="sacCierreModalAplicar()" style="flex:1;">✓ Usar este bloque del mes</button>
           <button type="button" class="fac-btn" onclick="sacCierreModalCerrar()">Cancelar</button>
         </div>
       </div>
@@ -8963,9 +8911,8 @@ function iaImportarResultados() {
     const monto  = parseInt((document.getElementById('ia-res-monto')?.value||'0').replace(/[^\d]/g,''),10)||0;
     const prov   = document.getElementById('ia-res-prov')?.value.trim()  || item.proveedor || '';
     if (!monto) { notify('⚠ El monto es 0 — verifica la imagen'); return; }
-    const w = sacActiveWeek();
     pushUndo();
-    sacGetCargas(w).push({
+    sacGetCargas().push({
       id:       'sc_'+Date.now(),
       nombre:   desc,
       cat:      'Compra',
@@ -8976,8 +8923,8 @@ function iaImportarResultados() {
       nota:     item.fecha||''
     });
     iaCerrarScanner();
-    sacRenderCargas(w);
-    sacCalcBalance(w);
+    sacRenderCargas();
+    sacCalcBalance();
     notify(`✅ "${desc}" agregado — ${fmt(monto)}`);
   }
 }
@@ -9956,6 +9903,9 @@ function _postLoadSetup() {
   if (!state.sacIngresos)               state.sacIngresos               = {};
   if (!state.sacCierresHistorial)       state.sacCierresHistorial       = [];
   if (state.sacSemanaTrabajo && (state.sacSemanaTrabajo.w < 1 || state.sacSemanaTrabajo.w > 4)) state.sacSemanaTrabajo = null;
+  if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'range' && (!state.sacPeriodoTrabajo.start || !state.sacPeriodoTrabajo.end || state.sacPeriodoTrabajo.end < state.sacPeriodoTrabajo.start)) state.sacPeriodoTrabajo = null;
+  if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'slot' && (state.sacPeriodoTrabajo.w < 1 || state.sacPeriodoTrabajo.w > 4)) state.sacPeriodoTrabajo = null;
+  if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
@@ -9983,7 +9933,7 @@ function _postLoadSetup() {
   }
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
-    if (typeof sacCalcBalance === 'function') sacCalcBalance(sacActiveWeek());
+    if (typeof sacCalcBalance === 'function') sacCalcBalance();
     if (typeof facSemRender === 'function') facSemRender();
     iaLoadSavedKey();
     if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
@@ -11684,8 +11634,10 @@ function archCountOldInformes(weeks) {
 function archCountOldSacCargas() {
   const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
   let count = 0;
-  Object.entries(state.sacCargas||{}).forEach(([w, arr]) => {
-    if (parseInt(w) !== currentW && Array.isArray(arr) && arr.length) count += arr.length;
+  Object.entries(state.sacCargas||{}).forEach(([k, arr]) => {
+    if (!/^\d+$/.test(String(k))) return;
+    const wk = parseInt(k, 10);
+    if (wk !== currentW && wk >= 1 && wk <= 4 && Array.isArray(arr) && arr.length) count += arr.length;
   });
   return count;
 }
@@ -11891,16 +11843,20 @@ function archExecute() {
   // 4. Cargas semanales pasadas (semana calendario actual, no la de edición)
   if (doSac && sacN > 0) {
     const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
-    Object.keys(state.sacCargas||{}).forEach(w => {
-      if (parseInt(w) !== currentW) {
-        totalRemoved += (state.sacCargas[w]||[]).length;
-        delete state.sacCargas[w];
+    Object.keys(state.sacCargas||{}).forEach(k => {
+      if (!/^\d+$/.test(String(k))) return;
+      const wk = parseInt(k, 10);
+      if (wk >= 1 && wk <= 4 && wk !== currentW) {
+        totalRemoved += (state.sacCargas[k]||[]).length;
+        delete state.sacCargas[k];
       }
     });
-    Object.keys(state.sacIngresos||{}).forEach(w => {
-      if (parseInt(w) !== currentW) {
-        totalRemoved += (state.sacIngresos[w]||[]).length;
-        delete state.sacIngresos[w];
+    Object.keys(state.sacIngresos||{}).forEach(k => {
+      if (!/^\d+$/.test(String(k))) return;
+      const wk = parseInt(k, 10);
+      if (wk >= 1 && wk <= 4 && wk !== currentW) {
+        totalRemoved += (state.sacIngresos[k]||[]).length;
+        delete state.sacIngresos[k];
       }
     });
   }
@@ -11951,7 +11907,7 @@ function archCheckSize() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacCierresHistorial','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
+    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
   keys.forEach(k => {
     if (state[k]) parts[k] = JSON.stringify(state[k]).length;
@@ -12898,8 +12854,8 @@ function infInit() {
 
 // Open modal to select which egresos to load
 function infOpenEgresosSelector() {
-  const w = typeof sacCurrentWeek === 'function' ? sacActiveWeek() : 1;
-  const cargas = (state.sacCargas && state.sacCargas[w]) ? state.sacCargas[w] : [];
+  const k = typeof sacDataKey === 'function' ? sacDataKey() : '1';
+  const cargas = (state.sacCargas && state.sacCargas[k]) ? state.sacCargas[k] : [];
   const pendientes = cargas.filter(c => c.estado !== 'pagado' && !c._esPago);
   if (!pendientes.length) { notify('⚠ No hay cargas pendientes en la semana actual'); return; }
 
@@ -15578,29 +15534,148 @@ function _sacWeekCalendario() {
 
 function sacCurrentWeek() { return _sacWeekCalendario(); }
 
-// Semana cuyos datos se editan en SAC (puede cambiarse con «Cambiar semana»)
-function sacActiveWeek() {
-  const o = state.sacSemanaTrabajo;
-  if (o && o.w >= 1 && o.w <= 4) return o.w;
-  return _sacWeekCalendario();
+function sacParseISODate(s) {
+  if (!s || typeof s !== 'string') return null;
+  const p = s.split('-').map(Number);
+  if (p.length < 3) return null;
+  return new Date(p[0], p[1] - 1, p[2]);
 }
 
-function sacWeekPeriodLabel(w) {
-  const ranges = getCalWeekRanges();
-  const r = ranges[w - 1];
-  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const now = new Date();
-  return r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+function sacYMDLocal(d) {
+  if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// Período en edición: slot del mes (1–4) o rango de fechas libre
+function sacNormalizedPeriod() {
+  const R = state.sacPeriodoTrabajo;
+  if (R && R.type === 'range' && R.start && R.end && R.end >= R.start) return R;
+  if (R && R.type === 'slot' && R.w >= 1 && R.w <= 4 && R.y && R.m >= 1 && R.m <= 12) return R;
+  const leg = state.sacSemanaTrabajo;
+  if (leg && leg.w >= 1 && leg.w <= 4) {
+    const n = new Date();
+    return { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w: leg.w };
+  }
+  const n = new Date();
+  return { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w: _sacWeekCalendario() };
+}
+
+function sacDataKey() {
+  const p = sacNormalizedPeriod();
+  if (p.type === 'range') return 'R|' + p.start + '|' + p.end;
+  return 'S|' + p.y + '|' + p.m + '|' + p.w;
+}
+
+function sacPeriodDayCount() {
+  const p = sacNormalizedPeriod();
+  if (p.type === 'range') {
+    const a = sacParseISODate(p.start);
+    const b = sacParseISODate(p.end);
+    if (!a || !b) return 7;
+    const n = Math.floor((b - a) / 86400000) + 1;
+    return Math.min(45, Math.max(1, n));
+  }
+  const ranges = getCalWeekRanges(p.y, p.m - 1);
+  const r = ranges[p.w - 1];
+  if (!r) return 7;
+  return Math.min(45, r.end - r.start + 1);
+}
+
+function sacPeriodLabel() {
+  const p = sacNormalizedPeriod();
+  const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  if (p.type === 'range') {
+    const a = sacParseISODate(p.start);
+    const b = sacParseISODate(p.end);
+    if (!a || !b) return 'Período';
+    return `${a.getDate()} ${MESES[a.getMonth()]} – ${b.getDate()} ${MESES[b.getMonth()]} ${b.getFullYear()}`;
+  }
+  const ranges = getCalWeekRanges(p.y, p.m - 1);
+  const r = ranges[p.w - 1];
+  return r ? `${r.start}–${r.end} ${MESES[p.m - 1]} ${p.y}` : `Semana ${p.w}`;
+}
+
+function sacDayMeta(i) {
+  const p = sacNormalizedPeriod();
+  const names = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const icons = ['🟡', '🟡', '🟡', '🟡', '🔴', '🟢', '🟢'];
+  let d;
+  if (p.type === 'range') {
+    const d0 = sacParseISODate(p.start);
+    if (!d0) return { line: 'Día ' + (i + 1), dowNum: 1 };
+    d = new Date(d0);
+    d.setDate(d.getDate() + i);
+  } else {
+    const ranges = getCalWeekRanges(p.y, p.m - 1);
+    const r = ranges[p.w - 1];
+    if (!r) return { line: 'Día ' + (i + 1), dowNum: 1 };
+    d = new Date(p.y, p.m - 1, r.start + i);
+  }
+  const dowNum = d.getDay();
+  const line = `${icons[dowNum]} ${names[dowNum]} ${d.getDate()}/${d.getMonth() + 1}`;
+  return { line, dowNum };
+}
+
+function vsGetWeekSac(key) {
+  const n = sacPeriodDayCount();
+  if (!state.vsData) state.vsData = {};
+  if (!state.vsData[key]) state.vsData[key] = [];
+  while (state.vsData[key].length < n) {
+    state.vsData[key].push({ est: 0, real: 0, caja: 0, cerrado: false });
+  }
+  const arr = state.vsData[key];
+  for (let i = 0; i < n; i++) {
+    const d = arr[i];
+    if (d.est === undefined) d.est = 0;
+    if (d.real === undefined) d.real = 0;
+    if (d.caja === undefined) d.caja = 0;
+    if (d.cerrado === undefined) d.cerrado = false;
+  }
+  return arr;
+}
+
+function vsGetExtraSac(key) {
+  if (!state.vsExtraData) state.vsExtraData = {};
+  if (!state.vsExtraData[key]) state.vsExtraData[key] = { monto: 0, nota: '', realExtra: 0 };
+  return state.vsExtraData[key];
+}
+
+function vsHybridTotalKey(key) {
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  const extra = vsGetExtraSac(key).monto || 0;
+  let total = 0, realDays = 0, estDays = 0;
+  for (let i = 0; i < n && i < days.length; i++) {
+    const d = days[i];
+    if (d.real > 0) { total += d.real; realDays++; }
+    else if (d.est > 0) { total += d.est; estDays++; }
+  }
+  return { total: roundCLP(total + extra), realDays, estDays, extra };
+}
+
+// Número de bloque 1–4 del mes (para comparar con calendario) o el de la semana slot activa
+function sacActiveWeek() {
+  const p = sacNormalizedPeriod();
+  if (p.type === 'slot') return p.w;
+  return _sacWeekCalendario();
 }
 
 function sacUpdateToolbarDesc() {
   const el = document.getElementById('sac-toolbar-desc');
   if (!el) return;
-  const w = sacActiveWeek();
+  const p = sacNormalizedPeriod();
+  const lbl = sacPeriodLabel();
+  if (p.type === 'range') {
+    el.textContent = `${lbl} · ${sacPeriodDayCount()} días · rango libre`;
+    return;
+  }
   const calW = _sacWeekCalendario();
-  const lbl = sacWeekPeriodLabel(w);
-  if (w !== calW) {
-    el.textContent = `${lbl} · editando otra semana que la del calendario (hoy: sem. ${calW})`;
+  const n = new Date();
+  const sameMonth = p.y === n.getFullYear() && p.m === n.getMonth() + 1;
+  if (sameMonth && p.w !== calW) {
+    el.textContent = `${lbl} · otra semana del mes (hoy: sem. ${calW})`;
+  } else if (!sameMonth) {
+    el.textContent = `${lbl} · mes ${p.m}/${p.y}`;
   } else {
     el.textContent = `${lbl} · alineada al calendario`;
   }
@@ -15627,6 +15702,33 @@ function sacRenderHistorialCierres() {
 }
 
 let _sacModalPickW = 1;
+let _sacLastVentasKey = '';
+let _sacLastVentasN = -1;
+
+function sacRenderVentasDias() {
+  const key = sacDataKey();
+  const n = sacPeriodDayCount();
+  const wrap = document.getElementById('sac-ventas-dias');
+  if (!wrap) return;
+  if (key === _sacLastVentasKey && n === _sacLastVentasN && wrap.children.length === n) return;
+  _sacLastVentasKey = key;
+  _sacLastVentasN = n;
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const meta = sacDayMeta(i);
+    const estBr = meta.dowNum === 5 ? 'border-color:rgba(249,115,22,.45);' : 'border-color:rgba(249,115,22,.3);';
+    const dayStyle = meta.dowNum === 5 ? 'color:var(--danger);' : '';
+    html += `<div class="sac-v-row" id="sac-vrow-${i}">
+      <div class="sac-v-day" style="${dayStyle}">${meta.line}</div>
+      <input class="sac-v-inp" id="sac-vest-${i}" type="text" inputmode="numeric" placeholder="$0"
+        onchange="sacVChange(${i},'est',this.value)" onblur="sacVBlur(this)" style="${estBr}">
+      <div style="font-size:9px;color:#94a3b8;text-align:center;">→</div>
+      <input class="sac-v-inp real" id="sac-vreal-${i}" type="text" inputmode="numeric" placeholder="$0"
+        onchange="sacVChange(${i},'real',this.value)" onblur="sacVBlur(this)" style="border-color:rgba(16,185,129,.3);">
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
 
 function sacModalSelectWeek(w) {
   _sacModalPickW = w;
@@ -15652,9 +15754,31 @@ function sacCierreModalBuildBody() {
 }
 
 function sacAbrirElegirSemana() {
+  const p = sacNormalizedPeriod();
+  const de = document.getElementById('sac-rango-desde');
+  const ha = document.getElementById('sac-rango-hasta');
+  if (de && ha) {
+    if (p.type === 'range') {
+      de.value = p.start;
+      ha.value = p.end;
+    } else {
+      const ranges = getCalWeekRanges(p.y, p.m - 1);
+      const r = ranges[p.w - 1];
+      if (r) {
+        const d0 = new Date(p.y, p.m - 1, r.start);
+        const d1 = new Date(p.y, p.m - 1, r.end);
+        de.value = sacYMDLocal(d0);
+        ha.value = sacYMDLocal(d1);
+      } else {
+        const t = new Date();
+        de.value = sacYMDLocal(t);
+        ha.value = sacYMDLocal(t);
+      }
+    }
+  }
   _sacModalPickW = sacActiveWeek();
   const t = document.getElementById('sac-cierre-title');
-  if (t) t.textContent = '📆 ¿Qué semana querés trabajar?';
+  if (t) t.textContent = '📆 Período a trabajar';
   const cb = document.getElementById('sac-cierre-limpiar');
   if (cb) cb.checked = false;
   sacCierreModalBuildBody();
@@ -15662,28 +15786,52 @@ function sacAbrirElegirSemana() {
   if (o) o.classList.add('show');
 }
 
+function sacModalAplicarRango() {
+  const desde = document.getElementById('sac-rango-desde')?.value;
+  const hasta = document.getElementById('sac-rango-hasta')?.value;
+  if (!desde || !hasta) { notify('⚠ Elegí fecha desde y hasta'); return; }
+  if (hasta < desde) { notify('⚠ «Hasta» debe ser igual o posterior a «Desde»'); return; }
+  const days = Math.floor((sacParseISODate(hasta) - sacParseISODate(desde)) / 86400000) + 1;
+  if (days > 45) { notify('⚠ Máximo 45 días por período'); return; }
+  const limpiar = document.getElementById('sac-cierre-limpiar')?.checked;
+  pushUndo();
+  state.sacPeriodoTrabajo = { type: 'range', start: desde, end: hasta };
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+  if (limpiar) sacLimpiarPeriodoPorKey(sacDataKey());
+  sacCierreModalCerrar();
+  _sacLastVentasKey = '';
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Período SAC rango', true);
+  notify(`✅ Período: ${sacPeriodLabel()} (${days} días)`);
+}
+
 function sacCerrarSemanaClick() {
-  const w = sacActiveWeek();
-  const B = sacGetBalanceEstimado(w);
-  const lbl = sacWeekPeriodLabel(w);
-  if (!confirm(`¿Cerrar el período ${lbl}?\n\nSe guardará en el historial el balance estimado (${fmt(B.balance)}). Los datos de esta semana (ventas, cargas, ingresos, registros) quedan guardados.`)) return;
+  const B = sacGetBalanceEstimado();
+  const lbl = sacPeriodLabel();
+  if (!confirm(`¿Cerrar el período ${lbl}?\n\nSe guardará en el historial el balance estimado (${fmt(B.balance)}). Los datos de este período quedan guardados (podés volver con «Cambiar período»).`)) return;
   pushUndo();
   if (!state.sacCierresHistorial) state.sacCierresHistorial = [];
+  const p = sacNormalizedPeriod();
   state.sacCierresHistorial.unshift({
     id: 'scerr_' + Date.now(),
     ts: Date.now(),
-    w,
+    w: p.type === 'slot' ? p.w : null,
     periodoLabel: lbl,
+    periodKey: sacDataKey(),
     balanceEstimado: B.balance
   });
   if (state.sacCierresHistorial.length > 48) state.sacCierresHistorial = state.sacCierresHistorial.slice(0, 48);
+  state.sacPeriodoTrabajo = null;
   state.sacSemanaTrabajo = null;
   sacRenderHistorialCierres();
+  _sacLastVentasKey = '';
   sacRender();
   if (typeof vsSavedRender === 'function') vsSavedRender();
   markUnsaved();
   if (typeof saveState === 'function') saveState('Cierre semana SAC', true);
-  notify(`✅ Cierre guardado: ${lbl}. Usá «Cambiar semana» para abrir otra.`);
+  notify(`✅ Cierre guardado: ${lbl}. Usá «Cambiar período» para otro rango o bloque.`);
 }
 
 function sacCierreModalAplicar() {
@@ -15692,14 +15840,17 @@ function sacCierreModalAplicar() {
   const ranges = getCalWeekRanges();
   if (w < 1 || w > ranges.length) return;
   pushUndo();
-  state.sacSemanaTrabajo = { w };
-  if (limpiar) sacLimpiarSemanaSlot(w);
+  const n = new Date();
+  state.sacPeriodoTrabajo = { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w };
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+  if (limpiar) sacLimpiarPeriodoPorKey(sacDataKey());
   sacCierreModalCerrar();
+  _sacLastVentasKey = '';
   sacRender();
   if (typeof vsSavedRender === 'function') vsSavedRender();
   markUnsaved();
   if (typeof saveState === 'function') saveState('Semana SAC', true);
-  notify(`✅ Trabajando semana ${w} (${sacWeekPeriodLabel(w)})`);
+  notify(`✅ Bloque del mes: ${sacPeriodLabel()}`);
 }
 
 function sacCierreModalCerrar() {
@@ -15707,48 +15858,88 @@ function sacCierreModalCerrar() {
   if (o) o.classList.remove('show');
 }
 
-function sacLimpiarSemanaSlot(w) {
-  const k = vsKey(w);
+function sacLimpiarPeriodoPorKey(key) {
+  const n = sacPeriodDayCount();
   if (!state.vsData) state.vsData = {};
-  state.vsData[k] = VS_DAYS.map(() => ({ est: 0, real: 0, caja: 0, cerrado: false }));
+  state.vsData[key] = [];
+  for (let i = 0; i < n; i++) {
+    state.vsData[key].push({ est: 0, real: 0, caja: 0, cerrado: false });
+  }
   if (!state.vsExtraData) state.vsExtraData = {};
-  state.vsExtraData[k] = { monto: 0, nota: '', realExtra: 0 };
+  state.vsExtraData[key] = { monto: 0, nota: '', realExtra: 0 };
   if (!state.sacCargas) state.sacCargas = {};
-  state.sacCargas[w] = [];
+  state.sacCargas[key] = [];
   if (!state.sacIngresos) state.sacIngresos = {};
-  state.sacIngresos[w] = [];
+  state.sacIngresos[key] = [];
 }
 
-function sacGetCargas(w) {
-  w = w || sacActiveWeek();
+function sacGetCargas(key) {
+  key = key || sacDataKey();
   if (!state.sacCargas) state.sacCargas = {};
-  if (!state.sacCargas[w]) state.sacCargas[w] = [];
-  return state.sacCargas[w];
+  if (!state.sacCargas[key]) state.sacCargas[key] = [];
+  return state.sacCargas[key];
 }
 
-function sacGetIngresos(w) {
-  w = w || sacActiveWeek();
+function sacGetIngresos(key) {
+  key = key || sacDataKey();
   if (!state.sacIngresos) state.sacIngresos = {};
-  if (!state.sacIngresos[w]) state.sacIngresos[w] = [];
-  return state.sacIngresos[w];
+  if (!state.sacIngresos[key]) state.sacIngresos[key] = [];
+  return state.sacIngresos[key];
+}
+
+function sacMigrateLegacySacKeys() {
+  try {
+    const n = new Date();
+    const y = n.getFullYear();
+    const m = n.getMonth() + 1;
+    for (let w = 1; w <= 4; w++) {
+      const newK = 'S|' + y + '|' + m + '|' + w;
+      const oldKs = [String(w), w];
+      if (state.vsData) {
+        for (const ok of oldKs) {
+          if (state.vsData[ok] && state.vsData[ok].length && !state.vsData[newK]) {
+            state.vsData[newK] = JSON.parse(JSON.stringify(state.vsData[ok]));
+            break;
+          }
+        }
+      }
+      if (state.vsExtraData) {
+        for (const ok of oldKs) {
+          if (state.vsExtraData[ok] && !state.vsExtraData[newK]) {
+            const x = state.vsExtraData[ok];
+            state.vsExtraData[newK] = { monto: x.monto || 0, nota: x.nota || '', realExtra: x.realExtra || 0 };
+            break;
+          }
+        }
+      }
+      if (state.sacCargas) {
+        for (const ok of oldKs) {
+          if (state.sacCargas[ok] && state.sacCargas[ok].length && !state.sacCargas[newK]) {
+            state.sacCargas[newK] = state.sacCargas[ok].slice();
+            break;
+          }
+        }
+      }
+      if (state.sacIngresos) {
+        for (const ok of oldKs) {
+          if (state.sacIngresos[ok] && state.sacIngresos[ok].length && !state.sacIngresos[newK]) {
+            state.sacIngresos[newK] = state.sacIngresos[ok].slice();
+            break;
+          }
+        }
+      }
+    }
+  } catch (e) {}
 }
 
 // ── RENDER ──
 function sacRender() {
-  const w = sacActiveWeek();
+  sacRenderVentasDias();
+  const wlbl = sacPeriodLabel();
+  const el = document.getElementById('sac-week-lbl'); if (el) el.textContent = wlbl;
 
-  // Week label
-  const ranges = getCalWeekRanges();
-  const r      = ranges[w-1];
-  const MESES  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const now    = new Date();
-  const wlbl   = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
-  const el = document.getElementById('sac-week-lbl'); if(el) el.textContent = wlbl;
+  sacLoadVentas();
 
-  // Load ventas from vsData (same data as Venta Semanal tab)
-  sacLoadVentas(w);
-
-  // Bank/efectivo
   const bancoInp = document.getElementById('sac-banco');
   if (bancoInp && document.activeElement !== bancoInp)
     bancoInp.value = state.cajaEmpresa?.banco || '';
@@ -15757,7 +15948,6 @@ function sacRender() {
   if (efInp && document.activeElement !== efInp)
     efInp.value = state.sacEfectivo || '';
 
-  // Merc
   const merc = state.sacMerc || {mode:'monto', val:0};
   const rMonto = document.getElementById('sac-merc-monto');
   const rPct   = document.getElementById('sac-merc-pct');
@@ -15766,50 +15956,48 @@ function sacRender() {
   const mInp = document.getElementById('sac-merc-val');
   if (mInp && document.activeElement !== mInp) mInp.value = merc.val || '';
 
-  // Cargas + panel financiamiento (antes de sacCalcAll para que existan #sac-fin-balance-live)
-  sacRenderCargas(w);
-  sacRenderIngresos(w);
-  sacRenderFinanciamientoPanel(w);
-  sacCalcAll(w);
+  sacRenderCargas();
+  sacRenderIngresos();
+  sacRenderFinanciamientoPanel();
+  sacCalcAll();
   sacUpdateToolbarDesc();
   sacRenderHistorialCierres();
 }
 
-// Load ventas values from vsData into static inputs — never reconstructs inputs
-function sacLoadVentas(w) {
-  const days = vsGetWeek(w);
-  const extraMonto = vsGetExtra(w).monto || 0;
-  const VS_REAL_DATA = vsGetWeek(w);
+function sacLoadVentas() {
+  const key = sacDataKey();
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  const extraMonto = vsGetExtraSac(key).monto || 0;
+  const extraReal = vsGetExtraSac(key).realExtra || 0;
 
-  for (let i=0; i<7; i++) {
-    const eInp = document.getElementById('sac-vest-'+i);
-    const rInp = document.getElementById('sac-vreal-'+i);
-    const d    = days[i] || {};
-    if (eInp && document.activeElement !== eInp) eInp.value = d.est  || '';
+  for (let i = 0; i < n; i++) {
+    const eInp = document.getElementById('sac-vest-' + i);
+    const rInp = document.getElementById('sac-vreal-' + i);
+    const d = days[i] || {};
+    if (eInp && document.activeElement !== eInp) eInp.value = d.est || '';
     if (rInp && document.activeElement !== rInp) rInp.value = d.real || '';
   }
   const exEInp = document.getElementById('sac-vest-extra');
   const exRInp = document.getElementById('sac-vreal-extra');
   if (exEInp && document.activeElement !== exEInp) exEInp.value = extraMonto || '';
-  if (exRInp) exRInp.value = '';  // extra real always manual
+  if (exRInp && document.activeElement !== exRInp) exRInp.value = extraReal || '';
 
-  sacCalcVentas(w);
+  sacCalcVentas();
 }
 
-// onchange handler for ventas inputs — writes to vsData, never touches other inputs
 function sacVChange(dayIdx, field, rawVal) {
-  const w   = sacActiveWeek();
-  const val = parseInt((rawVal||'0').replace(/[^\d]/g,''),10)||0;
+  const key = sacDataKey();
+  const val = parseInt((rawVal || '0').replace(/[^\d]/g, ''), 10) || 0;
   if (dayIdx === 'extra') {
-    if (field === 'est') vsGetExtra(w).monto = val;
-    if (field === 'real') vsGetExtra(w).realExtra = val;
+    if (field === 'est') vsGetExtraSac(key).monto = val;
+    if (field === 'real') vsGetExtraSac(key).realExtra = val;
   } else {
-    const days = vsGetWeek(w);
-    days[dayIdx][field] = val;
+    const days = vsGetWeekSac(key);
+    if (days[dayIdx]) days[dayIdx][field] = val;
   }
-  sacCalcVentas(w);
-  sacCalcBalance(w);
-  // Also sync Venta Semanal tab if open
+  sacCalcVentas();
+  sacCalcBalance();
   if (document.getElementById('venta')?.classList.contains('active')) vsCalcTotals();
 }
 
@@ -15818,14 +16006,20 @@ function sacVBlur(inp) {
   if (inp.value !== c) inp.value = c;
 }
 
-function sacCalcVentas(w) {
-  const days      = vsGetWeek(w);
-  const extraEst  = vsGetExtra(w).monto || 0;
-  const totalEst  = Math.round(days.reduce((s,d)=>s+d.est,0) + extraEst);
-  const totalReal = Math.round(days.reduce((s,d)=>s+d.real,0));
+function sacCalcVentas() {
+  const key = sacDataKey();
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  const extraEst = vsGetExtraSac(key).monto || 0;
+  let sumEst = 0, sumReal = 0;
+  for (let i = 0; i < n && i < days.length; i++) {
+    sumEst += days[i].est || 0;
+    sumReal += days[i].real || 0;
+  }
+  const totalEst = Math.round(sumEst + extraEst);
+  const totalReal = Math.round(sumReal);
 
-  // Hybrid: days with real > 0 use real, rest use estimated
-  const hybrid = vsHybridTotal(w);
+  const hybrid = vsHybridTotalKey(key);
   const hasReal = hybrid.realDays > 0;
 
   const te = document.getElementById('sac-vest-total');
@@ -15869,24 +16063,23 @@ function sacMercModeChange() {
   state.sacMerc.mode = r?.value || 'monto';
   const mInp = document.getElementById('sac-merc-val');
   if (mInp) mInp.placeholder = state.sacMerc.mode === 'pct' ? '30 (%)' : '0 ($)';
-  sacCalcAll(sacActiveWeek());
+  sacCalcAll();
   markUnsaved();
 }
 
 function sacMercValChange(val) {
   if (!state.sacMerc) state.sacMerc = {mode:'monto', val:0};
   state.sacMerc.val = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
-  sacCalcAll(sacActiveWeek());
+  sacCalcAll();
   markUnsaved();
 }
 
-function sacGetMercMonto(w) {
+function sacGetMercMonto() {
   const merc = state.sacMerc || {mode:'monto', val:0};
   if (merc.mode === 'monto') return merc.val || 0;
-  // Use hybrid total (real days win over estimated)
-  const hybrid   = vsHybridTotal(w);
+  const hybrid = vsHybridTotalKey(sacDataKey());
   const baseVenta = hybrid.total;
-  return Math.round(baseVenta * (merc.val||0) / 100);
+  return Math.round(baseVenta * (merc.val || 0) / 100);
 }
 
 // ── BANCO / EFECTIVO ──
@@ -15897,14 +16090,14 @@ function sacSetBanco(val) {
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
   const upd = document.getElementById('sac-banco-upd');
   if (upd) upd.textContent = 'Act. ' + state.cajaEmpresa.bancoUpd;
-  sacCalcBalance(sacActiveWeek());
+  sacCalcBalance();
   updateTotalDisponible();
   markUnsaved();
 }
 
 function sacSetEfectivo(val) {
   state.sacEfectivo = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
-  sacCalcBalance(sacActiveWeek());
+  sacCalcBalance();
   markUnsaved();
 }
 
@@ -15919,16 +16112,15 @@ function sacCatColor(cat) {
   return '#94a3b8';
 }
 
-function sacRenderCargas(w) {
-  w = w || sacActiveWeek();
-  const list   = document.getElementById('sac-cargas-list'); if (!list) return;
-  const cargas = sacGetCargas(w);
+function sacRenderCargas() {
+  const list = document.getElementById('sac-cargas-list'); if (!list) return;
+  const cargas = sacGetCargas();
 
   if (!cargas.length) {
     list.innerHTML = `<div style="padding:24px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic;">
       Sin cargas esta semana — usa <b>+ Agregar</b> o <b>☑ Gastos fijos</b> para agregar
     </div>`;
-    sacCalcCargasTotals(w);
+    sacCalcCargasTotals();
     return;
   }
 
@@ -15974,22 +16166,22 @@ function sacRenderCargas(w) {
         ${diffTxt}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button class="sac-estado-btn ${esCls}" onclick="sacCycleEstado(${w},'${c.id}')">${esTxt}</button>
-        ${!c._esPago ? `<button onclick="sacPagarParcial(${w},'${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>` : ''}
+        <button class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
+        ${!c._esPago ? `<button onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button onclick="sacDelCarga(${w},'${c.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;transition:.15s;"
+        <button onclick="sacDelCarga('${c.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;transition:.15s;"
           onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
-        <button onclick="sacEditCarga(${w},'${c.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
+        <button onclick="sacEditCarga('${c.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
       </div>
     </div>`;
   }).join('');
 
-  sacCalcCargasTotals(w);
+  sacCalcCargasTotals();
 }
 
-function sacCalcCargasTotals(w) {
-  const cargas   = sacGetCargas(w);
+function sacCalcCargasTotals() {
+  const cargas   = sacGetCargas();
   // Exclude auto-generated payment records from totals (they're subsets of originals)
   const base     = cargas.filter(c => !c._esPago);
   const total    = Math.round(base.reduce((s,c)=>s+(c.monto||0),0));
@@ -16003,8 +16195,7 @@ function sacCalcCargasTotals(w) {
     if (c.estado==='parcial') return s+(c.monto-(c.pagadoParcial||0));
     return s+(c.monto||0);
   },0));
-  // Add mercadería
-  const mercMonto = Math.round(sacGetMercMonto(w));
+  const mercMonto = Math.round(sacGetMercMonto());
   const grandTotal= Math.round(total + mercMonto);
   const grandPend = Math.round(pendiente + (mercMonto>0?mercMonto:0)); // mercadería always pending
 
@@ -16024,9 +16215,8 @@ function sacCalcCargasTotals(w) {
   }
 }
 
-function sacCalcIngresosTotals(w) {
-  w = w || sacActiveWeek();
-  const arr = sacGetIngresos(w);
+function sacCalcIngresosTotals() {
+  const arr = sacGetIngresos();
   const pend = Math.round(arr.filter(x => x.estado !== 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
   const rec = Math.round(arr.filter(x => x.estado === 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
   const set2 = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
@@ -16034,14 +16224,13 @@ function sacCalcIngresosTotals(w) {
   set2('sac-ing-recib', fmt(rec));
 }
 
-function sacRenderIngresos(w) {
-  w = w || sacActiveWeek();
+function sacRenderIngresos() {
   const list = document.getElementById('sac-ingresos-list');
   if (!list) return;
-  const arr = sacGetIngresos(w);
+  const arr = sacGetIngresos();
   if (!arr.length) {
     list.innerHTML = '<div style="padding:8px 10px;text-align:center;color:#94a3b8;font-size:10px;font-style:italic;">Sin ítems · <b>+ Ingreso</b></div>';
-    sacCalcIngresosTotals(w);
+    sacCalcIngresosTotals();
     return;
   }
   list.innerHTML = arr.map(it => {
@@ -16056,55 +16245,55 @@ function sacRenderIngresos(w) {
         <div class="sac-monto" style="color:${esRec ? '#94a3b8' : 'var(--success)'};">${fmt(it.monto || 0)}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button type="button" class="sac-estado-btn ${esRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado(${w},'${it.id}')">${esRec ? '✓ Recibido' : '○ Pendiente'}</button>
+        <button type="button" class="sac-estado-btn ${esRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado('${it.id}')">${esRec ? '✓ Recibido' : '○ Pendiente'}</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button type="button" onclick="sacDelIngreso(${w},'${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
-        <button type="button" onclick="sacEditIngreso(${w},'${it.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
+        <button type="button" onclick="sacDelIngreso('${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
+        <button type="button" onclick="sacEditIngreso('${it.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
       </div>
     </div>`;
   }).join('');
-  sacCalcIngresosTotals(w);
+  sacCalcIngresosTotals();
 }
 
 function sacAddIngresoManual() {
-  const w = sacActiveWeek();
   pushUndo();
   const id = 'si_' + Date.now();
-  sacGetIngresos(w).push({
+  sacGetIngresos().push({
     id, nombre: '', monto: 0, estado: 'pendiente', nota: ''
   });
-  sacRenderIngresos(w);
-  sacCalcBalance(w);
+  sacRenderIngresos();
+  sacCalcBalance();
   markUnsaved();
-  sacEditIngreso(w, id);
+  sacEditIngreso(id);
 }
 
-function sacDelIngreso(w, id) {
-  const arr = sacGetIngresos(w);
+function sacDelIngreso(id) {
+  const k = sacDataKey();
+  const arr = sacGetIngresos(k);
   const it = arr.find(x => x.id === id);
   if (!it) return;
   if (!confirm(`¿Eliminar ingreso "${it.nombre || id}" (${fmt(it.monto)})?`)) return;
   pushUndo();
-  state.sacIngresos[w] = arr.filter(x => x.id !== id);
-  sacRenderIngresos(w);
-  sacCalcBalance(w);
+  state.sacIngresos[k] = arr.filter(x => x.id !== id);
+  sacRenderIngresos();
+  sacCalcBalance();
   markUnsaved();
 }
 
-function sacCycleIngresoEstado(w, id) {
-  const it = sacGetIngresos(w).find(x => x.id === id);
+function sacCycleIngresoEstado(id) {
+  const it = sacGetIngresos().find(x => x.id === id);
   if (!it) return;
   pushUndo();
   it.estado = it.estado === 'recibido' ? 'pendiente' : 'recibido';
-  sacRenderIngresos(w);
-  sacCalcBalance(w);
+  sacRenderIngresos();
+  sacCalcBalance();
   markUnsaved();
   notify(it.estado === 'recibido' ? '✓ Marcado como recibido — actualiza banco/caja si aplica' : '○ Pendiente otra vez (suma al balance estimado)');
 }
 
-function sacEditIngreso(w, id) {
-  const it = sacGetIngresos(w).find(x => x.id === id);
+function sacEditIngreso(id) {
+  const it = sacGetIngresos().find(x => x.id === id);
   if (!it) return;
   const row = document.getElementById('sac-ir-' + id);
   if (!row) return;
@@ -16113,34 +16302,34 @@ function sacEditIngreso(w, id) {
       <input class="sac-edit-inp" type="text" value="${esc(it.nombre)}" placeholder="Concepto" id="sin-nombre-${id}" style="flex:2;min-width:140px;">
       <input class="sac-edit-inp" type="text" inputmode="numeric" value="${it.monto || ''}" placeholder="Monto $" id="sin-monto-${id}" style="width:110px;text-align:right;">
       <input class="sac-edit-inp" type="text" value="${esc(it.nota || '')}" placeholder="Nota (opcional)" id="sin-nota-${id}" style="flex:2;min-width:120px;">
-      <button type="button" onclick="sacSaveIngresoEdit(${w},'${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
-      <button type="button" onclick="sacRenderIngresos(${w})" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
+      <button type="button" onclick="sacSaveIngresoEdit('${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
+      <button type="button" onclick="sacRenderIngresos()" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
     </div>`;
   document.getElementById('sin-nombre-' + id)?.focus();
 }
 
-function sacSaveIngresoEdit(w, id) {
-  const it = sacGetIngresos(w).find(x => x.id === id);
+function sacSaveIngresoEdit(id) {
+  const it = sacGetIngresos().find(x => x.id === id);
   if (!it) return;
   pushUndo();
   it.nombre = (document.getElementById('sin-nombre-' + id)?.value || '').trim() || it.nombre;
   it.monto = parseInt((document.getElementById('sin-monto-' + id)?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
   it.nota = (document.getElementById('sin-nota-' + id)?.value || '').trim() || '';
-  sacRenderIngresos(w);
-  sacCalcBalance(w);
+  sacRenderIngresos();
+  sacCalcBalance();
   markUnsaved();
 }
 
-function sacGetBalanceEstimado(w) {
-  w = w || sacActiveWeek();
+function sacGetBalanceEstimado() {
+  const key = sacDataKey();
   const banco     = state.cajaEmpresa?.banco || 0;
   const efectivo  = state.sacEfectivo || 0;
   const propPend  = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
   const bancoReal = Math.round(banco - propPend);
   const disponible= Math.round(bancoReal + efectivo);
 
-  const cargas    = sacGetCargas(w);
-  const mercMonto = Math.round(sacGetMercMonto(w));
+  const cargas    = sacGetCargas(key);
+  const mercMonto = Math.round(sacGetMercMonto());
   const porPagar  = Math.round(cargas.reduce((s,c)=>{
     if (c.estado==='pagado')  return s;
     if (c.estado==='parcial') return s+(c.monto-(c.montoReal||0));
@@ -16152,22 +16341,18 @@ function sacGetBalanceEstimado(w) {
     return s;
   },0));
 
-  const days     = vsGetWeek(w);
-  const extra    = vsGetExtra(w);
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  const extra = vsGetExtraSac(key);
   let ventasEstPendientes = 0;
   let ventaRealAcum = 0;
-  days.forEach(d => {
-    if (d.real > 0) {
-      ventaRealAcum += d.real;
-    } else if (d.est > 0) {
-      ventasEstPendientes += d.est;
-    }
-  });
-  if (extra.realExtra > 0) {
-    ventaRealAcum += extra.realExtra;
-  } else if (extra.monto > 0) {
-    ventasEstPendientes += extra.monto;
+  for (let i = 0; i < n && i < days.length; i++) {
+    const d = days[i];
+    if (d.real > 0) ventaRealAcum += d.real;
+    else if (d.est > 0) ventasEstPendientes += d.est;
   }
+  if (extra.realExtra > 0) ventaRealAcum += extra.realExtra;
+  else if (extra.monto > 0) ventasEstPendientes += extra.monto;
   ventasEstPendientes = Math.round(ventasEstPendientes);
   ventaRealAcum = Math.round(ventaRealAcum);
 
@@ -16175,19 +16360,18 @@ function sacGetBalanceEstimado(w) {
     return s + (!i.confirmed ? (i.amount||0) : 0);
   }, 0));
 
-  const otrosIngPend = Math.round(sacGetIngresos(w).reduce((s, x) => s + (x.estado === 'recibido' ? 0 : (x.monto || 0)), 0));
+  const otrosIngPend = Math.round(sacGetIngresos(key).reduce((s, x) => s + (x.estado === 'recibido' ? 0 : (x.monto || 0)), 0));
 
   const balance = Math.round(disponible + ventasEstPendientes + ingresosPorIngresar + otrosIngPend - porPagar);
 
   return {
-    w, balance, disponible, porPagar, pagado, ventasEstPendientes, ventaRealAcum,
+    balance, disponible, porPagar, pagado, ventasEstPendientes, ventaRealAcum,
     ingresosPorIngresar, otrosIngPend, days, mercMonto
   };
 }
 
-function sacCalcBalance(w) {
-  w = w || sacActiveWeek();
-  const B = sacGetBalanceEstimado(w);
+function sacCalcBalance() {
+  const B = sacGetBalanceEstimado();
   const {
     balance, disponible, porPagar, ventasEstPendientes, ventaRealAcum,
     ingresosPorIngresar, otrosIngPend, pagado, days
@@ -16203,7 +16387,8 @@ function sacCalcBalance(w) {
   set2('sac-vreal-acum', fmt(ventaRealAcum));
   const vrSub = document.getElementById('sac-vreal-acum-sub');
   if (vrSub) {
-    const diasReal = days.filter(d=>d.real>0).length;
+    const nD = sacPeriodDayCount();
+    const diasReal = (days || []).slice(0, nD).filter(d => d.real > 0).length;
     vrSub.textContent = diasReal > 0 ? `${diasReal} día${diasReal!==1?'s':''} confirmado${diasReal!==1?'s':''} · ya en caja/banco` : 'Sin ventas reales aún';
   }
 
@@ -16219,14 +16404,12 @@ function sacCalcBalance(w) {
     subEl.textContent = subTxt;
   }
 
-  // Update dashboard SAC widget
-  updateDashSac(w, disponible, porPagar, pagado, ventasEstPendientes, balance);
-  sacUpdateFinPanelBalance(w);
+  updateDashSac(disponible, porPagar, pagado, ventasEstPendientes, balance);
+  sacUpdateFinPanelBalance();
 }
 
-function sacUpdateFinPanelBalance(w) {
-  w = w || sacActiveWeek();
-  const B = sacGetBalanceEstimado(w);
+function sacUpdateFinPanelBalance() {
+  const B = sacGetBalanceEstimado();
   const el = document.getElementById('sac-fin-balance-live');
   const hint = document.getElementById('sac-fin-neg-hint');
   if (el) {
@@ -16236,17 +16419,12 @@ function sacUpdateFinPanelBalance(w) {
   if (hint) hint.style.display = B.balance < 0 ? 'inline' : 'none';
 }
 
-function sacRenderFinanciamientoPanel(w) {
-  w = w || sacActiveWeek();
+function sacRenderFinanciamientoPanel() {
   const wrap = document.getElementById('sac-fin-panel-wrap');
   if (!wrap) return;
   if (!state.sacFinanciamientoRegistro) state.sacFinanciamientoRegistro = [];
-  const B = sacGetBalanceEstimado(w);
-  const now = new Date();
-  const ranges = getCalWeekRanges();
-  const r = ranges[w - 1];
-  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const wlbl = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+  const B = sacGetBalanceEstimado();
+  const wlbl = sacPeriodLabel();
   const balNeg = B.balance < 0;
   const reg = [...state.sacFinanciamientoRegistro].sort((a, b) => (b.ts || 0) - (a.ts || 0));
   const rows = reg.slice(0, 48).map(it => {
@@ -16295,8 +16473,7 @@ function sacRenderFinanciamientoPanel(w) {
 }
 
 function sacGuardarFinanciamientoRegistro() {
-  const w = sacActiveWeek();
-  const B = sacGetBalanceEstimado(w);
+  const B = sacGetBalanceEstimado();
   const monto = parseInt((document.getElementById('sac-fin-monto')?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
   const detalle = (document.getElementById('sac-fin-detalle')?.value || '').trim();
   if (!monto) { notify('⚠ Ingresa el monto que aportó o financió Sebas'); return; }
@@ -16306,15 +16483,15 @@ function sacGuardarFinanciamientoRegistro() {
   pushUndo();
   if (!state.sacFinanciamientoRegistro) state.sacFinanciamientoRegistro = [];
   const now = new Date();
-  const ranges = getCalWeekRanges();
-  const r = ranges[w - 1];
-  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const wlbl = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+  const p = sacNormalizedPeriod();
+  const wlbl = sacPeriodLabel();
   state.sacFinanciamientoRegistro.unshift({
     id: 'sfin_' + Date.now(),
     ts: Date.now(),
-    y: now.getFullYear(), mo: now.getMonth() + 1, w,
+    y: now.getFullYear(), mo: now.getMonth() + 1,
+    w: p.type === 'slot' ? p.w : null,
     periodoLabel: wlbl,
+    periodKey: sacDataKey(),
     balanceNegativo: B.balance,
     montoFinanciado: monto,
     detalle: detalle || ''
@@ -16323,7 +16500,7 @@ function sacGuardarFinanciamientoRegistro() {
   const di = document.getElementById('sac-fin-detalle');
   if (mi) mi.value = '';
   if (di) di.value = '';
-  sacRenderFinanciamientoPanel(w);
+  sacRenderFinanciamientoPanel();
   markUnsaved();
   if (typeof saveState === 'function') saveState('Registro financiamiento Sebas', true);
   notify('✅ Registro guardado en historial');
@@ -16333,19 +16510,14 @@ function sacEliminarFinanciamientoRegistro(id) {
   if (!confirm('¿Eliminar este registro del historial?')) return;
   pushUndo();
   state.sacFinanciamientoRegistro = (state.sacFinanciamientoRegistro || []).filter(x => x.id !== id);
-  sacRenderFinanciamientoPanel(sacActiveWeek());
+  sacRenderFinanciamientoPanel();
   markUnsaved();
   if (typeof saveState === 'function') saveState('Eliminó registro financiamiento', true);
   notify('Registro eliminado');
 }
 
-function updateDashSac(w, disponible, porPagar, pagado, ventas, balance) {
-  w = w || sacActiveWeek();
-  const ranges = getCalWeekRanges();
-  const r      = ranges[(w-1)] || ranges[0];
-  const now    = new Date();
-  const MESES  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-  const wlbl   = r ? `${r.start}–${r.end} ${MESES[now.getMonth()]}` : '';
+function updateDashSac(disponible, porPagar, pagado, ventas, balance) {
+  const wlbl = sacPeriodLabel();
 
   const set2=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set2('dash-sac-wlbl',    wlbl);
@@ -16361,17 +16533,16 @@ function updateDashSac(w, disponible, porPagar, pagado, ventas, balance) {
   }
 }
 
-function sacCalcAll(w) {
-  sacCalcVentas(w);
-  sacCalcCargasTotals(w);
-  sacCalcBalance(w);
+function sacCalcAll() {
+  sacCalcVentas();
+  sacCalcCargasTotals();
+  sacCalcBalance();
 }
 
 // ── CARGA ACTIONS ──
 function sacAddCargaManual() {
-  const w = sacActiveWeek();
   pushUndo();
-  sacGetCargas(w).push({
+  sacGetCargas().push({
     id:       'sc_'+Date.now(),
     nombre:   '',
     cat:      'Otro',
@@ -16381,26 +16552,26 @@ function sacAddCargaManual() {
     resp:     currentUser || '',
     nota:     ''
   });
-  sacRenderCargas(w);
-  sacCalcBalance(w);
-  // Auto-open edit for last item
-  const cargas = sacGetCargas(w);
-  sacEditCarga(w, cargas[cargas.length-1].id);
+  sacRenderCargas();
+  sacCalcBalance();
+  const cargas = sacGetCargas();
+  sacEditCarga(cargas[cargas.length - 1].id);
 }
 
-function sacDelCarga(w, id) {
-  const cargas = sacGetCargas(w);
-  const c = cargas.find(x=>x.id===id);
+function sacDelCarga(id) {
+  const k = sacDataKey();
+  const cargas = sacGetCargas(k);
+  const c = cargas.find(x => x.id === id);
   if (!c) return;
   if (!confirm(`¿Eliminar "${c.nombre}" (${fmt(c.monto)})?`)) return;
   pushUndo();
-  state.sacCargas[w] = cargas.filter(x=>x.id!==id);
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  state.sacCargas[k] = cargas.filter(x => x.id !== id);
+  sacRenderCargas();
+  sacCalcBalance();
 }
 
-function sacCycleEstado(w, id) {
-  const c = sacGetCargas(w).find(x=>x.id===id); if(!c) return;
+function sacCycleEstado(id) {
+  const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   const order = ['nopagado','pagado','parcial'];
   const idx   = order.indexOf(c.estado||'nopagado');
   const next  = order[(idx+1)%order.length];
@@ -16409,21 +16580,21 @@ function sacCycleEstado(w, id) {
   pushUndo();
   c.estado = next;
   if (c.estado==='pagado' && c.montoReal==null) c.montoReal = c.monto;
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  sacRenderCargas();
+  sacCalcBalance();
   notify(c.estado==='pagado'?`✓ ${c.nombre} — Pagado`:c.estado==='parcial'?`◑ ${c.nombre} — Parcial`:`○ ${c.nombre} — No pagado`);
 }
 
-function sacEditMonto(w, id) {
-  const c = sacGetCargas(w).find(x=>x.id===id); if(!c) return;
+function sacEditMonto(id) {
+  const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   const v = prompt(`Monto real pagado para "${c.nombre}"\n(Proyectado: ${fmt(c.monto)})`, c.montoReal??c.monto);
   if (v === null) return;
   const real = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
   pushUndo();
   c.montoReal = real;
   c.estado    = real === c.monto ? 'pagado' : real < c.monto ? 'parcial' : 'pagado';
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  sacRenderCargas();
+  sacCalcBalance();
   notify(`✓ Monto real: ${fmt(real)}`);
 }
 
@@ -16431,8 +16602,8 @@ function sacEditMonto(w, id) {
 // Al registrar un pago parcial de X sobre una carga de Y:
 // 1. La carga original queda en Y-X (pendiente)
 // 2. Se crea automáticamente una carga nueva de X con estado "pagado"
-function sacPagarParcial(w, id) {
-  const cargas = sacGetCargas(w);
+function sacPagarParcial(id) {
+  const cargas = sacGetCargas();
   const c = cargas.find(x=>x.id===id); if(!c) return;
 
   const pendiente = c.monto - (c.pagadoParcial||0);
@@ -16484,13 +16655,13 @@ function sacPagarParcial(w, id) {
     }
   }
 
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  sacRenderCargas();
+  sacCalcBalance();
   markUnsaved();
 }
 
-function sacEditCarga(w, id) {
-  const c = sacGetCargas(w).find(x=>x.id===id); if(!c) return;
+function sacEditCarga(id) {
+  const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   const CAT_LIST = ['Crédito','TC','Retiro','Proveedor','Impuesto','Servicio','Bono','Arriendo','Compra','RRHH','Otro'];
   const row = document.getElementById('sac-cr-'+id); if(!row) return;
 
@@ -16502,22 +16673,22 @@ function sacEditCarga(w, id) {
       <input class="sac-edit-inp" type="text" inputmode="numeric" value="${c.monto||''}" placeholder="Monto $" id="se-monto-${id}" style="width:110px;text-align:right;">
       <input class="sac-edit-inp" type="text" value="${esc(c.resp||'')}" placeholder="Responsable" id="se-resp-${id}" style="width:110px;">
       <input class="sac-edit-inp" type="text" value="${esc(c.nota||'')}" placeholder="Nota" id="se-nota-${id}" style="flex:2;min-width:120px;">
-      <button onclick="sacSaveEdit(${w},'${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
-      <button onclick="sacRenderCargas(${w})" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
+      <button onclick="sacSaveEdit('${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
+      <button onclick="sacRenderCargas()" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
     </div>`;
   document.getElementById('se-nombre-'+id)?.focus();
 }
 
-function sacSaveEdit(w, id) {
-  const c = sacGetCargas(w).find(x=>x.id===id); if(!c) return;
+function sacSaveEdit(id) {
+  const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   pushUndo();
   c.nombre = document.getElementById('se-nombre-'+id)?.value || c.nombre;
   c.cat    = document.getElementById('se-cat-'+id)?.value    || c.cat;
   c.monto  = parseInt((document.getElementById('se-monto-'+id)?.value||'0').replace(/[^\d]/g,''),10)||0;
   c.resp   = document.getElementById('se-resp-'+id)?.value   || '';
   c.nota   = document.getElementById('se-nota-'+id)?.value   || '';
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  sacRenderCargas();
+  sacCalcBalance();
 }
 
 // ── CONFIG SELECTOR ──
@@ -16527,8 +16698,7 @@ function sacOpenConfigSel() {
   const keys = ['mercaderia','rrhh','operacion','pasivos','socias','gestion','ingresos'];
   const keyLabels = {mercaderia:'🛒 Mercadería', rrhh:'👥 RRHH', operacion:'⚡ Operación',
     pasivos:'🏦 Pasivos', socias:'🤝 Socias', gestion:'💼 Gestión', ingresos:'💰 Ingresos'};
-  const w = sacActiveWeek();
-  const existing = new Set(sacGetCargas(w).map(c=>c._fixedId));
+  const existing = new Set(sacGetCargas().map(c=>c._fixedId));
   let html = '';
   keys.forEach(k => {
     const items = (state[k]||[]).filter(i=>i.amount>0);
@@ -16555,7 +16725,6 @@ function sacCloseSel() {
 }
 
 function sacImportSelected() {
-  const w    = sacActiveWeek();
   const keys = ['mercaderia','rrhh','operacion','pasivos','socias','gestion','ingresos'];
   const keyLabels = {mercaderia:'Proveedor', rrhh:'RRHH', operacion:'Servicio',
     pasivos:'Crédito', socias:'Retiro', gestion:'Crédito', ingresos:'Ingreso'};
@@ -16567,7 +16736,7 @@ function sacImportSelected() {
     const [secKey, itemId] = cb.value.split('|');
     const item = (state[secKey]||[]).find(x=>String(x.id)===itemId);
     if (!item) return;
-    sacGetCargas(w).push({
+    sacGetCargas().push({
       id:       'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       nombre:   item.name,
       cat:      keyLabels[secKey] || 'Otro',
@@ -16581,8 +16750,8 @@ function sacImportSelected() {
     added++;
   });
   sacCloseSel();
-  sacRenderCargas(w);
-  sacCalcBalance(w);
+  sacRenderCargas();
+  sacCalcBalance();
   notify(`✅ ${added} ítem${added!==1?'s':''} agregado${added!==1?'s':''} a la semana`);
 }
 
