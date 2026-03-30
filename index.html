@@ -1017,8 +1017,10 @@ body.dark-mode .inv-cons-table th,.dark-mode .inv-orden-table th{background:#0f1
 
 /* ---- INVENTARIO ---- */
 .inv-toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
-.inv-filter-row{display:flex;gap:8px;margin:-4px 0 14px;flex-wrap:wrap;align-items:center;font-size:11px;}
-.inv-filter-select{border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 8px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;max-width:100%;}
+.inv-filter-bar{background:linear-gradient(180deg,#f1f5f9 0%,#f8fafc 100%);border:1px solid var(--border);border-radius:10px;padding:10px 12px 12px;margin-bottom:14px;}
+.inv-filter-bar-title{font-size:10px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+.inv-filter-row{display:flex;gap:8px;margin:0;flex-wrap:wrap;align-items:center;font-size:11px;}
+.inv-filter-select{border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-family:inherit;font-size:11px;color:var(--primary);background:var(--white);max-width:100%;min-height:34px;}
 .inv-search{flex:1;min-width:140px;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;}
 .inv-search:focus{outline:none;border-color:var(--accent);}
 .inv-category-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
@@ -1055,6 +1057,9 @@ body.dark-mode .inv-cons-table th,.dark-mode .inv-orden-table th{background:#0f1
 .fac-venc-item{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #fecaca;font-size:11px;flex-wrap:wrap;gap:4px;}
 .fac-venc-item:last-child{border-bottom:none;}
 body.dark-mode .inv-table-wrap,.dark-mode .inv-pedido-card,.dark-mode .inv-kpi{background:#1e293b;}
+body.dark-mode .inv-filter-bar{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);border-color:rgba(255,255,255,.12);}
+body.dark-mode .inv-filter-bar-title{color:#94a3b8;}
+body.dark-mode .inv-filter-select{background:#1c1c1e;border-color:rgba(255,255,255,.12);color:#e2e8f0;}
 body.dark-mode .inv-cat-btn{background:#1e293b;}
 body.dark-mode .fac-venc-banner{background:#2d1a1a;border-color:#7f1d1d;}
 
@@ -3293,6 +3298,61 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     </div>
   </div>
 
+  <!-- Importar inventario desde facturas guardadas -->
+  <div class="ai-modal-overlay" id="invFacImportModal" onclick="if(event.target===this)closeInvImportFromFacsModal()">
+    <div class="ai-modal" style="width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column;">
+      <div class="ai-modal-head" style="background:linear-gradient(135deg,#0d9488,#059669);">
+        <div>
+          <h3 style="margin:0;">🔗 Importar desde facturas</h3>
+          <p style="margin:4px 0 0;font-size:12px;opacity:.95;">Elige qué facturas usar. Se importan líneas de detalle y precios por proveedor (facturas importadas con IA desde marzo 2026 guardan líneas).</p>
+        </div>
+      </div>
+      <div class="ai-modal-body" style="overflow:auto;flex:1;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;font-size:11px;">
+          <label style="color:#64748b;font-weight:600;">Proveedor</label>
+          <select id="inv-fac-filt-prov" class="inv-filter-select" style="min-width:140px;" onchange="invFacImportRenderList()">
+            <option value="">Todos</option>
+          </select>
+          <label style="color:#64748b;font-weight:600;">Estado</label>
+          <select id="inv-fac-filt-estado" class="inv-filter-select" onchange="invFacImportRenderList()">
+            <option value="todas">Todas</option>
+            <option value="activa">Activas</option>
+            <option value="parcial">Parcial</option>
+            <option value="inactiva">Pagadas (inactiva)</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+            <input type="checkbox" id="inv-fac-filt-solo-lineas" checked onchange="invFacImportRenderList()">
+            <span>Solo facturas con líneas guardadas</span>
+          </label>
+        </div>
+        <input type="text" id="inv-fac-filt-q" class="inv-search" placeholder="🔍 Buscar por N°, proveedor o comentario…" style="width:100%;margin-bottom:10px;" oninput="invFacImportRenderList()">
+        <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;">
+          <button type="button" class="fac-btn" style="font-size:10px;padding:4px 10px;" onclick="invFacImportSelectAll(true)">Seleccionar todas (visibles)</button>
+          <button type="button" class="fac-btn" style="font-size:10px;padding:4px 10px;" onclick="invFacImportSelectAll(false)">Ninguna</button>
+        </div>
+        <div style="max-height:min(360px,50vh);overflow:auto;border:1px solid var(--border);border-radius:8px;">
+          <table class="inv-table" style="font-size:11px;margin:0;">
+            <thead><tr>
+              <th style="width:36px;"></th>
+              <th>Proveedor</th>
+              <th>N°</th>
+              <th>Emisión</th>
+              <th style="text-align:right;">Monto</th>
+              <th style="text-align:center;">Líneas</th>
+              <th>Estado</th>
+            </tr></thead>
+            <tbody id="inv-fac-import-tbody"></tbody>
+          </table>
+        </div>
+        <p id="inv-fac-import-hint" style="font-size:10px;color:#94a3b8;margin-top:10px;"></p>
+      </div>
+      <div class="ai-modal-footer">
+        <button type="button" class="fac-btn" onclick="closeInvImportFromFacsModal()">Cancelar</button>
+        <button type="button" class="fac-btn primary" onclick="invFacImportApply()" style="background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;">✓ Importar productos y precios</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI Import Modal -->
   <div class="ai-modal-overlay" id="aiModal" onclick="closeAiModal(event)">
     <div class="ai-modal" style="width:600px;">
@@ -3424,10 +3484,12 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
           </button>
-          <button class="fac-btn" onclick="invImportFromFacs()">🔗 Desde facturas</button>
+          <button class="fac-btn" onclick="openInvImportFromFacsModal()">🔗 Desde facturas</button>
         </div>
-        <div class="inv-filter-row">
-          <span style="color:#94a3b8;font-weight:600;">Stock</span>
+        <div class="inv-filter-bar" id="inv-filter-bar">
+          <div class="inv-filter-bar-title">Filtrar y ordenar — lista general</div>
+          <div class="inv-filter-row">
+          <span style="color:#64748b;font-weight:600;">Stock</span>
           <select id="inv-filter-stock" class="inv-filter-select" onchange="invRender()" title="Filtrar por nivel de stock">
             <option value="todos">Todos</option>
             <option value="critico">Crítico (≤ mínimo)</option>
@@ -3445,6 +3507,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <option value="minimo_desc">Mínimo (mayor → menor)</option>
           </select>
           <span id="inv-filter-count" style="margin-left:auto;color:#64748b;font-size:11px;"></span>
+          </div>
         </div>
         <div id="inv-cat-tabs" class="inv-category-tabs"></div>
         <div id="inv-form" style="display:none;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:16px;border:2px dashed var(--accent);">
@@ -9281,7 +9344,18 @@ function aiConfirmImport() {
       nro: r.nro, rut: r.rut||'', tipoDoc: 'factura',
       emision: r.emision||'', monto: r.monto,
       vence: r.vence||'', estado: 'activa',
-      comentario: r.comentario || (r.observacion ? '⚠ ' + r.observacion : '')
+      comentario: r.comentario || (r.observacion ? '⚠ ' + r.observacion : ''),
+      items: Array.isArray(r.items) ? r.items.map(function(it) {
+        return {
+          descripcion: it.descripcion || '',
+          cantidad: it.cantidad,
+          unidad: it.unidad || '',
+          precioUnit: it.precioUnit || 0,
+          subtotal: it.subtotal || 0,
+          invProdId: it.invProdId || '',
+          categoria: it.categoria || ''
+        };
+      }) : []
     });
     if (rutNorm && rutNorm.length > 4) {
       ensureProvRuts();
@@ -11883,16 +11957,188 @@ function invEditPrecio(id,prov) {
   invRender();
 }
 
-function invImportFromFacs() {
+var _invFacImportIndex = {};
+
+function invParseFacEmision_(em) {
+  var s = String(em || '').trim();
+  var p = s.split(/[-/.]/);
+  if (p.length >= 3) {
+    var d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, y = parseInt(p[2], 10);
+    var yr = y < 100 ? 2000 + y : y;
+    if (!isNaN(d) && !isNaN(m) && yr > 1999) return new Date(yr, m, d).getTime();
+  }
+  return 0;
+}
+
+function invInferCatFromDesc_(desc) {
+  var nombreU = String(desc || '').toUpperCase();
+  if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) return 'Carnes';
+  if (/SALMON|PESCADO|MERLUZA|ATUN|REINETA|CONGRIO|MARISCOS|CAMARON|CHORITO|OSTIÓN|PULPO|JIBIA/.test(nombreU)) return 'Pescados y Mariscos';
+  if (/TOMATE|LECHUGA|CEBOLLA|AJO|ZANAHORIA|PIMENTÓN|PEPINO|APIO|CILANTRO|PEREJIL|VERDURA|VEGETAL|PAPA|FRUTA|NARANJA|LIMON|PALTA|MANZANA/.test(nombreU)) return 'Frutas y Verduras';
+  if (/LECHE|QUESO|MANTEQUILLA|CREMA|YOGUR|LACTEO/.test(nombreU)) return 'Lácteos';
+  if (/HARINA|ARROZ|PASTA|FIDEOS|ACEITE|VINAGRE|SAL|AZUCAR|CONDIMENTO|ESPECIA/.test(nombreU)) return 'Abarrotes';
+  if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) return 'Bebidas';
+  if (/PAN|HALLULLA|MARRAQUETA|BAGUETTE/.test(nombreU)) return 'Panadería';
+  if (/HUEVO/.test(nombreU)) return 'Huevos';
+  return 'Importado';
+}
+
+function invFacImportOneLine_(it, provNombre) {
+  var desc = String(it.descripcion || '').trim();
+  if (!desc) return { created: false, price: false };
+  var precio = parseInt(String(it.precioUnit != null ? it.precioUnit : '0').replace(/[^\d]/g, ''), 10) || 0;
+  var prod = it.invProdId ? state.inventario.find(function(p) { return p.id === it.invProdId; }) : null;
+  var dlow = desc.toLowerCase();
+  if (!prod) prod = state.inventario.find(function(p) { return (p.nombre || '').toLowerCase() === dlow; });
+  if (!prod) {
+    prod = state.inventario.find(function(p) {
+      return dlow.includes((p.nombre || '').toLowerCase()) || (p.nombre || '').toLowerCase().includes(dlow.split(/\s+/)[0] || '');
+    });
+  }
+  var created = false;
+  if (!prod) {
+    prod = {
+      id: 'inv_fac_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+      nombre: desc,
+      cat: invInferCatFromDesc_(desc),
+      unidad: (it.unidad && String(it.unidad).slice(0, 12)) || 'un',
+      stock: 0, minimo: 0, qty: 0,
+      prov: provNombre,
+      precios: []
+    };
+    state.inventario.push(prod);
+    created = true;
+  }
+  var price = false;
+  if (precio > 0) {
+    invUpsertPrecioProveedor(prod.id, provNombre, precio);
+    price = true;
+  }
+  if (!prod.prov) prod.prov = provNombre;
+  return { created: created, price: price };
+}
+
+function openInvImportFromFacsModal() {
   invInit();
-  if(!state.facturas){notify('⚠ No hay facturas cargadas');return;}
-  const existentes=new Set(state.inventario.map(p=>p.prov));
-  const nuevos=Object.keys(state.facturas).filter(pn=>!existentes.has(pn)&&(state.facturas[pn]||[]).length>0);
-  if(!nuevos.length){notify('Todos los proveedores ya están vinculados');return;}
-  if(!confirm(`Se crearán ${nuevos.length} productos:\n${nuevos.slice(0,8).join(', ')}${nuevos.length>8?'…':''}\n¿Continuar?`)) return;
+  facInit();
+  if (!state.facturas || !Object.keys(state.facturas).length) {
+    notify('⚠ No hay facturas. Cárgalas en el módulo Facturas (manual o con IA).');
+    return;
+  }
+  var sel = document.getElementById('inv-fac-filt-prov');
+  var cur = sel ? sel.value : '';
+  if (sel) {
+    sel.innerHTML = '<option value="">Todos</option>' +
+      Object.keys(state.facturas).sort().map(function(p) {
+        return '<option value="' + esc(p) + '">' + esc(p) + '</option>';
+      }).join('');
+    sel.value = cur;
+  }
+  invFacImportRenderList();
+  var m = document.getElementById('invFacImportModal');
+  if (m) m.classList.add('open');
+}
+
+function closeInvImportFromFacsModal() {
+  var el = document.getElementById('invFacImportModal');
+  if (el) el.classList.remove('open');
+}
+
+function invFacImportSelectAll(v) {
+  document.querySelectorAll('#inv-fac-import-tbody .inv-fac-import-chk:not(:disabled)').forEach(function(c) {
+    c.checked = v;
+  });
+}
+
+function invFacImportRenderList() {
+  var tbody = document.getElementById('inv-fac-import-tbody');
+  var hint = document.getElementById('inv-fac-import-hint');
+  if (!tbody) return;
+  _invFacImportIndex = {};
+  var filtProv = document.getElementById('inv-fac-filt-prov') ? document.getElementById('inv-fac-filt-prov').value : '';
+  var filtEst = document.getElementById('inv-fac-filt-estado') ? document.getElementById('inv-fac-filt-estado').value : 'todas';
+  var filtQ = (document.getElementById('inv-fac-filt-q') ? document.getElementById('inv-fac-filt-q').value : '').toLowerCase().trim();
+  var soloLineas = document.getElementById('inv-fac-filt-solo-lineas') ? document.getElementById('inv-fac-filt-solo-lineas').checked : true;
+
+  var rows = [];
+  Object.keys(state.facturas || {}).forEach(function(prov) {
+    if (filtProv && prov !== filtProv) return;
+    (state.facturas[prov] || []).forEach(function(f) {
+      var items = f.items || [];
+      var nLines = items.filter(function(it) { return it && String(it.descripcion || '').trim(); }).length;
+      if (soloLineas && nLines === 0) return;
+      if (filtEst !== 'todas' && (f.estado || 'activa') !== filtEst) return;
+      if (filtQ) {
+        var blob = (f.nro || '') + ' ' + prov + ' ' + (f.comentario || '');
+        if (blob.toLowerCase().indexOf(filtQ) < 0) return;
+      }
+      rows.push({ prov: prov, fac: f, nLines: nLines });
+    });
+  });
+  rows.sort(function(a, b) {
+    return invParseFacEmision_(b.fac.emision) - invParseFacEmision_(a.fac.emision);
+  });
+
+  var withLines = rows.filter(function(r) { return r.nLines > 0; }).length;
+  if (hint) {
+    hint.innerHTML = rows.length
+      ? ('Listado: <strong>' + rows.length + '</strong> factura(s) · <strong>' + withLines + '</strong> con líneas importables. Las facturas sin líneas aparecen solo si desmarcas “Solo facturas con líneas”.')
+      : 'Ninguna factura coincide con los filtros.';
+  }
+
+  tbody.innerHTML = rows.map(function(_ref) {
+    var prov = _ref.prov, f = _ref.fac, nLines = _ref.nLines;
+    _invFacImportIndex[f.id] = { prov: prov, fac: f };
+    var dis = nLines === 0 ? 'disabled' : '';
+    var est = f.estado || 'activa';
+    return '<tr style="opacity:' + (nLines ? '1' : '0.65') + '">' +
+      '<td><input type="checkbox" class="inv-fac-import-chk" data-facid="' + esc(f.id) + '" ' + dis + '></td>' +
+      '<td>' + esc(prov) + '</td>' +
+      '<td style="font-weight:600;">' + esc(f.nro || '—') + '</td>' +
+      '<td style="color:#64748b;">' + esc(f.emision || '') + '</td>' +
+      '<td style="text-align:right;">' + fmt(f.monto || 0) + '</td>' +
+      '<td style="text-align:center;">' + nLines + '</td>' +
+      '<td><span class="estado-' + esc(est) + '" style="font-size:9px;padding:2px 6px;border-radius:8px;">' + esc(est) + '</span></td>' +
+      '</tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">Ninguna factura coincide.</td></tr>';
+}
+
+function invFacImportApply() {
+  invInit();
+  var chks = document.querySelectorAll('#inv-fac-import-tbody .inv-fac-import-chk:checked');
+  if (!chks.length) {
+    notify('⚠ Marca al menos una factura con líneas de detalle.');
+    return;
+  }
+  var totalLines = 0;
+  var batches = [];
+  for (var i = 0; i < chks.length; i++) {
+    var id = chks[i].getAttribute('data-facid');
+    var rec = _invFacImportIndex[id];
+    if (!rec) continue;
+    var items = (rec.fac.items || []).filter(function(it) { return it && String(it.descripcion || '').trim(); });
+    if (!items.length) continue;
+    batches.push({ prov: rec.prov, items: items });
+    totalLines += items.length;
+  }
+  if (!totalLines) {
+    notify('⚠ Las facturas marcadas no tienen líneas guardadas. Vuelve a importar esos PDF con IA (el sistema ahora guarda el detalle) o elige otras facturas.');
+    return;
+  }
+  if (!confirm('Se procesarán ' + totalLines + ' línea(s) desde ' + batches.length + ' factura(s): productos coincidentes recibirán precio por proveedor; si no existen, se crearán. ¿Continuar?')) return;
+
   pushUndo();
-  nuevos.forEach(pn=>state.inventario.push({id:'inv_imp_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),nombre:pn,cat:'Importado',unidad:'unidad',stock:0,minimo:0,qty:0,prov:pn}));
-  invRender(); notify('✅ '+nuevos.length+' productos importados');
+  var newProds = 0, priceUps = 0;
+  batches.forEach(function(batch) {
+    batch.items.forEach(function(it) {
+      var r = invFacImportOneLine_(it, batch.prov);
+      if (r.created) newProds++;
+      if (r.price) priceUps++;
+    });
+  });
+  closeInvImportFromFacsModal();
+  invRender();
+  notify('✅ Inventario: ' + newProds + ' producto(s) nuevo(s), ' + priceUps + ' precio(s) por proveedor.');
 }
 
 // ============================================================
