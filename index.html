@@ -1171,6 +1171,39 @@ body.dark-mode .seb-tag-pagado{background:#334155;color:#94a3b8;}
 .seb-add-form label{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;}
 .seb-add-form input,.seb-add-form select{width:100%;border:1px solid var(--border);border-radius:5px;padding:6px 8px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;}
 .seb-add-form input:focus,.seb-add-form select:focus{outline:none;border-color:var(--accent2);}
+
+/* Finanzas Sebas — Compromisos estilo lista/detalle */
+.seb-comp-layout{display:grid;grid-template-columns:minmax(260px,360px) minmax(0,1fr);gap:12px;align-items:start;}
+.seb-comp-list-wrap{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.seb-comp-list-head{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.seb-comp-search{flex:1;min-width:140px;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;}
+.seb-comp-search:focus{outline:none;border-color:var(--accent2);}
+.seb-comp-chip{border:1px solid var(--border);background:var(--white);color:var(--primary);border-radius:20px;padding:4px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;}
+.seb-comp-chip.active{background:var(--accent2);border-color:var(--accent2);color:#fff;}
+.seb-comp-list{max-height:560px;overflow:auto;}
+.seb-comp-item{display:flex;gap:8px;align-items:center;padding:9px 12px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:.15s;}
+.seb-comp-item:last-child{border-bottom:none;}
+.seb-comp-item:hover{background:rgba(99,102,241,.04);}
+.seb-comp-item.sel{background:rgba(99,102,241,.08);border-left:3px solid var(--accent2);padding-left:9px;}
+.seb-comp-item-left{flex:1;min-width:0;}
+.seb-comp-nro{font-family:monospace;font-size:10px;color:#94a3b8;}
+.seb-comp-emisor{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.seb-comp-concepto{font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.seb-comp-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.seb-comp-saldo{font-size:12px;font-weight:800;}
+.seb-comp-detail{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.seb-comp-detail-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;}
+.seb-comp-detail-title{font-size:14px;font-weight:800;line-height:1.2;}
+.seb-comp-detail-sub{font-size:10px;color:#94a3b8;margin-top:2px;}
+.seb-comp-kpis{padding:12px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;}
+.seb-comp-kpi{background:#f8fafc;border-radius:8px;padding:8px 10px;}
+.seb-comp-kpi .lbl{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;}
+.seb-comp-kpi .val{font-size:14px;font-weight:800;margin-top:2px;}
+.seb-comp-actions{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;}
+.seb-comp-hist{padding:10px 14px;border-top:1px solid var(--border);}
+.seb-comp-hist-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;}
+.seb-comp-empty{padding:22px 16px;color:#94a3b8;font-size:11px;text-align:center;}
+@media(max-width:980px){.seb-comp-layout{grid-template-columns:1fr;}}
 /* Health bar */
 .seb-health{border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .seb-health.bien{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);}
@@ -2992,6 +3025,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;color:#991b1b;cursor:pointer;font-family:inherit;">
           🔔 <span id="fac-venc-count">0</span> factura(s) por vencer — ver detalle ▾
         </button>
+        <button class="fac-btn" style="margin-left:6px;padding:4px 8px;font-size:10px;" onclick="facDismissWarning('venc')">Ocultar</button>
         <div id="fac-venc-detail" style="display:none;margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:10px 14px;">
           <div id="fac-venc-list"></div>
         </div>
@@ -3002,7 +3036,13 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <!-- Alerta duplicados -->
       <div id="fac-dup-banner" style="display:none;margin-bottom:16px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:var(--radius-sm);font-size:12px;color:#991b1b;">
-        <strong>⚠ Posibles facturas duplicadas detectadas</strong>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <strong>⚠ Posibles facturas duplicadas detectadas</strong>
+          <div style="display:flex;gap:6px;">
+            <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facCheckAllDuplicates()">Revisar de nuevo</button>
+            <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facDismissWarning('dup')">Ocultar</button>
+          </div>
+        </div>
         <div id="fac-dup-list" style="margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
       </div>
 
@@ -3058,6 +3098,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <span class="ai-spark">✦</span> Importar desde PDF con IA
         </button>
         <button class="fac-btn" onclick="toggleNuevoProveedor()">+ Proveedor</button>
+        <button class="fac-btn" onclick="facNormalizeAndUnifyProviders()" title="Unifica proveedores por RUT y normaliza formatos">🪪 Normalizar RUT</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
       </div>
@@ -7256,6 +7297,9 @@ let _facModalProv   = null;
 
 function facInit() {
   if (!state.facturas) state.facturas = makeDefaultFacturas();
+  ensureProvRuts();
+  facAutoLearnRuts();
+  facUnifyProvidersByRut();
 }
 
 // ── CALCULAR KPIs ──
@@ -7437,8 +7481,7 @@ function facRender() {
   ensureProvRuts();
   facAutoLearnRuts();
   facCalcKpis();
-  facCheckAllDuplicates();
-  facCheckAllRutConflicts();
+  facRefreshWarnings();
   facRenderNcPanel();
   facRenderDashboard();
   facSemRender(); // #13 render facturas a pagar en semana
@@ -7880,8 +7923,12 @@ function toggleNuevaFactura() {
 // ── HELPER: normalizar RUT (quita puntos, deja guión) ──
 function normRut(rut) {
   if (!rut) return '';
-  return rut.replace(/\./g,'').replace(/\s/g,'').toUpperCase();
+  const cleaned = String(rut).toUpperCase().replace(/[^0-9K]/g,'');
+  if (!cleaned) return '';
+  if (cleaned.length === 1) return cleaned;
+  return cleaned.slice(0,-1) + '-' + cleaned.slice(-1);
 }
+function rutKey(rut) { return normRut(rut).replace(/-/g,''); }
 
 // ── GUARDAR FACTURA con RUT ──
 function facSaveNuevaFactura() {
@@ -7921,7 +7968,7 @@ function facSaveNuevaFactura() {
   });
   // Auto-update provRuts if RUT is consistent
   if (rut) {
-    const rn = normRut(rut);
+    const rn = rutKey(rut);
     const existing = state.provRuts[_facCurrentProv];
     if (!existing) {
       state.provRuts[_facCurrentProv] = rut;
@@ -7978,11 +8025,13 @@ function facRutLookup(rawRut) {
 // ── BUSCAR PROVEEDOR POR RUT (recorre todas las facturas) ──
 function facFindProvByRut(rut) {
   if (!rut || !state.facturas) return null;
+  const key = rutKey(rut);
+  if (!key) return null;
   // Check rutMap first (AI-populated)
-  if (state.rutMap && state.rutMap[rut]) return state.rutMap[rut];
+  if (state.rutMap && state.rutMap[key]) return state.rutMap[key];
   // Then scan invoices
   for (const [pn, facs] of Object.entries(state.facturas)) {
-    if (facs.some(f => f.rut && normRut(f.rut) === rut)) return pn;
+    if (facs.some(f => f.rut && rutKey(f.rut) === key)) return pn;
   }
   return null;
 }
@@ -8124,6 +8173,21 @@ function toggleNuevoProveedor() {
 function ensureProvRuts() {
   if (!state.provRuts) state.provRuts = {};
   if (!state.rutMap)   state.rutMap   = {};
+  Object.keys(state.provRuts).forEach(pn => {
+    const n = normRut(state.provRuts[pn]);
+    if (n) state.provRuts[pn] = n;
+    else delete state.provRuts[pn];
+  });
+  const rm = {};
+  Object.entries(state.rutMap).forEach(([rk, prov]) => {
+    const key = rutKey(rk);
+    if (key && prov) rm[key] = prov;
+  });
+  state.rutMap = rm;
+  Object.entries(state.provRuts).forEach(([prov, rut]) => {
+    const key = rutKey(rut);
+    if (key) state.rutMap[key] = prov;
+  });
 }
 
 // ── RUT badge en encabezado del proveedor ──
@@ -8147,17 +8211,17 @@ function facEditProvRut(prov) {
   const actual = state.provRuts[prov] || '';
   const nuevo  = prompt(`RUT del proveedor "${prov}"\nEjemplo: 76.543.210-5\n\nDeja vacío para borrar el RUT registrado:`, actual);
   if (nuevo === null) return; // cancelled
-  const clean = nuevo.trim();
+  const clean = normRut(nuevo.trim());
   pushUndo();
   if (clean) {
     state.provRuts[prov] = clean;
     // Update rutMap inverse too
-    const rn = normRut(clean);
+    const rn = rutKey(clean);
     if (rn) state.rutMap[rn] = prov;
     notify(`🪪 RUT ${clean} asociado a "${prov}"`);
   } else {
     // Remove RUT
-    const oldRut = normRut(actual);
+    const oldRut = rutKey(actual);
     delete state.provRuts[prov];
     if (oldRut && state.rutMap[oldRut] === prov) delete state.rutMap[oldRut];
     notify(`RUT de "${prov}" eliminado`);
@@ -8176,10 +8240,86 @@ function facAutoLearnRuts() {
       // All invoices agree on one RUT → store it if not set
       if (!state.provRuts[pn]) {
         state.provRuts[pn] = ruts[0];
-        state.rutMap[ruts[0]] = pn;
+        const rk = rutKey(ruts[0]);
+        if (rk) state.rutMap[rk] = pn;
       }
     }
   });
+}
+
+function facUnifyProvidersByRut() {
+  ensureProvRuts();
+  if (!state.facturas) return;
+  const byRut = {};
+  Object.entries(state.facturas).forEach(([pn, facs]) => {
+    const fromProv = rutKey(state.provRuts[pn] || '');
+    if (fromProv) {
+      if (!byRut[fromProv]) byRut[fromProv] = new Set();
+      byRut[fromProv].add(pn);
+    }
+    (facs||[]).forEach(f => {
+      const rk = rutKey(f.rut||'');
+      if (!rk) return;
+      if (!byRut[rk]) byRut[rk] = new Set();
+      byRut[rk].add(pn);
+      f.rut = normRut(f.rut);
+    });
+  });
+
+  Object.entries(byRut).forEach(([rk, provSet]) => {
+    const provs = [...provSet].filter(p => state.facturas[p]);
+    if (!provs.length) return;
+    let canonical = state.rutMap[rk];
+    if (!canonical || !state.facturas[canonical]) {
+      canonical = provs.slice().sort((a,b)=>a.length-b.length)[0];
+    }
+    if (!state.facturas[canonical]) state.facturas[canonical] = [];
+    provs.forEach(p => {
+      if (p === canonical || !state.facturas[p]) return;
+      state.facturas[canonical] = [...state.facturas[canonical], ...state.facturas[p]];
+      delete state.facturas[p];
+      delete state.provRuts[p];
+      if (_facCurrentProv === p) _facCurrentProv = canonical;
+    });
+    state.provRuts[canonical] = normRut(state.provRuts[canonical] || rk);
+    state.rutMap[rk] = canonical;
+    (state.facturas[canonical]||[]).forEach(f => { if (f.rut) f.rut = normRut(f.rut); });
+  });
+}
+
+function facDismissWarning(type) {
+  if (type === 'dup') {
+    const b = document.getElementById('fac-dup-banner');
+    if (b) b.style.display = 'none';
+    Object.values(state.facturas||{}).forEach(facs => facs.forEach(f => { f._dupFlag = false; }));
+  } else if (type === 'rut') {
+    const b = document.getElementById('fac-rut-banner');
+    if (b) b.style.display = 'none';
+  } else if (type === 'venc') {
+    const b = document.getElementById('fac-venc-banner');
+    if (b) b.style.display = 'none';
+  }
+}
+
+function facRefreshWarnings() {
+  facCheckAllDuplicates();
+  facCheckAllRutConflicts();
+  facCheckVencimientos();
+}
+
+function facNormalizeAndUnifyProviders() {
+  pushUndo();
+  ensureProvRuts();
+  Object.entries(state.facturas||{}).forEach(([, facs]) => {
+    (facs||[]).forEach(f => { if (f.rut) f.rut = normRut(f.rut); });
+  });
+  facAutoLearnRuts();
+  facUnifyProvidersByRut();
+  facRefreshWarnings();
+  facRenderDashboard();
+  if (_facCurrentProv) facRenderDetail();
+  facCalcKpis();
+  notify('✅ Proveedores normalizados/unificados por RUT');
 }
 
 // ── Detectar conflictos RUT ──
@@ -8203,7 +8343,7 @@ function facDetectRutConflicts(incomingRut, incomingProv) {
   }
 
   // Case 2: Same RUT, but DIFFERENT provider name than what we have stored
-  const knownProv = state.rutMap[rn];
+  const knownProv = state.rutMap[rutKey(rn)];
   if (knownProv && knownProv !== incomingProv) {
     conflicts.push({
       type: 'nombre_cambiado',
@@ -8245,10 +8385,10 @@ function facResolveRutChange(prov, rutNuevo, action) {
   ensureProvRuts();
   pushUndo();
   if (action === 'update') {
-    const old = normRut(state.provRuts[prov]||'');
+    const old = rutKey(state.provRuts[prov]||'');
     if (old && state.rutMap[old] === prov) delete state.rutMap[old];
     state.provRuts[prov] = rutNuevo;
-    state.rutMap[normRut(rutNuevo)] = prov;
+    state.rutMap[rutKey(rutNuevo)] = prov;
     notify(`✓ RUT de "${prov}" actualizado a ${rutNuevo}`);
   } else if (action === 'keep') {
     // Revert invoices with new RUT back to old RUT
@@ -8268,7 +8408,7 @@ function facResolveRutChange(prov, rutNuevo, action) {
       state.facturas[prov] = state.facturas[prov].filter(x => x.id !== f.id);
     });
     state.provRuts[nn] = rutNuevo;
-    state.rutMap[normRut(rutNuevo)] = nn;
+    state.rutMap[rutKey(rutNuevo)] = nn;
     notify(`✓ ${toMove.length} factura(s) movida(s) a nuevo proveedor "${nn}"`);
   }
   document.getElementById('fac-rut-conflict').style.display = 'none';
@@ -8282,7 +8422,7 @@ function facResolveRutChange(prov, rutNuevo, action) {
 function facResolveNameChange(rut, provAnterior, provNuevo, action) {
   ensureProvRuts();
   pushUndo();
-  const rn = normRut(rut);
+  const rn = rutKey(rut);
   if (action === 'update') {
     // Rename all invoices from old to new provider name
     if (state.facturas[provAnterior] && !state.facturas[provNuevo]) {
@@ -8297,13 +8437,13 @@ function facResolveNameChange(rut, provAnterior, provNuevo, action) {
       delete state.provRuts[provAnterior];
       state.provRuts[provNuevo] = rut;
     }
-    state.rutMap[rn] = provNuevo;
+    if (rn) state.rutMap[rn] = provNuevo;
     notify(`✓ Proveedor renombrado a "${provNuevo}"`);
     _facCurrentProv = provNuevo;
     set('fac-detail-name', provNuevo);
   } else if (action === 'keep') {
     // Keep old name, update invoices that had wrong name
-    state.rutMap[rn] = provAnterior;
+    if (rn) state.rutMap[rn] = provAnterior;
     notify(`Nombre mantenido como "${provAnterior}"`);
   } else {
     // They are different providers — keep both, just remove RUT conflict
@@ -8342,7 +8482,7 @@ function facCheckAllRutConflicts() {
   // Check for same RUT → multiple provider names
   const rutToProvs = {};
   Object.entries(state.provRuts).forEach(([pn, rut]) => {
-    const rn = normRut(rut);
+    const rn = rutKey(rut);
     if (!rutToProvs[rn]) rutToProvs[rn] = [];
     rutToProvs[rn].push(pn);
   });
@@ -8356,7 +8496,13 @@ function facCheckAllRutConflicts() {
   if (banner) {
     if (alerts.length) {
       banner.innerHTML = `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:12px 16px;font-size:11px;color:#92400e;">
-        <strong style="display:block;margin-bottom:6px;">🪪 Inconsistencias de RUT detectadas</strong>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+          <strong style="display:block;">🪪 Inconsistencias de RUT detectadas</strong>
+          <div style="display:flex;gap:6px;">
+            <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facNormalizeAndUnifyProviders()">Normalizar/Unificar</button>
+            <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facDismissWarning('rut')">Ocultar</button>
+          </div>
+        </div>
         ${alerts.map(a=>`<div style="padding:2px 0;">${a}</div>`).join('')}
         <div style="margin-top:8px;color:#a16207;font-size:10px;">Entra al proveedor correspondiente para resolver.</div>
       </div>`;
@@ -9331,7 +9477,7 @@ function aiConfirmImport() {
   facturas.forEach(r => {
     const provName = resolveProvName(r);
     if (!state.facturas[provName]) state.facturas[provName] = [];
-    const rutNorm = normRut(r.rut||'');
+    const rutNorm = rutKey(r.rut||'');
     if (r.rut) {
       const conflicts = facDetectRutConflicts(r.rut, provName);
       if (conflicts.length) {
@@ -9359,7 +9505,7 @@ function aiConfirmImport() {
     });
     if (rutNorm && rutNorm.length > 4) {
       ensureProvRuts();
-      if (!state.provRuts[provName]) state.provRuts[provName] = r.rut;
+      if (!state.provRuts[provName]) state.provRuts[provName] = normRut(r.rut||'');
       state.rutMap[rutNorm] = provName;
     }
     summary[provName] = (summary[provName]||0) + 1;
@@ -12960,6 +13106,9 @@ function sebInit() {
 }
 
 let _sebSubtab = 'resumen';
+let _sebCompFilter = 'pendientes';
+let _sebCompSearch = '';
+let _sebCompSelId  = null;
 
 function sebRender() {
   const el = document.getElementById('sebas-content'); if (!el) return;
@@ -12988,6 +13137,10 @@ function sebRender() {
 
 function sebSubTab(tab) {
   _sebSubtab = tab;
+  if (tab === 'compromisos') {
+    if (!_sebCompFilter) _sebCompFilter = 'pendientes';
+    if (_sebCompSearch == null) _sebCompSearch = '';
+  }
   document.querySelectorAll('.seb-stab').forEach(b => b.classList.toggle('active', b.textContent.trim().includes(
     tab==='resumen'?'Resumen':tab==='bancos'?'Cuentas':tab==='tarjetas'?'Tarjetas':
     tab==='lineas'?'Líneas':tab==='compromisos'?'Compromisos':'Gastos'
@@ -13325,32 +13478,77 @@ function sebDelLC(idx) {
 
 // ── COMPROMISOS ──
 function sebHtmlCompromisos(sf) {
-  const activos  = sf.compromisos.filter(c=>c.estado==='activo');
-  const creditos = sf.compromisos.filter(c=>c.estado==='credito');
-  const pagados  = sf.compromisos.filter(c=>c.estado==='pagado');
-  const totalPend = activos.reduce((s,c)=>s+c.saldo,0);
-  const totalCred = creditos.reduce((s,c)=>s+Math.abs(c.saldo),0);
-  const totalInv  = sf.compromisos.reduce((s,c)=>s+c.total,0);
+  const activos   = sf.compromisos.filter(c=>c.estado==='activo');
+  const creditos  = sf.compromisos.filter(c=>c.estado==='credito');
+  const pagados   = sf.compromisos.filter(c=>c.estado==='pagado');
+  const totalPend = activos.reduce((s,c)=>s+Math.max(0,c.saldo||0),0);
+  const totalCred = creditos.reduce((s,c)=>s+Math.abs(c.saldo||0),0);
+  const totalInv  = sf.compromisos.reduce((s,c)=>s+(c.total||0),0);
 
-  function compRow(c,i) {
-    const tagCls = c.estado==='activo'?'seb-tag-activo':c.estado==='credito'?'seb-tag-credito':'seb-tag-pagado';
-    const tagTxt = c.estado==='activo'?'Pendiente':c.estado==='credito'?'Crédito a favor':'Pagado';
+  const visible = sf.compromisos.filter(c => {
+    if (_sebCompFilter === 'pendientes') return c.estado === 'activo' || c.estado === 'credito';
+    if (_sebCompFilter === 'activos') return c.estado === 'activo';
+    if (_sebCompFilter === 'creditos') return c.estado === 'credito';
+    if (_sebCompFilter === 'pagados') return c.estado === 'pagado';
+    return true;
+  }).filter(c => {
+    const q = (_sebCompSearch||'').trim().toLowerCase();
+    if (!q) return true;
+    return [c.nro,c.emisor,c.concepto,c.fechaProx,c.estado].some(v => String(v||'').toLowerCase().includes(q));
+  });
+
+  if (_sebCompSelId && !visible.some(c=>c.id===_sebCompSelId)) _sebCompSelId = null;
+  if (!_sebCompSelId && visible.length) _sebCompSelId = visible[0].id;
+  const sel = visible.find(c=>c.id===_sebCompSelId) || null;
+
+  const listHtml = visible.length ? visible.map(c => {
     const saldoCol = c.saldo>0?'var(--danger)':c.saldo<0?'var(--success)':'#94a3b8';
-    return `<tr>
-      <td style="font-size:10px;color:#94a3b8;font-family:monospace;">${esc(c.nro)}</td>
-      <td><b>${esc(c.emisor)}</b></td>
-      <td style="font-size:10px;color:#64748b;max-width:180px;">${esc(c.concepto)}</td>
-      <td style="text-align:right;">${fmt(c.total)}</td>
-      <td style="text-align:right;color:var(--success);">${fmt(c.pagado)}</td>
-      <td style="text-align:right;font-weight:800;color:${saldoCol};">${c.saldo!==0?fmt(Math.abs(c.saldo)):fmt(0)}</td>
-      <td style="font-size:10px;color:#94a3b8;">${esc(c.fechaProx||'')}</td>
-      <td><span class="seb-tag ${tagCls}">${tagTxt}</span></td>
-      <td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
-        ${c.estado!=='pagado'&&c.saldo>0?`<button class="seb-btn-accion" onclick="sebPagoAbrir('comp','${c.id}')" style="border-color:var(--accent2);color:var(--accent2);font-weight:700;">💳 Abonar</button>`:''}
-        <button onclick="sebToggleCompEstado('${c.id}')" class="seb-btn-accion" style="border-color:var(--success);color:var(--success);font-weight:700;">${c.estado==='pagado'?'↩ Reabrir':'✓ Pagado'}</button>
-        <button class="seb-btn-accion seb-btn-del" onclick="sebDelComp('${c.id}')" title="Eliminar">✕</button>
-      </td>
-    </tr>`;
+    const tagCls = c.estado==='activo'?'seb-tag-activo':c.estado==='credito'?'seb-tag-credito':'seb-tag-pagado';
+    const tagTxt = c.estado==='activo'?'Pendiente':c.estado==='credito'?'Crédito':'Pagado';
+    return `<div class="seb-comp-item ${_sebCompSelId===c.id?'sel':''}" onclick="sebCompSelect('${c.id}')">
+      <div class="seb-comp-item-left">
+        <div class="seb-comp-nro">${esc(c.nro||'')}</div>
+        <div class="seb-comp-emisor">${esc(c.emisor||'—')}</div>
+        <div class="seb-comp-concepto">${esc(c.concepto||'Sin concepto')}</div>
+      </div>
+      <div class="seb-comp-item-right">
+        <span class="seb-tag ${tagCls}">${tagTxt}</span>
+        <div class="seb-comp-saldo" style="color:${saldoCol};">${fmt(Math.abs(c.saldo||0))}</div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="seb-comp-empty">Sin compromisos para este filtro.</div>`;
+
+  let detailHtml = `<div class="seb-comp-empty">Selecciona un compromiso para ver detalle.</div>`;
+  if (sel) {
+    const saldoCol = sel.saldo>0?'var(--danger)':sel.saldo<0?'var(--success)':'#94a3b8';
+    const tagCls = sel.estado==='activo'?'seb-tag-activo':sel.estado==='credito'?'seb-tag-credito':'seb-tag-pagado';
+    const tagTxt = sel.estado==='activo'?'Pendiente':sel.estado==='credito'?'Crédito a favor':'Pagado';
+    const pagosHist = (sel.pagos||[]).slice().reverse();
+    detailHtml = `
+      <div class="seb-comp-detail-head">
+        <div>
+          <div class="seb-comp-detail-title">${esc(sel.emisor||'—')} · ${esc(sel.concepto||sel.nro||'Compromiso')}</div>
+          <div class="seb-comp-detail-sub">Código ${esc(sel.nro||'—')} · Próximo pago: ${esc(sel.fechaProx||'—')}</div>
+        </div>
+        <span class="seb-tag ${tagCls}" style="font-size:9px;">${tagTxt}</span>
+      </div>
+      <div class="seb-comp-kpis">
+        <div class="seb-comp-kpi"><div class="lbl">Total</div><div class="val">${fmt(sel.total||0)}</div></div>
+        <div class="seb-comp-kpi"><div class="lbl">Pagado</div><div class="val" style="color:var(--success);">${fmt(sel.pagado||0)}</div></div>
+        <div class="seb-comp-kpi"><div class="lbl">Saldo</div><div class="val" style="color:${saldoCol};">${fmt(Math.abs(sel.saldo||0))}</div></div>
+      </div>
+      <div class="seb-comp-actions">
+        ${sel.estado!=='pagado'&&sel.saldo>0?`<button class="seb-btn-accion" onclick="sebPagoAbrir('comp','${sel.id}')" style="border-color:var(--accent2);color:var(--accent2);font-weight:700;">💳 Abonar</button>`:''}
+        <button onclick="sebToggleCompEstado('${sel.id}')" class="seb-btn-accion" style="border-color:var(--success);color:var(--success);font-weight:700;">${sel.estado==='pagado'?'↩ Reabrir':'✓ Marcar pagado'}</button>
+        <button class="seb-btn-accion seb-btn-del" onclick="sebDelComp('${sel.id}')" title="Eliminar">✕ Eliminar</button>
+      </div>
+      <div class="seb-comp-hist">
+        <div class="seb-comp-hist-title">Historial de abonos</div>
+        ${pagosHist.length
+          ? pagosHist.map(p=>`<div class="seb-hist-item"><div><span style="font-weight:600;">${esc(p.fecha||'')}</span>${p.nota?`<span style="color:#94a3b8;margin-left:6px;">${esc(p.nota)}</span>`:''}</div><span style="font-weight:800;color:var(--success);">−${fmt(p.monto)}</span></div>`).join('')
+          : `<div style="font-size:11px;color:#94a3b8;">Sin abonos registrados.</div>`
+        }
+      </div>`;
   }
 
   return `
@@ -13362,21 +13560,22 @@ function sebHtmlCompromisos(sf) {
     <div class="seb-kpi" style="border-left:4px solid var(--success);"><div class="seb-kpi-label">🟢 Crédito a favor</div>
       <div class="seb-kpi-val" style="color:var(--success)">${fmt(totalCred)}</div></div>
   </div>
-  <div class="seb-table-wrap">
-    <table class="seb-table">
-      <thead><tr><th>N°</th><th>Emisor</th><th>Concepto</th><th style="text-align:right;">Total</th><th style="text-align:right;">Pagado</th><th style="text-align:right;">Saldo</th><th>Avance</th><th>Próx. pago</th><th>Estado</th><th>Acciones</th></tr></thead>
-      <tbody>
-        <tr><td colspan="9" style="background:#fef2f2;padding:6px 12px;font-size:10px;font-weight:700;color:var(--danger);">ACTIVOS / PENDIENTES (${activos.length})</td></tr>
-        ${activos.map((c,i)=>compRow(c,i)).join('')}
-        ${creditos.length?`<tr><td colspan="9" style="background:#f0fdf4;padding:6px 12px;font-size:10px;font-weight:700;color:var(--success);">CRÉDITO A FAVOR (${creditos.length})</td></tr>${creditos.map((c,i)=>compRow(c,i)).join('')}`:''}
-        <tr><td colspan="9" style="background:#f8fafc;padding:6px 12px;font-size:10px;font-weight:700;color:#94a3b8;cursor:pointer;" onclick="sebTogglePagados()">
-          ▸ VER PAGADOS (${pagados.length}) <span id="seb-pag-arrow">▸</span></td></tr>
-        <tbody id="seb-pag-rows" style="display:none;">${pagados.map((c,i)=>compRow(c,i)).join('')}</tbody>
-      </tbody>
-    </table>
-    <div class="seb-add-row">
-      <button class="seb-btn-accion" onclick="sebShowFormComp()">+ Agregar compromiso</button>
+  <div class="seb-comp-layout">
+    <div class="seb-comp-list-wrap">
+      <div class="seb-comp-list-head">
+        <input id="seb-comp-search" class="seb-comp-search" placeholder="Buscar compromiso..." value="${esc(_sebCompSearch||'')}" oninput="sebCompSearch(this.value)">
+        <button class="seb-btn-accion" onclick="sebShowFormComp()">+ Agregar</button>
+      </div>
+      <div class="seb-comp-list-head" style="padding-top:8px;">
+        <button class="seb-comp-chip ${_sebCompFilter==='pendientes'?'active':''}" onclick="sebCompFilter('pendientes')">Pendientes</button>
+        <button class="seb-comp-chip ${_sebCompFilter==='activos'?'active':''}" onclick="sebCompFilter('activos')">Activos</button>
+        <button class="seb-comp-chip ${_sebCompFilter==='creditos'?'active':''}" onclick="sebCompFilter('creditos')">Créditos</button>
+        <button class="seb-comp-chip ${_sebCompFilter==='pagados'?'active':''}" onclick="sebCompFilter('pagados')">Pagados</button>
+        <button class="seb-comp-chip ${_sebCompFilter==='todos'?'active':''}" onclick="sebCompFilter('todos')">Todos</button>
+      </div>
+      <div class="seb-comp-list">${listHtml}</div>
     </div>
+    <div class="seb-comp-detail">${detailHtml}</div>
   </div>
   <div class="seb-add-form" id="seb-form-comp">
     <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:10px;">+ Nuevo compromiso</div>
@@ -13394,6 +13593,19 @@ function sebHtmlCompromisos(sf) {
       <button class="fac-btn" onclick="document.getElementById('seb-form-comp').classList.remove('show')" style="font-size:11px;">Cancelar</button>
     </div>
   </div>`;
+}
+
+function sebCompFilter(mode) {
+  _sebCompFilter = mode || 'pendientes';
+  sebRenderPanel();
+}
+function sebCompSearch(val) {
+  _sebCompSearch = val || '';
+  sebRenderPanel();
+}
+function sebCompSelect(id) {
+  _sebCompSelId = id;
+  sebRenderPanel();
 }
 
 function sebShowFormComp() {
@@ -13415,8 +13627,9 @@ function sebAddComp() {
   const total   = parseInt((document.getElementById('sco-total').value||'0').replace(/[^\d]/g,''),10)||0;
   const pagado  = parseInt((document.getElementById('sco-pagado').value||'0').replace(/[^\d]/g,''),10)||0;
   pushUndo();
+  const id = 'sco_'+Date.now();
   sebInit().compromisos.unshift({
-    id:'sco_'+Date.now(),
+    id,
     nro:       document.getElementById('sco-nro').value||'',
     emisor,
     concepto:  document.getElementById('sco-concepto').value||'',
@@ -13425,6 +13638,9 @@ function sebAddComp() {
     nota:      document.getElementById('sco-nota').value||'',
     estado:    total<=pagado?'pagado':'activo'
   });
+  _sebCompSelId = id;
+  _sebCompFilter = 'pendientes';
+  _sebCompSearch = '';
   sebRenderPanel(); notify('✅ Compromiso agregado');
 }
 
@@ -13434,6 +13650,7 @@ function sebDelComp(id) {
   if (!confirm(`¿Eliminar compromiso "${c.emisor} — ${c.concepto||c.nro}"?`)) return;
   pushUndo();
   sf.compromisos = sf.compromisos.filter(x=>x.id!==id);
+  if (_sebCompSelId === id) _sebCompSelId = null;
   sebRenderPanel();
 }
 
@@ -15279,6 +15496,22 @@ async function loadFromCloud() {
       }
       state = parsed.state || makeDefaultState();
       _nid  = parsed.nid  || 200;
+      // Safety net: si nube viene sin inventario, intenta rescatar inventario local previo.
+      try {
+        const rawLocal = localStorage.getItem('jaime_v23');
+        if (rawLocal) {
+          const localParsed = JSON.parse(rawLocal);
+          const localState = localParsed && localParsed.state ? localParsed.state : null;
+          const cloudInvCount = Array.isArray(state.inventario) ? state.inventario.length : 0;
+          const localInvCount = localState && Array.isArray(localState.inventario) ? localState.inventario.length : 0;
+          if (cloudInvCount === 0 && localInvCount > 0) {
+            state.inventario = localState.inventario;
+            if (localState.preciosProveedor) state.preciosProveedor = localState.preciosProveedor;
+            if (localState.catInventario) state.catInventario = localState.catInventario;
+            notify(`🧩 Inventario recuperado desde respaldo local (${localInvCount} productos).`);
+          }
+        }
+      } catch(e){}
       // Decompress short keys from cloud
       decompressVsData(state);
       cloudVersion = json.meta?.version || '0';
