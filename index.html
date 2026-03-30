@@ -1285,8 +1285,13 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-kpi-val{font-size:19px;font-weight:900;letter-spacing:-.5px;}
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
 .sac-kpi-inp:focus{border-color:var(--accent);}
-.sac-main{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;}
-@media(max-width:800px){.sac-main{grid-template-columns:1fr;}}
+.sac-main{display:flex;flex-direction:column;gap:16px;align-items:stretch;}
+.sac-row-ing-cargas{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+@media(max-width:900px){.sac-row-ing-cargas{grid-template-columns:1fr;}}
+.sac-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;padding:10px 12px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.sac-toolbar-lbl{font-size:12px;font-weight:700;color:var(--primary);}
+.sac-toolbar-sub{font-size:10px;color:#64748b;margin-top:2px;}
+@media(max-width:800px){.sac-main{flex-direction:column;}}
 /* ventas */
 .sac-ventas-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
 .sac-ventas-head{background:var(--primary);color:white;padding:10px 16px;font-size:12px;font-weight:700;}
@@ -1752,7 +1757,6 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
   .export-menu-list{right:auto;left:0;}
 
   /* SAC cargas cards */
-  .sac-main{grid-template-columns:1fr;}
   .sac-estado-btn{min-height:40px;min-width:80px;font-size:12px;padding:6px 12px;}
 
   /* Informe diario fields */
@@ -2513,6 +2517,11 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div id="sac" class="tab-content">
     <div class="content">
 
+      <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;">📋 Historial de cierres</div>
+        <div id="sac-cierres-hist-body"></div>
+      </div>
+
       <!-- Header KPIs -->
       <div class="sac-header" id="sac-header-grid">
         <div class="sac-kpi" style="border-left:4px solid #3b82f6;">
@@ -2547,7 +2556,16 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </div>
       </div>
 
-      <div id="sac-fin-panel-wrap" style="margin-bottom:14px;"></div>
+      <div class="sac-toolbar">
+        <div>
+          <div class="sac-toolbar-lbl">📅 Semana en edición</div>
+          <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()" style="font-size:11px;padding:7px 12px;border:1px solid var(--border);background:var(--white);">📆 Cambiar semana</button>
+          <button type="button" class="fac-btn" onclick="sacCerrarSemanaClick()" style="font-size:11px;padding:7px 14px;font-weight:800;background:linear-gradient(135deg,var(--accent),#fb923c);color:white;border:none;">📋 Cerrar semana</button>
+        </div>
+      </div>
 
       <div class="sac-main">
 
@@ -2662,6 +2680,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
         </div>
 
+        <div class="sac-row-ing-cargas">
         <!-- OTROS INGRESOS (semana) -->
         <div class="sac-ingresos-card">
           <div class="sac-cargas-head sac-ingresos-head">
@@ -2709,8 +2728,32 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             </div>
           </div>
         </div>
+        </div>
       </div>
 
+      <div id="sac-fin-panel-wrap" style="margin-top:4px;"></div>
+
+    </div>
+  </div>
+
+  <!-- Modal: elegir semana a trabajar (después de cierre o Cambiar semana) -->
+  <div class="sac-sel-overlay" id="sac-cierre-overlay" onclick="if(event.target===this)sacCierreModalCerrar()">
+    <div class="sac-sel-modal" style="max-width:440px;" onclick="event.stopPropagation();">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:14px;font-weight:800;" id="sac-cierre-title">📆 ¿Qué semana querés trabajar?</div>
+        <button type="button" onclick="sacCierreModalCerrar()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;">✕</button>
+      </div>
+      <div class="sac-sel-body" id="sac-cierre-body" style="max-height:60vh;overflow-y:auto;"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;font-weight:600;">
+          <input type="checkbox" id="sac-cierre-limpiar" checked>
+          Empezar en blanco (borra ventas/cargas/ingresos de esa semana en pantalla)
+        </label>
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="fac-btn primary" onclick="sacCierreModalAplicar()" style="flex:1;">✓ Usar esta semana</button>
+          <button type="button" class="fac-btn" onclick="sacCierreModalCerrar()">Cancelar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5715,7 +5758,7 @@ function showTab(tabId) {
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
-    const _w = sacCurrentWeek ? sacCurrentWeek() : 1;
+    const _w = sacCurrentWeek ? sacActiveWeek() : 1;
     if (typeof sacCalcBalance === 'function') sacCalcBalance(_w);
     wxFetch();
   }
@@ -8915,7 +8958,7 @@ function iaImportarResultados() {
     const monto  = parseInt((document.getElementById('ia-res-monto')?.value||'0').replace(/[^\d]/g,''),10)||0;
     const prov   = document.getElementById('ia-res-prov')?.value.trim()  || item.proveedor || '';
     if (!monto) { notify('⚠ El monto es 0 — verifica la imagen'); return; }
-    const w = sacCurrentWeek();
+    const w = sacActiveWeek();
     pushUndo();
     sacGetCargas(w).push({
       id:       'sc_'+Date.now(),
@@ -9906,6 +9949,8 @@ function _postLoadSetup() {
   if (!state.pagosSemanales)            state.pagosSemanales            = {};
   if (!state.sacCargas)                 state.sacCargas                 = {};
   if (!state.sacIngresos)               state.sacIngresos               = {};
+  if (!state.sacCierresHistorial)       state.sacCierresHistorial       = [];
+  if (state.sacSemanaTrabajo && (state.sacSemanaTrabajo.w < 1 || state.sacSemanaTrabajo.w > 4)) state.sacSemanaTrabajo = null;
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
@@ -9933,7 +9978,7 @@ function _postLoadSetup() {
   }
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
-    if (typeof sacCalcBalance === 'function') sacCalcBalance(sacCurrentWeek());
+    if (typeof sacCalcBalance === 'function') sacCalcBalance(sacActiveWeek());
     if (typeof facSemRender === 'function') facSemRender();
     iaLoadSavedKey();
     if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
@@ -11632,7 +11677,7 @@ function archCountOldInformes(weeks) {
 }
 
 function archCountOldSacCargas() {
-  const currentW = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+  const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
   let count = 0;
   Object.entries(state.sacCargas||{}).forEach(([w, arr]) => {
     if (parseInt(w) !== currentW && Array.isArray(arr) && arr.length) count += arr.length;
@@ -11838,9 +11883,9 @@ function archExecute() {
     totalRemoved += before - state.informesDiarios.length;
   }
 
-  // 4. Cargas semanales pasadas
+  // 4. Cargas semanales pasadas (semana calendario actual, no la de edición)
   if (doSac && sacN > 0) {
-    const currentW = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+    const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
     Object.keys(state.sacCargas||{}).forEach(w => {
       if (parseInt(w) !== currentW) {
         totalRemoved += (state.sacCargas[w]||[]).length;
@@ -11901,7 +11946,7 @@ function archCheckSize() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
+    'sacCargas','sacIngresos','sacCierresHistorial','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
   keys.forEach(k => {
     if (state[k]) parts[k] = JSON.stringify(state[k]).length;
@@ -12848,7 +12893,7 @@ function infInit() {
 
 // Open modal to select which egresos to load
 function infOpenEgresosSelector() {
-  const w = typeof sacCurrentWeek === 'function' ? sacCurrentWeek() : 1;
+  const w = typeof sacCurrentWeek === 'function' ? sacActiveWeek() : 1;
   const cargas = (state.sacCargas && state.sacCargas[w]) ? state.sacCargas[w] : [];
   const pendientes = cargas.filter(c => c.estado !== 'pagado' && !c._esPago);
   if (!pendientes.length) { notify('⚠ No hay cargas pendientes en la semana actual'); return; }
@@ -15516,8 +15561,8 @@ function psemEliminar(w, i) {
 //  SEMANA ACTUAL (SAC)
 // ============================================================
 
-// Returns current week number (1-4) based on today's date
-function sacCurrentWeek() {
+// Semana calendario del mes (1–4) según el día de hoy — sin override de edición
+function _sacWeekCalendario() {
   const ranges = getCalWeekRanges();
   const today  = new Date().getDate();
   for (let i=0; i<ranges.length; i++) {
@@ -15526,15 +15571,163 @@ function sacCurrentWeek() {
   return ranges.length;
 }
 
+function sacCurrentWeek() { return _sacWeekCalendario(); }
+
+// Semana cuyos datos se editan en SAC (puede cambiarse con «Cambiar semana»)
+function sacActiveWeek() {
+  const o = state.sacSemanaTrabajo;
+  if (o && o.w >= 1 && o.w <= 4) return o.w;
+  return _sacWeekCalendario();
+}
+
+function sacWeekPeriodLabel(w) {
+  const ranges = getCalWeekRanges();
+  const r = ranges[w - 1];
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const now = new Date();
+  return r ? `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}` : `Semana ${w}`;
+}
+
+function sacUpdateToolbarDesc() {
+  const el = document.getElementById('sac-toolbar-desc');
+  if (!el) return;
+  const w = sacActiveWeek();
+  const calW = _sacWeekCalendario();
+  const lbl = sacWeekPeriodLabel(w);
+  if (w !== calW) {
+    el.textContent = `${lbl} · editando otra semana que la del calendario (hoy: sem. ${calW})`;
+  } else {
+    el.textContent = `${lbl} · alineada al calendario`;
+  }
+}
+
+function sacRenderHistorialCierres() {
+  const body = document.getElementById('sac-cierres-hist-body');
+  if (!body) return;
+  const arr = state.sacCierresHistorial || [];
+  if (!arr.length) {
+    body.innerHTML = '<div style="padding:14px;color:#94a3b8;font-size:12px;">Sin cierres aún. «Cerrar semana» guarda el balance en esta tabla y te deja elegir la próxima semana en limpio.</div>';
+    return;
+  }
+  const rows = arr.map(h => {
+    const fd = h.ts ? new Date(h.ts).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+    const bal = h.balanceEstimado != null ? h.balanceEstimado : 0;
+    return `<tr>
+      <td style="padding:8px 12px;font-size:11px;">${esc(fd)}</td>
+      <td style="padding:8px 12px;font-size:11px;">${esc(h.periodoLabel || '—')}</td>
+      <td style="padding:8px 12px;text-align:right;font-weight:700;">${fmt(bal)}</td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#f8fafc;text-align:left;font-size:9px;text-transform:uppercase;color:#94a3b8;"><th style="padding:8px 12px;">Fecha</th><th style="padding:8px 12px;">Período</th><th style="padding:8px 12px;text-align:right;">Balance al guardar</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+let _sacModalPickW = 1;
+
+function sacModalSelectWeek(w) {
+  _sacModalPickW = w;
+  sacCierreModalBuildBody();
+}
+
+function sacCierreModalBuildBody() {
+  const body = document.getElementById('sac-cierre-body');
+  if (!body) return;
+  const ranges = getCalWeekRanges();
+  const now = new Date();
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const calW = _sacWeekCalendario();
+  body.innerHTML = ranges.map((r, i) => {
+    const w = i + 1;
+    const sel = w === _sacModalPickW ? 'border-color:var(--accent);background:#fff7ed;box-shadow:0 0 0 1px rgba(249,115,22,.25);' : 'border-color:var(--border);background:var(--white);';
+    const wlbl = `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}`;
+    const pin = w === calW ? ' · 📍 calendario' : '';
+    return `<button type="button" class="fac-btn" style="width:100%;margin-bottom:8px;text-align:left;border:2px solid;${sel}" onclick="sacModalSelectWeek(${w})">
+      <span style="font-weight:800;">Semana ${w}</span> · ${wlbl}${pin}
+    </button>`;
+  }).join('');
+}
+
+function sacAbrirElegirSemana() {
+  _sacModalPickW = sacActiveWeek();
+  const t = document.getElementById('sac-cierre-title');
+  if (t) t.textContent = '📆 ¿Qué semana querés trabajar?';
+  const cb = document.getElementById('sac-cierre-limpiar');
+  if (cb) cb.checked = false;
+  sacCierreModalBuildBody();
+  const o = document.getElementById('sac-cierre-overlay');
+  if (o) o.classList.add('show');
+}
+
+function sacCerrarSemanaClick() {
+  const w = sacActiveWeek();
+  const B = sacGetBalanceEstimado(w);
+  const lbl = sacWeekPeriodLabel(w);
+  if (!confirm(`¿Cerrar la semana (${lbl})?\n\nSe guardará en el historial el balance estimado (${fmt(B.balance)}). Después elegís con cuál semana seguir (podés dejarla en blanco).`)) return;
+  pushUndo();
+  if (!state.sacCierresHistorial) state.sacCierresHistorial = [];
+  state.sacCierresHistorial.unshift({
+    id: 'scerr_' + Date.now(),
+    ts: Date.now(),
+    w,
+    periodoLabel: lbl,
+    balanceEstimado: B.balance
+  });
+  if (state.sacCierresHistorial.length > 48) state.sacCierresHistorial = state.sacCierresHistorial.slice(0, 48);
+  _sacModalPickW = w >= 4 ? 1 : w + 1;
+  const t = document.getElementById('sac-cierre-title');
+  if (t) t.textContent = '✅ Cierre guardado — elegí la semana a trabajar';
+  const cb = document.getElementById('sac-cierre-limpiar');
+  if (cb) cb.checked = true;
+  sacCierreModalBuildBody();
+  const o = document.getElementById('sac-cierre-overlay');
+  if (o) o.classList.add('show');
+  sacRenderHistorialCierres();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Cierre semana SAC', true);
+  notify('✅ Cierre registrado en historial');
+}
+
+function sacCierreModalAplicar() {
+  const limpiar = document.getElementById('sac-cierre-limpiar')?.checked;
+  const w = _sacModalPickW;
+  const ranges = getCalWeekRanges();
+  if (w < 1 || w > ranges.length) return;
+  pushUndo();
+  state.sacSemanaTrabajo = { w };
+  if (limpiar) sacLimpiarSemanaSlot(w);
+  sacCierreModalCerrar();
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Semana SAC', true);
+  notify(`✅ Trabajando semana ${w} (${sacWeekPeriodLabel(w)})`);
+}
+
+function sacCierreModalCerrar() {
+  const o = document.getElementById('sac-cierre-overlay');
+  if (o) o.classList.remove('show');
+}
+
+function sacLimpiarSemanaSlot(w) {
+  const k = vsKey(w);
+  if (!state.vsData) state.vsData = {};
+  state.vsData[k] = VS_DAYS.map(() => ({ est: 0, real: 0, caja: 0, cerrado: false }));
+  if (!state.vsExtraData) state.vsExtraData = {};
+  state.vsExtraData[k] = { monto: 0, nota: '', realExtra: 0 };
+  if (!state.sacCargas) state.sacCargas = {};
+  state.sacCargas[w] = [];
+  if (!state.sacIngresos) state.sacIngresos = {};
+  state.sacIngresos[w] = [];
+}
+
 function sacGetCargas(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   if (!state.sacCargas) state.sacCargas = {};
   if (!state.sacCargas[w]) state.sacCargas[w] = [];
   return state.sacCargas[w];
 }
 
 function sacGetIngresos(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   if (!state.sacIngresos) state.sacIngresos = {};
   if (!state.sacIngresos[w]) state.sacIngresos[w] = [];
   return state.sacIngresos[w];
@@ -15542,7 +15735,7 @@ function sacGetIngresos(w) {
 
 // ── RENDER ──
 function sacRender() {
-  const w = sacCurrentWeek();
+  const w = sacActiveWeek();
 
   // Week label
   const ranges = getCalWeekRanges();
@@ -15578,6 +15771,8 @@ function sacRender() {
   sacRenderIngresos(w);
   sacRenderFinanciamientoPanel(w);
   sacCalcAll(w);
+  sacUpdateToolbarDesc();
+  sacRenderHistorialCierres();
 }
 
 // Load ventas values from vsData into static inputs — never reconstructs inputs
@@ -15603,7 +15798,7 @@ function sacLoadVentas(w) {
 
 // onchange handler for ventas inputs — writes to vsData, never touches other inputs
 function sacVChange(dayIdx, field, rawVal) {
-  const w   = sacCurrentWeek();
+  const w   = sacActiveWeek();
   const val = parseInt((rawVal||'0').replace(/[^\d]/g,''),10)||0;
   if (dayIdx === 'extra') {
     if (field === 'est') vsGetExtra(w).monto = val;
@@ -15674,14 +15869,14 @@ function sacMercModeChange() {
   state.sacMerc.mode = r?.value || 'monto';
   const mInp = document.getElementById('sac-merc-val');
   if (mInp) mInp.placeholder = state.sacMerc.mode === 'pct' ? '30 (%)' : '0 ($)';
-  sacCalcAll(sacCurrentWeek());
+  sacCalcAll(sacActiveWeek());
   markUnsaved();
 }
 
 function sacMercValChange(val) {
   if (!state.sacMerc) state.sacMerc = {mode:'monto', val:0};
   state.sacMerc.val = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
-  sacCalcAll(sacCurrentWeek());
+  sacCalcAll(sacActiveWeek());
   markUnsaved();
 }
 
@@ -15702,14 +15897,14 @@ function sacSetBanco(val) {
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
   const upd = document.getElementById('sac-banco-upd');
   if (upd) upd.textContent = 'Act. ' + state.cajaEmpresa.bancoUpd;
-  sacCalcBalance(sacCurrentWeek());
+  sacCalcBalance(sacActiveWeek());
   updateTotalDisponible();
   markUnsaved();
 }
 
 function sacSetEfectivo(val) {
   state.sacEfectivo = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
-  sacCalcBalance(sacCurrentWeek());
+  sacCalcBalance(sacActiveWeek());
   markUnsaved();
 }
 
@@ -15725,7 +15920,7 @@ function sacCatColor(cat) {
 }
 
 function sacRenderCargas(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const list   = document.getElementById('sac-cargas-list'); if (!list) return;
   const cargas = sacGetCargas(w);
 
@@ -15830,7 +16025,7 @@ function sacCalcCargasTotals(w) {
 }
 
 function sacCalcIngresosTotals(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const arr = sacGetIngresos(w);
   const pend = Math.round(arr.filter(x => x.estado !== 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
   const rec = Math.round(arr.filter(x => x.estado === 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
@@ -15840,7 +16035,7 @@ function sacCalcIngresosTotals(w) {
 }
 
 function sacRenderIngresos(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const list = document.getElementById('sac-ingresos-list');
   if (!list) return;
   const arr = sacGetIngresos(w);
@@ -15873,7 +16068,7 @@ function sacRenderIngresos(w) {
 }
 
 function sacAddIngresoManual() {
-  const w = sacCurrentWeek();
+  const w = sacActiveWeek();
   pushUndo();
   const id = 'si_' + Date.now();
   sacGetIngresos(w).push({
@@ -15937,7 +16132,7 @@ function sacSaveIngresoEdit(w, id) {
 }
 
 function sacGetBalanceEstimado(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const banco     = state.cajaEmpresa?.banco || 0;
   const efectivo  = state.sacEfectivo || 0;
   const propPend  = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
@@ -15991,7 +16186,7 @@ function sacGetBalanceEstimado(w) {
 }
 
 function sacCalcBalance(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const B = sacGetBalanceEstimado(w);
   const {
     balance, disponible, porPagar, ventasEstPendientes, ventaRealAcum,
@@ -16030,7 +16225,7 @@ function sacCalcBalance(w) {
 }
 
 function sacUpdateFinPanelBalance(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const B = sacGetBalanceEstimado(w);
   const el = document.getElementById('sac-fin-balance-live');
   const hint = document.getElementById('sac-fin-neg-hint');
@@ -16042,7 +16237,7 @@ function sacUpdateFinPanelBalance(w) {
 }
 
 function sacRenderFinanciamientoPanel(w) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const wrap = document.getElementById('sac-fin-panel-wrap');
   if (!wrap) return;
   if (!state.sacFinanciamientoRegistro) state.sacFinanciamientoRegistro = [];
@@ -16100,7 +16295,7 @@ function sacRenderFinanciamientoPanel(w) {
 }
 
 function sacGuardarFinanciamientoRegistro() {
-  const w = sacCurrentWeek();
+  const w = sacActiveWeek();
   const B = sacGetBalanceEstimado(w);
   const monto = parseInt((document.getElementById('sac-fin-monto')?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
   const detalle = (document.getElementById('sac-fin-detalle')?.value || '').trim();
@@ -16138,14 +16333,14 @@ function sacEliminarFinanciamientoRegistro(id) {
   if (!confirm('¿Eliminar este registro del historial?')) return;
   pushUndo();
   state.sacFinanciamientoRegistro = (state.sacFinanciamientoRegistro || []).filter(x => x.id !== id);
-  sacRenderFinanciamientoPanel(sacCurrentWeek());
+  sacRenderFinanciamientoPanel(sacActiveWeek());
   markUnsaved();
   if (typeof saveState === 'function') saveState('Eliminó registro financiamiento', true);
   notify('Registro eliminado');
 }
 
 function updateDashSac(w, disponible, porPagar, pagado, ventas, balance) {
-  w = w || sacCurrentWeek();
+  w = w || sacActiveWeek();
   const ranges = getCalWeekRanges();
   const r      = ranges[(w-1)] || ranges[0];
   const now    = new Date();
@@ -16174,7 +16369,7 @@ function sacCalcAll(w) {
 
 // ── CARGA ACTIONS ──
 function sacAddCargaManual() {
-  const w = sacCurrentWeek();
+  const w = sacActiveWeek();
   pushUndo();
   sacGetCargas(w).push({
     id:       'sc_'+Date.now(),
@@ -16332,7 +16527,7 @@ function sacOpenConfigSel() {
   const keys = ['mercaderia','rrhh','operacion','pasivos','socias','gestion','ingresos'];
   const keyLabels = {mercaderia:'🛒 Mercadería', rrhh:'👥 RRHH', operacion:'⚡ Operación',
     pasivos:'🏦 Pasivos', socias:'🤝 Socias', gestion:'💼 Gestión', ingresos:'💰 Ingresos'};
-  const w = sacCurrentWeek();
+  const w = sacActiveWeek();
   const existing = new Set(sacGetCargas(w).map(c=>c._fixedId));
   let html = '';
   keys.forEach(k => {
@@ -16360,7 +16555,7 @@ function sacCloseSel() {
 }
 
 function sacImportSelected() {
-  const w    = sacCurrentWeek();
+  const w    = sacActiveWeek();
   const keys = ['mercaderia','rrhh','operacion','pasivos','socias','gestion','ingresos'];
   const keyLabels = {mercaderia:'Proveedor', rrhh:'RRHH', operacion:'Servicio',
     pasivos:'Crédito', socias:'Retiro', gestion:'Crédito', ingresos:'Ingreso'};
@@ -16618,6 +16813,10 @@ function compressStateForSave(st) {
 
     if (s.sacFinanciamientoRegistro && s.sacFinanciamientoRegistro.length > 80) {
       s.sacFinanciamientoRegistro = s.sacFinanciamientoRegistro.slice(0, 80);
+    }
+
+    if (s.sacCierresHistorial && s.sacCierresHistorial.length > 48) {
+      s.sacCierresHistorial = s.sacCierresHistorial.slice(0, 48);
     }
 
     // Compress pagosSemanales: remove empty weeks
