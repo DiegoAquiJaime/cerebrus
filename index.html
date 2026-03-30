@@ -8702,7 +8702,7 @@ Para CADA documento extrae un objeto JSON con:
   * invProdId: si el producto coincide con alguno de la lista de inventario, pon su ID. Si no coincide, deja vacío.
   Si el documento no tiene detalle de líneas o no es una factura/guía, deja items como array vacío [].
 
-Responde SOLO con array JSON válido. Sin texto, sin markdown, sin backticks.
+Responde SOLO con array JSON válido. Sin texto, sin markdown, sin backticks. Sin saltos de línea dentro de valores de texto (descripción, nombres).
 Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORÍFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","items":[{"descripcion":"Lomo vetado","cantidad":15,"unidad":"kg","precioUnit":8900,"subtotal":133500,"invProdId":"inv_123"},{"descripcion":"Pollo entero","cantidad":20,"unidad":"un","precioUnit":3200,"subtotal":64000,"invProdId":""}]}]`;
 }
 
@@ -8888,7 +8888,7 @@ Para CADA documento extrae un JSON con:
   * precioOriginal: precio como aparece en la factura (antes de aplicar IVA si era neto)
   * eraNetoIVA: true si tuviste que multiplicar por 1.19
 
-Responde SOLO con array JSON válido. Sin texto ni markdown.`;
+Responde SOLO con array JSON válido. Sin texto ni markdown. Sin saltos de línea dentro de strings.`;
 }
 
 async function processAiImage(file, ext) {
@@ -11958,7 +11958,7 @@ Para cada producto que veas, extrae un objeto JSON con:
 - observacion: qué no quedó claro (solo si confianza es "duda")
 
 IMPORTANTE: Responde ÚNICAMENTE con un array JSON (empieza con [ y termina con ]).
-Usa comillas dobles " en claves y valores de texto. Sin comentarios // dentro del JSON. Sin markdown ni texto antes o después del array.
+Usa comillas dobles " en claves y valores de texto. Sin saltos de línea dentro de los valores de texto (una sola línea por campo). Sin comentarios // dentro del JSON. Sin markdown ni texto antes o después del array.
 Ejemplo: [{"nombre":"Lomo","stock":5.5,"unidad":"kg","precio":8900,"categoria":"Carnes","nombreMatch":"","confianza":"ok","observacion":""},{"nombre":"Mantequilla","stock":0.3,"unidad":"kg","precio":0,"categoria":"Lácteos","nombreMatch":"","confianza":"ok","observacion":""}]`;
 
     const controller = new AbortController();
@@ -15351,14 +15351,95 @@ function cerebrusNormalizeDocItems(rows) {
   });
 }
 
+/** Quita comas finales antes de ] o } (JSON tolerante). */
+function cerebrusJsonStripTrailingCommas(jsonStr) {
+  return String(jsonStr).replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+}
+
+/** Escapa saltos de línea y tab reales dentro de strings "…" (error típico de Claude). */
+function cerebrusJsonEscapeNewlinesInStrings(str) {
+  let out = '';
+  let inStr = false, esc = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (!inStr) {
+      if (ch === '"') inStr = true;
+      out += ch;
+      continue;
+    }
+    if (esc) {
+      out += ch;
+      esc = false;
+      continue;
+    }
+    if (ch === '\\') {
+      out += ch;
+      esc = true;
+      continue;
+    }
+    if (ch === '"') {
+      inStr = false;
+      out += ch;
+      continue;
+    }
+    if (ch === '\n' || ch === '\r') {
+      out += '\\n';
+      if (ch === '\r' && str[i + 1] === '\n') i++;
+      continue;
+    }
+    if (ch === '\t') {
+      out += '\\t';
+      continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/** Cierra } ] faltantes al final si la respuesta vino truncada (max_tokens). */
+function cerebrusJsonCloseTruncated(str) {
+  const s = String(str);
+  const stack = [];
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = false; }
+      continue;
+    }
+    if (ch === '"') {
+      inStr = true;
+      continue;
+    }
+    if (ch === '{') stack.push('}');
+    else if (ch === '[') stack.push(']');
+    else if (ch === '}' || ch === ']') {
+      if (stack.length && stack[stack.length - 1] === ch) stack.pop();
+    }
+  }
+  let suffix = '';
+  for (let k = stack.length - 1; k >= 0; k--) suffix += stack[k];
+  return s + suffix;
+}
+
 /**
  * Extrae y parsea un array JSON desde la respuesta de Claude (markdown, texto previo, comas finales).
- * Evita fallos cuando el modelo envuelve el JSON en ``` o comenta antes del '['.
+ * Repara: comillas tipográficas, saltos de línea en strings, JSON truncado.
  */
 function cerebrusParseJsonArray(rawText, contextLabel) {
   let s = String(rawText || '').replace(/\uFEFF/g, '').trim();
   s = s.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+  s = s.replace(/[\u201C\u201D\u201E\u00AB\u00BB\u2033\u2036\u2039\u203A]/g, '"');
+
   const first = s.indexOf('[');
+  if (first < 0) {
+    throw new Error(
+      (contextLabel || 'Claude') + ' no devolvió un array JSON (no aparece [). ' +
+      'Revisa F12 → Consola para la respuesta cruda.'
+    );
+  }
   if (first > 0) s = s.slice(first);
 
   function extractBalancedArray(src) {
@@ -15390,26 +15471,46 @@ function cerebrusParseJsonArray(rawText, contextLabel) {
   let chunk = extractBalancedArray(s);
   if (!chunk) chunk = s;
 
-  function stripTrailingCommas(jsonStr) {
-    return jsonStr.replace(/,\s*]/g, ']').replace(/,\s*}/g, '}');
+  function tryParseArray(jsonSlice) {
+    const t = cerebrusJsonStripTrailingCommas(jsonSlice);
+    const arr = JSON.parse(t);
+    if (!Array.isArray(arr)) throw new Error('no es array');
+    return arr;
   }
 
-  try {
-    const arr = JSON.parse(stripTrailingCommas(chunk));
-    if (!Array.isArray(arr)) throw new Error('La respuesta no es un array');
-    return arr;
-  } catch (e1) {
-    try {
-      const chunk2 = extractBalancedArray(s);
-      if (chunk2 && chunk2 !== chunk) return JSON.parse(stripTrailingCommas(chunk2));
-    } catch (e2) {}
-    const tail = s.length > 800 ? s.slice(-600) : s;
-    throw new Error(
-      (contextLabel || 'Claude') + ' no devolvió JSON válido (' + (e1.message || 'parse') + '). ' +
-      'Si el documento es muy largo, divide la importación o reduce filas. ' +
-      'Revisa F12 → Consola. Final de la respuesta: ' + tail.replace(/\s+/g, ' ').slice(0, 400)
-    );
+  const attempts = [
+    () => tryParseArray(chunk),
+    () => tryParseArray(cerebrusJsonEscapeNewlinesInStrings(chunk)),
+    () => tryParseArray(cerebrusJsonCloseTruncated(chunk)),
+    () => tryParseArray(cerebrusJsonEscapeNewlinesInStrings(cerebrusJsonCloseTruncated(chunk))),
+  ];
+
+  if (chunk !== s) {
+    attempts.push(() => tryParseArray(s));
+    attempts.push(() => tryParseArray(cerebrusJsonEscapeNewlinesInStrings(cerebrusJsonCloseTruncated(s))));
   }
+
+  let lastErr = null;
+  for (let a = 0; a < attempts.length; a++) {
+    try {
+      return attempts[a]();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  console.error('[Cerebrus JSON] parse falló — contexto:', contextLabel, lastErr && lastErr.message);
+  console.error('[Cerebrus JSON] longitud texto:', s.length, '— inicio:', s.slice(0, 500));
+  console.error('[Cerebrus JSON] final:', s.slice(-500));
+
+  const tail = s.length > 800 ? s.slice(-600) : s;
+  throw new Error(
+    (contextLabel || 'Claude') + ' no devolvió JSON válido' +
+    (lastErr ? ' (' + (lastErr.message || '') + ')' : '') +
+    '. Causas frecuentes: documento muy largo (truncado), o texto explicativo fuera del array. ' +
+    'Prueba con menos filas o un archivo más corto; revisa F12 → Consola para el detalle. Fragmento final: ' +
+    tail.replace(/\s+/g, ' ').slice(0, 380)
+  );
 }
 
 /** Igual que el array pero para un objeto { ... } (p. ej. escáner S.A.C.). */
