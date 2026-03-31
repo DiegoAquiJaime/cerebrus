@@ -1332,6 +1332,11 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-carga-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-carga-row:last-child{border-bottom:none;}
 .sac-carga-row:hover{background:rgba(148,163,184,.08);}
+.sac-cargas-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:#f8fafc;}
+.sac-filter-inp,.sac-filter-sel{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:11px;font-family:inherit;color:var(--primary);background:var(--white);}
+.sac-filter-inp{min-width:120px;}
+.sac-filter-sel{min-width:130px;}
+.sac-filter-clear{font-size:10px;padding:5px 9px;}
 .sac-carga-row.pagado{opacity:.55;}
 .sac-carga-row.pagado .sac-nombre{text-decoration:line-through;}
 .sac-nombre{font-weight:700;font-size:12px;}
@@ -1368,6 +1373,8 @@ body.dark-mode .sac-v-row,.dark-mode .sac-carga-row{border-color:#334155;}
 body.dark-mode .sac-v-total,.dark-mode .sac-footer,.dark-mode .sac-ventas-head+*{background:#0f172a;}
 body.dark-mode .sac-v-inp,.dark-mode .sac-edit-inp{color:#e2e8f0;border-color:#334155;}
 body.dark-mode .sac-v-row:hover,body.dark-mode .sac-carga-row:hover{background:rgba(100,116,139,.16);}
+body.dark-mode .sac-cargas-filters{background:#0f172a;border-color:#334155;}
+body.dark-mode .sac-filter-inp,body.dark-mode .sac-filter-sel{background:#1e293b;color:#e2e8f0;border-color:#334155;}
 body.dark-mode .sac-sel-modal{background:#1e293b;}
 body.dark-mode .sac-help-sheet{background:#1e293b;border-color:#334155;}
 body.dark-mode .sac-help-sheet-head{border-color:#334155;}
@@ -2051,6 +2058,24 @@ body.dark-mode textarea:focus{
   .sac-v-row { grid-template-columns: 1fr 92px 14px 92px; }
 }
 
+/* iPad 9th gen portrait: inventario en columna única */
+@media (min-width: 768px) and (max-width: 900px) and (orientation: portrait) {
+  .inv-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+  .inv-toolbar .inv-search {
+    grid-column: 1;
+  }
+  .inv-toolbar .fac-btn,
+  .inv-toolbar .ai-import-btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
 /* ── iPAD / MÓVIL ── */
 @media (max-width: 600px) {
   .nav { gap: 0; padding: 0 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; }
@@ -2141,7 +2166,37 @@ body.dark-mode textarea:focus{
   .inv-kpi-label { font-size: 10px; }
   .inv-search { padding: 10px 14px; font-size: 14px; min-height: 44px; }
   .inv-cat-btn { padding: 8px 16px; font-size: 12px; min-height: 40px; }
-  .inv-toolbar { gap: 10px; }
+  .inv-toolbar {
+    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  .inv-toolbar .inv-search {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+  }
+  .inv-toolbar .fac-btn,
+  .inv-toolbar .ai-import-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
+  }
+  .inv-subtabs {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+  .inv-subtab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
   .inv-table-wrap { border-radius: 12px; }
   #inv-form { padding: 20px 22px; }
   #inv-form input, #inv-form select { min-height: 42px; font-size: 14px !important; padding: 9px 12px; }
@@ -2322,6 +2377,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <span class="mode-badge mode-local" id="mode-badge">💾 LOCAL</span>
       <span class="user-chip" id="user-chip" onclick="openLogPanel()" title="Ver registro de actividad">👤 —</span>
       <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio (Ctrl+Z)">↩ Deshacer</button>
+      <button class="btn" onclick="showAvisosManual()" title="Mostrar avisos del día">🔔 Avisos</button>
       <button class="dark-toggle" onclick="toggleDark()" id="dark-btn" title="Modo oscuro">🌙</button>
       <button class="btn btn-save" id="btn-save-indicator" onclick="saveState()">💾 Guardar</button>
       <div class="export-menu" id="exportMenu">
@@ -2730,6 +2786,25 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
               <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
             </div>
+          </div>
+          <div class="sac-cargas-filters">
+            <select id="sac-fil-cat" class="sac-filter-sel" onchange="sacSetCargaFilters()">
+              <option value="">Todas las clases</option>
+              <option value="Crédito">Crédito</option><option value="TC">TC</option><option value="Retiro">Retiro</option>
+              <option value="Proveedor">Proveedor</option><option value="Impuesto">Impuesto</option><option value="Servicio">Servicio</option>
+              <option value="Bono">Bono</option><option value="Arriendo">Arriendo</option><option value="Compra">Compra</option>
+              <option value="RRHH">RRHH</option><option value="Otro">Otro</option>
+            </select>
+            <select id="sac-fil-est" class="sac-filter-sel" onchange="sacSetCargaFilters()">
+              <option value="">Todos los estados</option>
+              <option value="nopagado">No pagado</option>
+              <option value="parcial">Parcial</option>
+              <option value="pagado">Pagado</option>
+            </select>
+            <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
+            <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()">
+            <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()">
+            <button class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
           </div>
           <div id="sac-cargas-list">
             <!-- rendered by sacRenderCargas() -->
@@ -3598,7 +3673,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     <div class="content">
 
       <!-- Sub-tabs: Inventario / Pedido Semana / Historial consumo -->
-      <div style="display:flex;gap:0;margin-bottom:20px;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;">
+      <div class="inv-subtabs" style="display:flex;gap:0;margin-bottom:20px;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;">
         <button class="inv-subtab active" id="ist-inventario" onclick="invSubTab('inventario')">📦 Inventario</button>
         <button class="inv-subtab" id="ist-conteo" onclick="invSubTab('conteo')">📋 Conteo rápido</button>
         <button class="inv-subtab" id="ist-pedido" onclick="invSubTab('pedido')">🛒 Pedido Semanal</button>
@@ -5462,7 +5537,19 @@ function ingConfirmar() {
 
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
-function checkCreditAlerts() {
+function _alertsTodayKey() {
+  const d = new Date();
+  const ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  return 'cerebrus_alerts_seen_' + ymd + '_' + (currentUser || 'anon');
+}
+function _alertsSeenToday() {
+  try { return localStorage.getItem(_alertsTodayKey()) === '1'; } catch(e) { return false; }
+}
+function _markAlertsSeenToday() {
+  try { localStorage.setItem(_alertsTodayKey(), '1'); } catch(e) {}
+}
+
+function checkCreditAlerts(forceShow) {
   if (!state.creditos) return;
 
   // ── Banner interno del tab Créditos (créditos próximos a terminar) ──
@@ -5486,8 +5573,12 @@ function checkCreditAlerts() {
 
   // ── Popup al inicio: SOLO si NO es recarga desde nube y NO es Bodega ──
   if (_suppressAlerts || currentUser === 'Bodega') { _suppressAlerts = false; return; }
+  if (!forceShow && _alertsSeenToday()) return;
   const payAlerts = getPaymentAlerts();
-  if (!payAlerts.length) return;
+  if (!payAlerts.length) {
+    if (forceShow) notify('✅ No hay avisos pendientes por mostrar hoy');
+    return;
+  }
 
   const overlay = document.getElementById('startupAlert');
   const slist   = document.getElementById('startup-alert-list');
@@ -5511,10 +5602,15 @@ function checkCreditAlerts() {
     }).join('');
 
   overlay.classList.add('show');
+  _markAlertsSeenToday();
 }
 
 function closeStartupAlert() {
   document.getElementById('startupAlert').classList.remove('show');
+}
+
+function showAvisosManual() {
+  checkCreditAlerts(true);
 }
 
 // ── DASHBOARD: bloque de venta semanal ──
@@ -16345,9 +16441,33 @@ const SAC_CAT_COLORS = {
   'Impuesto':'#6366f1','Servicio':'#0ea5e9','Bono':'#10b981','Arriendo':'#8b5cf6',
   'Compra':'#64748b','RRHH':'#27ae60','Otro':'#94a3b8'
 };
+let _sacCargaFilter = { cat:'', estado:'', name:'', min:null, max:null };
 function sacCatColor(cat) {
   for (const [k,v] of Object.entries(SAC_CAT_COLORS)) if ((cat||'').toLowerCase().includes(k.toLowerCase())) return v;
   return '#94a3b8';
+}
+
+function sacSetCargaFilters() {
+  const cat = (document.getElementById('sac-fil-cat')?.value || '').trim();
+  const estado = (document.getElementById('sac-fil-est')?.value || '').trim();
+  const name = (document.getElementById('sac-fil-name')?.value || '').trim().toLowerCase();
+  const minRaw = (document.getElementById('sac-fil-min')?.value || '').replace(/[^\d]/g,'');
+  const maxRaw = (document.getElementById('sac-fil-max')?.value || '').replace(/[^\d]/g,'');
+  _sacCargaFilter = {
+    cat,
+    estado,
+    name,
+    min: minRaw ? parseInt(minRaw, 10) : null,
+    max: maxRaw ? parseInt(maxRaw, 10) : null
+  };
+  sacRenderCargas();
+}
+
+function sacClearCargaFilters() {
+  const ids = ['sac-fil-cat','sac-fil-est','sac-fil-name','sac-fil-min','sac-fil-max'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  _sacCargaFilter = { cat:'', estado:'', name:'', min:null, max:null };
+  sacRenderCargas();
 }
 
 function sacRenderCargas() {
@@ -16369,10 +16489,27 @@ function sacRenderCargas() {
     const ob = statusOrder[b.estado] ?? 0;
     return oa - ob;
   });
+  const filteredCargas = sortedCargas.filter(c => {
+    const catOk = !_sacCargaFilter.cat || (c.cat || '').toLowerCase().includes(_sacCargaFilter.cat.toLowerCase());
+    const estOk = !_sacCargaFilter.estado || (c.estado || 'nopagado') === _sacCargaFilter.estado;
+    const nameOk = !_sacCargaFilter.name || (c.nombre || '').toLowerCase().includes(_sacCargaFilter.name);
+    const m = Number(c.monto || 0);
+    const minOk = _sacCargaFilter.min == null || m >= _sacCargaFilter.min;
+    const maxOk = _sacCargaFilter.max == null || m <= _sacCargaFilter.max;
+    return catOk && estOk && nameOk && minOk && maxOk;
+  });
 
   const CAT_LIST = ['Crédito','TC','Retiro','Proveedor','Impuesto','Servicio','Bono','Arriendo','Compra','RRHH','Otro'];
 
-  list.innerHTML = sortedCargas.map((c,i) => {
+  if (!filteredCargas.length) {
+    list.innerHTML = `<div style="padding:16px;text-align:center;color:#94a3b8;font-size:11px;font-style:italic;">
+      No hay egresos que coincidan con los filtros.
+    </div>`;
+    sacCalcCargasTotals();
+    return;
+  }
+
+  list.innerHTML = filteredCargas.map((c,i) => {
     const col     = sacCatColor(c.cat);
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : '○ No pagado';
