@@ -1,0 +1,11 @@
+.DS_Store
+
+# Local docs/utilities not part of deployed app
+CEREBRUS_GUIA_COMPLETA.md
+CEREBRUS_MAC_Y_GITHUB.md
+cerebrus-google-apps-script.js
+
+# Local data/import artifacts
+inventario_completo_stock_mano.xlsx
+rescate_inventario_2026-03-29.json
+scripts/
