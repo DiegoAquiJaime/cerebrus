@@ -3734,7 +3734,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
         </div>
         <div class="inv-toolbar">
-          <input class="inv-search" id="inv-search" placeholder="🔍 Nombre, categoría o unidad…" oninput="invRender()">
+          <input class="inv-search" id="inv-search" placeholder="🔍 Nombre, categoría, familia, subfamilia o unidad…" oninput="invRender()">
           <button class="fac-btn primary" onclick="invToggleForm()">+ Agregar producto</button>
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
@@ -3758,9 +3758,18 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <option value="ok">Por encima del mínimo</option>
             <option value="sin_prov">Sin proveedor</option>
           </select>
+          <span style="color:#64748b;font-weight:600;">Familia</span>
+          <select id="inv-filter-familia" class="inv-filter-select" onchange="invRender()" title="Filtrar por familia">
+            <option value="">Todas</option>
+          </select>
+          <span style="color:#64748b;font-weight:600;">Subfamilia</span>
+          <select id="inv-filter-subfamilia" class="inv-filter-select" onchange="invRender()" title="Filtrar por subfamilia">
+            <option value="">Todas</option>
+          </select>
           <span style="color:#94a3b8;font-weight:600;">Orden</span>
           <select id="inv-filter-sort" class="inv-filter-select" onchange="invRender()" title="Ordenar la tabla">
             <option value="cat_nombre">Categoría, luego nombre (A→Z)</option>
+            <option value="familia_nombre">Familia/Subfamilia, luego nombre (A→Z)</option>
             <option value="nombre">Nombre (A→Z)</option>
             <option value="stock_desc">Stock (mayor → menor)</option>
             <option value="stock_asc">Stock (menor → mayor)</option>
@@ -3780,6 +3789,18 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
                 <select id="inv-f-cat" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
                 </select>
                 <button onclick="catInvAgregar()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nueva categoría">+ Nueva</button>
+              </div>
+            </div>
+            <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Familia</label>
+              <div style="display:flex;gap:4px;">
+                <select id="inv-f-familia" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;"></select>
+                <button onclick="invAddFamiliaGlobal()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nueva familia">+ Nueva</button>
+              </div>
+            </div>
+            <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Subfamilia</label>
+              <div style="display:flex;gap:4px;">
+                <select id="inv-f-subfamilia" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;"></select>
+                <button onclick="invAddSubfamiliaGlobal()" class="fac-btn" style="font-size:10px;padding:4px 8px;white-space:nowrap;" title="Nueva subfamilia">+ Nueva</button>
               </div>
             </div>
             <div><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;display:block;margin-bottom:3px;">Unidad</label>
@@ -3810,7 +3831,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <div class="inv-table-wrap">
           <table class="inv-table">
             <thead><tr>
-              <th>Producto</th><th>Categoría</th><th>Unidad</th>
+              <th>Producto</th><th>Categoría</th><th>Familia / Subfamilia</th><th>Unidad</th>
               <th style="text-align:right;">Stock actual</th>
               <th style="text-align:right;">Mínimo</th>
               <th style="text-align:center;">Estado</th>
@@ -10416,6 +10437,13 @@ function _postLoadSetup() {
   if (!state.vsExtraData)               state.vsExtraData               = {};
   applyInventorySnapshot20260329IfNeeded();
   setTimeout(function(){ applyAbarrotesBienExtraIfNeeded(); }, 300);
+  invEnsureFamiliesState();
+  (state.inventario || []).forEach(function(p) {
+    if (!p.familia) p.familia = 'Sin familia';
+    if (!p.subfamilia) p.subfamilia = 'Sin subfamilia';
+    if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
+    if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
+  });
   SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
     if (i.day===undefined) i.day=0;
     if (i.weekday===undefined) i.weekday=0;
@@ -10737,6 +10765,65 @@ function invGetCategories() {
   invInit();
   return [...new Set(state.inventario.map(p=>p.cat||'Sin categoría'))].sort();
 }
+function invEnsureFamiliesState() {
+  if (!state.invFamilias || typeof state.invFamilias !== 'object') state.invFamilias = {};
+  if (!state.invFamilias['Sin familia']) state.invFamilias['Sin familia'] = ['Sin subfamilia'];
+  Object.keys(state.invFamilias).forEach(function(f) {
+    if (!Array.isArray(state.invFamilias[f])) state.invFamilias[f] = ['Sin subfamilia'];
+    if (!state.invFamilias[f].length) state.invFamilias[f].push('Sin subfamilia');
+  });
+}
+function invGetFamilias() {
+  invEnsureFamiliesState();
+  return Object.keys(state.invFamilias).sort((a,b)=>a.localeCompare(b,'es'));
+}
+function invGetSubfamilias(familia) {
+  invEnsureFamiliesState();
+  const fam = familia || 'Sin familia';
+  return (state.invFamilias[fam] || ['Sin subfamilia']).slice().sort((a,b)=>a.localeCompare(b,'es'));
+}
+function invRefreshFamiliaSubfamiliaSelects(baseId, selectedFamilia, selectedSubfamilia) {
+  const famSel = document.getElementById(baseId + '-familia');
+  const subSel = document.getElementById(baseId + '-subfamilia');
+  if (!famSel || !subSel) return;
+  const familias = invGetFamilias();
+  const fam = selectedFamilia && familias.includes(selectedFamilia) ? selectedFamilia : (familias[0] || 'Sin familia');
+  famSel.innerHTML = familias.map(f => `<option value="${esc(f)}" ${f===fam?'selected':''}>${esc(f)}</option>`).join('');
+  const subs = invGetSubfamilias(fam);
+  const sub = selectedSubfamilia && subs.includes(selectedSubfamilia) ? selectedSubfamilia : (subs[0] || 'Sin subfamilia');
+  subSel.innerHTML = subs.map(s => `<option value="${esc(s)}" ${s===sub?'selected':''}>${esc(s)}</option>`).join('');
+  famSel.onchange = function() {
+    const subsNow = invGetSubfamilias(famSel.value);
+    subSel.innerHTML = subsNow.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  };
+}
+function invAddFamiliaGlobal() {
+  invEnsureFamiliesState();
+  const nombre = prompt('Nombre de la nueva familia:', '');
+  if (!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  if (state.invFamilias[n]) { notify('⚠ Esa familia ya existe'); return; }
+  pushUndo();
+  state.invFamilias[n] = ['Sin subfamilia'];
+  invRefreshFamiliaSubfamiliaSelects('inv-f', n, 'Sin subfamilia');
+  invRender();
+  markUnsaved();
+  notify(`✓ Familia "${n}" creada`);
+}
+function invAddSubfamiliaGlobal() {
+  invEnsureFamiliesState();
+  const fam = document.getElementById('inv-f-familia')?.value || 'Sin familia';
+  const nombre = prompt(`Nueva subfamilia para "${fam}":`, '');
+  if (!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  const list = state.invFamilias[fam] || (state.invFamilias[fam] = ['Sin subfamilia']);
+  if (list.includes(n)) { notify('⚠ Esa subfamilia ya existe en esa familia'); return; }
+  pushUndo();
+  list.push(n);
+  invRefreshFamiliaSubfamiliaSelects('inv-f', fam, n);
+  markUnsaved();
+  notify(`✓ Subfamilia "${n}" creada en ${fam}`);
+}
 
 function invRender() {
   invInit();
@@ -10753,6 +10840,36 @@ function invRender() {
   }
   const dl = document.getElementById('inv-cats-list');
   if (dl) dl.innerHTML = invGetCategories().map(c=>`<option value="${esc(c)}">`).join('');
+  invEnsureFamiliesState();
+  // Keep family catalogs in sync with current products
+  (state.inventario || []).forEach(function(p) {
+    const fam = p.familia || 'Sin familia';
+    const sub = p.subfamilia || 'Sin subfamilia';
+    if (!state.invFamilias[fam]) state.invFamilias[fam] = [];
+    if (!state.invFamilias[fam].includes(sub)) state.invFamilias[fam].push(sub);
+  });
+  const famSel = document.getElementById('inv-filter-familia');
+  const subSel = document.getElementById('inv-filter-subfamilia');
+  if (famSel && subSel) {
+    const famVal = famSel.value || '';
+    const subsAll = [...new Set((state.inventario || []).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'));
+    const fams = [''].concat(invGetFamilias());
+    famSel.innerHTML = fams.map(f => `<option value="${esc(f)}" ${f===famVal?'selected':''}>${f?esc(f):'Todas'}</option>`).join('');
+    const subVal = subSel.value || '';
+    const subsByFam = famVal
+      ? [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === famVal).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'))
+      : subsAll;
+    const subs = [''].concat(subsByFam);
+    subSel.innerHTML = subs.map(s => `<option value="${esc(s)}" ${s===subVal?'selected':''}>${s?esc(s):'Todas'}</option>`).join('');
+    famSel.onchange = function() {
+      const fv = famSel.value || '';
+      const list = fv
+        ? [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === fv).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'))
+        : [...new Set((state.inventario || []).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'));
+      subSel.innerHTML = ['<option value="">Todas</option>'].concat(list.map(s => `<option value="${esc(s)}">${esc(s)}</option>`)).join('');
+      invRender();
+    };
+  }
 }
 
 function invCheckKpis() {
@@ -10817,6 +10934,8 @@ function invRenderTable() {
   invInit();
   const q     = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
   const stockF = document.getElementById('inv-filter-stock')?.value || 'todos';
+  const famF = document.getElementById('inv-filter-familia')?.value || '';
+  const subF = document.getElementById('inv-filter-subfamilia')?.value || '';
   const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
   const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
   const filtered = state.inventario.filter(p => {
@@ -10824,9 +10943,13 @@ function invRenderTable() {
     if (q) {
       const n = (p.nombre || '').toLowerCase();
       const c = (p.cat || '').toLowerCase();
+      const f = (p.familia || '').toLowerCase();
+      const sf = (p.subfamilia || '').toLowerCase();
       const u = (p.unidad || '').toLowerCase();
-      if (!n.includes(q) && !c.includes(q) && !u.includes(q)) return false;
+      if (!n.includes(q) && !c.includes(q) && !f.includes(q) && !sf.includes(q) && !u.includes(q)) return false;
     }
+    if (famF && (p.familia || '') !== famF) return false;
+    if (subF && (p.subfamilia || '') !== subF) return false;
     const st = p.stock || 0;
     const em = invEfectivMin_(p);
     if (stockF === 'critico') {
@@ -10843,6 +10966,11 @@ function invRenderTable() {
     return true;
   }).sort((a, b) => {
     if (sortF === 'nombre') return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+    if (sortF === 'familia_nombre') {
+      if ((a.familia || '') !== (b.familia || '')) return (a.familia || '').localeCompare(b.familia || '', 'es');
+      if ((a.subfamilia || '') !== (b.subfamilia || '')) return (a.subfamilia || '').localeCompare(b.subfamilia || '', 'es');
+      return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+    }
     if (sortF === 'stock_desc') return (b.stock || 0) - (a.stock || 0);
     if (sortF === 'stock_asc') return (a.stock || 0) - (b.stock || 0);
     if (sortF === 'minimo_desc') return (b.minimo || 0) - (a.minimo || 0);
@@ -10862,7 +10990,7 @@ function invRenderTable() {
     const emptyMsg = state.inventario.length
       ? 'Ningún producto coincide con búsqueda o filtros.'
       : 'Sin productos — agrega uno o importa desde facturas.';
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#94a3b8;padding:24px;">' + emptyMsg + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:24px;">' + emptyMsg + '</td></tr>';
     return;
   }
 
@@ -10884,6 +11012,7 @@ function invRenderTable() {
     return `<tr id="inv-row-${p.id}">
       <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">${esc(p.nombre||'')}</td>
       <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
+      <td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.familia||'Sin familia')} <span style="color:#94a3b8;">/</span> ${esc(p.subfamilia||'Sin subfamilia')}</td>
       <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
       <td style="text-align:right;font-weight:700;color:${stockColor};">${p.stock||0}</td>
       <td style="text-align:right;color:#94a3b8;">${p.minimo||0}</td>
@@ -11452,6 +11581,7 @@ function invToggleForm() {
       if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
       unitSel.innerHTML = state.unidadesInventario.map(u => `<option value="${u}">${u}</option>`).join('');
     }
+    invRefreshFamiliaSubfamiliaSelects('inv-f', 'Sin familia', 'Sin subfamilia');
     // Populate provider dropdown
     const provSel = document.getElementById('inv-f-prov');
     if (provSel && state.facturas) {
@@ -11511,10 +11641,17 @@ function invSave() {
   const nombre = (document.getElementById('inv-f-nombre').value||'').trim();
   if (!nombre) { notify('⚠ Ingresa el nombre del producto'); return; }
   pushUndo();
+  invEnsureFamiliesState();
+  const famVal = (document.getElementById('inv-f-familia')?.value||'').trim()||'Sin familia';
+  const subVal = (document.getElementById('inv-f-subfamilia')?.value||'').trim()||'Sin subfamilia';
+  if (!state.invFamilias[famVal]) state.invFamilias[famVal] = ['Sin subfamilia'];
+  if (!state.invFamilias[famVal].includes(subVal)) state.invFamilias[famVal].push(subVal);
   const prov = document.getElementById('inv-f-prov').value;
   state.inventario.push({
     id:'inv_'+Date.now(), nombre,
     cat:   (document.getElementById('inv-f-cat').value||'').trim()||'Sin categoría',
+    familia: famVal,
+    subfamilia: subVal,
     unidad: document.getElementById('inv-f-unidad').value||'unidad',
     stock:  parseFloat(document.getElementById('inv-f-stock').value||0)||0,
     minimo: parseFloat(document.getElementById('inv-f-minimo')?.value||0)||0,
@@ -12710,9 +12847,16 @@ function invEditProd(id) {
   // Ensure current values are in lists
   if (p.cat && !CATS.includes(p.cat)) CATS.push(p.cat);
   if (p.unidad && !UNIDADES.includes(p.unidad)) UNIDADES.push(p.unidad);
+  invEnsureFamiliesState();
+  const FAMS = invGetFamilias();
+  const currFam = p.familia || 'Sin familia';
+  if (!state.invFamilias[currFam]) state.invFamilias[currFam] = ['Sin subfamilia'];
+  const SUBS = invGetSubfamilias(currFam);
 
   const catOpts = CATS.map(c=>`<option value="${c}" ${(p.cat||'')=== c?'selected':''}>${c}</option>`).join('');
   const unOpts  = UNIDADES.map(u=>`<option value="${u}" ${(p.unidad||'')=== u?'selected':''}>${u}</option>`).join('');
+  const famOpts = FAMS.map(f=>`<option value="${f}" ${currFam===f?'selected':''}>${f}</option>`).join('');
+  const subOpts = SUBS.map(s=>`<option value="${s}" ${(p.subfamilia||'Sin subfamilia')===s?'selected':''}>${s}</option>`).join('');
 
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -12751,6 +12895,20 @@ function invEditProd(id) {
               <button id="inv-ep-add-unit" title="Nueva unidad"
                 style="background:var(--accent2);color:white;border:none;border-radius:8px;padding:0 12px;font-size:16px;font-weight:800;cursor:pointer;min-height:42px;">+</button>
             </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">FAMILIA</label>
+            <select id="inv-ep-familia" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--primary);background:var(--white);min-height:42px;">
+              ${famOpts}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">SUBFAMILIA</label>
+            <select id="inv-ep-subfamilia" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--primary);background:var(--white);min-height:42px;">
+              ${subOpts}
+            </select>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -12879,6 +13037,12 @@ function invEditProd(id) {
     markUnsaved();
     notify(`✓ Unidad "${nombre.trim()}" creada`);
   };
+  document.getElementById('inv-ep-familia').onchange = function() {
+    const fam = this.value || 'Sin familia';
+    const subSel = document.getElementById('inv-ep-subfamilia');
+    const subs = invGetSubfamilias(fam);
+    subSel.innerHTML = subs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  };
 
   // Save
   document.getElementById('inv-edit-save').onclick = () => {
@@ -12887,6 +13051,11 @@ function invEditProd(id) {
     pushUndo();
     p.nombre = nombre;
     p.cat    = document.getElementById('inv-ep-cat').value;
+    p.familia = document.getElementById('inv-ep-familia').value || 'Sin familia';
+    p.subfamilia = document.getElementById('inv-ep-subfamilia').value || 'Sin subfamilia';
+    invEnsureFamiliesState();
+    if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
+    if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
     p.unidad = document.getElementById('inv-ep-unidad').value;
     p.stock  = parseFloat(document.getElementById('inv-ep-stock').value)||0;
     p.minimo = parseFloat(document.getElementById('inv-ep-minimo').value)||0;
