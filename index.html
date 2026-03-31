@@ -1280,7 +1280,7 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 
 /* ---- SEMANA ACTUAL (SAC) ---- */
 .sac-header{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
-.sac-kpi{background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:12px 14px;position:relative;}
+.sac-kpi{background:var(--white);border-radius:14px;box-shadow:0 8px 22px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.22);padding:12px 14px;position:relative;}
 .sac-kpi-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;}
 .sac-kpi-val{font-size:19px;font-weight:900;letter-spacing:-.5px;}
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
@@ -1293,15 +1293,19 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-ingresos-card .sac-carga-row{padding:6px 10px;font-size:11px;}
 .sac-ingresos-card .sac-footer{padding:6px 10px;}
 .sac-ingresos-card .sac-foot-kpi{padding:4px 0;}
-.sac-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;padding:10px 12px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.sac-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;padding:10px 12px;background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 8px 22px rgba(15,23,42,.05);}
 .sac-toolbar-lbl{font-size:12px;font-weight:700;color:var(--primary);}
 .sac-toolbar-sub{font-size:10px;color:#64748b;margin-top:2px;}
+.sac-toolbar-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.sac-toolbar-actions .fac-btn{font-size:11px;padding:7px 12px;}
+.sac-toolbar-actions .sac-close-btn{font-weight:800;background:linear-gradient(135deg,var(--accent),#fb923c);color:white;border:none;}
 @media(max-width:800px){.sac-main{flex-direction:column;}}
 /* ventas */
-.sac-ventas-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.sac-ventas-head{background:var(--primary);color:white;padding:10px 16px;font-size:12px;font-weight:700;}
+.sac-ventas-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.2);overflow:hidden;}
+.sac-ventas-head{background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:10px 16px;font-size:12px;font-weight:700;}
 .sac-v-row{display:grid;grid-template-columns:1fr 90px 16px 90px;gap:6px;align-items:center;padding:7px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-v-row:last-child{border-bottom:none;}
+.sac-v-row:hover{background:rgba(148,163,184,.08);}
 .sac-v-day{font-weight:700;}
 .sac-v-inp{border:1.5px solid var(--border);border-radius:5px;padding:5px 8px;font-family:inherit;font-size:12px;font-weight:700;text-align:right;color:var(--primary);background:transparent;width:100%;}
 .sac-v-inp:focus{outline:none;border-color:var(--accent);background:var(--white);}
@@ -1309,8 +1313,8 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-v-total{background:#f8fafc;border-top:2px solid var(--border);padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;}
 #sac-ventas-dias{max-height:min(52vh,520px);overflow-y:auto;}
 /* cargas */
-.sac-cargas-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
-.sac-ingresos-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;border-top:3px solid rgba(16,185,129,.35);}
+.sac-cargas-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.2);overflow:hidden;}
+.sac-ingresos-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(16,185,129,.24);overflow:hidden;}
 .sac-ingresos-head{background:linear-gradient(135deg, rgba(16,185,129,.12), rgba(16,185,129,.04));}
 .sac-carga-row.ingreso-recibido{opacity:.65;}
 .sac-carga-row.ingreso-recibido .sac-nombre{text-decoration:line-through;}
@@ -1321,8 +1325,11 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-head-btn.ghost:hover{background:rgba(255,255,255,.32);}
 .sac-head-btn.accent{background:var(--accent);border-color:rgba(255,255,255,.25);}
 .sac-head-btn.accent:hover{filter:brightness(1.06);}
+.sac-head-btn.success{background:var(--success);border-color:rgba(255,255,255,.28);}
+.sac-head-btn.success:hover{filter:brightness(1.06);}
 .sac-carga-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-carga-row:last-child{border-bottom:none;}
+.sac-carga-row:hover{background:rgba(148,163,184,.08);}
 .sac-carga-row.pagado{opacity:.55;}
 .sac-carga-row.pagado .sac-nombre{text-decoration:line-through;}
 .sac-nombre{font-weight:700;font-size:12px;}
@@ -1348,10 +1355,11 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-edit-inp{border:1px solid var(--border);border-radius:5px;padding:3px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;width:100%;}
 .sac-edit-inp:focus{outline:none;border-color:var(--accent2);}
 /* dark */
-body.dark-mode .sac-kpi,.dark-mode .sac-ventas-card,.dark-mode .sac-cargas-card,.dark-mode .sac-ingresos-card{background:#1e293b;}
+body.dark-mode .sac-kpi,.dark-mode .sac-ventas-card,.dark-mode .sac-cargas-card,.dark-mode .sac-ingresos-card{background:#1e293b;border-color:#334155;box-shadow:0 10px 26px rgba(0,0,0,.28);}
 body.dark-mode .sac-v-row,.dark-mode .sac-carga-row{border-color:#334155;}
 body.dark-mode .sac-v-total,.dark-mode .sac-footer,.dark-mode .sac-ventas-head+*{background:#0f172a;}
 body.dark-mode .sac-v-inp,.dark-mode .sac-edit-inp{color:#e2e8f0;border-color:#334155;}
+body.dark-mode .sac-v-row:hover,body.dark-mode .sac-carga-row:hover{background:rgba(100,116,139,.16);}
 body.dark-mode .sac-sel-modal{background:#1e293b;}
 body.dark-mode .sac-sel-item{border-color:#334155;}
 body.dark-mode .sac-sel-item:hover{background:#0f172a;}
@@ -1359,6 +1367,7 @@ body.dark-mode .sac-head-btn.ghost{background:#1f2937;border-color:#64748b;color
 body.dark-mode .sac-head-btn.ghost:hover{background:#334155;border-color:#94a3b8;}
 body.dark-mode .sac-head-btn.accent{background:#f97316;border-color:#fdba74;color:white;}
 body.dark-mode .sac-head-btn.accent:hover{background:#fb923c;}
+body.dark-mode .sac-head-btn.success{background:#10b981;border-color:#6ee7b7;color:white;}
 
 /* ---- IA SCANNER UNIVERSAL ---- */
 .ia-scan-overlay{display:none;position:fixed;inset:0;z-index:160;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
@@ -2019,6 +2028,14 @@ body.dark-mode textarea:focus{
   .inv-kpi-val { font-size: 22px; }
   .ai-modal { width: 96vw !important; }
   .fac-prov-panel { min-width: 260px; }
+  /* SAC tablet */
+  .sac-header { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+  .sac-kpi { min-height: 94px; }
+  .sac-kpi-val, .sac-kpi-inp { font-size: 18px; }
+  .sac-toolbar { padding: 10px 12px; }
+  .sac-toolbar-actions { width: 100%; justify-content: flex-end; }
+  .sac-row-ing-cargas { grid-template-columns: minmax(220px,300px) 1fr; gap: 12px; }
+  .sac-v-row { grid-template-columns: 1fr 92px 14px 92px; }
 }
 
 /* ── iPAD / MÓVIL ── */
@@ -2033,6 +2050,22 @@ body.dark-mode textarea:focus{
   .btn, .fac-btn { padding: 7px 10px; font-size: 11px; }
   .btn-save { min-width: unset; }
   /* SAC mobile */
+  .sac-header { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .sac-kpi { padding: 10px 10px; border-radius: 12px; min-height: 86px; }
+  .sac-kpi-lbl { font-size: 8px; letter-spacing: .05em; }
+  .sac-kpi-val, .sac-kpi-inp { font-size: 16px; }
+  .sac-toolbar { padding: 9px 10px; border-radius: 12px; }
+  .sac-toolbar-lbl { font-size: 11px; }
+  .sac-toolbar-sub { font-size: 9px; }
+  .sac-toolbar-actions { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+  .sac-toolbar-actions .fac-btn { width: 100%; padding: 8px 10px; font-size: 10px; }
+  .sac-ventas-card, .sac-cargas-card, .sac-ingresos-card { border-radius: 13px; }
+  .sac-ventas-head, .sac-cargas-head { padding: 9px 12px; font-size: 11px; }
+  .sac-v-row { grid-template-columns: 1fr 78px 10px 78px; gap: 5px; padding: 7px 10px; }
+  .sac-v-inp { padding: 5px 6px; font-size: 11px; }
+  .sac-footer { gap: 8px; padding: 9px 10px; }
+  .sac-foot-val { font-size: 13px; }
+  .sac-head-btn { font-size: 9px; padding: 4px 8px; border-radius: 7px; }
   .sac-cargas-wrap { gap: 8px; }
   .sac-carga-row { padding: 8px 10px; font-size: 12px; grid-template-columns: 28px 1fr auto auto; }
   .sac-nombre { font-size: 12px; }
@@ -2052,6 +2085,27 @@ body.dark-mode textarea:focus{
   .mov-btns { flex-direction: column !important; }
   /* Hide some columns on mobile */
   .inv-table-hide-mobile { display: none; }
+}
+
+/* iPhone compact mode */
+@media (max-width: 430px) {
+  .sac-header { grid-template-columns: 1fr; }
+  .sac-kpi:nth-child(n+5) { display: none; } /* prioriza KPIs críticos en pantallas pequeñas */
+  .sac-toolbar-actions { grid-template-columns: 1fr; }
+  .sac-row-ing-cargas { grid-template-columns: 1fr; gap: 10px; }
+  .sac-v-row { grid-template-columns: 1fr 72px 8px 72px; }
+  .sac-carga-row { grid-template-columns: 24px 1fr auto; }
+  .sac-carga-row > :nth-child(4),
+  .sac-carga-row > :nth-child(5) { grid-column: 2 / -1; justify-self: end; }
+}
+
+/* iPad Pro refinado (portrait/landscape) */
+@media (min-width: 1025px) and (max-width: 1368px) {
+  .content { max-width: 1220px; margin: 0 auto; }
+  .sac-header { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  .sac-main { gap: 14px; }
+  .sac-row-ing-cargas { grid-template-columns: minmax(240px, 340px) 1fr; gap: 14px; }
+  .sac-toolbar-actions .fac-btn { min-height: 36px; }
 }
 
 /* Touch-friendly: bigger tap targets on touch devices */
@@ -2170,7 +2224,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
   <div class="nav-sep">Secciones</div>
   <div class="nav-item" onclick="goto('sec-ingresos')"><span class="ni">💰</span> Ingresos</div>
-  <div class="nav-item" onclick="goto('sec-mercaderia')"><span class="ni">🛒</span> Mercadería</div>
+  <div class="nav-item" onclick="goto('sec-mercaderia')" style="display:none;"><span class="ni">🛒</span> Mercadería</div>
   <div class="nav-item" onclick="goto('sec-rrhh')"><span class="ni">👥</span> RRHH &amp; Bonos</div>
   <div class="nav-item" onclick="goto('sec-operacion')"><span class="ni">⚡</span> Operación</div>
   <div class="nav-item" onclick="goto('sec-pasivos')"><span class="ni">🏦</span> Pasivos</div>
@@ -2474,7 +2528,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <!-- Category KPIs -->
       <div class="kpi-grid-bot">
-        <div class="kpi-card" onclick="goto('sec-mercaderia')">
+        <div class="kpi-card" onclick="goto('sec-mercaderia')" style="display:none;">
           <div class="kpi-label">🛒 Mercadería</div>
           <div class="kpi-main" id="d-mer" style="font-size:18px;">$0</div>
           <div class="kpi-sub" id="d-mer-pct" style="margin-bottom:2px;">0% de ingresos totales</div>
@@ -2533,7 +2587,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div id="sac" class="tab-content">
     <div class="content">
 
-      <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;">
+      <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 8px 22px rgba(15,23,42,.05);overflow:hidden;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;">📋 Historial de cierres</div>
         <div id="sac-cierres-hist-body"></div>
       </div>
@@ -2577,9 +2631,9 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div class="sac-toolbar-lbl">📅 Período en edición</div>
           <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()" style="font-size:11px;padding:7px 12px;border:1px solid var(--border);background:var(--white);">📆 Cambiar período</button>
-          <button type="button" class="fac-btn" onclick="sacCerrarSemanaClick()" style="font-size:11px;padding:7px 14px;font-weight:800;background:linear-gradient(135deg,var(--accent),#fb923c);color:white;border:none;">📋 Cerrar semana</button>
+        <div class="sac-toolbar-actions">
+          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()">📆 Cambiar período</button>
+          <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
         </div>
       </div>
 
@@ -2617,8 +2671,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <span id="sac-vreal-total" style="color:var(--success);">$0</span>
             </div>
           </div>
-          <!-- Mercadería como % -->
-          <div style="padding:10px 14px;border-top:1px solid var(--border);background:#f8fafc;">
+          <!-- Mercadería como % (oculto por flujo actual) -->
+          <div style="display:none;padding:10px 14px;border-top:1px solid var(--border);background:#f8fafc;">
             <div style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;">🛒 Mercadería</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;">
@@ -2639,7 +2693,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <div class="sac-ingresos-card">
           <div class="sac-cargas-head sac-ingresos-head">
             <div style="font-size:12px;font-weight:800;">💰 Otros ingresos</div>
-            <button type="button" onclick="sacAddIngresoManual()" style="background:var(--success);color:white;border:none;border-radius:6px;padding:4px 9px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;">+ Ingreso</button>
+            <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
           </div>
           <p style="font-size:9px;color:#64748b;padding:5px 12px 0;margin:0;line-height:1.35;">Aportes fuera de venta diaria · Pendiente suma al balance; Recibido = ya en caja (actualizá banco/caja).</p>
           <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
@@ -3877,14 +3931,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
         </div>
 
-        <!-- Propina -->
-        <div class="inf-block">
-          <div class="inf-block-title">Propina del día</div>
-          <div class="inf-fields">
-            <div class="inf-field inf-full"><label>Monto propina ($)</label><input type="number" id="inf-propina" placeholder="0" oninput="infCalcLive()"></div>
-          </div>
-        </div>
-
         <!-- Balance en tiempo real -->
         <div class="inf-block" style="border:2px solid var(--accent);background:rgba(249,115,22,.03);">
           <div class="inf-block-title" style="color:var(--accent);">📊 Balance en tiempo real</div>
@@ -3919,6 +3965,13 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
           <div id="inf-cargas-list"></div>
           <button class="inf-add-btn" onclick="infAddItem('cargas')">+ Agregar carga</button>
+        </div>
+
+        <div class="inf-block" style="border:2px solid rgba(245,158,11,.45);background:rgba(245,158,11,.06);">
+          <div class="inf-block-title" style="color:#b45309;">💵 Propina del día (sumar a cargas)</div>
+          <div class="inf-fields">
+            <div class="inf-field inf-full"><label>Monto propina ($)</label><input type="number" id="inf-propina" placeholder="0" oninput="infCalcLive()"></div>
+          </div>
         </div>
 
         <div class="inf-block">
@@ -4115,13 +4168,13 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <button class="btn-add" onclick="addItem('ingresos')">+ Agregar Ingreso / Aporte</button>
       <p class="tip">Tip: el primer ítem es la Venta Bruta. Columna "✓": activa o desactiva el ingreso en el balance — sin confirmar aparece como "ingreso esperado" en gris y no suma al total. Columna "Día": día del mes (1–31).</p>
 
-      <!-- 2. MERCADERÍA -->
-      <div class="section-title" id="sec-mercaderia">
+      <!-- 2. MERCADERÍA (oculto por flujo actual) -->
+      <div class="section-title" id="sec-mercaderia" style="display:none;">
         <span>🛒 2. Mercadería y Materia Prima</span>
         <span class="section-total" id="tot-mercaderia">$0</span>
       </div>
       <!-- Mercadería simplificada: un solo ítem por semana -->
-      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:12px;">
+      <div style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:12px;">
         <div style="font-size:10px;color:#94a3b8;margin-bottom:12px;">El detalle por productos vive en <b>📦 Inventario → Pedidos</b>. Aquí registra solo el total de cada semana como egreso.</div>
         <div style="display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end;flex-wrap:wrap;" id="merc-semanas-wrap">
           <!-- rendered by JS -->
@@ -5220,6 +5273,7 @@ function deleteMonth(id) {
 //  CALCULATE
 // ============================================================
 function secTotal(key) {
+  if (key === 'mercaderia') return 0;
   return (state[key]||[]).reduce((s,i) => {
     if (key === 'ingresos') {
       // No confirmado = no suma
