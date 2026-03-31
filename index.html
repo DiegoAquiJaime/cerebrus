@@ -3737,6 +3737,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <input class="inv-search" id="inv-search" placeholder="🔍 Nombre, categoría, familia, subfamilia o unidad…" oninput="invRender()">
           <button class="fac-btn primary" onclick="invToggleForm()">+ Agregar producto</button>
           <button class="fac-btn" onclick="invAutoClassifyInventory()">🧭 Auto-clasificar</button>
+          <button class="fac-btn" onclick="invRefinePendingClassification()">🎯 Sugerencias precisas</button>
           <button class="fac-btn" onclick="invShowPendingClassification()">📝 Pendientes clasificar</button>
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
@@ -5610,7 +5611,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.03.31.4';
+const APP_VERSION = '2026.03.31.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10917,6 +10918,47 @@ function invAutoClassifyInventory() {
   markUnsaved();
   invRender();
   notify(`🧭 Clasificación aplicada: ${changed} producto(s) actualizados, ${pending} pendiente(s) manual(es)`);
+}
+function invRefinePendingClassification() {
+  invInit();
+  invEnsureFamiliesState();
+  const pendingItems = (state.inventario || []).filter(p => (p.familia || '') === 'Sin clasificar' || (p.subfamilia || '') === 'Revisar manual');
+  if (!pendingItems.length) { notify('✅ No hay pendientes para refinar'); return; }
+  if (!confirm(`Se intentará refinar ${pendingItems.length} pendiente(s) con reglas más precisas.\n¿Continuar?`)) return;
+
+  const ruleSets = [
+    { r: /(cabernet|merlot|carmenere|pinot noir|syrah|malbec|ensamblaje|blend)/i, fam:'Bebidas', sub:'Vinos tintos' },
+    { r: /(sauvignon blanc|chardonnay|riesling|gewurz|pinot grigio)/i, fam:'Bebidas', sub:'Vinos blancos' },
+    { r: /(espumante|prosecco|brut|champagne)/i, fam:'Bebidas', sub:'Espumantes' },
+    { r: /(pisco|vodka|whisk|ron|gin|tequila|vermouth|campari|aperol|licor)/i, fam:'Bebidas', sub:'Licores y destilados' },
+    { r: /(ostion|ostra|almeja|macha|navajuela|chorito|choro|calamar|pulpo|jibia|loco)/i, fam:'Pescados y Mariscos', sub:'Mariscos y moluscos' },
+    { r: /(salmon|reineta|congrio|corvina|trucha|atun|merluza)/i, fam:'Pescados y Mariscos', sub:'Pescados' },
+    { r: /(camaron|langostino|jaiba|centolla)/i, fam:'Pescados y Mariscos', sub:'Crustáceos' },
+    { r: /(vacuno|posta|lomo|entraña|asado|carne molida)/i, fam:'Carnes', sub:'Vacuno' },
+    { r: /(cerdo|chuleta|costillar)/i, fam:'Carnes', sub:'Cerdo' },
+    { r: /(pollo|pavo|ave)/i, fam:'Carnes', sub:'Aves' },
+    { r: /(queso|leche|crema|mantequilla|yogurt)/i, fam:'Lácteos', sub:'Lácteos' },
+    { r: /(huevo)/i, fam:'Huevos', sub:'Huevos' },
+    { r: /(detergente|cloro|limpiador|servilleta|guante|bolsa basura)/i, fam:'Aseo', sub:'Limpieza y desechables' }
+  ];
+
+  pushUndo();
+  let changed = 0;
+  pendingItems.forEach(function(p) {
+    const name = String(p.nombre || '');
+    const hit = ruleSets.find(x => x.r.test(name));
+    if (!hit) return;
+    p.familia = hit.fam;
+    p.subfamilia = hit.sub;
+    if (!state.invFamilias[hit.fam]) state.invFamilias[hit.fam] = ['Sin subfamilia'];
+    if (!state.invFamilias[hit.fam].includes(hit.sub)) state.invFamilias[hit.fam].push(hit.sub);
+    changed++;
+  });
+
+  const stillPending = (state.inventario || []).filter(p => (p.familia || '') === 'Sin clasificar' || (p.subfamilia || '') === 'Revisar manual').length;
+  markUnsaved();
+  invRender();
+  notify(`🎯 Refinado aplicado: ${changed} reclasificados · ${stillPending} siguen pendientes manuales`);
 }
 
 function invRender() {

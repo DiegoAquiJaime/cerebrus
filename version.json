@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.5",
-  "notes": "Auto-clasificacion de inventario por familia/subfamilia (incluye vinos) y listado de pendientes para revision manual."
+  "version": "2026.03.31.6",
+  "notes": "Boton de sugerencias precisas para reclasificar pendientes de familia/subfamilia y mejorar orden del inventario."
 }
