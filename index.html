@@ -719,6 +719,12 @@ td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{co
 .conflict-banner.show{display:flex;}
 .conflict-btn{border:1px solid #f59e0b;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:white;color:#92400e;transition:.15s;}
 .conflict-btn.primary{background:#f59e0b;color:white;border-color:#f59e0b;}
+.conflict-overlay{position:fixed;inset:0;background:rgba(2,6,23,.45);backdrop-filter:blur(3px);z-index:1810;display:none;align-items:center;justify-content:center;padding:16px;}
+.conflict-overlay.show{display:flex;}
+.conflict-modal{background:var(--white);border-radius:14px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.25);width:520px;max-width:96vw;overflow:hidden;}
+.conflict-modal-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.conflict-modal-body{padding:12px 16px;font-size:12px;color:#475569;}
+body.dark-mode .conflict-modal{background:#1e293b;border-color:#334155;}
 /* Log panel */
 .log-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1800;display:none;align-items:flex-end;justify-content:flex-end;}
 .log-overlay.open{display:flex;}
@@ -2365,8 +2371,21 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="conflict-banner" id="conflict-banner">
     <span>⚠</span>
     <span id="conflict-msg" style="flex:1;"></span>
+    <button class="conflict-btn" onclick="openConflictDetails()">Ver detalles</button>
     <button class="conflict-btn primary" onclick="reloadFromCloud()">↻ Actualizar desde nube</button>
     <button class="conflict-btn" onclick="dismissConflict()">Ignorar</button>
+  </div>
+  <div class="conflict-overlay" id="conflict-overlay" onclick="if(event.target===this)closeConflictDetails()">
+    <div class="conflict-modal">
+      <div class="conflict-modal-head">
+        <div style="font-size:13px;font-weight:800;">Conflicto de sincronización</div>
+        <button class="conflict-btn" style="padding:3px 8px;" onclick="closeConflictDetails()">✕</button>
+      </div>
+      <div class="conflict-modal-body">
+        <div id="conflict-detail-user" style="margin-bottom:8px;"></div>
+        <div id="conflict-detail-keys" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;"></div>
+      </div>
+    </div>
   </div>
   <div class="topbar">
     <button class="hamburger" onclick="toggleNav()" aria-label="Menú">☰</button>
@@ -2665,7 +2684,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="sac-header" id="sac-header-grid">
         <div class="sac-kpi" style="border-left:4px solid #3b82f6;">
           <div class="sac-kpi-lbl">🏦 Cuenta bancaria empresa <span class="sac-help" title="Saldo actual en cuenta bancaria de la empresa. Lo ingresas manualmente y se usa en: Total disponible = Banco + Caja.">?</span></div>
-          <input class="sac-kpi-inp" id="sac-banco" type="text" inputmode="numeric" placeholder="$0"
+          <input class="sac-kpi-inp" id="sac-banco" type="text" inputmode="decimal" placeholder="$0 (usa - para negativo)"
             onchange="sacSetBanco(this.value)" style="color:#3b82f6;">
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-banco-upd"></div>
         </div>
@@ -5537,6 +5556,7 @@ function ingConfirmar() {
 
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
+let _lastConflictInfo = { user:'', date:'', keys:[] };
 function _alertsTodayKey() {
   const d = new Date();
   const ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -10024,6 +10044,8 @@ const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIP
 
 let currentUser     = '';
 let cloudVersion    = '0';
+let _cloudBaseVersion = '0';
+let _cloudBaseState = null;
 let _heartbeatTimer = null;
 let _loginAttempts  = 0;
 let _pendingUser    = '';
@@ -16419,7 +16441,10 @@ function sacGetMercMonto() {
 
 // ── BANCO / EFECTIVO ──
 function sacSetBanco(val) {
-  const n = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  const raw = String(val||'').trim();
+  const neg = raw.startsWith('-');
+  const abs = parseInt(raw.replace(/[^\d]/g,''),10)||0;
+  const n = neg ? -abs : abs;
   if (!state.cajaEmpresa) state.cajaEmpresa = {};
   state.cajaEmpresa.banco    = n;
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
@@ -17203,6 +17228,8 @@ async function loadFromCloud() {
       // Decompress short keys from cloud
       decompressVsData(state);
       cloudVersion = json.meta?.version || '0';
+      _cloudBaseVersion = cloudVersion;
+      try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
       if (json.meta?.lastUser && json.meta.lastUser !== currentUser)
         notify('📥 Datos de ' + json.meta.lastUser + ' · ' + json.meta.lastDate);
       setSyncStatus('✓ Nube', 'ok');
@@ -17217,11 +17244,91 @@ async function loadFromCloud() {
   _postLoadSetup();
 }
 
+function _topLevelChangedKeys(base, newer) {
+  const out = new Set();
+  const a = base || {};
+  const b = newer || {};
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  keys.forEach(k => {
+    const av = a[k] === undefined ? '__UNDEF__' : JSON.stringify(a[k]);
+    const bv = b[k] === undefined ? '__UNDEF__' : JSON.stringify(b[k]);
+    if (av !== bv) out.add(k);
+  });
+  return out;
+}
+
+function _intersectSets(a, b) {
+  const out = [];
+  a.forEach(v => { if (b.has(v)) out.push(v); });
+  return out;
+}
+
+async function _fetchCloudStateRaw() {
+  const res = await fetch(API_URL + '?action=load&_=' + Date.now());
+  const json = await res.json();
+  if (!json.ok || !json.data) throw new Error('No se pudo leer estado nube actual');
+  let parsed = json.data;
+  if (typeof json.data === 'string') {
+    try { parsed = JSON.parse(json.data); } catch(e) { parsed = json.data; }
+  }
+  const st = parsed.state || {};
+  decompressVsData(st);
+  return st;
+}
+
+async function _prepareConcurrentSafeState() {
+  const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
+  const vj = await vr.json();
+  if (!vj.ok) return {ok:true, stateToSave: state};
+  if (String(vj.version) === String(cloudVersion) || vj.lastUser === currentUser) {
+    return {ok:true, stateToSave: state};
+  }
+  if (!_cloudBaseState) {
+    return {ok:false, reason:'no_base', by:vj.lastUser||'otro usuario'};
+  }
+
+  const remote = await _fetchCloudStateRaw();
+  const local = state;
+  const base  = _cloudBaseState;
+
+  const localChanged  = _topLevelChangedKeys(base, local);
+  const remoteChanged = _topLevelChangedKeys(base, remote);
+  const conflicts = _intersectSets(localChanged, remoteChanged);
+
+  if (conflicts.length) {
+    return {ok:false, reason:'conflict_keys', keys:conflicts, by:vj.lastUser||'otro usuario'};
+  }
+
+  const merged = JSON.parse(JSON.stringify(remote));
+  localChanged.forEach(k => { merged[k] = local[k]; });
+  return {ok:true, stateToSave: merged, merged:true, by:vj.lastUser||'otro usuario', changed:[...localChanged]};
+}
+
 // ── CLOUD SAVE ──
 async function saveToCloud(description, silent) {
   setSyncStatus('⏳ Guardando…', '');
   try {
-    const stateToSave = compressStateForSave(state);
+    const prep = await _prepareConcurrentSafeState();
+    if (!prep.ok) {
+      saveLocalRaw();
+      setSyncStatus('⚠ Conflicto nube', 'err');
+      if (prep.reason === 'conflict_keys') {
+        const keys = (prep.keys || []).slice(0, 8).join(', ');
+        showConflict(prep.by || 'Otro usuario', 'ahora', prep.keys || []);
+        if (!silent) notify('⚠ Conflicto de edición: no se guardó para evitar sobrescritura. Revisa/actualiza primero. Áreas: ' + keys);
+      } else {
+        showConflict(prep.by || 'Otro usuario', 'ahora', []);
+        if (!silent) notify('⚠ Hubo cambios en nube y no hay base local para mezclar seguro. Actualiza primero.');
+      }
+      return;
+    }
+
+    if (prep.merged) {
+      state = prep.stateToSave;
+      if (!silent) notify('🔀 Cambios combinados automáticamente con ' + prep.by + ' (sin conflicto).');
+    }
+
+    const stateToSave = compressStateForSave(prep.stateToSave);
     const dataStr     = JSON.stringify({state:stateToSave, nid:_nid});
     const CHUNK_SIZE  = 42000; // safe limit per cell
 
@@ -17232,6 +17339,8 @@ async function saveToCloud(description, silent) {
       const json = await res.json();
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
+        _cloudBaseVersion = cloudVersion;
+        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
         setSyncStatus('✓ Guardado en nube', 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify('☁ Guardado por ' + currentUser);
@@ -17253,6 +17362,8 @@ async function saveToCloud(description, silent) {
       const json = await res.json();
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
+        _cloudBaseVersion = cloudVersion;
+        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
         setSyncStatus(`✓ Nube (${totalChunks} partes)`, 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify(`☁ Guardado en ${totalChunks} partes por ${currentUser}`);
@@ -17444,11 +17555,28 @@ async function checkVersion() {
       showConflict(json.lastUser, json.lastDate);
   } catch(e) {}
 }
-function showConflict(user, date) {
+function showConflict(user, date, keys) {
+  _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: Array.isArray(keys)?keys:[] };
   set('conflict-msg', user + ' guardó cambios el ' + date + ' mientras estabas editando.');
   document.getElementById('conflict-banner').classList.add('show');
 }
 function dismissConflict() { document.getElementById('conflict-banner').classList.remove('show'); }
+function openConflictDetails() {
+  const o = document.getElementById('conflict-overlay');
+  const u = document.getElementById('conflict-detail-user');
+  const k = document.getElementById('conflict-detail-keys');
+  if (!o || !u || !k) return;
+  const keys = _lastConflictInfo.keys || [];
+  u.innerHTML = `<strong>Usuario:</strong> ${esc(_lastConflictInfo.user||'—')} · <strong>Fecha:</strong> ${esc(_lastConflictInfo.date||'—')}`;
+  k.innerHTML = keys.length
+    ? `<strong>Módulos en conflicto:</strong><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;">${keys.map(x=>`<span style="padding:2px 8px;border-radius:999px;background:#fff;border:1px solid var(--border);font-size:11px;">${esc(x)}</span>`).join('')}</div>`
+    : `<strong>Sin detalle de módulos.</strong><div style="margin-top:6px;">Posible guardado remoto detectado por versión.</div>`;
+  o.classList.add('show');
+}
+function closeConflictDetails() {
+  const o = document.getElementById('conflict-overlay');
+  if (o) o.classList.remove('show');
+}
 
 // ── HEARTBEAT & ONLINE ──
 function startHeartbeat() { sendHeartbeat(); _heartbeatTimer = setInterval(() => { sendHeartbeat(); checkVersion(); }, 30000); }
