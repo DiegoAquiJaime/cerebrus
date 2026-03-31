@@ -8406,6 +8406,10 @@ function toggleNuevoProveedor() {
 function ensureProvRuts() {
   if (!state.provRuts) state.provRuts = {};
   if (!state.rutMap)   state.rutMap   = {};
+  const existingProvs = new Set(Object.keys(state.facturas || {}));
+  Object.keys(state.provRuts).forEach(pn => {
+    if (!existingProvs.has(pn)) delete state.provRuts[pn];
+  });
   Object.keys(state.provRuts).forEach(pn => {
     const n = normRut(state.provRuts[pn]);
     if (n) state.provRuts[pn] = n;
@@ -8716,6 +8720,7 @@ function facCheckAllRutConflicts() {
   ensureProvRuts();
   if (!state.facturas) return;
   const alerts = [];
+  const existingProvs = new Set(Object.keys(state.facturas || {}));
 
   Object.entries(state.facturas).forEach(([pn, facs]) => {
     const ruts = [...new Set(facs.map(f => normRut(f.rut||'')).filter(Boolean))];
@@ -8738,7 +8743,9 @@ function facCheckAllRutConflicts() {
   // Check for same RUT → multiple provider names
   const rutToProvs = {};
   Object.entries(state.provRuts).forEach(([pn, rut]) => {
+    if (!existingProvs.has(pn)) return;
     const rn = rutKey(rut);
+    if (!rn) return;
     if (!rutToProvs[rn]) rutToProvs[rn] = [];
     rutToProvs[rn].push(pn);
   });
