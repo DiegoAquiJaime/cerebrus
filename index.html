@@ -13132,6 +13132,7 @@ function infInit() {
 // Open modal to select which egresos to load
 function infOpenEgresosSelector() {
   const k = typeof sacDataKey === 'function' ? sacDataKey() : '1';
+  const periodLbl = (typeof sacPeriodLabel === 'function') ? sacPeriodLabel() : k;
   const cargas = (state.sacCargas && state.sacCargas[k]) ? state.sacCargas[k] : [];
   const pendientes = cargas.filter(c => c.estado !== 'pagado' && !c._esPago);
   if (!pendientes.length) { notify('⚠ No hay cargas pendientes en la semana actual'); return; }
@@ -13161,7 +13162,7 @@ function infOpenEgresosSelector() {
       <div style="background:linear-gradient(135deg,var(--danger),#dc2626);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div>
           <div style="font-size:14px;font-weight:800;color:white;">📋 Seleccionar egresos</div>
-          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">${pendientes.length} carga${pendientes.length!==1?'s':''} pendiente${pendientes.length!==1?'s':''} en semana ${w}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.7);margin-top:2px;">${pendientes.length} carga${pendientes.length!==1?'s':''} pendiente${pendientes.length!==1?'s':''} en ${esc(periodLbl)}</div>
         </div>
         <button id="inf-eg-close" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
       </div>
