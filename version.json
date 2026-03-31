@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.1",
-  "notes": "Snapshot inventario 29-03, deploy/actualizacion automatica y mejoras de auditoria de costos."
+  "version": "2026.03.31.2",
+  "notes": "Rango de fechas en semana de pedido, ampliacion de inventario con AbarrotesBien y valorizacion manual clara en preelaboracion."
 }

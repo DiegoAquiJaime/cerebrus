@@ -3837,7 +3837,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <div id="inv-sem-estado" style="font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;"></div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="fac-btn" id="inv-btn-iniciar" onclick="invIniciarSemana()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
+              <button class="fac-btn" id="inv-btn-iniciar" onclick="invOpenSemanaModal()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
               <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPorProveedor()" style="display:none;">📤 Por proveedor</button>
               <button class="fac-btn" id="inv-btn-transfer" onclick="transferirPedidoAMercaderia()" style="display:none;background:rgba(16,185,129,.1);color:var(--success);border-color:var(--success);">→ Enviar total a Mercadería</button>
@@ -4001,6 +4001,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
                 <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">TIPO</th>
                 <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">PRODUCTO</th>
                 <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;">CANTIDAD</th>
+                <th style="padding:10px 12px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;">VALORIZACIÓN</th>
                 <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">DESTINO</th>
                 <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">RESPONSABLE</th>
                 <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;">NOTA</th>
@@ -4443,6 +4444,33 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     <div class="warn-footer">
       <button class="warn-btn-fix" onclick="closeWarn(true)">Corregir valor</button>
       <button class="warn-btn-ok" onclick="closeWarn(false)">Entendido, continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Inventario: iniciar semana con rango -->
+<div class="fac-modal-overlay" id="inv-sem-modal" onclick="if(event.target===this) invCloseSemanaModal()">
+  <div class="fac-modal" style="max-width:460px;">
+    <div class="fac-modal-head">
+      <h3>📅 Iniciar semana de pedido</h3>
+      <button class="fac-x" onclick="invCloseSemanaModal()">✕</button>
+    </div>
+    <div class="fac-modal-body">
+      <div class="fac-modal-row">
+        <label style="font-size:11px;color:#64748b;font-weight:700;">Fecha inicio</label>
+        <input type="date" id="inv-sem-start" class="fac-inp">
+      </div>
+      <div class="fac-modal-row">
+        <label style="font-size:11px;color:#64748b;font-weight:700;">Fecha término</label>
+        <input type="date" id="inv-sem-end" class="fac-inp">
+      </div>
+      <div style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px;">
+        Puedes ajustar cualquier rango (ej: lunes a domingo, o cierres especiales por período).
+      </div>
+    </div>
+    <div class="fac-modal-foot" style="display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--border);">
+      <button class="fac-btn" onclick="invCloseSemanaModal()">Cancelar</button>
+      <button class="fac-btn" style="background:var(--success);color:white;border-color:var(--success);" onclick="invConfirmSemanaModal()">Iniciar</button>
     </div>
   </div>
 </div>
@@ -5559,7 +5587,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.03.31.1';
+const APP_VERSION = '2026.03.31.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10256,6 +10284,7 @@ function _localInit() {
 }
 
 const INV_SNAPSHOT_ID_20260329 = 'inv_snapshot_2026_03_29';
+const INV_SNAPSHOT_ID_20260329_V2 = 'inv_snapshot_2026_03_29_v2';
 const INV_SNAPSHOT_DATA_20260329 = JSON.parse('[{"id":"inv_snap_1","nombre":"ACEITUNAS","cat":"Abarrotes","unidad":"kg","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":7735.0}]},{"id":"inv_snap_2","nombre":"AJI","cat":"Abarrotes","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2190.0}]},{"id":"inv_snap_3","nombre":"AJO","cat":"Abarrotes","unidad":"unidad","stock":20.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":298.0}]},{"id":"inv_snap_4","nombre":"ALBAHACAS","cat":"Abarrotes","unidad":"unidad","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1059.0}]},{"id":"inv_snap_5","nombre":"APIO","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1892.0}]},{"id":"inv_snap_6","nombre":"BERROS","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2796.0}]},{"id":"inv_snap_7","nombre":"CEBOLLA BLANCA","cat":"Abarrotes","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":12602.0}]},{"id":"inv_snap_8","nombre":"CEBOLLA MORADA","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":16065.0}]},{"id":"inv_snap_9","nombre":"CEBOLLIN","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":774.0}]},{"id":"inv_snap_10","nombre":"CIBOULETTE","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":464.0}]},{"id":"inv_snap_11","nombre":"CILANTRO","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1118.0}]},{"id":"inv_snap_12","nombre":"ESPINACA","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1118.0}]},{"id":"inv_snap_13","nombre":"FRUTILLAS","cat":"Abarrotes","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2797.0}]},{"id":"inv_snap_14","nombre":"JENGIBRE","cat":"Abarrotes","unidad":"kg","stock":0.1,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":893.0}]},{"id":"inv_snap_15","nombre":"LECHUGA CHILENA","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_16","nombre":"LECHUGA ESCAROLA","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1535.0}]},{"id":"inv_snap_17","nombre":"LECHUGA ESPAÑOLA","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_18","nombre":"LECHUGA HIDROPONICA","cat":"Abarrotes","unidad":"unidad","stock":10.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":940.0}]},{"id":"inv_snap_19","nombre":"LIMON SUTIL","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":3201.0}]},{"id":"inv_snap_20","nombre":"MANZANAS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2082.0}]},{"id":"inv_snap_21","nombre":"MENTA","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1488.0}]},{"id":"inv_snap_22","nombre":"NARANJAS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1488.0}]},{"id":"inv_snap_23","nombre":"PAPA CAMOTE","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2916.0}]},{"id":"inv_snap_24","nombre":"PAPAS","cat":"Abarrotes","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":15352.0}]},{"id":"inv_snap_25","nombre":"PEPINOS ENSALADA","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":583.0}]},{"id":"inv_snap_26","nombre":"PEREJIL","cat":"Abarrotes","unidad":"unidad","stock":4.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":714.0}]},{"id":"inv_snap_27","nombre":"PEREJIL CRESPO","cat":"Abarrotes","unidad":"unidad","stock":3.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_28","nombre":"PICKLE","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_29","nombre":"PIMENTON AMARILLO","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1130.0}]},{"id":"inv_snap_30","nombre":"PIMENTON ROJO","cat":"Abarrotes","unidad":"unidad","stock":4.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":893.0}]},{"id":"inv_snap_31","nombre":"PIMENTON VERDE","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_32","nombre":"PLATANOS","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_33","nombre":"RUCULA","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2697.0}]},{"id":"inv_snap_34","nombre":"TOMATE CAJA","cat":"Abarrotes","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":17779.0}]},{"id":"inv_snap_35","nombre":"TOMATE CHERRY ROJO","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":4165.0}]},{"id":"inv_snap_36","nombre":"TOMATE CHERRY AMARILLO","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":5355.0}]},{"id":"inv_snap_37","nombre":"ZANAHORIAS","cat":"Abarrotes","unidad":"kg","stock":3.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1059.0}]},{"id":"inv_snap_38","nombre":"ZAPALLO CAMOTE","cat":"Abarrotes","unidad":"kg","stock":10.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1178.0}]},{"id":"inv_snap_39","nombre":"ZAPALLO ITALIANO","cat":"Abarrotes","unidad":"unidad","stock":6.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":536.0}]},{"id":"inv_snap_40","nombre":"LIMON PARA JUGO","cat":"Abarrotes","unidad":"KG","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1240.0}]},{"id":"inv_snap_41","nombre":"LIMON DE MESA","cat":"Abarrotes","unidad":"KG","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_42","nombre":"PALTAS FIRMES","cat":"Abarrotes","unidad":"kg","stock":4.2,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2130.0}]},{"id":"inv_snap_43","nombre":"BROCOLI","cat":"Abarrotes","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1535.0}]},{"id":"inv_snap_44","nombre":"PUERROS","cat":"Abarrotes","unidad":"unidad","stock":3.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1178.0}]},{"id":"inv_snap_45","nombre":"UVAS SIN PEPAS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2261.0}]},{"id":"inv_snap_46","nombre":"REPOLLO MORADO","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2011.0}]},{"id":"inv_snap_47","nombre":"MIX DE HOJAS VERDES","cat":"Abarrotes","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":3082.0}]},{"id":"inv_snap_48","nombre":"PIÑA","cat":"Abarrotes","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":4165.0}]},{"id":"inv_snap_49","nombre":"ACELGA","cat":"Abarrotes","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":464.0}]},{"id":"inv_snap_50","nombre":"ARANDANOS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_51","nombre":"BETARRAGAS","cat":"Abarrotes","unidad":"UN","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1297.0}]},{"id":"inv_snap_52","nombre":"TOMATES DESHIDRATADOS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":1011.0}]},{"id":"inv_snap_53","nombre":"ALMENDRAS LAMINADAS","cat":"Abarrotes","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":23205.0}]},{"id":"inv_snap_54","nombre":"SEMILLAS DE ZAPALLO","cat":"Abarrotes","unidad":"kg","stock":0.2,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":5355.0}]},{"id":"inv_snap_55","nombre":"COCHAYUYO","cat":"Abarrotes","unidad":"UN","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Abarrotes","precios":[{"prov":"Stock Excel Abarrotes","precio":2000.0}]},{"id":"inv_snap_56","nombre":"ALMEJAS","cat":"Pescados y Mariscos","unidad":"kg","stock":32.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":3570.0}]},{"id":"inv_snap_57","nombre":"CALAMAR","cat":"Pescados y Mariscos","unidad":"kg","stock":12.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":7913.0}]},{"id":"inv_snap_58","nombre":"CAMARÓN","cat":"Pescados y Mariscos","unidad":"kg","stock":13.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":14637.0}]},{"id":"inv_snap_59","nombre":"CAMARÓN EC.","cat":"Pescados y Mariscos","unidad":"kg","stock":5.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":9996.0}]},{"id":"inv_snap_60","nombre":"CENTOLLA","cat":"Pescados y Mariscos","unidad":"kg","stock":2.5,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":35000.0}]},{"id":"inv_snap_61","nombre":"CHORITOS","cat":"Pescados y Mariscos","unidad":"kg","stock":9.6,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":3320.0}]},{"id":"inv_snap_62","nombre":"CHORO MALTON","cat":"Pescados y Mariscos","unidad":"Bolsas","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":2975.0}]},{"id":"inv_snap_63","nombre":"COCHAYUYO","cat":"Pescados y Mariscos","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_64","nombre":"Congrio Fresco","cat":"Pescados y Mariscos","unidad":"Porciones","stock":55.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":7735.0}]},{"id":"inv_snap_65","nombre":"Congrio HGT","cat":"Pescados y Mariscos","unidad":"porciones","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":10353.0}]},{"id":"inv_snap_66","nombre":"JAIBA PASTEL","cat":"Pescados y Mariscos","unidad":"kg","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":26180.0}]},{"id":"inv_snap_67","nombre":"LANGOSTINO","cat":"Pescados y Mariscos","unidad":"kg","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":14268.0}]},{"id":"inv_snap_68","nombre":"LOCO ENTRADA","cat":"Pescados y Mariscos","unidad":"docena","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":25000.0}]},{"id":"inv_snap_69","nombre":"LOCO FRASCO","cat":"Pescados y Mariscos","unidad":"UN","stock":24.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":30821.0}]},{"id":"inv_snap_70","nombre":"LOCO SALSA","cat":"Pescados y Mariscos","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":30000.0}]},{"id":"inv_snap_71","nombre":"MACHA 1/2 CONCHA","cat":"Pescados y Mariscos","unidad":"Bandejas","stock":36.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":4760.0}]},{"id":"inv_snap_72","nombre":"MACHA LENGUA","cat":"Pescados y Mariscos","unidad":"kg","stock":98.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":19000.0}]},{"id":"inv_snap_73","nombre":"CORVINA","cat":"Pescados y Mariscos","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_74","nombre":"NAVAJUELAS","cat":"Pescados y Mariscos","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_75","nombre":"OSTION BOLSA","cat":"Pescados y Mariscos","unidad":"KG","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":19992.0}]},{"id":"inv_snap_76","nombre":"OSTIÓN","cat":"Pescados y Mariscos","unidad":"Bandejas","stock":34.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":5117.0}]},{"id":"inv_snap_77","nombre":"Pinzas de Jaiba","cat":"Pescados y Mariscos","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":16660.0}]},{"id":"inv_snap_78","nombre":"PULPO","cat":"Pescados y Mariscos","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":12959.0}]},{"id":"inv_snap_79","nombre":"REINETA","cat":"Pescados y Mariscos","unidad":"Porciones","stock":40.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":3570.0}]},{"id":"inv_snap_80","nombre":"SALMÓN","cat":"Pescados y Mariscos","unidad":"Porciones","stock":50.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":14481.0}]},{"id":"inv_snap_81","nombre":"SALMÓN MAR AZUL","cat":"Pescados y Mariscos","unidad":"kg","stock":1.8,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":14161.0}]},{"id":"inv_snap_82","nombre":"TRUCHA","cat":"Pescados y Mariscos","unidad":"kg","stock":60.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":16303.0}]},{"id":"inv_snap_83","nombre":"SURTIDO MARISCOS","cat":"Pescados y Mariscos","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":3915.0}]},{"id":"inv_snap_84","nombre":"CHOLGAS","cat":"Pescados y Mariscos","unidad":"kg","stock":15.0,"minimo":0,"qty":0,"prov":"Stock Excel Pescados","precios":[{"prov":"Stock Excel Pescados","precio":2975.0}]},{"id":"inv_snap_85","nombre":"ACEITUNAS","cat":"Frutas y Verduras","unidad":"kg","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":7735.0}]},{"id":"inv_snap_86","nombre":"AJI","cat":"Frutas y Verduras","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2190.0}]},{"id":"inv_snap_87","nombre":"AJO","cat":"Frutas y Verduras","unidad":"unidad","stock":20.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":298.0}]},{"id":"inv_snap_88","nombre":"ALBAHACAS","cat":"Frutas y Verduras","unidad":"unidad","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1059.0}]},{"id":"inv_snap_89","nombre":"APIO","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1892.0}]},{"id":"inv_snap_90","nombre":"BERROS","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2796.0}]},{"id":"inv_snap_91","nombre":"CEBOLLA BLANCA","cat":"Frutas y Verduras","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":12602.0}]},{"id":"inv_snap_92","nombre":"CEBOLLA MORADA","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":16065.0}]},{"id":"inv_snap_93","nombre":"CEBOLLIN","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":774.0}]},{"id":"inv_snap_94","nombre":"CIBOULETTE","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":464.0}]},{"id":"inv_snap_95","nombre":"CILANTRO","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1118.0}]},{"id":"inv_snap_96","nombre":"ESPINACA","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1118.0}]},{"id":"inv_snap_97","nombre":"FRUTILLAS","cat":"Frutas y Verduras","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2797.0}]},{"id":"inv_snap_98","nombre":"JENGIBRE","cat":"Frutas y Verduras","unidad":"kg","stock":0.1,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":893.0}]},{"id":"inv_snap_99","nombre":"LECHUGA CHILENA","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_100","nombre":"LECHUGA ESCAROLA","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1535.0}]},{"id":"inv_snap_101","nombre":"LECHUGA ESPAÑOLA","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_102","nombre":"LECHUGA HIDROPONICA","cat":"Frutas y Verduras","unidad":"unidad","stock":10.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":940.0}]},{"id":"inv_snap_103","nombre":"LIMON SUTIL","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":3201.0}]},{"id":"inv_snap_104","nombre":"MANZANAS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2082.0}]},{"id":"inv_snap_105","nombre":"MENTA","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1488.0}]},{"id":"inv_snap_106","nombre":"NARANJAS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1488.0}]},{"id":"inv_snap_107","nombre":"PAPA CAMOTE","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2916.0}]},{"id":"inv_snap_108","nombre":"PAPAS","cat":"Frutas y Verduras","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":15352.0}]},{"id":"inv_snap_109","nombre":"PEPINOS ENSALADA","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":583.0}]},{"id":"inv_snap_110","nombre":"PEREJIL","cat":"Frutas y Verduras","unidad":"unidad","stock":4.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":714.0}]},{"id":"inv_snap_111","nombre":"PEREJIL CRESPO","cat":"Frutas y Verduras","unidad":"unidad","stock":3.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_112","nombre":"PICKLE","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_113","nombre":"PIMENTON AMARILLO","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1130.0}]},{"id":"inv_snap_114","nombre":"PIMENTON ROJO","cat":"Frutas y Verduras","unidad":"unidad","stock":4.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":893.0}]},{"id":"inv_snap_115","nombre":"PIMENTON VERDE","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_116","nombre":"PLATANOS","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_117","nombre":"RUCULA","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2697.0}]},{"id":"inv_snap_118","nombre":"TOMATE CAJA","cat":"Frutas y Verduras","unidad":"kg","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":17779.0}]},{"id":"inv_snap_119","nombre":"TOMATE CHERRY ROJO","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":4165.0}]},{"id":"inv_snap_120","nombre":"TOMATE CHERRY AMARILLO","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":5355.0}]},{"id":"inv_snap_121","nombre":"ZANAHORIAS","cat":"Frutas y Verduras","unidad":"kg","stock":3.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1059.0}]},{"id":"inv_snap_122","nombre":"ZAPALLO CAMOTE","cat":"Frutas y Verduras","unidad":"kg","stock":10.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1178.0}]},{"id":"inv_snap_123","nombre":"ZAPALLO ITALIANO","cat":"Frutas y Verduras","unidad":"unidad","stock":6.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":536.0}]},{"id":"inv_snap_124","nombre":"LIMON PARA JUGO","cat":"Frutas y Verduras","unidad":"KG","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1240.0}]},{"id":"inv_snap_125","nombre":"LIMON DE MESA","cat":"Frutas y Verduras","unidad":"KG","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_126","nombre":"PALTAS FIRMES","cat":"Frutas y Verduras","unidad":"kg","stock":4.2,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2130.0}]},{"id":"inv_snap_127","nombre":"BROCOLI","cat":"Frutas y Verduras","unidad":"unidad","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1535.0}]},{"id":"inv_snap_128","nombre":"PUERROS","cat":"Frutas y Verduras","unidad":"unidad","stock":3.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1178.0}]},{"id":"inv_snap_129","nombre":"UVAS SIN PEPAS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2261.0}]},{"id":"inv_snap_130","nombre":"REPOLLO MORADO","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2011.0}]},{"id":"inv_snap_131","nombre":"MIX DE HOJAS VERDES","cat":"Frutas y Verduras","unidad":"unidad","stock":1.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":3082.0}]},{"id":"inv_snap_132","nombre":"PIÑA","cat":"Frutas y Verduras","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":4165.0}]},{"id":"inv_snap_133","nombre":"ACELGA","cat":"Frutas y Verduras","unidad":"UN","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":464.0}]},{"id":"inv_snap_134","nombre":"ARANDANOS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"","precios":[]},{"id":"inv_snap_135","nombre":"BETARRAGAS","cat":"Frutas y Verduras","unidad":"UN","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1297.0}]},{"id":"inv_snap_136","nombre":"TOMATES DESHIDRATADOS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":1011.0}]},{"id":"inv_snap_137","nombre":"ALMENDRAS LAMINADAS","cat":"Frutas y Verduras","unidad":"kg","stock":0.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":23205.0}]},{"id":"inv_snap_138","nombre":"SEMILLAS DE ZAPALLO","cat":"Frutas y Verduras","unidad":"kg","stock":0.2,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":5355.0}]},{"id":"inv_snap_139","nombre":"COCHAYUYO","cat":"Frutas y Verduras","unidad":"unidad","stock":2.0,"minimo":0,"qty":0,"prov":"Stock Excel Verduras","precios":[{"prov":"Stock Excel Verduras","precio":2000.0}]}]');
 function applyInventorySnapshot20260329IfNeeded() {
   if (state.inventorySnapshotId === INV_SNAPSHOT_ID_20260329) return;
@@ -10282,6 +10311,76 @@ function applyInventorySnapshot20260329IfNeeded() {
   state.inventorySnapshotDate = '2026-03-29';
   state.inventorySnapshotSource = 'Abarrotes.xlsx + Pescados.xlsx + Verduras.xlsx';
   markUnsaved();
+}
+
+function _invNormNameKey(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+}
+function _invNormUnit(u) {
+  const x = String(u || '').trim().toLowerCase();
+  if (!x) return 'unidad';
+  if (x === 'un' || x === 'u' || x === 'unidad') return 'unidad';
+  if (x === 'k' || x === 'kg') return 'kg';
+  return u;
+}
+async function applyAbarrotesBienExtraIfNeeded() {
+  if (state.inventorySnapshotId === INV_SNAPSHOT_ID_20260329_V2) return;
+  let rows = [];
+  try {
+    const res = await fetch('data/abarrotes_bien_20260329.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('Sin archivo extra de abarrotes');
+    rows = await res.json();
+  } catch (e) {
+    return; // Si no está el archivo, no bloquea la carga de la app
+  }
+  if (!Array.isArray(rows) || !rows.length) return;
+
+  const byName = {};
+  (state.inventario || []).forEach(function(p) {
+    byName[_invNormNameKey(p.nombre)] = p;
+  });
+
+  let added = 0;
+  let updated = 0;
+  rows.forEach(function(r, idx) {
+    const nombre = String(r && r.nombre || '').trim();
+    if (!nombre) return;
+    const key = _invNormNameKey(nombre);
+    const stock = Number(r && r.stock) || 0;
+    const minimo = Number(r && r.minimo) || 0;
+    const unidad = _invNormUnit(r && r.unidad);
+    const existing = byName[key];
+    if (existing) {
+      existing.stock = stock;
+      if ((!existing.unidad || existing.unidad === 'unidad') && unidad) existing.unidad = unidad;
+      if ((!existing.cat || existing.cat === 'Sin categoría') && 'Abarrotes') existing.cat = 'Abarrotes';
+      if (minimo > 0) existing.minimo = minimo;
+      updated++;
+      return;
+    }
+    const id = 'inv_ab_' + Date.now() + '_' + idx;
+    const np = {
+      id,
+      nombre,
+      cat: 'Abarrotes',
+      unidad: unidad || 'unidad',
+      stock,
+      minimo: minimo > 0 ? minimo : 0,
+      qty: 0,
+      prov: '',
+      precios: []
+    };
+    state.inventario.push(np);
+    byName[key] = np;
+    added++;
+  });
+
+  state.inventorySnapshotId = INV_SNAPSHOT_ID_20260329_V2;
+  state.inventorySnapshotDate = '2026-03-29';
+  state.inventorySnapshotSource = 'Abarrotes.xlsx + Pescados.xlsx + Verduras.xlsx + AbarrotesBien.xlsx';
+  markUnsaved();
+  invRender();
+  notify('📦 Inventario complementado con AbarrotesBien: +' + added + ' nuevos, ' + updated + ' actualizados');
 }
 
 function _postLoadSetup() {
@@ -10316,6 +10415,7 @@ function _postLoadSetup() {
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
   applyInventorySnapshot20260329IfNeeded();
+  setTimeout(function(){ applyAbarrotesBienExtraIfNeeded(); }, 300);
   SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
     if (i.day===undefined) i.day=0;
     if (i.weekday===undefined) i.weekday=0;
@@ -10835,21 +10935,62 @@ function invSubTab(panel) {
 
 function invGetSemana() { return state.semanaActiva||null; }
 
-function invIniciarSemana() {
+function invOpenSemanaModal() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmtIso = d => d.toISOString().slice(0,10);
+  const st = document.getElementById('inv-sem-start');
+  const en = document.getElementById('inv-sem-end');
+  if (st) st.value = fmtIso(monday);
+  if (en) en.value = fmtIso(sunday);
+  const modal = document.getElementById('inv-sem-modal');
+  if (modal) modal.classList.add('open');
+}
+function invCloseSemanaModal() {
+  const modal = document.getElementById('inv-sem-modal');
+  if (modal) modal.classList.remove('open');
+}
+function invConfirmSemanaModal() {
+  const st = document.getElementById('inv-sem-start')?.value || '';
+  const en = document.getElementById('inv-sem-end')?.value || '';
+  if (!st || !en) { notify('⚠ Debes elegir inicio y término'); return; }
+  if (en < st) { notify('⚠ La fecha de término no puede ser menor al inicio'); return; }
+  invCloseSemanaModal();
+  invIniciarSemana(st, en);
+}
+
+function invIniciarSemana(startIso, endIso) {
   if (state.semanaActiva && !state.semanaActiva.cerrada) {
     if (!confirm('Ya hay una semana abierta. ¿Descartarla e iniciar una nueva?')) return;
   }
   invInit();
   const hoy   = new Date();
-  const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-((hoy.getDay()+6)%7));
-  const nombre= `Semana ${lunes.toLocaleDateString('es-CL',{day:'2-digit',month:'short'})}`;
+  const inicio = startIso ? new Date(startIso + 'T00:00:00') : (() => { const d = new Date(hoy); d.setDate(hoy.getDate()-((hoy.getDay()+6)%7)); return d; })();
+  const termino = endIso ? new Date(endIso + 'T00:00:00') : (() => { const d = new Date(inicio); d.setDate(inicio.getDate()+6); return d; })();
+  const fLabel = d => d.toLocaleDateString('es-CL',{day:'2-digit',month:'short'});
+  const nombre= `Semana ${fLabel(inicio)} → ${fLabel(termino)}`;
+  const inicioIso = inicio.toISOString().slice(0,10);
+  const terminoIso = termino.toISOString().slice(0,10);
   const stockInicial = {};
   state.inventario.forEach(p => { stockInicial[p.id] = p.stock||0; });
   pushUndo();
-  state.semanaActiva = { id:'sem_'+Date.now(), nombre, fechaInicio:hoy.toLocaleDateString('es-CL'), stockInicial, ordenes:[], cerrada:false };
+  state.semanaActiva = {
+    id:'sem_'+Date.now(),
+    nombre,
+    fechaInicio:hoy.toLocaleDateString('es-CL'),
+    fechaInicioISO: inicioIso,
+    fechaFinISO: terminoIso,
+    periodoLabel: `${fLabel(inicio)} al ${fLabel(termino)}`,
+    stockInicial,
+    ordenes:[],
+    cerrada:false
+  };
   invAgregarOrdenInterna(state.semanaActiva, '1° Pedido');
   invRenderPedido();
-  notify('▶ Semana iniciada — completa el pedido');
+  notify('▶ Semana iniciada (' + state.semanaActiva.periodoLabel + ')');
 }
 
 function invAgregarOrden() {
@@ -10886,7 +11027,8 @@ function invRenderPedido() {
   }
 
   set('inv-sem-titulo', sem.nombre);
-  set('inv-sem-estado', sem.cerrada ? '✓ Cerrada · '+sem.fechaInicio : 'En curso desde '+sem.fechaInicio+' · '+sem.ordenes.length+' pedido'+(sem.ordenes.length!==1?'s':''));
+  const periodoTxt = sem.periodoLabel || sem.fechaInicio || '';
+  set('inv-sem-estado', sem.cerrada ? '✓ Cerrada · '+periodoTxt : 'En curso · '+periodoTxt+' · '+sem.ordenes.length+' pedido'+(sem.ordenes.length!==1?'s':''));
   if (document.getElementById('inv-sem-kpis')) document.getElementById('inv-sem-kpis').style.display='grid';
   if (btnInit)   btnInit.style.display   = sem.cerrada?'':'none';
   if (btnCerrar) btnCerrar.style.display = sem.cerrada?'none':'';
@@ -11595,7 +11737,7 @@ function movRender() {
   }
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Sin movimientos con estos filtros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Sin movimientos con estos filtros.</td></tr>';
     return;
   }
 
@@ -11612,6 +11754,13 @@ function movRender() {
       <td style="padding:10px 12px;">${tiposBadge[m.tipo]||m.tipo}</td>
       <td style="padding:10px 12px;font-weight:600;">${esc(m.producto||'')}</td>
       <td style="padding:10px 12px;text-align:right;font-weight:700;">${m.cantidad||''} ${esc(m.unidad||'')}</td>
+      <td style="padding:10px 12px;text-align:right;">
+        ${m.valorTotal && m.valorTotal > 0
+          ? `<div style="font-weight:800;color:#0f766e;">${fmt(m.valorTotal)}</div>
+             <div style="font-size:10px;color:#94a3b8;">${fmt(m.valorUnit||0)} c/u</div>
+             ${m.valorModo==='manual_unit' ? '<div style="margin-top:2px;"><span style="display:inline-block;background:#0ea5e91a;color:#0369a1;border:1px solid #0ea5e94d;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:700;">Valorización manual</span></div>' : ''}`
+          : '<span style="color:#94a3b8;">—</span>'}
+      </td>
       <td style="padding:10px 12px;color:#64748b;">${esc(m.destino||m.origen||'')}</td>
       <td style="padding:10px 12px;color:#64748b;">${esc(m.responsable||'')}</td>
       <td style="padding:10px 12px;color:#94a3b8;font-style:italic;max-width:160px;">${esc(m.nota||'')}</td>
@@ -11781,6 +11930,12 @@ function movAbrirModal(tipo) {
       <label style="font-size:10px;font-weight:700;color:var(--danger);display:block;margin-bottom:4px;">MERMA (cantidad perdida)</label>
       <input id="mov-qty-merma" type="text" inputmode="decimal" placeholder="ej: 5"
         style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;box-sizing:border-box;background:transparent;color:var(--primary);">
+    </div>
+    <div>
+      <label style="font-size:10px;font-weight:700;color:#0f766e;display:block;margin-bottom:4px;">VALOR UNITARIO MANUAL DEL PROCESADO ($)</label>
+      <input id="mov-valor-unit" type="text" inputmode="decimal" placeholder="ej: 3500"
+        style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:13px;box-sizing:border-box;background:transparent;color:var(--primary);">
+      <div style="font-size:10px;color:#64748b;margin-top:4px;">Se calcula como: cantidad que regresa × valor unitario (independiente si la unidad dice kg/filete/unidad).</div>
     </div>` : '';
 
   // Extra for devolucion — estado
@@ -11898,6 +12053,8 @@ function movAbrirModal(tipo) {
     } else if (tipo === 'preelaboracion') {
       const regresa = parseFloat(document.getElementById('mov-qty-regresa')?.value)||0;
       const merma   = parseFloat(document.getElementById('mov-qty-merma')?.value)||0;
+      const valorUnitRaw = (document.getElementById('mov-valor-unit')?.value || '').replace(/\./g,'').replace(',','.');
+      const valorUnit = parseFloat(valorUnitRaw) || 0;
 
       // Descontar del stock los que entran a preelaboración
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
@@ -11907,13 +12064,16 @@ function movAbrirModal(tipo) {
       // Registrar regreso a bodega
       if (regresa > 0) {
         prod.stock = (prod.stock||0) + regresa;
-        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:unidadFinal, origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${unidadFinal}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true });
+        const valorTotal = valorUnit > 0 ? (regresa * valorUnit) : 0;
+        const notaVal = valorUnit > 0 ? ` · valorización manual ${fmt(valorUnit)} c/u` : '';
+        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:unidadFinal, origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${unidadFinal}${notaVal}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true, valorUnit: valorUnit > 0 ? valorUnit : 0, valorTotal: valorTotal > 0 ? valorTotal : 0, valorModo: valorUnit > 0 ? 'manual_unit' : '' });
       }
       // Registrar merma
       if (merma > 0) {
         movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:unidadFinal, origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+2 });
       }
-      notify(`⚗ Preelaboración registrada: ${cantidad} entran, ${regresa} regresan, ${merma} merma`);
+      const msgValor = (regresa > 0 && valorUnit > 0) ? ` · valorizado ${fmt(regresa * valorUnit)}` : '';
+      notify(`⚗ Preelaboración registrada: ${cantidad} entran, ${regresa} regresan, ${merma} merma${msgValor}`);
     }
 
     invRender(); // Update inventory table
