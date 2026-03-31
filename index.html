@@ -5608,7 +5608,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.03.31.3';
+const APP_VERSION = '2026.03.31.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -11012,10 +11012,27 @@ function invRenderTable() {
     return `<tr id="inv-row-${p.id}">
       <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">
         <div>${esc(p.nombre||'')}</div>
-        <button onclick="event.stopPropagation();invQuickMovMenu('${p.id}')" title="Gestionar movimiento rápido"
-          style="margin-top:4px;background:#0ea5e914;border:1px solid #0ea5e955;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;color:#0369a1;">
-          ⚡ Movimiento rápido
-        </button>
+        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+          <input id="inv-qm-qty-${p.id}" type="text" inputmode="decimal" placeholder="cant."
+            onclick="event.stopPropagation()"
+            style="width:66px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-align:right;background:var(--white);color:var(--primary);">
+          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','despacho','inv-qm-qty-${p.id}')" title="Sale desde Bodega hacia Cocina/Salón"
+            style="background:#6366f114;border:1px solid #6366f155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#4338ca;">
+            → Cocina
+          </button>
+          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','devolucion','inv-qm-qty-${p.id}')" title="Vuelve desde Cocina/Salón hacia Bodega"
+            style="background:#10b98114;border:1px solid #10b98155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#047857;">
+            ← Bodega
+          </button>
+          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','preelaboracion','inv-qm-qty-${p.id}')" title="Sale a preelaboración y luego puede regresar procesado"
+            style="background:#8b5cf614;border:1px solid #8b5cf655;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6d28d9;">
+            ⚗ → Preelab
+          </button>
+          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','merma','inv-qm-qty-${p.id}')" title="Sale desde Bodega hacia Merma"
+            style="background:#ef444414;border:1px solid #ef444455;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#b91c1c;">
+            ⚠ → Merma
+          </button>
+        </div>
       </td>
       <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
       <td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.familia||'Sin familia')} <span style="color:#94a3b8;">/</span> ${esc(p.subfamilia||'Sin subfamilia')}</td>
@@ -11676,9 +11693,10 @@ function invDelete(id) {
 // ============================================================
 //  MOVIMIENTO RÁPIDO DESDE PRODUCTO EN INVENTARIO
 // ============================================================
-function invQuickMov(prodId, tipo) {
+function invQuickMov(prodId, tipo, opts) {
   const prod = (state.inventario||[]).find(p=>p.id===prodId);
   if (!prod) { notify('⚠ Producto no encontrado'); return; }
+  opts = opts || {};
 
   const cfg = {
     despacho:   { titulo:`→ Despachar "${prod.nombre}"`, color:'#6366f1', destDefault:'Cocina', verb:'despachado' },
@@ -11718,7 +11736,7 @@ function invQuickMov(prodId, tipo) {
       <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
           <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">CANTIDAD</label>
-          <input id="qm-qty" type="text" inputmode="decimal" placeholder="ej: 5" autofocus
+          <input id="qm-qty" type="text" inputmode="decimal" placeholder="ej: 5" value="${opts.presetQty||''}" autofocus
             style="width:100%;border:2px solid ${cfg.color};border-radius:7px;padding:10px 12px;font-family:inherit;font-size:16px;font-weight:800;box-sizing:border-box;background:transparent;color:var(--primary);text-align:center;">
         </div>
         <div>
@@ -11832,6 +11850,16 @@ function invQuickMovMenu(prodId) {
   if (op === '3') return invQuickMov(prodId, 'merma');
   if (op === '4') return invQuickMov(prodId, 'preelaboracion');
   notify('⚠ Opción no válida');
+}
+
+function invQuickMovFromRow(prodId, tipo, qtyInputId) {
+  const raw = (document.getElementById(qtyInputId)?.value || '').trim().replace(',', '.');
+  const qty = parseFloat(raw) || 0;
+  if (qty <= 0) {
+    notify('⚠ Indica la cantidad a mover en "cant."');
+    return;
+  }
+  invQuickMov(prodId, tipo, { presetQty: qty });
 }
 
 // ============================================================

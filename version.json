@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.3",
-  "notes": "Acceso rapido a movimientos desde cada producto para todos los usuarios y mejora de claridad en inventario."
+  "version": "2026.03.31.4",
+  "notes": "Movimientos inline por producto con cantidad editable y destinos/origenes claros (Cocina, Bodega, Preelaboracion, Merma)."
 }
