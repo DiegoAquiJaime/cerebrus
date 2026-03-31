@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.4",
-  "notes": "Movimientos inline por producto con cantidad editable y destinos/origenes claros (Cocina, Bodega, Preelaboracion, Merma)."
+  "version": "2026.03.31.5",
+  "notes": "Auto-clasificacion de inventario por familia/subfamilia (incluye vinos) y listado de pendientes para revision manual."
 }

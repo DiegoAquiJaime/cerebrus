@@ -3736,6 +3736,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <div class="inv-toolbar">
           <input class="inv-search" id="inv-search" placeholder="🔍 Nombre, categoría, familia, subfamilia o unidad…" oninput="invRender()">
           <button class="fac-btn primary" onclick="invToggleForm()">+ Agregar producto</button>
+          <button class="fac-btn" onclick="invAutoClassifyInventory()">🧭 Auto-clasificar</button>
+          <button class="fac-btn" onclick="invShowPendingClassification()">📝 Pendientes clasificar</button>
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
           </button>
@@ -10823,6 +10825,98 @@ function invAddSubfamiliaGlobal() {
   invRefreshFamiliaSubfamiliaSelects('inv-f', fam, n);
   markUnsaved();
   notify(`✓ Subfamilia "${n}" creada en ${fam}`);
+}
+function invGuessFamilySubfamily(nombre, cat, unidad) {
+  const n = String(nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const c = String(cat || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const u = String(unidad || '').toLowerCase();
+  const has = (arr) => arr.some(k => n.includes(k));
+  const hasCat = (arr) => arr.some(k => c.includes(k));
+
+  // Vinos y bebidas alcohólicas
+  if (has(['cabernet','merlot','carmenere','pinot noir','syrah','malbec','tinto','blend tinto'])) return { familia:'Bebidas', subfamilia:'Vinos tintos', conf:0.95 };
+  if (has(['sauvignon blanc','chardonnay','riesling','gewurz','blanco','pinot grigio'])) return { familia:'Bebidas', subfamilia:'Vinos blancos', conf:0.95 };
+  if (has(['espumante','prosecco','champagne'])) return { familia:'Bebidas', subfamilia:'Espumantes', conf:0.95 };
+  if (has(['pisco','vodka','whisky','whiskey','ron','gin','tequila','licor','aperol','campari','vermouth'])) return { familia:'Bebidas', subfamilia:'Licores y destilados', conf:0.95 };
+  if (has(['cerveza','beer','ipa','stout'])) return { familia:'Bebidas', subfamilia:'Cervezas', conf:0.95 };
+  if (has(['coca','sprite','fanta','gaseosa','bebida','soda','tonica'])) return { familia:'Bebidas', subfamilia:'Bebidas y gaseosas', conf:0.9 };
+  if (has(['jugo','nectar','pulpa'])) return { familia:'Bebidas', subfamilia:'Jugos y pulpas', conf:0.9 };
+  if (has(['agua mineral','agua'])) return { familia:'Bebidas', subfamilia:'Aguas', conf:0.85 };
+
+  // Pescados y mariscos
+  if (has(['salmon','reineta','congrio','corvina','trucha','atun','jibia','merluza'])) return { familia:'Pescados y Mariscos', subfamilia:'Pescados', conf:0.95 };
+  if (has(['camaron','langostino','jaiba','centolla'])) return { familia:'Pescados y Mariscos', subfamilia:'Crustáceos', conf:0.95 };
+  if (has(['ostion','ostra','chorito','choro','almeja','macha','navajuela','calamar','pulpo','loco'])) return { familia:'Pescados y Mariscos', subfamilia:'Mariscos y moluscos', conf:0.95 };
+
+  // Carnes y proteínas
+  if (has(['vacuno','posta','lomo vetado','lomo liso','asado','entraña','carne molida'])) return { familia:'Carnes', subfamilia:'Vacuno', conf:0.95 };
+  if (has(['cerdo','chuleta','costillar'])) return { familia:'Carnes', subfamilia:'Cerdo', conf:0.95 };
+  if (has(['pollo','pavo','ave'])) return { familia:'Carnes', subfamilia:'Aves', conf:0.95 };
+  if (has(['longaniza','chorizo','jamon','tocino','salame'])) return { familia:'Carnes', subfamilia:'Embutidos', conf:0.9 };
+
+  // Frutas y verduras
+  if (has(['lechuga','rucula','espinaca','mix de hojas','berros','acelga'])) return { familia:'Frutas y Verduras', subfamilia:'Hojas verdes', conf:0.95 };
+  if (has(['cilantro','perejil','menta','albahaca','ciboulette','cebollin'])) return { familia:'Frutas y Verduras', subfamilia:'Hierbas y aromáticas', conf:0.95 };
+  if (has(['cebolla','ajo','pimenton','tomate','pepino','apio','brocoli','zanahoria','zapallo','repollo'])) return { familia:'Frutas y Verduras', subfamilia:'Verduras', conf:0.9 };
+  if (has(['papa','camote'])) return { familia:'Frutas y Verduras', subfamilia:'Tubérculos', conf:0.9 };
+  if (has(['limon','naranja','manzana','frutilla','palta','platano','uva','piña','arandano'])) return { familia:'Frutas y Verduras', subfamilia:'Frutas', conf:0.9 };
+
+  // Lácteos y huevos
+  if (has(['leche','queso','crema','mantequilla','manteca','yogurt','yoghurt'])) return { familia:'Lácteos', subfamilia:'Lácteos', conf:0.9 };
+  if (has(['huevo'])) return { familia:'Huevos', subfamilia:'Huevos', conf:0.95 };
+
+  // Abarrotes despensa
+  if (has(['arroz','fideo','pasta','harina','quinoa'])) return { familia:'Abarrotes', subfamilia:'Secos y granos', conf:0.9 };
+  if (has(['aceite','vinagre','sal','azucar','azucar flor','condimento','especia'])) return { familia:'Abarrotes', subfamilia:'Condimentos y básicos', conf:0.9 };
+  if (has(['almendra','nuez','semilla'])) return { familia:'Abarrotes', subfamilia:'Frutos secos y semillas', conf:0.9 };
+  if (has(['alcaparra','aceituna','pickle','conserva','frasco'])) return { familia:'Abarrotes', subfamilia:'Conservas', conf:0.85 };
+
+  // Panadería / congelados / aseo
+  if (has(['pan','marraqueta','hallulla','baguette','masa'])) return { familia:'Panadería', subfamilia:'Panes y masas', conf:0.9 };
+  if (has(['congelad'])) return { familia:'Congelados', subfamilia:'Congelados', conf:0.85 };
+  if (has(['detergente','cloro','limpiador','bolsa basura','servilleta','guante'])) return { familia:'Aseo', subfamilia:'Limpieza y desechables', conf:0.9 };
+
+  // Fallback con categoría existente
+  if (hasCat(['pescados','mariscos'])) return { familia:'Pescados y Mariscos', subfamilia:'Revisar manual', conf:0.6 };
+  if (hasCat(['carnes'])) return { familia:'Carnes', subfamilia:'Revisar manual', conf:0.6 };
+  if (hasCat(['frutas','verduras'])) return { familia:'Frutas y Verduras', subfamilia:'Revisar manual', conf:0.6 };
+  if (hasCat(['abarrotes'])) return { familia:'Abarrotes', subfamilia:'Revisar manual', conf:0.6 };
+  if (hasCat(['lacteos'])) return { familia:'Lácteos', subfamilia:'Revisar manual', conf:0.6 };
+  if (hasCat(['bebidas'])) return { familia:'Bebidas', subfamilia:'Revisar manual', conf:0.6 };
+  if (u === 'botella' || u === 'lata') return { familia:'Bebidas', subfamilia:'Revisar manual', conf:0.55 };
+
+  return { familia:'Sin clasificar', subfamilia:'Revisar manual', conf:0.1 };
+}
+function invShowPendingClassification() {
+  const pending = (state.inventario || []).filter(p => (p.familia || '') === 'Sin clasificar' || (p.subfamilia || '') === 'Revisar manual');
+  if (!pending.length) { notify('✅ No hay productos pendientes de clasificación manual'); return; }
+  const names = pending.slice(0, 40).map(p => '• ' + p.nombre).join('\n');
+  alert(`Pendientes de revisar manual (${pending.length}):\n\n${names}${pending.length > 40 ? '\n…' : ''}`);
+}
+function invAutoClassifyInventory() {
+  invInit();
+  invEnsureFamiliesState();
+  if (!state.inventario || !state.inventario.length) { notify('⚠ No hay productos para clasificar'); return; }
+  if (!confirm('¿Auto-clasificar familias y subfamilias de todo el inventario?')) return;
+  pushUndo();
+  let changed = 0;
+  let pending = 0;
+  (state.inventario || []).forEach(function(p) {
+    const g = invGuessFamilySubfamily(p.nombre, p.cat, p.unidad);
+    const fam = g.familia || 'Sin clasificar';
+    const sub = g.subfamilia || 'Revisar manual';
+    if (p.familia !== fam || p.subfamilia !== sub) {
+      p.familia = fam;
+      p.subfamilia = sub;
+      changed++;
+    }
+    if (!state.invFamilias[fam]) state.invFamilias[fam] = ['Sin subfamilia'];
+    if (!state.invFamilias[fam].includes(sub)) state.invFamilias[fam].push(sub);
+    if (fam === 'Sin clasificar' || sub === 'Revisar manual') pending++;
+  });
+  markUnsaved();
+  invRender();
+  notify(`🧭 Clasificación aplicada: ${changed} producto(s) actualizados, ${pending} pendiente(s) manual(es)`);
 }
 
 function invRender() {
