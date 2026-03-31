@@ -1315,6 +1315,12 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-carga-row.ingreso-recibido{opacity:.65;}
 .sac-carga-row.ingreso-recibido .sac-nombre{text-decoration:line-through;}
 .sac-cargas-head{background:var(--primary);color:white;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.sac-head-btn{border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;border:1px solid transparent;color:white;}
+.sac-head-btn:hover{transform:translateY(-1px);}
+.sac-head-btn.ghost{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45);}
+.sac-head-btn.ghost:hover{background:rgba(255,255,255,.32);}
+.sac-head-btn.accent{background:var(--accent);border-color:rgba(255,255,255,.25);}
+.sac-head-btn.accent:hover{filter:brightness(1.06);}
 .sac-carga-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-carga-row:last-child{border-bottom:none;}
 .sac-carga-row.pagado{opacity:.55;}
@@ -1349,6 +1355,10 @@ body.dark-mode .sac-v-inp,.dark-mode .sac-edit-inp{color:#e2e8f0;border-color:#3
 body.dark-mode .sac-sel-modal{background:#1e293b;}
 body.dark-mode .sac-sel-item{border-color:#334155;}
 body.dark-mode .sac-sel-item:hover{background:#0f172a;}
+body.dark-mode .sac-head-btn.ghost{background:#1f2937;border-color:#64748b;color:#f8fafc;}
+body.dark-mode .sac-head-btn.ghost:hover{background:#334155;border-color:#94a3b8;}
+body.dark-mode .sac-head-btn.accent{background:#f97316;border-color:#fdba74;color:white;}
+body.dark-mode .sac-head-btn.accent:hover{background:#fb923c;}
 
 /* ---- IA SCANNER UNIVERSAL ---- */
 .ia-scan-overlay{display:none;position:fixed;inset:0;z-index:160;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
@@ -2650,8 +2660,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div class="sac-cargas-head">
             <div style="font-size:13px;font-weight:800;">📤 Cargas de la semana</div>
             <div style="display:flex;gap:7px;flex-wrap:wrap;">
-              <button onclick="sacOpenConfigSel()" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">☑ Gastos fijos</button>
-              <button onclick="sacAddCargaManual()" style="background:var(--accent);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ Agregar</button>
+              <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
+              <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
             </div>
           </div>
           <div id="sac-cargas-list">
@@ -3069,6 +3079,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <strong>⚠ Posibles facturas duplicadas detectadas</strong>
           <div style="display:flex;gap:6px;">
             <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facCheckAllDuplicates()">Revisar de nuevo</button>
+            <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facDupSelectAll(true)">Seleccionar todo</button>
+            <button class="fac-btn success" style="font-size:10px;padding:3px 8px;" onclick="facDupApplySelected()">Aprobar unificación</button>
             <button class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="facDismissWarning('dup')">Ocultar</button>
           </div>
         </div>
@@ -3128,6 +3140,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </button>
         <button class="fac-btn" onclick="toggleNuevoProveedor()">+ Proveedor</button>
         <button class="fac-btn" onclick="facNormalizeAndUnifyProviders()" title="Unifica proveedores por RUT y normaliza formatos">🪪 Normalizar RUT</button>
+        <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Fusiona 2 proveedores manualmente">🔀 Unificar 2 proveedores</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
       </div>
@@ -7336,6 +7349,7 @@ let _facCurrentProv = null;
 let _facDashFilter  = 'activas';
 let _facModalId     = null;
 let _facModalProv   = null;
+let _facDupGroups   = [];
 
 function facInit() {
   if (!state.facturas) state.facturas = makeDefaultFacturas();
@@ -8119,73 +8133,155 @@ function facFindDuplicate(nro, monto, rut, currentProv, emision) {
   return null;
 }
 
-// ── SCAN GLOBAL DE DUPLICADOS ──
-// N° factura: solo es único por proveedor (o por RUT si hay varios nombres con mismo emisor).
-// Monto+fecha: mismo mismo día en distintos proveedores es muy común → solo alerta dentro del mismo proveedor.
+function facDupSelectAll(flag) {
+  const checks = document.querySelectorAll('.fac-dup-check');
+  checks.forEach(ch => { ch.checked = !!flag; });
+}
+
+function facDupApplySelected() {
+  const selected = _facDupGroups.filter(g => {
+    const ch = document.getElementById('fac-dup-chk-' + g.id);
+    return !!(ch && ch.checked);
+  });
+  if (!selected.length) {
+    notify('⚠ Selecciona al menos una alerta para unificar');
+    return;
+  }
+  const facCount = selected.reduce((s, g) => s + g.items.length, 0);
+
+  pushUndo();
+  let removed = 0;
+  selected.forEach(g => { if (g.strict === true) removed += facResolveDupGroup(g); });
+  facAutoLearnRuts();
+  facSpreadProvRutToInvoices();
+  facUnifyProvidersByRut();
+  facRefreshWarnings();
+  facRenderDashboard();
+  if (_facCurrentProv) facRenderDetail();
+  facCalcKpis();
+  markUnsaved();
+  notify(`✅ Unificación silenciosa: ${selected.length} grupo(s), ${removed} factura(s) duplicada(s) eliminada(s).`);
+}
+
+function facResolveDupGroup(group) {
+  if (!group || !group.items || group.items.length < 2) return 0;
+  const items = group.items
+    .map(it => {
+      const facs = (state.facturas || {})[it.pn] || [];
+      const fac = facs.find(f => f.id === it.facId);
+      return fac ? { pn: it.pn, fac } : null;
+    })
+    .filter(Boolean);
+  if (items.length < 2) return 0;
+
+  const score = it => {
+    const f = it.fac;
+    let s = 0;
+    if (f.estado !== 'inactiva') s += 2;
+    if (f.rut) s += 1;
+    if (f.comentario) s += 1;
+    if (f.vence) s += 1;
+    return s;
+  };
+  items.sort((a, b) => score(b) - score(a));
+  const keep = items[0];
+  let removed = 0;
+
+  for (let i = 1; i < items.length; i++) {
+    const cur = items[i];
+    if (!keep.fac.rut && cur.fac.rut) keep.fac.rut = cur.fac.rut;
+    if (!keep.fac.comentario && cur.fac.comentario) keep.fac.comentario = cur.fac.comentario;
+    if (!keep.fac.vence && cur.fac.vence) keep.fac.vence = cur.fac.vence;
+    state.facturas[cur.pn] = (state.facturas[cur.pn] || []).filter(f => f.id !== cur.fac.id);
+    state.facSemana = (state.facSemana || []).filter(s => !(s.prov === cur.pn && s.facId === cur.fac.id));
+    if ((state.facturas[cur.pn] || []).length === 0) {
+      delete state.facturas[cur.pn];
+      if (state.provRuts) delete state.provRuts[cur.pn];
+    }
+    removed++;
+  }
+  keep.fac._dupFlag = false;
+  return removed;
+}
+
+function facMergeTwoProvidersPrompt() {
+  facInit();
+  const provs = Object.keys(state.facturas || {}).sort();
+  if (provs.length < 2) { notify('⚠ No hay suficientes proveedores para unificar'); return; }
+  const listado = provs.slice(0, 60).join('\n');
+  const a = prompt(`Proveedor 1 (base):\n\n${listado}\n\nEscribe el nombre exacto:`, '');
+  if (!a) return;
+  const b = prompt('Proveedor 2 (se fusionará dentro del proveedor 1):', '');
+  if (!b) return;
+  const p1 = a.trim();
+  const p2 = b.trim();
+  if (p1 === p2) { notify('⚠ Deben ser dos proveedores distintos'); return; }
+  if (!state.facturas[p1] || !state.facturas[p2]) { notify('⚠ No encontré uno de los proveedores (revisa el nombre exacto)'); return; }
+  if (!confirm(`¿Unificar "${p2}" dentro de "${p1}"?\nSe moverán todas las facturas y luego se eliminará "${p2}".`)) return;
+
+  pushUndo();
+  state.facturas[p1] = [...(state.facturas[p1] || []), ...(state.facturas[p2] || [])];
+  delete state.facturas[p2];
+  if (state.facSemana) state.facSemana.forEach(s => { if (s.prov === p2) s.prov = p1; });
+  if (state.provRuts) {
+    if (!state.provRuts[p1] && state.provRuts[p2]) state.provRuts[p1] = state.provRuts[p2];
+    delete state.provRuts[p2];
+  }
+  if (_facCurrentProv === p2) _facCurrentProv = p1;
+
+  facRefreshWarnings();
+  facRenderDashboard();
+  if (_facCurrentProv) facRenderDetail();
+  facCalcKpis();
+  markUnsaved();
+  notify(`✅ Proveedores unificados: "${p2}" → "${p1}"`);
+}
+
+// ── SCAN GLOBAL DE DUPLICADOS (estricto para unificación automática) ──
+// Solo considera duplicado automático si coincide: proveedor + N° factura + monto.
 function facCheckAllDuplicates() {
   if (!state.facturas) return;
-  const byNro   = {};
-  const byMonto = {};
-  const byRut   = {};
-  const dups    = [];
+  const byStrict = {};
+  const groups  = [];
+  let gid = 0;
 
   Object.values(state.facturas).forEach(facs => facs.forEach(f => { f._dupFlag = false; }));
 
   Object.entries(state.facturas).forEach(([pn, facs]) => {
     facs.forEach(f => {
-      if (f.nro && f.nro !== '?') {
-        const n = f.nro.trim().toLowerCase();
-        const rk = rutKey(f.rut||'');
-        const k = rk ? ('R' + rk + '|' + n) : ('P' + pn + '|' + n);
-        if (!byNro[k]) byNro[k] = [];
-        byNro[k].push({pn, f});
-      }
-      if (f.monto > 0 && f.emision) {
-        const k = pn + '|' + f.monto + '|' + f.emision;
-        if (!byMonto[k]) byMonto[k] = [];
-        byMonto[k].push({pn, f});
-      }
-      if (f.rut && f.monto > 0) {
-        const k = rutKey(f.rut) + '|' + f.monto;
-        if (!byRut[k]) byRut[k] = [];
-        byRut[k].push({pn, f});
-      }
+      const nro = (f.nro || '').trim().toLowerCase();
+      const monto = Number(f.monto || 0);
+      if (!nro || nro === '?' || monto <= 0) return;
+      const k = `${pn}|${nro}|${monto}`;
+      if (!byStrict[k]) byStrict[k] = [];
+      byStrict[k].push({pn, f});
     });
   });
 
-  Object.entries(byNro).forEach(([k, items]) => {
+  Object.entries(byStrict).forEach(([k, items]) => {
     if (items.length > 1) {
       items.forEach(({f}) => { f._dupFlag = true; });
       const nro = items[0].f.nro;
-      dups.push(`🔁 N° ${nro} (mismo RUT o mismo proveedor): ${items.map(i=>`${i.f.emision} "${i.pn}" (${fmt(i.f.monto)})`).join(' — ')}`);
-    }
-  });
-  Object.entries(byMonto).forEach(([k, items]) => {
-    if (items.length > 1) {
-      items.forEach(({f}) => { f._dupFlag = true; });
-      const segs = k.split('|');
-      const fecha = segs.pop();
-      const monto = segs.pop();
-      const pname = segs.join('|');
-      dups.push(`🔁 ${fmt(parseInt(monto,10))} el ${fecha} en "${pname}" (${items.length} veces)`);
-    }
-  });
-  Object.entries(byRut).forEach(([k, items]) => {
-    const pns = [...new Set(items.map(i => i.pn))];
-    if (items.length > 1 && pns.length > 1) {
-      items.forEach(({f}) => { f._dupFlag = true; });
-      const monto = k.slice(k.lastIndexOf('|') + 1);
-      dups.push(`🔁 Mismo RUT y monto ${fmt(parseInt(monto,10))} en varios proveedores: ${items.map(i=>`N° ${i.f.nro} "${i.pn}"`).join(' — ')}`);
+      groups.push({
+        id: 'dup_' + (++gid),
+        strict: true,
+        label: `🔁 Duplicado estricto (${items[0].pn}) N° ${nro} · ${fmt(items[0].f.monto)} (${items.length} veces)`,
+        items: items.map(i => ({ pn: i.pn, facId: i.f.id })),
+        strictKey: k
+      });
     }
   });
 
   // Show/hide banner
   const banner = document.getElementById('fac-dup-banner');
   const list   = document.getElementById('fac-dup-list');
+  _facDupGroups = groups;
   if (banner && list) {
-    if (dups.length) {
-      const unique = [...new Set(dups)];
-      list.innerHTML = unique.map(d => `<div style="padding:3px 0;">${d}</div>`).join('');
+    if (groups.length) {
+      list.innerHTML = groups.map(g => `<label style="padding:3px 0;display:flex;gap:8px;align-items:flex-start;">
+          <input type="checkbox" class="fac-dup-check" id="fac-dup-chk-${g.id}" checked style="margin-top:1px;">
+          <span>${g.label}</span>
+        </label>`).join('');
       banner.style.display = 'block';
     } else {
       banner.style.display = 'none';
@@ -8368,6 +8464,7 @@ function facDismissWarning(type) {
   if (type === 'dup') {
     const b = document.getElementById('fac-dup-banner');
     if (b) b.style.display = 'none';
+    _facDupGroups = [];
     Object.values(state.facturas||{}).forEach(facs => facs.forEach(f => { f._dupFlag = false; }));
   } else if (type === 'rut') {
     const b = document.getElementById('fac-rut-banner');
@@ -15696,9 +15793,40 @@ function sacRenderHistorialCierres() {
       <td style="padding:8px 12px;font-size:11px;">${esc(fd)}</td>
       <td style="padding:8px 12px;font-size:11px;">${esc(h.periodoLabel || '—')}</td>
       <td style="padding:8px 12px;text-align:right;font-weight:700;">${fmt(bal)}</td>
+      <td style="padding:8px 12px;text-align:right;"><button type="button" class="fac-btn" style="font-size:10px;padding:3px 8px;" onclick="sacAbrirDesdeCierre('${h.id}')">Ver</button></td>
     </tr>`;
   }).join('');
-  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#f8fafc;text-align:left;font-size:9px;text-transform:uppercase;color:#94a3b8;"><th style="padding:8px 12px;">Fecha</th><th style="padding:8px 12px;">Período</th><th style="padding:8px 12px;text-align:right;">Balance al guardar</th></tr></thead><tbody>${rows}</tbody></table>`;
+  body.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#f8fafc;text-align:left;font-size:9px;text-transform:uppercase;color:#94a3b8;"><th style="padding:8px 12px;">Fecha</th><th style="padding:8px 12px;">Período</th><th style="padding:8px 12px;text-align:right;">Balance al guardar</th><th style="padding:8px 12px;text-align:right;">Abrir</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function sacAbrirDesdeCierre(cierreId) {
+  const c = (state.sacCierresHistorial || []).find(x => x.id === cierreId);
+  if (!c || !c.periodKey) {
+    notify('⚠ No se pudo abrir ese cierre (sin clave de período)');
+    return;
+  }
+  const parts = String(c.periodKey).split('|');
+  pushUndo();
+  if (parts[0] === 'S' && parts.length === 4) {
+    state.sacPeriodoTrabajo = {
+      type: 'slot',
+      y: parseInt(parts[1], 10) || new Date().getFullYear(),
+      m: parseInt(parts[2], 10) || (new Date().getMonth() + 1),
+      w: parseInt(parts[3], 10) || 1
+    };
+  } else if (parts[0] === 'R' && parts.length === 3) {
+    state.sacPeriodoTrabajo = { type: 'range', start: parts[1], end: parts[2] };
+  } else {
+    notify('⚠ Formato de período no reconocido');
+    return;
+  }
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+  _sacLastVentasKey = '';
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Abrió cierre semanal', true);
+  notify(`✅ Abierto: ${c.periodoLabel || 'período guardado'}`);
 }
 
 let _sacModalPickW = 1;
@@ -16443,31 +16571,20 @@ function sacRenderFinanciamientoPanel() {
   }).join('');
 
   wrap.innerHTML = `
-    <div style="padding:14px 16px;background:var(--white);border-radius:12px;border:1px solid var(--border);box-shadow:var(--shadow);border-left:4px solid ${balNeg ? 'var(--danger)' : '#94a3b8'};">
-      <div style="font-size:12px;font-weight:800;margin-bottom:6px;color:var(--primary);">📒 Registro — financiamiento Sebas (balance semanal negativo)</div>
-      <p style="font-size:10px;color:#64748b;line-height:1.45;margin-bottom:10px;">
-        Si el <b>balance estimado</b> de la semana <strong>${esc(wlbl)}</strong> está en rojo, dejá constancia de <b>cuánto aportó o con qué financió Sebastián</b> (plata que entró, transferencia, efectivo, tarjeta personal, etc.). Cada guardado queda en el historial con el déficit que había al momento.
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;padding:10px 12px;background:${balNeg ? '#fef2f2' : '#f8fafc'};border-radius:8px;">
-        <span style="font-size:11px;">Balance estimado ahora: <strong id="sac-fin-balance-live" style="color:${balNeg ? 'var(--danger)' : 'var(--success)'};">${B.balance < 0 ? '−' : ''}${fmt(Math.abs(B.balance))}</strong></span>
-        <span id="sac-fin-neg-hint" style="font-size:10px;color:#b91c1c;display:${balNeg ? 'inline' : 'none'};">Déficit — registrá abajo cómo se cubrió.</span>
+    <div style="padding:10px 12px;background:var(--white);border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow);border-left:3px solid ${balNeg ? 'var(--danger)' : '#94a3b8'};">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:800;color:var(--primary);">📒 Financiamiento Sebas · ${esc(wlbl)}</div>
+        <div style="font-size:10px;">Balance: <strong id="sac-fin-balance-live" style="color:${balNeg ? 'var(--danger)' : 'var(--success)'};">${B.balance < 0 ? '−' : ''}${fmt(Math.abs(B.balance))}</strong></div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr;gap:8px;align-items:end;margin-bottom:10px;">
-        <div>
-          <label style="font-size:9px;font-weight:700;color:#94a3b8;">Monto que aportó / financió Sebas ($)</label>
-          <input id="sac-fin-monto" class="sac-edit-inp" type="text" inputmode="numeric" placeholder="0" style="width:100%;max-width:220px;">
-        </div>
-        <div>
-          <label style="font-size:9px;font-weight:700;color:#94a3b8;">Detalle (cómo: transferencia, efectivo, TC, préstamo…)</label>
-          <input id="sac-fin-detalle" class="sac-edit-inp" type="text" placeholder="Ej: Transferencia cuenta personal" style="width:100%;">
-        </div>
-        <div>
-          <button type="button" class="fac-btn primary" onclick="sacGuardarFinanciamientoRegistro()" style="padding:8px 16px;font-size:12px;">Guardar registro</button>
-        </div>
+      <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin-bottom:8px;">
+        <input id="sac-fin-monto" class="sac-edit-inp" type="text" inputmode="numeric" placeholder="Monto ($)" style="width:140px;">
+        <input id="sac-fin-detalle" class="sac-edit-inp" type="text" placeholder="Detalle (transferencia, efectivo, TC...)" style="flex:1;min-width:180px;">
+        <button type="button" class="fac-btn primary" onclick="sacGuardarFinanciamientoRegistro()" style="padding:7px 12px;font-size:11px;">Guardar</button>
       </div>
+      <div id="sac-fin-neg-hint" style="font-size:10px;color:#b91c1c;display:${balNeg ? 'block' : 'none'};margin-bottom:6px;">Déficit detectado: registra aquí cómo se cubrió.</div>
       ${reg.length ? `<div style="font-size:10px;font-weight:700;color:#94a3b8;margin:0 0 6px;">Historial</div>
-      <div style="overflow-x:auto;max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
-        <table style="font-size:11px;width:100%;border-collapse:collapse;"><thead><tr style="background:#f8fafc;text-align:left;"><th style="padding:6px 8px;">Fecha</th><th style="padding:6px 8px;">Periodo</th><th style="padding:6px 8px;text-align:right;">Balance al guardar</th><th style="padding:6px 8px;text-align:right;">Financió Sebas</th><th style="padding:6px 8px;">Detalle</th><th style="padding:6px 4px;"></th></tr></thead><tbody>${rows}</tbody></table>
+      <div style="overflow-x:auto;max-height:170px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+        <table style="font-size:10px;width:100%;border-collapse:collapse;"><thead><tr style="background:#f8fafc;text-align:left;"><th style="padding:5px 6px;">Fecha</th><th style="padding:5px 6px;">Periodo</th><th style="padding:5px 6px;text-align:right;">Balance</th><th style="padding:5px 6px;text-align:right;">Financió</th><th style="padding:5px 6px;">Detalle</th><th style="padding:5px 3px;"></th></tr></thead><tbody>${rows}</tbody></table>
       </div>` : `<div style="font-size:11px;color:#94a3b8;font-style:italic;">Sin registros guardados aún.</div>`}
     </div>`;
 }
