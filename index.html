@@ -3815,6 +3815,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <th style="text-align:center;">Estado</th>
               <th>Proveedor(es)</th>
               <th style="text-align:right;">Mejor precio</th>
+              <th style="text-align:right;">Costo final</th>
               <th style="text-align:center;">Movimientos</th>
               <th></th>
             </tr></thead>
@@ -9491,6 +9492,13 @@ Para CADA documento extrae un JSON con:
 - confianza: "ok" | "duda" | "ilegible"
 - observacion: si hay dudas sobre IVA u otros datos
 - tieneIVA: true si detectaste que los precios de línea incluyen IVA, false si son netos, null si no puedes determinarlo
+- montoNeto: subtotal neto sin IVA (si se puede determinar)
+- montoIVA: monto de IVA del documento
+- montoILA: impuesto adicional (alcohol/ILA) si aplica
+- montoRetencion: retención (ej. 5%) si aparece
+- montoFlete: flete/despacho si aparece como cargo
+- montoOtrosImpuestos: otros impuestos/cargos no clasificados
+- totalDoc: total final del documento tal como aparece
 - items: array de líneas con:
   * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
   * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
@@ -9868,6 +9876,14 @@ function aiConfirmImport() {
       nro: r.nro, rut: r.rut||'', tipoDoc: 'factura',
       emision: r.emision||'', monto: r.monto,
       vence: r.vence||'', estado: 'activa',
+      tieneIVA: r.tieneIVA,
+      montoNeto: r.montoNeto || 0,
+      montoIVA: r.montoIVA || 0,
+      montoILA: r.montoILA || 0,
+      montoRetencion: r.montoRetencion || 0,
+      montoFlete: r.montoFlete || 0,
+      montoOtrosImpuestos: r.montoOtrosImpuestos || 0,
+      totalDoc: r.totalDoc || 0,
       comentario: r.comentario || (r.observacion ? '⚠ ' + r.observacion : ''),
       items: Array.isArray(r.items) ? r.items.map(function(it) {
         return {
@@ -9876,6 +9892,8 @@ function aiConfirmImport() {
           unidad: it.unidad || '',
           precioUnit: it.precioUnit || 0,
           subtotal: it.subtotal || 0,
+          precioOriginal: it.precioOriginal || 0,
+          eraNetoIVA: !!it.eraNetoIVA,
           invProdId: it.invProdId || '',
           categoria: it.categoria || ''
         };
@@ -10503,7 +10521,7 @@ function _getPreciosUnified(prod) {
   if (prod?.proveedores?.length) return prod.proveedores.map(p=>({prov:p.nombre||p.prov||'',precio:p.precio}));
   return (prod?.precios||[]);
 }
-function invUpsertPrecioProveedor(prodId, prov, precio) {
+function invUpsertPrecioProveedor(prodId, prov, precio, extraMeta) {
   if (!prodId || !prov) return;
   if (!state.preciosProveedor) state.preciosProveedor = {};
   if (!state.preciosProveedor[prodId]) state.preciosProveedor[prodId] = [];
@@ -10513,8 +10531,14 @@ function invUpsertPrecioProveedor(prodId, prov, precio) {
     if (idx >= 0) lista.splice(idx, 1);
     return;
   }
-  if (idx >= 0) lista[idx].precio = precio;
-  else lista.push({ prov, precio });
+  if (idx >= 0) {
+    lista[idx].precio = precio;
+    if (extraMeta && typeof extraMeta === 'object') Object.assign(lista[idx], extraMeta);
+  } else {
+    const row = { prov, precio };
+    if (extraMeta && typeof extraMeta === 'object') Object.assign(row, extraMeta);
+    lista.push(row);
+  }
 }
 function invBestPrice(prod) {
   const lista = _getPreciosUnified(prod).filter(p=>p.precio>0);
@@ -10653,7 +10677,7 @@ function invRenderTable() {
     const emptyMsg = state.inventario.length
       ? 'Ningún producto coincide con búsqueda o filtros.'
       : 'Sin productos — agrega uno o importa desde facturas.';
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">' + emptyMsg + '</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#94a3b8;padding:24px;">' + emptyMsg + '</td></tr>';
     return;
   }
 
@@ -10668,6 +10692,10 @@ function invRenderTable() {
       </span>`;
     }).join('');
     const stockColor = (p.stock||0)<=0?'var(--danger)':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'var(--warning)':'var(--success)';
+    const bestFromFactura = !!(best && best.source === 'fac_import');
+    const bestMeta = bestFromFactura
+      ? `Precio final importado desde factura. Factor aplicado: ×${(best.factor || 1).toFixed(3)} (incluye IVA/impuestos/cargos prorrateados cuando vienen informados).`
+      : 'Precio manual o histórico del proveedor.';
     return `<tr id="inv-row-${p.id}">
       <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">${esc(p.nombre||'')}</td>
       <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
@@ -10679,6 +10707,14 @@ function invRenderTable() {
         <button onclick="invAddPrecio('${p.id}')" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;color:#94a3b8;margin-left:2px;">+ precio</button>
       </td>
       <td class="inv-precio-col inv-mejor-precio" style="text-align:right;">${best?fmt(best.precio):'—'}</td>
+      <td style="text-align:right;font-weight:700;color:#0f766e;" title="${esc(bestMeta)}">
+        ${best ? fmt(best.precio) : '—'} ${best ? `
+          <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.3px;vertical-align:middle;${bestFromFactura?'background:#0ea5e920;color:#0369a1;border:1px solid #0ea5e955;':'background:#94a3b820;color:#64748b;border:1px solid #94a3b855;'}">
+            ${bestFromFactura ? 'Factura' : 'Manual'}
+          </span>
+          <span style="font-size:10px;color:#94a3b8;">ⓘ</span>
+        ` : ''}
+      </td>
       <td style="text-align:center;white-space:nowrap;">
         <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;">
           <button onclick="invQuickMov('${p.id}','despacho')" title="Despachar a cocina/salón"
@@ -12671,10 +12707,72 @@ function invInferCatFromDesc_(desc) {
   return 'Importado';
 }
 
-function invFacImportOneLine_(it, provNombre) {
+function invNum_(v) {
+  if (v == null || v === '') return 0;
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  var s = String(v).trim().replace(/\s/g, '');
+  if (!s) return 0;
+  if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g, '').replace(',', '.');
+    else s = s.replace(/,/g, '');
+  } else if (s.indexOf(',') >= 0) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  }
+  var n = parseFloat(s.replace(/[^\d.-]/g, ''));
+  return isFinite(n) ? n : 0;
+}
+
+function invParseMontoEnTexto_(txt, etiquetas) {
+  var s = String(txt || '');
+  if (!s) return 0;
+  for (var i = 0; i < etiquetas.length; i++) {
+    var e = etiquetas[i];
+    var rx = new RegExp(e + '[^\\d\\-]{0,12}(-?\\$?\\s?[\\d\\.\\,]+)', 'i');
+    var m = s.match(rx);
+    if (m && m[1]) {
+      var n = invNum_(m[1].replace('$', ''));
+      if (Math.abs(n) > 0) return n;
+    }
+  }
+  return 0;
+}
+
+function invBuildFacturaCostCtx_(fac, items) {
+  var valid = (items || []).filter(function(it) { return it && String(it.descripcion || '').trim(); });
+  var sumBase = 0;
+  valid.forEach(function(it) {
+    var qty = Math.max(0, invNum_(it.cantidad));
+    var pu = Math.max(0, invNum_(it.precioUnit));
+    var st = Math.max(0, invNum_(it.subtotal));
+    var base = st > 0 ? st : (qty > 0 && pu > 0 ? qty * pu : pu);
+    sumBase += base;
+  });
+
+  var montoFactura = Math.max(0, invNum_(fac && fac.monto));
+  var flete = Math.max(0, invNum_(fac && fac.montoFlete));
+  var ila = Math.max(0, invNum_(fac && fac.montoILA));
+  var otros = Math.max(0, invNum_(fac && fac.montoOtrosImpuestos));
+  if (!flete) flete = Math.max(0, invParseMontoEnTexto_(fac && fac.comentario, ['flete', 'despacho']));
+  if (!ila) ila = Math.max(0, invParseMontoEnTexto_(fac && fac.comentario, ['ila', 'impuesto\\s+adicional']));
+  if (!otros) otros = Math.max(0, invParseMontoEnTexto_(fac && fac.comentario, ['impuesto', 'cargo']));
+  var totalCosto = montoFactura > 0 ? (montoFactura + flete + ila + otros) : sumBase;
+  var factor = sumBase > 0 ? (totalCosto / sumBase) : 1;
+  if (!isFinite(factor) || factor <= 0) factor = 1;
+  return { factor: factor, totalCosto: totalCosto, sumBase: sumBase };
+}
+
+function invFacImportOneLine_(it, provNombre, facCtx) {
   var desc = String(it.descripcion || '').trim();
   if (!desc) return { created: false, price: false };
-  var precio = parseInt(String(it.precioUnit != null ? it.precioUnit : '0').replace(/[^\d]/g, ''), 10) || 0;
+  var qty = Math.max(0, invNum_(it.cantidad));
+  var puBase = Math.max(0, invNum_(it.precioUnit));
+  var stBase = Math.max(0, invNum_(it.subtotal));
+  var baseLine = stBase > 0 ? stBase : (qty > 0 && puBase > 0 ? qty * puBase : puBase);
+  var factor = facCtx && facCtx.factor ? facCtx.factor : 1;
+  var lineFinal = baseLine > 0 ? (baseLine * factor) : 0;
+  var precio = 0;
+  if (qty > 0 && lineFinal > 0) precio = Math.round(lineFinal / qty);
+  else if (puBase > 0) precio = Math.round(puBase * factor);
   var prod = it.invProdId ? state.inventario.find(function(p) { return p.id === it.invProdId; }) : null;
   var dlow = desc.toLowerCase();
   if (!prod) prod = state.inventario.find(function(p) { return (p.nombre || '').toLowerCase() === dlow; });
@@ -12699,7 +12797,11 @@ function invFacImportOneLine_(it, provNombre) {
   }
   var price = false;
   if (precio > 0) {
-    invUpsertPrecioProveedor(prod.id, provNombre, precio);
+    invUpsertPrecioProveedor(prod.id, provNombre, precio, {
+      source: 'fac_import',
+      factor: Math.round((factor || 1) * 1000) / 1000,
+      updatedAt: Date.now()
+    });
     price = true;
   }
   if (!prod.prov) prod.prov = provNombre;
@@ -12806,7 +12908,7 @@ function invFacImportApply() {
     if (!rec) continue;
     var items = (rec.fac.items || []).filter(function(it) { return it && String(it.descripcion || '').trim(); });
     if (!items.length) continue;
-    batches.push({ prov: rec.prov, items: items });
+    batches.push({ prov: rec.prov, fac: rec.fac, items: items });
     totalLines += items.length;
   }
   if (!totalLines) {
@@ -12816,17 +12918,19 @@ function invFacImportApply() {
   if (!confirm('Se procesarán ' + totalLines + ' línea(s) desde ' + batches.length + ' factura(s): productos coincidentes recibirán precio por proveedor; si no existen, se crearán. ¿Continuar?')) return;
 
   pushUndo();
-  var newProds = 0, priceUps = 0;
+  var newProds = 0, priceUps = 0, ajustadas = 0;
   batches.forEach(function(batch) {
+    var facCtx = invBuildFacturaCostCtx_(batch.fac, batch.items);
     batch.items.forEach(function(it) {
-      var r = invFacImportOneLine_(it, batch.prov);
+      var r = invFacImportOneLine_(it, batch.prov, facCtx);
       if (r.created) newProds++;
       if (r.price) priceUps++;
+      if (facCtx && Math.abs((facCtx.factor || 1) - 1) > 0.001) ajustadas++;
     });
   });
   closeInvImportFromFacsModal();
   invRender();
-  notify('✅ Inventario: ' + newProds + ' producto(s) nuevo(s), ' + priceUps + ' precio(s) por proveedor.');
+  notify('✅ Inventario: ' + newProds + ' producto(s) nuevo(s), ' + priceUps + ' precio(s). Líneas ajustadas por impuestos/cargos: ' + ajustadas + '.');
 }
 
 // ============================================================
