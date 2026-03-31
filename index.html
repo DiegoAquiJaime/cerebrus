@@ -5608,7 +5608,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.03.31.2';
+const APP_VERSION = '2026.03.31.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -11010,7 +11010,13 @@ function invRenderTable() {
       ? `Precio final importado desde factura. Factor aplicado: ×${(best.factor || 1).toFixed(3)} (incluye IVA/impuestos/cargos prorrateados cuando vienen informados).`
       : 'Precio manual o histórico del proveedor.';
     return `<tr id="inv-row-${p.id}">
-      <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">${esc(p.nombre||'')}</td>
+      <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">
+        <div>${esc(p.nombre||'')}</div>
+        <button onclick="event.stopPropagation();invQuickMovMenu('${p.id}')" title="Gestionar movimiento rápido"
+          style="margin-top:4px;background:#0ea5e914;border:1px solid #0ea5e955;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;color:#0369a1;">
+          ⚡ Movimiento rápido
+        </button>
+      </td>
       <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
       <td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.familia||'Sin familia')} <span style="color:#94a3b8;">/</span> ${esc(p.subfamilia||'Sin subfamilia')}</td>
       <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
@@ -11806,6 +11812,26 @@ function invQuickMov(prodId, tipo) {
     try { movRender(); } catch(e) {}
     markUnsaved();
   };
+}
+
+function invQuickMovMenu(prodId) {
+  const prod = (state.inventario || []).find(p => p.id === prodId);
+  if (!prod) { notify('⚠ Producto no encontrado'); return; }
+  const op = prompt(
+    `Movimiento rápido para "${prod.nombre}"\n\n` +
+    `1 = Despachar\n` +
+    `2 = Devolución\n` +
+    `3 = Merma\n` +
+    `4 = Preelaboración\n\n` +
+    `Escribe 1, 2, 3 o 4:`,
+    '1'
+  );
+  if (!op) return;
+  if (op === '1') return invQuickMov(prodId, 'despacho');
+  if (op === '2') return invQuickMov(prodId, 'devolucion');
+  if (op === '3') return invQuickMov(prodId, 'merma');
+  if (op === '4') return invQuickMov(prodId, 'preelaboracion');
+  notify('⚠ Opción no válida');
 }
 
 // ============================================================
