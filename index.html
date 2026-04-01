@@ -10464,7 +10464,7 @@ var INV_UNIFY_TOKENS = {
   frutilla: 'FRUTILLA', frutillas: 'FRUTILLAS',
   palta: 'PALTA', paltas: 'PALTAS',
   limon: 'LIMÓN', limones: 'LIMONES',
-  piña: 'PIÑA', pinas: 'PIÑA',
+  pina: 'PIÑA', pinas: 'PIÑAS',
   uva: 'UVA', uvas: 'UVAS',
   alcachofa: 'ALCACHOFA',
   albahaca: 'ALBAHACA', albahacas: 'ALBAHACAS',
@@ -10552,7 +10552,7 @@ function invFormatProductNombre(raw) {
   for (i = 0; i < parts.length; i++) {
     tok = parts[i];
     if (/^[\d]+([.,][\d]+)?$/.test(tok)) { out.push(tok.replace(',', ',')); continue; }
-    tk = tok.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    tk = _invAsciiLower(tok.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü0-9]/g, '')).toLowerCase();
     if (!tk) { out.push(tok.toLocaleUpperCase('es-CL')); continue; }
     mapped = INV_UNIFY_TOKENS[tk];
     if (mapped) out.push(mapped);
