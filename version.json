@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.7",
-  "notes": "Inventario: unificación de duplicados (lista maestra PDF), Salmón filete sin nombre de proveedor, familia/subfamilia al cargar snapshot."
+  "version": "2026.04.01.1",
+  "notes": "Inventario Grande (PDF): alta automática de productos faltantes sin tocar los existentes; Salsa de ostras y resto del maestro."
 }
