@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.01.1",
-  "notes": "Inventario Grande (PDF): alta automática de productos faltantes sin tocar los existentes; Salsa de ostras y resto del maestro."
+  "version": "2026.04.01.2",
+  "notes": "Nube: guardado por módulos (Part_*). Informe diario: base banco/cuenta, propinas en egresos. UI sincronización y clima. Medidor almacenamiento realista."
 }
