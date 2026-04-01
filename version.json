@@ -1,4 +1,4 @@
 {
-  "version": "2026.03.31.6",
-  "notes": "Boton de sugerencias precisas para reclasificar pendientes de familia/subfamilia y mejorar orden del inventario."
+  "version": "2026.03.31.7",
+  "notes": "Inventario: unificación de duplicados (lista maestra PDF), Salmón filete sin nombre de proveedor, familia/subfamilia al cargar snapshot."
 }
