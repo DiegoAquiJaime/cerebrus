@@ -4070,7 +4070,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div class="inf-block-title">Datos del día</div>
           <div class="inf-fields">
             <div class="inf-field inf-full"><label>Fecha</label><input type="date" id="inf-fecha"></div>
-            <div class="inf-field"><label>Banco inicial ($)</label><input type="number" id="inf-banco" placeholder="0" oninput="infCalcLive()"></div>
+            <div class="inf-field"><label>Banco inicial / Cuenta empresa ($)</label><input type="number" id="inf-banco" placeholder="0" oninput="infCalcLive()"></div>
             <div class="inf-field"><label>Venta de ayer ($)</label><input type="number" id="inf-venta" placeholder="0" oninput="infCalcLive()"></div>
             <div class="inf-field inf-full"><label>Caja ($)</label><input type="number" id="inf-caja" placeholder="0" oninput="infCalcLive()"></div>
           </div>
@@ -4081,11 +4081,11 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div class="inf-block-title" style="color:var(--accent);">📊 Balance en tiempo real</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;">
             <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Banco + Ingresos</div>
+              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Base Banco + Ingresos</div>
               <div style="font-size:18px;font-weight:800;color:var(--success);" id="inf-live-entrada">$0</div>
             </div>
             <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Cargas + Propina</div>
+              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Egresos + Propina</div>
               <div style="font-size:18px;font-weight:800;color:var(--danger);" id="inf-live-cargas">$0</div>
             </div>
             <div style="text-align:center;">
@@ -4105,7 +4105,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </div>
 
         <div class="inf-block">
-          <div class="inf-block-title" style="justify-content:flex-start;gap:12px;">Cargas
+          <div class="inf-block-title" style="justify-content:flex-start;gap:12px;">Egresos
             <button class="fac-btn" onclick="infOpenEgresosSelector()" style="font-size:10px;padding:4px 10px;">📋 Seleccionar desde egresos</button>
           </div>
           <div id="inf-cargas-list"></div>
@@ -4133,7 +4133,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div class="inf-prev-fecha" id="inf-prev-fecha"></div>
           </div>
           <div class="inf-prev-kpis">
-            <div class="inf-prev-kpi"><div class="kl">Banco inicial</div><div class="kv" id="inf-pk-banco">$0</div></div>
+            <div class="inf-prev-kpi"><div class="kl">Banco inicial / cuenta empresa</div><div class="kv" id="inf-pk-banco">$0</div></div>
             <div class="inf-prev-kpi"><div class="kl">Venta de ayer</div><div class="kv" id="inf-pk-venta">$0</div></div>
             <div class="inf-prev-kpi"><div class="kl">Caja</div><div class="kv" id="inf-pk-caja">$0</div></div>
           </div>
@@ -4143,7 +4143,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div class="inf-ps-total ing"><span>Total ingresos</span><span id="inf-prev-tot-ing">$0</span></div>
           </div>
           <div class="inf-prev-sec">
-            <div class="inf-ps-label">Cargas</div>
+            <div class="inf-ps-label">Egresos</div>
             <div id="inf-prev-car-rows"></div>
             <div class="inf-ps-total car"><span>Total cargas</span><span id="inf-prev-tot-car">$0</span></div>
           </div>
@@ -4152,7 +4152,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div id="inf-prev-notas-txt" style="font-size:12px;color:#94a3b8;line-height:1.6;"></div>
           </div>
           <div class="inf-saldo-sec">
-            <div class="inf-saldo-lbl">Saldo Final Banco</div>
+            <div class="inf-saldo-lbl">Saldo final</div>
             <div class="inf-saldo-num" id="inf-prev-saldo">$0</div>
           </div>
         </div>
@@ -4176,7 +4176,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="ci-fecha" id="inf-ci-fecha"></div>
     </div>
     <div class="ci-kpis">
-      <div class="ci-kpi"><div class="ci-kpi-label">Banco inicial</div><div class="ci-kpi-val" id="inf-ci-banco"></div></div>
+      <div class="ci-kpi"><div class="ci-kpi-label">Banco inicial / cuenta empresa</div><div class="ci-kpi-val" id="inf-ci-banco"></div></div>
       <div class="ci-kpi"><div class="ci-kpi-label">Venta de ayer</div><div class="ci-kpi-val" id="inf-ci-venta"></div></div>
       <div class="ci-kpi"><div class="ci-kpi-label">Caja</div><div class="ci-kpi-val" id="inf-ci-caja"></div></div>
     </div>
@@ -4186,7 +4186,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="ci-total ing"><span>Total ingresos</span><span id="inf-ci-tot-ing"></span></div>
     </div>
     <div class="ci-section">
-      <div class="ci-stitle">Cargas</div>
+      <div class="ci-stitle">Egresos</div>
       <div id="inf-ci-car-rows"></div>
       <div class="ci-total car"><span>Total cargas</span><span id="inf-ci-tot-car"></span></div>
     </div>
@@ -4195,7 +4195,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="ci-notas-text" id="inf-ci-notas-txt"></div>
     </div>
     <div class="ci-saldo">
-      <div class="ci-saldo-label">Saldo Final Banco</div>
+      <div class="ci-saldo-label">Saldo final</div>
       <div class="ci-saldo-num" id="inf-ci-saldo"></div>
     </div>
     <div class="ci-footer">Aquí Jaime Restaurante · CEREBRUS</div>
@@ -14462,7 +14462,11 @@ function infOpenEgresosSelector() {
 
 // Real-time balance calculation as user fills the form
 function infCalcLive() {
-  const banco   = parseFloat(document.getElementById('inf-banco')?.value)||0;
+  const bancoRaw = document.getElementById('inf-banco')?.value || '';
+  const bancoManual = parseFloat(bancoRaw);
+  const banco = bancoRaw !== '' && !Number.isNaN(bancoManual)
+    ? bancoManual
+    : (state.cajaEmpresa?.banco || 0);
   const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
   const ingMontos = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseFloat(i.value)||0);
   const carMontos = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseFloat(i.value)||0);
@@ -14606,7 +14610,11 @@ function infFechaLegible(val) {
 
 function infRecolectar() {
   const fecha = document.getElementById('inf-fecha').value;
-  const banco = parseFloat(document.getElementById('inf-banco').value)||0;
+  const bancoRaw = document.getElementById('inf-banco').value || '';
+  const bancoManual = parseFloat(bancoRaw);
+  const banco = bancoRaw !== '' && !Number.isNaN(bancoManual)
+    ? bancoManual
+    : (state.cajaEmpresa?.banco || 0);
   const venta = parseFloat(document.getElementById('inf-venta').value)||0;
   const caja  = parseFloat(document.getElementById('inf-caja').value)||0;
   const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
@@ -14734,7 +14742,7 @@ function infCopiarTexto() {
   const hayCar = d.carNombres.some((n,i)=>n||d.carMontos[i]);
   let t = `*Informe Diario Financiero — Aquí Jaime*\n`;
   t += `📅 ${infFechaLegible(d.fecha)}\n\n`;
-  t += `🏦 Banco inicial:  ${infFmt(d.banco)}\n`;
+  t += `🏦 Banco inicial / cuenta empresa:  ${infFmt(d.banco)}\n`;
   t += `📊 Venta de ayer:  ${infFmt(d.venta)}\n`;
   t += `🗃 Caja:           ${infFmt(d.caja)}\n`;
   if (d.propina) t += `💵 Propina:        ${infFmt(d.propina)}\n`;
@@ -14743,7 +14751,7 @@ function infCopiarTexto() {
   if (!hayIng) t += `Sin ingresos registrados\n`;
   else d.ingNombres.forEach((n,i)=>{ if(!n&&!d.ingMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.ingMontos[i])}\n`; });
   t += `*Total ▸ ${infFmt(d.totalIng)}*\n\n`;
-  t += `🔴 *CARGAS*\n`;
+  t += `🔴 *EGRESOS*\n`;
   if (!hayCar) t += `Sin cargas registradas\n`;
   else d.carNombres.forEach((n,i)=>{ if(!n&&!d.carMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.carMontos[i])}\n`; });
   t += `*Total ▸ ${infFmt(d.totalCar)}*\n\n`;
