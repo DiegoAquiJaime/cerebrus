@@ -3739,6 +3739,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <button class="fac-btn" onclick="invAutoClassifyInventory()">🧭 Auto-clasificar</button>
           <button class="fac-btn" onclick="invRefinePendingClassification()">🎯 Sugerencias precisas</button>
           <button class="fac-btn" onclick="invShowPendingClassification()">📝 Pendientes clasificar</button>
+          <button class="fac-btn" onclick="invUnifyNormalizeInventoryPrompt()" title="Mayúsculas, ortografía, fusionar duplicados y referencias">🔤 Unificar nombres</button>
           <button class="ai-import-btn" onclick="openAiInvImport()" style="font-size:11px;padding:7px 13px;">
             <span class="ai-spark">✦</span> Importar ficha con IA
           </button>
@@ -10065,6 +10066,10 @@ function aiConfirmImport() {
         // Try to match by invProdId first, then by name
         let prod = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
         if (!prod) {
+          const dk = invNameDedupeKey(it.descripcion || '');
+          prod = (state.inventario||[]).find(p => invNameDedupeKey(p.nombre) === dk);
+        }
+        if (!prod) {
           const desc = (it.descripcion||'').toLowerCase();
           prod = (state.inventario||[]).find(p => desc.includes(p.nombre.toLowerCase()) || p.nombre.toLowerCase().includes(desc.split(' ')[0]));
         }
@@ -10096,7 +10101,7 @@ function aiConfirmImport() {
           const provNombre = it._provNombre || 'Proveedor';
           const newProd = {
             id: 'inv_ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
-            nombre: it.descripcion,
+            nombre: invFormatProductNombre(it.descripcion || '') || String(it.descripcion || '').trim() || 'SIN NOMBRE',
             cat,
             unidad: it.unidad||'un',
             stock: 0, stockMin: 0
@@ -10319,15 +10324,15 @@ function applyPdfMasterAdditionsIfNeeded() {
   invEnsureFamiliesState();
   const byKey = {};
   (state.inventario || []).forEach(function(p) {
-    byKey[_invNormNameKey(p.nombre)] = true;
+    byKey[invNameDedupeKey(p.nombre)] = true;
   });
   let added = 0;
   const rows = INV_PDF_MASTER_ADDITIONS || [];
   const t0 = Date.now();
   rows.forEach(function(row, idx) {
-    const key = _invNormNameKey(row.nombre);
+    const key = invNameDedupeKey(row.nombre);
     if (byKey[key]) return;
-    const nombre = row.nombre || 'Sin nombre';
+    const nombre = invFormatProductNombre(row.nombre || 'Sin nombre') || row.nombre || 'Sin nombre';
     const cat = row.cat || 'Sin categoría';
     const unidad = row.unidad || 'unidad';
     const g = invGuessFamilySubfamily(nombre, cat, unidad);
@@ -10399,6 +10404,454 @@ function _invNormUnit(u) {
   if (x === 'k' || x === 'kg') return 'kg';
   return u;
 }
+
+// Frases (ASCII minúsculas, sin tildes) → nombre canónico en MAYÚSCULAS
+var INV_UNIFY_PHRASES = [
+  ['arroz arboreo', 'ARROZ ARBORIO'],
+  ['arroz arborio', 'ARROZ ARBORIO'],
+  ['arroz risotto', 'ARROZ ARBORIO'],
+  ['queso parmesano', 'QUESO PARMESANO'],
+  ['queso parmesan', 'QUESO PARMESANO'],
+  ['aceite de oliva', 'ACEITE DE OLIVA'],
+  ['aceituna negra', 'ACEITUNA NEGRA'],
+  ['aceituna verde', 'ACEITUNA VERDE'],
+  ['harina con polvo', 'HARINA CON POLVO'],
+  ['harina sin polvo', 'HARINA SIN POLVO'],
+  ['limon de mesa', 'LIMÓN DE MESA'],
+  ['limon para jugo', 'LIMÓN PARA JUGO'],
+  ['limon sutil', 'LIMÓN SUTIL'],
+  ['papa camote', 'PAPA CAMOTE'],
+  ['palta firme', 'PALTA FIRME'],
+  ['paltas firmes', 'PALTAS FIRMES'],
+  ['tomate cherry', 'TOMATE CHERRY'],
+  ['tomate cherry rojo', 'TOMATE CHERRY ROJO'],
+  ['tomate cherry amarillo', 'TOMATE CHERRY AMARILLO'],
+  ['salmon filete', 'SALMÓN FILETE'],
+  ['salmon', 'SALMÓN'],
+  ['congrio fresco', 'CONGRIO FRESCO'],
+  ['ostion bolsa', 'OSTIÓN BOLSA'],
+  ['ostion', 'OSTIÓN'],
+  ['camaron ec', 'CAMARÓN EC.'],
+  ['camaron', 'CAMARÓN'],
+  ['aji color', 'AJÍ COLOR'],
+  ['aji', 'AJÍ'],
+  ['aji verde', 'AJÍ VERDE'],
+  ['aji rojo', 'AJÍ ROJO']
+];
+INV_UNIFY_PHRASES.sort(function(a, b) { return b[0].length - a[0].length; });
+
+// Tokens (clave ASCII sin tildes ni signos) → forma en MAYÚSCULAS correcta
+var INV_UNIFY_TOKENS = {
+  amareto: 'AMARETTO', amaretto: 'AMARETTO', amaretti: 'AMARETTO',
+  reineta: 'REINETA', reinetas: 'REINETA',
+  arborio: 'ARBORIO', arboreo: 'ARBORIO', arboreos: 'ARBORIO',
+  azucar: 'AZÚCAR', azucares: 'AZÚCAR',
+  jengibre: 'JENGIBRE',
+  ajo: 'AJO', ajos: 'AJO',
+  perejil: 'PEREJIL',
+  cilantro: 'CILANTRO',
+  betarraga: 'BETARRAGA', betarragas: 'BETARRAGAS',
+  arandano: 'ARÁNDANO', arandanos: 'ARÁNDANOS',
+  brocoli: 'BRÓCOLI', brocolis: 'BRÓCOLI',
+  cebollin: 'CEBOLLÍN', cebollines: 'CEBOLLÍN',
+  pimenton: 'PIMENTÓN',
+  naranja: 'NARANJA', naranjas: 'NARANJAS',
+  manzana: 'MANZANA', manzanas: 'MANZANAS',
+  platano: 'PLÁTANO', platanos: 'PLÁTANOS',
+  pepino: 'PEPINO', pepinos: 'PEPINOS',
+  lechuga: 'LECHUGA',
+  espinaca: 'ESPINACA',
+  frutilla: 'FRUTILLA', frutillas: 'FRUTILLAS',
+  palta: 'PALTA', paltas: 'PALTAS',
+  limon: 'LIMÓN', limones: 'LIMONES',
+  piña: 'PIÑA', pinas: 'PIÑA',
+  uva: 'UVA', uvas: 'UVAS',
+  alcachofa: 'ALCACHOFA',
+  albahaca: 'ALBAHACA', albahacas: 'ALBAHACAS',
+  vainilla: 'VAINILLA',
+  sesamo: 'SÉSAMO',
+  merquen: 'MERQUÉN',
+  choclo: 'CHOCLO',
+  arveja: 'ARVEJA', arvejas: 'ARVEJAS',
+  quinoa: 'QUINOA',
+  parmesano: 'PARMESANO', parmesan: 'PARMESANO',
+  mozzarella: 'MOZZARELLA',
+  emmental: 'EMMENTAL',
+  nescafe: 'NESCAFÉ',
+  ketchup: 'KETCHUP',
+  mayonesa: 'MAYONESA',
+  mostaza: 'MOSTAZA',
+  camaron: 'CAMARÓN',
+  oston: 'OSTIÓN', ostion: 'OSTIÓN',
+  salmon: 'SALMÓN',
+  congrio: 'CONGRIO',
+  trucha: 'TRUCHA',
+  corvina: 'CORVINA',
+  pulpo: 'PULPO',
+  jaiba: 'JAIBA',
+  langostino: 'LANGOSTINO',
+  centolla: 'CENTOLLA',
+  almeja: 'ALMEJA', almejas: 'ALMEJAS',
+  chorito: 'CHORITO', choritos: 'CHORITOS',
+  macha: 'MACHA', machas: 'MACHAS',
+  loco: 'LOCO', locos: 'LOCOS',
+  vino: 'VINO',
+  pisco: 'PISCO',
+  cerveza: 'CERVEZA',
+  harina: 'HARINA',
+  fideo: 'FIDEO', fideos: 'FIDEOS',
+  aceite: 'ACEITE',
+  aceituna: 'ACEITUNA', aceitunas: 'ACEITUNAS',
+  alcaparra: 'ALCAPARRA', alcaparras: 'ALCAPARRAS',
+  almendra: 'ALMENDRA', almendras: 'ALMENDRAS',
+  nuez: 'NUEZ', nueces: 'NUECES',
+  mantequilla: 'MANTEQUILLA',
+  yogurt: 'YOGUR', yoghurt: 'YOGUR',
+  jugo: 'JUGO',
+  crema: 'CREMA',
+  leche: 'LECHE',
+  miel: 'MIEL',
+  manjar: 'MANJAR',
+  chocolate: 'CHOCOLATE',
+  cafe: 'CAFÉ',
+  te: 'TÉ',
+  infusion: 'INFUSIÓN',
+  pan: 'PAN',
+  hielo: 'HIELO',
+  alcohol: 'ALCOHOL',
+  cloro: 'CLORO',
+  detergente: 'DETERGENTE',
+  servilleta: 'SERVILLETA', servilletas: 'SERVILLETAS',
+  kg: 'KG', gr: 'G', g: 'G', lt: 'LT', l: 'L', ml: 'ML', un: 'UN', u: 'U',
+  und: 'UN', unid: 'UN', unidad: 'UNIDAD', porciones: 'PORCIONES', porcion: 'PORCIÓN',
+  bandejas: 'BANDEJAS', bandeja: 'BANDEJA', docena: 'DOCENA', docenas: 'DOCENAS',
+  bolsa: 'BOLSA', bolsas: 'BOLSAS', caja: 'CAJA', cajas: 'CAJAS', saco: 'SACO', sacos: 'SACOS',
+  personal: 'PERSONAL', sachet: 'SACHET', sachets: 'SACHET'
+};
+
+function _invAsciiLower(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function invFormatProductNombre(raw) {
+  var s = String(raw || '').replace(/\r|\n/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  s = s.replace(/([A-Za-zÁÉÍÓÚÑáéíóúñ0-9])\.(?=[A-Za-zÁÉÍÓÚÑáéíóúñ0-9])/g, '$1 ');
+  s = s.replace(/\s+/g, ' ').trim();
+  var asci = _invAsciiLower(s);
+  var pi, ph, from, toCanon;
+  for (pi = 0; pi < INV_UNIFY_PHRASES.length; pi++) {
+    ph = INV_UNIFY_PHRASES[pi];
+    from = ph[0];
+    toCanon = ph[1];
+    if (asci.indexOf(from) >= 0) asci = asci.split(from).join(_invAsciiLower(toCanon));
+  }
+  var parts = asci.split(/\s+/).filter(Boolean);
+  var out = [];
+  var i, tok, tk, mapped;
+  for (i = 0; i < parts.length; i++) {
+    tok = parts[i];
+    if (/^[\d]+([.,][\d]+)?$/.test(tok)) { out.push(tok.replace(',', ',')); continue; }
+    tk = tok.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    if (!tk) { out.push(tok.toLocaleUpperCase('es-CL')); continue; }
+    mapped = INV_UNIFY_TOKENS[tk];
+    if (mapped) out.push(mapped);
+    else out.push(tok.toLocaleUpperCase('es-CL'));
+  }
+  return out.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function invNameDedupeKey(s) {
+  return _invNormNameKey(invFormatProductNombre(s));
+}
+
+function _invLevenshtein(a, b) {
+  var i, j, row, prev, tmp;
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  if (a.length > b.length) { tmp = a; a = b; b = tmp; }
+  row = [];
+  for (j = 0; j <= b.length; j++) row[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    prev = i - 1;
+    row[0] = i;
+    for (j = 1; j <= b.length; j++) {
+      tmp = row[j];
+      row[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, row[j], row[j - 1]);
+      prev = tmp;
+    }
+  }
+  return row[b.length];
+}
+
+function _invTokensCouldBeTypo(ta, tb) {
+  if (ta === tb) return true;
+  if (ta.length < 5 || tb.length < 5) return false;
+  return _invLevenshtein(ta, tb) <= 2;
+}
+
+function _invFuzzySameProductName(catA, keyA, catB, keyB) {
+  if ((catA || '') !== (catB || '')) return false;
+  if (keyA === keyB) return true;
+  var wa = keyA.split(' ').filter(Boolean);
+  var wb = keyB.split(' ').filter(Boolean);
+  if (!wa.length || wa.length !== wb.length) return false;
+  var fuzzySlots = 0;
+  var i;
+  for (i = 0; i < wa.length; i++) {
+    if (wa[i] === wb[i]) continue;
+    if (_invTokensCouldBeTypo(wa[i], wb[i])) { fuzzySlots++; continue; }
+    return false;
+  }
+  return fuzzySlots === 1 && wa.length >= 2;
+}
+
+function invMergePreciosArrays(intoArr, fromArr) {
+  if (!intoArr) intoArr = [];
+  (fromArr || []).forEach(function(x) {
+    if (!x || !(x.prov || x.nombre)) return;
+    var prov = x.prov || x.nombre;
+    var precio = Number(x.precio) || 0;
+    var ix = intoArr.findIndex(function(y) { return (y.prov || y.nombre) === prov; });
+    if (precio <= 0) return;
+    if (ix >= 0) {
+      if (precio < intoArr[ix].precio) intoArr[ix].precio = precio;
+    } else intoArr.push({ prov: prov, precio: precio });
+  });
+  return intoArr;
+}
+
+function invAbsorbProductInto(keep, victim) {
+  keep.stock = (Number(keep.stock) || 0) + (Number(victim.stock) || 0);
+  keep.minimo = Math.max(Number(keep.minimo) || 0, Number(victim.minimo) || 0);
+  if (typeof keep.qty === 'number' || typeof victim.qty === 'number')
+    keep.qty = (Number(keep.qty) || 0) + (Number(victim.qty) || 0);
+  keep.precios = invMergePreciosArrays(keep.precios || [], victim.precios);
+  if (victim.proveedores && victim.proveedores.length)
+    victim.proveedores.forEach(function(z) {
+      invUpsertPrecioProveedor(keep.id, z.nombre || z.prov || '', Number(z.precio) || 0);
+    });
+  if (state.preciosProveedor && state.preciosProveedor[victim.id] && state.preciosProveedor[victim.id].length) {
+    if (!state.preciosProveedor[keep.id]) state.preciosProveedor[keep.id] = [];
+    state.preciosProveedor[victim.id].forEach(function(r) {
+      invUpsertPrecioProveedor(keep.id, r.prov || '', Number(r.precio) || 0, r);
+    });
+    delete state.preciosProveedor[victim.id];
+  }
+  if ((!keep.cat || keep.cat === 'Sin categoría') && victim.cat && victim.cat !== 'Sin categoría') keep.cat = victim.cat;
+  var gu = String(keep.unidad || '').toLowerCase();
+  var vu = String(victim.unidad || '').toLowerCase();
+  if ((!gu || gu === 'unidad' || gu === 'un') && vu && vu !== 'unidad') keep.unidad = victim.unidad;
+  if ((!keep.familia || keep.familia === 'Sin familia') && victim.familia) keep.familia = victim.familia;
+  if ((!keep.subfamilia || keep.subfamilia === 'Sin subfamilia') && victim.subfamilia) keep.subfamilia = victim.subfamilia;
+  if (!keep.prov && victim.prov) keep.prov = victim.prov;
+}
+
+function invDedupeOrdenItems(orden) {
+  if (!orden || !orden.items || !orden.items.length) return;
+  var by = {};
+  orden.items.forEach(function(it) {
+    var id = it.prodId;
+    if (!by[id]) by[id] = { prodId: id, qty: 0, precio: 0, prov: it.prov || '', recibido: !!it.recibido, qtyRecibida: Number(it.qtyRecibida) || 0 };
+    by[id].qty += Number(it.qty) || 0;
+    if (it.precio && (!by[id].precio || it.precio < by[id].precio)) by[id].precio = it.precio;
+    if (it.prov && !by[id].prov) by[id].prov = it.prov;
+    if (it.recibido) by[id].recibido = true;
+    if (it.qtyRecibida) by[id].qtyRecibida = Math.max(by[id].qtyRecibida, Number(it.qtyRecibida) || 0);
+  });
+  orden.items = Object.keys(by).map(function(k) { return by[k]; });
+}
+
+function invRemapProdIdEverywhere(oldId, newId, newNombre) {
+  if (!oldId || !newId || oldId === newId) return;
+  var sem, o, it, h, facArr, fi, fac, item;
+  (state.movimientos || []).forEach(function(m) {
+    if (m.prodId === oldId) {
+      m.prodId = newId;
+      if (newNombre) m.producto = newNombre;
+    }
+  });
+  sem = state.semanaActiva;
+  if (sem) {
+    if (sem.stockInicial && sem.stockInicial[oldId] !== undefined) {
+      sem.stockInicial[newId] = (Number(sem.stockInicial[newId]) || 0) + (Number(sem.stockInicial[oldId]) || 0);
+      delete sem.stockInicial[oldId];
+    }
+    if (sem.stockFinal && sem.stockFinal[oldId] !== undefined) {
+      sem.stockFinal[newId] = (Number(sem.stockFinal[newId]) || 0) + (Number(sem.stockFinal[oldId]) || 0);
+      delete sem.stockFinal[oldId];
+    }
+    (sem.ordenes || []).forEach(function(ord) {
+      (ord.items || []).forEach(function(x) { if (x.prodId === oldId) x.prodId = newId; });
+      invDedupeOrdenItems(ord);
+    });
+  }
+  (state.semanasHistorial || []).forEach(function(semH) {
+    if (semH.stockInicial && semH.stockInicial[oldId] !== undefined) {
+      semH.stockInicial[newId] = (Number(semH.stockInicial[newId]) || 0) + (Number(semH.stockInicial[oldId]) || 0);
+      delete semH.stockInicial[oldId];
+    }
+    if (semH.stockFinal && semH.stockFinal[oldId] !== undefined) {
+      semH.stockFinal[newId] = (Number(semH.stockFinal[newId]) || 0) + (Number(semH.stockFinal[oldId]) || 0);
+      delete semH.stockFinal[oldId];
+    }
+    if (semH.consumo && semH.consumo[oldId] !== undefined) {
+      semH.consumo[newId] = (Number(semH.consumo[newId]) || 0) + (Number(semH.consumo[oldId]) || 0);
+      delete semH.consumo[oldId];
+    }
+    (semH.ordenes || []).forEach(function(ord) {
+      (ord.items || []).forEach(function(x) { if (x.prodId === oldId) x.prodId = newId; });
+      invDedupeOrdenItems(ord);
+    });
+  });
+  if (state.facturas) {
+    Object.keys(state.facturas).forEach(function(pk) {
+      facArr = state.facturas[pk];
+      if (!Array.isArray(facArr)) return;
+      facArr.forEach(function(fac) {
+        (fac.items || []).forEach(function(item) {
+          if (item.invProdId === oldId) item.invProdId = newId;
+        });
+      });
+    });
+  }
+}
+
+function invUnifyNormalizeInventory(opts) {
+  invInit();
+  opts = opts || {};
+  var fuzzy = !!opts.fuzzy;
+  var renamed = 0, merged = 0, fuzzyMerged = 0;
+  var prods = state.inventario || [];
+  var i, j, p, k, groups, canon, g, keep, victim, keys, rep, uf, r;
+
+  for (i = 0; i < prods.length; i++) {
+    p = prods[i];
+    canon = invFormatProductNombre(p.nombre);
+    if (canon && canon !== p.nombre) { p.nombre = canon; renamed++; }
+  }
+
+  groups = {};
+  prods.forEach(function(pr) {
+    k = invNameDedupeKey(pr.nombre);
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(pr);
+  });
+  Object.keys(groups).forEach(function(gk) {
+    g = groups[gk];
+    if (g.length < 2) return;
+    g.sort(function(a, b) {
+      var pa = _getPreciosUnified(a).filter(function(x) { return x.precio > 0; }).length;
+      var pb = _getPreciosUnified(b).filter(function(x) { return x.precio > 0; }).length;
+      if (pb !== pa) return pb - pa;
+      return (Number(b.stock) || 0) - (Number(a.stock) || 0);
+    });
+    keep = g[0];
+    for (j = 1; j < g.length; j++) {
+      victim = g[j];
+      invAbsorbProductInto(keep, victim);
+      invRemapProdIdEverywhere(victim.id, keep.id, keep.nombre);
+      state.inventario = state.inventario.filter(function(x) { return x.id !== victim.id; });
+      merged++;
+    }
+  });
+
+  if (fuzzy) {
+    prods = state.inventario || [];
+    keys = prods.map(function(x) { return invNameDedupeKey(x.nombre); });
+    uf = [];
+    for (i = 0; i < prods.length; i++) uf[i] = i;
+    function findU(x) {
+      if (uf[x] !== x) uf[x] = findU(uf[x]);
+      return uf[x];
+    }
+    function unionU(x, y) {
+      var rx = findU(x), ry = findU(y);
+      if (rx !== ry) uf[ry] = rx;
+    }
+    for (i = 0; i < prods.length; i++) {
+      for (j = i + 1; j < prods.length; j++) {
+        if (_invFuzzySameProductName(prods[i].cat, keys[i], prods[j].cat, keys[j])) unionU(i, j);
+      }
+    }
+    rep = {};
+    for (i = 0; i < prods.length; i++) {
+      r = findU(i);
+      if (!rep[r]) rep[r] = [];
+      rep[r].push(i);
+    }
+    var snap = prods.slice();
+    Object.keys(rep).forEach(function(root) {
+      var idxs = rep[root];
+      if (idxs.length < 2) return;
+      idxs.sort(function(ai, bi) {
+        var A = snap[ai], B = snap[bi];
+        var pa = _getPreciosUnified(A).filter(function(x) { return x.precio > 0; }).length;
+        var pb = _getPreciosUnified(B).filter(function(x) { return x.precio > 0; }).length;
+        if (pb !== pa) return pb - pa;
+        if ((B.nombre || '').length !== (A.nombre || '').length) return (B.nombre || '').length - (A.nombre || '').length;
+        return ai - bi;
+      });
+      keep = snap[idxs[0]];
+      for (j = 1; j < idxs.length; j++) {
+        victim = snap[idxs[j]];
+        if (victim.id === keep.id) continue;
+        invAbsorbProductInto(keep, victim);
+        invRemapProdIdEverywhere(victim.id, keep.id, keep.nombre);
+        state.inventario = state.inventario.filter(function(x) { return x.id !== victim.id; });
+        fuzzyMerged++;
+      }
+    });
+  }
+
+  return { renamed: renamed, merged: merged, fuzzyMerged: fuzzyMerged };
+}
+
+function invNubeReplicaHint() {
+  return (typeof IS_CLOUD !== 'undefined' && IS_CLOUD)
+    ? ' Para que todos los equipos reciban este inventario, guarda en la nube (☁).'
+    : '';
+}
+
+function invUnifyNormalizeInventoryPrompt() {
+  invInit();
+  if (!(state.inventario || []).length) { notify('⚠ No hay productos'); return; }
+  var msg = 'Se aplicará:\n• Mayúsculas y correcciones de ortografía habituales\n• Fusión de duplicados (mismo nombre, ignorando tildes)\n\n¿También fusionar parejas del MISMO RUBRO donde solo una palabra difiere por un posible typo (ej. ARROZ ARBOREO vs ARROZ ARBORIO)?\n\nAceptar = sí fuzzy · Cancelar = solo exactos';
+  var useFuzzy = confirm(msg);
+  if (!confirm('¿Continuar? Se reasignarán movimientos, pedidos e historial a un solo producto por grupo.')) return;
+  pushUndo();
+  var r = invUnifyNormalizeInventory({ fuzzy: useFuzzy });
+  markUnsaved();
+  invRender();
+  notify('🔤 Nombres: ' + r.renamed + ' ajustados · Fusionados: ' + r.merged + (useFuzzy ? ' · Fuzzy: ' + r.fuzzyMerged : '') + invNubeReplicaHint());
+}
+
+// Sube la versión para forzar otra pasada en todos los clientes; el estado compartido en equipo exige guardar en nube tras unificar.
+const INV_AUTO_UNIFY_VER = '2026-03-31_auto_v2';
+
+function invApplyAutoUnifyIfNeeded() {
+  try {
+    if (state.invAutoUnifyVer === INV_AUTO_UNIFY_VER) return;
+    invInit();
+    if (!(state.inventario || []).length) {
+      state.invAutoUnifyVer = INV_AUTO_UNIFY_VER;
+      return;
+    }
+    var r = invUnifyNormalizeInventory({ fuzzy: true });
+    state.invAutoUnifyVer = INV_AUTO_UNIFY_VER;
+    if (r.renamed > 0 || r.merged > 0 || r.fuzzyMerged > 0) {
+      markUnsaved();
+      if (typeof notify === 'function') {
+        notify('🔤 Inventario unificado automáticamente: ' + r.renamed + ' nombres · ' + r.merged + ' duplicados · ' + r.fuzzyMerged + ' parejas similares (misma categoría).' + invNubeReplicaHint());
+      }
+    }
+    if (typeof invRender === 'function' && document.getElementById('inventario') && document.getElementById('inventario').classList.contains('active')) invRender();
+  } catch (e) {
+    console.error('invApplyAutoUnifyIfNeeded', e);
+  }
+}
+
 async function applyAbarrotesBienExtraIfNeeded() {
   if (state.inventorySnapshotId === INV_SNAPSHOT_ID_20260331_V2) return;
   let rows = [];
@@ -10413,15 +10866,15 @@ async function applyAbarrotesBienExtraIfNeeded() {
 
   const byName = {};
   (state.inventario || []).forEach(function(p) {
-    byName[_invNormNameKey(p.nombre)] = p;
+    byName[invNameDedupeKey(p.nombre)] = p;
   });
 
   let added = 0;
   let updated = 0;
   rows.forEach(function(r, idx) {
-    const nombre = String(r && r.nombre || '').trim();
+    const nombre = invFormatProductNombre(String(r && r.nombre || '').trim()) || String(r && r.nombre || '').trim();
     if (!nombre) return;
-    const key = _invNormNameKey(nombre);
+    const key = invNameDedupeKey(nombre);
     const stock = Number(r && r.stock) || 0;
     const minimo = Number(r && r.minimo) || 0;
     const unidad = _invNormUnit(r && r.unidad);
@@ -10492,7 +10945,9 @@ function _postLoadSetup() {
   if (!state.vsExtraData)               state.vsExtraData               = {};
   applyInventorySnapshot20260331IfNeeded();
   applyPdfMasterAdditionsIfNeeded();
-  setTimeout(function(){ applyAbarrotesBienExtraIfNeeded(); }, 300);
+  setTimeout(function() {
+    applyAbarrotesBienExtraIfNeeded().finally(function() { invApplyAutoUnifyIfNeeded(); });
+  }, 300);
   invEnsureFamiliesState();
   (state.inventario || []).forEach(function(p) {
     if (!p.familia) p.familia = 'Sin familia';
@@ -11850,7 +12305,7 @@ function invCrearProveedorInline() {
 
 function invSave() {
   invInit();
-  const nombre = (document.getElementById('inv-f-nombre').value||'').trim();
+  const nombre = invFormatProductNombre((document.getElementById('inv-f-nombre').value||'').trim());
   if (!nombre) { notify('⚠ Ingresa el nombre del producto'); return; }
   pushUndo();
   invEnsureFamiliesState();
@@ -13289,7 +13744,7 @@ function invEditProd(id) {
 
   // Save
   document.getElementById('inv-edit-save').onclick = () => {
-    const nombre = (document.getElementById('inv-ep-nombre').value||'').trim();
+    const nombre = invFormatProductNombre((document.getElementById('inv-ep-nombre').value||'').trim());
     if (!nombre) { notify('⚠ El nombre no puede estar vacío'); return; }
     pushUndo();
     p.nombre = nombre;
@@ -13421,6 +13876,7 @@ function invBuildFacturaCostCtx_(fac, items) {
 function invFacImportOneLine_(it, provNombre, facCtx) {
   var desc = String(it.descripcion || '').trim();
   if (!desc) return { created: false, price: false };
+  var descCanon = invFormatProductNombre(desc);
   var qty = Math.max(0, invNum_(it.cantidad));
   var puBase = Math.max(0, invNum_(it.precioUnit));
   var stBase = Math.max(0, invNum_(it.subtotal));
@@ -13432,6 +13888,7 @@ function invFacImportOneLine_(it, provNombre, facCtx) {
   else if (puBase > 0) precio = Math.round(puBase * factor);
   var prod = it.invProdId ? state.inventario.find(function(p) { return p.id === it.invProdId; }) : null;
   var dlow = desc.toLowerCase();
+  if (!prod) prod = state.inventario.find(function(p) { return invNameDedupeKey(p.nombre) === invNameDedupeKey(desc); });
   if (!prod) prod = state.inventario.find(function(p) { return (p.nombre || '').toLowerCase() === dlow; });
   if (!prod) {
     prod = state.inventario.find(function(p) {
@@ -13442,7 +13899,7 @@ function invFacImportOneLine_(it, provNombre, facCtx) {
   if (!prod) {
     prod = {
       id: 'inv_fac_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
-      nombre: desc,
+      nombre: descCanon || desc,
       cat: invInferCatFromDesc_(desc),
       unidad: (it.unidad && String(it.unidad).slice(0, 12)) || 'un',
       stock: 0, minimo: 0, qty: 0,
@@ -13846,8 +14303,8 @@ function aiInvConfirm() {
     const stock = isNaN(stockNum) ? 0 : stockNum;
     // Try to match existing product
     const existing = state.inventario.find(p =>
-      p.nombre.toLowerCase() === targetName.toLowerCase() ||
-      p.nombre.toLowerCase() === (r.nombre||'').toLowerCase()
+      invNameDedupeKey(p.nombre) === invNameDedupeKey(targetName) ||
+      invNameDedupeKey(p.nombre) === invNameDedupeKey(r.nombre || '')
     );
 
     if (existing) {
@@ -13863,7 +14320,7 @@ function aiInvConfirm() {
       const newId = 'inv_ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
       state.inventario.push({
         id:     newId,
-        nombre: r.nombre||'Sin nombre',
+        nombre: invFormatProductNombre(r.nombre || 'Sin nombre'),
         cat:    r.categoria || 'Importado',
         unidad: r.unidad||'unidad',
         stock:  stock,
