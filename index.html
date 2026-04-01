@@ -704,9 +704,13 @@ td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{co
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 /* Topbar cloud elements */
 .mode-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.5px;}
-.mode-cloud{background:rgba(16,185,129,.12);color:var(--success);}
+/* Nube = modo de datos (no implica “todo OK” hasta que sync-status sea ✓) */
+.mode-cloud{background:rgba(100,116,139,.14);color:#64748b;}
+.mode-cloud.mode-cloud-state-wait{background:rgba(245,158,11,.14);color:#b45309;}
+.mode-cloud.mode-cloud-state-ok{background:rgba(16,185,129,.12);color:var(--success);}
+.mode-cloud.mode-cloud-state-err{background:rgba(239,68,68,.12);color:var(--danger);}
 .mode-local{background:#f1f5f9;color:#64748b;}
-.sync-status{font-size:10px;color:#94a3b8;font-weight:600;}
+.sync-status{font-size:10px;color:#94a3b8;font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sync-ok{color:var(--success);}
 .sync-err{color:var(--danger);}
 .user-chip{font-size:11px;font-weight:700;color:#64748b;padding:3px 8px;background:#f1f5f9;border-radius:20px;cursor:pointer;}
@@ -2392,8 +2396,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     <h2 id="tab-title">Dashboard Resumen</h2>
     <div id="online-strip" class="online-strip" style="margin-right:6px;"></div>
     <div class="btn-group">
-      <span class="sync-status" id="sync-status"></span>
-      <span class="mode-badge mode-local" id="mode-badge">💾 LOCAL</span>
+      <span class="sync-status" id="sync-status" title="Sincronización con Google (carga, guardado, errores)"></span>
+      <span class="mode-badge mode-local" id="mode-badge" title="Modo de almacenamiento: nube o solo este equipo">💾 LOCAL</span>
       <span class="user-chip" id="user-chip" onclick="openLogPanel()" title="Ver registro de actividad">👤 —</span>
       <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio (Ctrl+Z)">↩ Deshacer</button>
       <button class="btn" onclick="showAvisosManual()" title="Mostrar avisos del día">🔔 Avisos</button>
@@ -10294,7 +10298,8 @@ function _finishLogin() {
   }
   if (IS_CLOUD) {
     document.getElementById('mode-badge').textContent = '☁ NUBE';
-    document.getElementById('mode-badge').className   = 'mode-badge mode-cloud';
+    document.getElementById('mode-badge').className   = 'mode-badge mode-cloud mode-cloud-state-wait';
+    document.getElementById('mode-badge').title       = 'Modo nube: datos en Google. El texto a la izquierda indica si la conexión/sincronización va bien.';
     loadFromCloud(); startHeartbeat();
   } else {
     document.getElementById('mode-badge').textContent = '💾 LOCAL';
@@ -16195,7 +16200,7 @@ async function wxFetch() {
     }
   } catch(e) {
     const el = document.getElementById('wx-cond');
-    if (el) el.textContent = 'Sin conexión';
+    if (el) el.textContent = 'Clima no disponible';
   }
 }
 function wxCondText(code) {
@@ -18439,8 +18444,11 @@ function startAutoSave() {
 // ── CLOUD LOAD ──
 async function loadFromCloud() {
   setSyncStatus('⏳ Cargando…', '');
+  const ctrl = new AbortController();
+  const abortT = setTimeout(() => ctrl.abort(), 45000);
   try {
-    const res  = await fetch(API_URL + '?action=getState&_=' + Date.now());
+    const res  = await fetch(API_URL + '?action=getState&_=' + Date.now(), { signal: ctrl.signal });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const json = await res.json();
     if (json.ok && json.data) {
       // Handle chunked data: if data comes as string, parse it
@@ -18479,8 +18487,11 @@ async function loadFromCloud() {
     }
   } catch(e) {
     if (!loadLocalRaw()) state = makeDefaultState();
-    setSyncStatus('⚠ Sin conexión', 'err');
-    notify('⚠ Sin conexión — usando datos locales');
+    const isAbort = e && (e.name === 'AbortError' || String(e.message||'').indexOf('aborted') >= 0);
+    setSyncStatus(isAbort ? '⚠ Tiempo agotado (nube)' : '⚠ Sin conexión', 'err');
+    notify(isAbort ? '⚠ La nube tardó demasiado en responder — usando datos locales si hay.' : '⚠ Sin conexión — usando datos locales');
+  } finally {
+    clearTimeout(abortT);
   }
   _postLoadSetup();
 }
@@ -18922,6 +18933,12 @@ function setSyncStatus(msg, cls) {
   if (!el) return;
   el.textContent = msg;
   el.className = 'sync-status' + (cls ? ' sync-'+cls : '');
+  const badge = document.getElementById('mode-badge');
+  if (!badge || !badge.classList.contains('mode-cloud')) return;
+  badge.classList.remove('mode-cloud-state-ok', 'mode-cloud-state-err', 'mode-cloud-state-wait');
+  if (cls === 'ok') badge.classList.add('mode-cloud-state-ok');
+  else if (cls === 'err') badge.classList.add('mode-cloud-state-err');
+  else badge.classList.add('mode-cloud-state-wait');
 }
 
 // ── SAVE / LOAD ──
