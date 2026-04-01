@@ -4145,7 +4145,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div class="inf-prev-sec">
             <div class="inf-ps-label">Egresos</div>
             <div id="inf-prev-car-rows"></div>
-            <div class="inf-ps-total car"><span>Total cargas</span><span id="inf-prev-tot-car">$0</span></div>
+            <div class="inf-ps-total car"><span>Total egresos</span><span id="inf-prev-tot-car">$0</span></div>
           </div>
           <div id="inf-prev-notas-sec" class="inf-prev-sec" style="display:none;">
             <div class="inf-ps-label">Información adicional</div>
@@ -4188,7 +4188,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     <div class="ci-section">
       <div class="ci-stitle">Egresos</div>
       <div id="inf-ci-car-rows"></div>
-      <div class="ci-total car"><span>Total cargas</span><span id="inf-ci-tot-car"></span></div>
+      <div class="ci-total car"><span>Total egresos</span><span id="inf-ci-tot-car"></span></div>
     </div>
     <div class="ci-notas" id="inf-ci-notas-sec" style="display:none;">
       <div class="ci-notas-label">Notas</div>
@@ -13065,7 +13065,9 @@ function archRenderStats() {
   const rawSize = archGetStateSize();
   let compSize = rawSize;
   try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch(e){}
-  const limit  = 250000; // 6 chunks × 42KB
+  // Realistic ceiling for browser localStorage (safe headroom under ~5MB typical quota).
+  // Previous 250KB value was a legacy sync threshold and produced misleading "98%" alerts.
+  const limit  = 4500000;
   const pct    = Math.min(100, Math.round(compSize / limit * 100));
 
   // KPIs
@@ -13103,7 +13105,7 @@ function archRenderStats() {
   const note  = document.getElementById('arch-size-note');
   if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
   if (label) label.textContent = `${(compSize/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%) — comprimido de ${(rawSize/1024).toFixed(1)} KB`;
-  if (note && pct > 70) note.textContent = '⚠ Se recomienda archivar datos antiguos para evitar problemas de sincronización';
+  if (note && pct > 70) note.textContent = '⚠ Uso alto de almacenamiento local: considera respaldo externo + particionar módulos.';
 
   // Update counts
   archUpdateCounts();
@@ -13310,7 +13312,8 @@ function archCheckSize() {
   try {
     const compressed = compressStateForSave(state);
     const size = JSON.stringify(compressed).length;
-    const chunkLimit = 250000; // 6 chunks × 42KB
+    // Keep warning aligned with realistic localStorage headroom.
+    const chunkLimit = 4500000;
     const pct = Math.round(size / chunkLimit * 100);
     if (pct > 85) {
       notify(`⚠ Almacenamiento al ${pct}% (${(size/1024).toFixed(1)}KB) — archiva datos antiguos en ⚙ Configuración`);
@@ -14645,8 +14648,19 @@ function infCiRowsHTML(nombres, montos) {
   ).join('');
 }
 
+function infPropinaRowHTML(propina) {
+  if (!propina) return '';
+  return `<div class="inf-ps-row"><span class="inf-ps-name">Propina del día</span><span class="inf-ps-amt">${infFmt(propina)}</span></div>`;
+}
+
+function infCiPropinaRowHTML(propina) {
+  if (!propina) return '';
+  return `<div class="ci-row"><span class="ci-row-name">Propina del día</span><span class="ci-row-amt">${infFmt(propina)}</span></div>`;
+}
+
 function infGenerar() {
   const d = infRecolectar();
+  const totalEgresos = d.totalCar + d.propina;
   _infData = d;
   const fechaStr = infFechaLegible(d.fecha);
 
@@ -14656,9 +14670,9 @@ function infGenerar() {
   set('inf-pk-venta',      infFmt(d.venta));
   set('inf-pk-caja',       infFmt(d.caja));
   document.getElementById('inf-prev-ing-rows').innerHTML = infRowsHTML(d.ingNombres, d.ingMontos);
-  document.getElementById('inf-prev-car-rows').innerHTML = infRowsHTML(d.carNombres, d.carMontos);
+  document.getElementById('inf-prev-car-rows').innerHTML = infRowsHTML(d.carNombres, d.carMontos) + infPropinaRowHTML(d.propina);
   set('inf-prev-tot-ing', infFmt(d.totalIng));
-  set('inf-prev-tot-car', infFmt(d.totalCar));
+  set('inf-prev-tot-car', infFmt(totalEgresos));
   if (d.notas) {
     document.getElementById('inf-prev-notas-txt').textContent = d.notas;
     document.getElementById('inf-prev-notas-sec').style.display = '';
@@ -14675,9 +14689,9 @@ function infGenerar() {
   set('inf-ci-venta',    infFmt(d.venta));
   set('inf-ci-caja',     infFmt(d.caja));
   document.getElementById('inf-ci-ing-rows').innerHTML = infCiRowsHTML(d.ingNombres, d.ingMontos);
-  document.getElementById('inf-ci-car-rows').innerHTML = infCiRowsHTML(d.carNombres, d.carMontos);
+  document.getElementById('inf-ci-car-rows').innerHTML = infCiRowsHTML(d.carNombres, d.carMontos) + infCiPropinaRowHTML(d.propina);
   set('inf-ci-tot-ing', infFmt(d.totalIng));
-  set('inf-ci-tot-car', infFmt(d.totalCar));
+  set('inf-ci-tot-car', infFmt(totalEgresos));
   if (d.notas) {
     document.getElementById('inf-ci-notas-txt').textContent = d.notas;
     document.getElementById('inf-ci-notas-sec').style.display = '';
@@ -14739,13 +14753,13 @@ function infDescargar(canvas) {
 function infCopiarTexto() {
   const d = _infData; if (!d) return;
   const hayIng = d.ingNombres.some((n,i)=>n||d.ingMontos[i]);
-  const hayCar = d.carNombres.some((n,i)=>n||d.carMontos[i]);
+  const hayCar = d.carNombres.some((n,i)=>n||d.carMontos[i]) || !!d.propina;
+  const totalEgresos = d.totalCar + (d.propina||0);
   let t = `*Informe Diario Financiero — Aquí Jaime*\n`;
   t += `📅 ${infFechaLegible(d.fecha)}\n\n`;
   t += `🏦 Banco inicial / cuenta empresa:  ${infFmt(d.banco)}\n`;
   t += `📊 Venta de ayer:  ${infFmt(d.venta)}\n`;
   t += `🗃 Caja:           ${infFmt(d.caja)}\n`;
-  if (d.propina) t += `💵 Propina:        ${infFmt(d.propina)}\n`;
   t += `\n`;
   t += `💚 *INGRESOS*\n`;
   if (!hayIng) t += `Sin ingresos registrados\n`;
@@ -14754,7 +14768,8 @@ function infCopiarTexto() {
   t += `🔴 *EGRESOS*\n`;
   if (!hayCar) t += `Sin cargas registradas\n`;
   else d.carNombres.forEach((n,i)=>{ if(!n&&!d.carMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.carMontos[i])}\n`; });
-  t += `*Total ▸ ${infFmt(d.totalCar)}*\n\n`;
+  if (d.propina) t += `├ Propina del día: ${infFmt(d.propina)}\n`;
+  t += `*Total ▸ ${infFmt(totalEgresos)}*\n\n`;
   t += `━━━━━━━━━━━━━━━━━\n`;
   t += (d.saldo<0?`⚠️`:`✅`) + ` *SALDO FINAL: ${infFmt(d.saldo)}*\n`;
   t += `━━━━━━━━━━━━━━━━━`;
@@ -18490,7 +18505,7 @@ function _intersectSets(a, b) {
 }
 
 async function _fetchCloudStateRaw() {
-  const res = await fetch(API_URL + '?action=load&_=' + Date.now());
+  const res = await fetch(API_URL + '?action=getState&_=' + Date.now());
   const json = await res.json();
   if (!json.ok || !json.data) throw new Error('No se pudo leer estado nube actual');
   let parsed = json.data;
@@ -18530,6 +18545,33 @@ async function _prepareConcurrentSafeState() {
   return {ok:true, stateToSave: merged, merged:true, by:vj.lastUser||'otro usuario', changed:[...localChanged]};
 }
 
+// ── NUBE: guardado por módulos (hojas Part_*) — debe coincidir con PARTITION_PART_IDS en Apps Script
+function splitStateForCloudParts(st) {
+  const PART_DEF = [
+    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario'] },
+    { id: 'pFac', keys: ['facturas', 'movimientos'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'mercaderiaSemanasSimple'] },
+    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
+  ];
+  const stripped = JSON.parse(JSON.stringify(st));
+  const parts = {};
+  PART_DEF.forEach(def => {
+    const obj = {};
+    def.keys.forEach(k => {
+      if (stripped[k] !== undefined) {
+        obj[k] = stripped[k];
+        delete stripped[k];
+      }
+    });
+    parts[def.id] = JSON.stringify(obj);
+  });
+  stripped._partitioned = true;
+  stripped._partitionV = 1;
+  stripped._partitionIds = PART_DEF.map(d => d.id);
+  parts.main = JSON.stringify({ state: stripped, nid: _nid });
+  return parts;
+}
+
 // ── CLOUD SAVE ──
 async function saveToCloud(description, silent) {
   setSyncStatus('⏳ Guardando…', '');
@@ -18555,6 +18597,34 @@ async function saveToCloud(description, silent) {
     }
 
     const stateToSave = compressStateForSave(prep.stateToSave);
+
+    try {
+      const parts = splitStateForCloudParts(stateToSave);
+      const resPart = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'saveParted',
+          user: currentUser,
+          parts: parts,
+          description: (description || 'Guardó cambios') + ' (partido)'
+        })
+      });
+      const jsonPart = await resPart.json();
+      if (jsonPart.ok) {
+        cloudVersion = jsonPart.version || cloudVersion;
+        _cloudBaseVersion = cloudVersion;
+        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
+        setSyncStatus('✓ Guardado en nube (partido)', 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify('☁ Guardado por ' + currentUser + ' (partido)');
+        return;
+      }
+      const errPart = String(jsonPart.error || '');
+      if (errPart.indexOf('no reconocida') === -1 && errPart.indexOf('No reconocida') === -1) throw new Error(jsonPart.error || 'saveParted');
+    } catch (e) {
+      console.warn('[CEREBRUS] Guardado partido no disponible o falló, usando modo clásico:', e);
+    }
+
     const dataStr     = JSON.stringify({state:stateToSave, nid:_nid});
     const CHUNK_SIZE  = 42000; // safe limit per cell
 
