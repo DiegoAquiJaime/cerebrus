@@ -18945,10 +18945,66 @@ function setSyncStatus(msg, cls) {
   else badge.classList.add('mode-cloud-state-wait');
 }
 
+function _todayKeyYMD() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function _hasSacData(st) {
+  if (!st || typeof st !== 'object') return false;
+  const hasVs = !!(st.vsData && typeof st.vsData === 'object' && Object.keys(st.vsData).length);
+  const hasCar = !!(st.sacCargas && typeof st.sacCargas === 'object' && Object.keys(st.sacCargas).length);
+  const hasIng = !!(st.sacIngresos && typeof st.sacIngresos === 'object' && Object.keys(st.sacIngresos).length);
+  return hasVs || hasCar || hasIng;
+}
+
+function autoBackupJsonFirstSaveOfDay() {
+  try {
+    const today = _todayKeyYMD();
+    const doneKey = 'cerebrus_json_backup_day';
+    if (localStorage.getItem(doneKey) === today) return;
+    const stateToSave = compressStateForSave(state);
+    const payload = {
+      ts: new Date().toISOString(),
+      user: (typeof currentUser !== 'undefined' ? currentUser : '') || 'desconocido',
+      source: 'auto-first-save-of-day',
+      data: { state: stateToSave, nid: _nid }
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Cerebrus_AutoRespaldo_' + today + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    localStorage.setItem(doneKey, today);
+    notify('🧩 Auto-respaldo JSON del día generado');
+  } catch (e) {
+    console.warn('[CEREBRUS] auto backup json error:', e);
+  }
+}
+
 // ── SAVE / LOAD ──
 function saveState(description, silent) {
-  if (IS_CLOUD && currentUser) { saveToCloud(description, silent); }
-  else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }
+  if (!silent) autoBackupJsonFirstSaveOfDay();
+  if (IS_CLOUD && currentUser) {
+    const sacNow = _hasSacData(state);
+    const sacBase = _hasSacData(_cloudBaseState);
+    if (!sacNow && sacBase) {
+      const ok = confirm(
+        '⚠ Riesgo de pérdida en Semana Actual\n\n' +
+        'Esta sesión tiene SAC vacío, pero tu base de nube sí tenía datos.\n' +
+        'Si guardas ahora, podrías sobrescribir Semana Actual.\n\n' +
+        'Aceptar = guardar de todas formas\n' +
+        'Cancelar = no guardar'
+      );
+      if (!ok) {
+        if (!silent) notify('🛑 Guardado cancelado para proteger Semana Actual');
+        return;
+      }
+    }
+    saveToCloud(description, silent);
+  } else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }
   // Check if state is getting large
   if (!silent && typeof archCheckSize === 'function') archCheckSize();
 }
