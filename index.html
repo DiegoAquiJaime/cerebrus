@@ -2408,6 +2408,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <button class="btn btn-export" onclick="toggleExportMenu()">📤 Exportar ▾</button>
         <div class="export-menu-list" id="exportList">
           <div class="export-menu-item" onclick="exportHTML()"><span class="emi">🌐</span> Archivo HTML <span style="font-size:10px;color:#9aacb8;margin-left:auto;">portátil</span></div>
+          <div class="export-menu-item" onclick="exportJSON()"><span class="emi">🧩</span> Respaldo JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">estado completo</span></div>
           <hr class="export-sep-line">
           <div class="export-menu-item" onclick="exportExcel()"><span class="emi">📊</span> Excel (.xlsx)</div>
           <div class="export-menu-item" onclick="exportPDF()"><span class="emi">🖨</span> PDF / Imprimir</div>
@@ -19286,6 +19287,7 @@ function cerebrusParseJsonAny(rawText, contextLabel) {
 //  EXPORT AS SELF-CONTAINED HTML
 // ============================================================
 function exportHTML() {
+  document.getElementById('exportList').classList.remove('open');
   const payload = JSON.stringify({state, nid:_nid});
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
   // Inject current state so the file works standalone (no localStorage needed)
@@ -19303,6 +19305,29 @@ function exportHTML() {
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
   notify('✓ Archivo HTML descargado');
+}
+
+function exportJSON() {
+  document.getElementById('exportList').classList.remove('open');
+  try {
+    const stateToSave = compressStateForSave(state);
+    const payload = {
+      ts: new Date().toISOString(),
+      user: (typeof currentUser !== 'undefined' ? currentUser : '') || 'desconocido',
+      data: { state: stateToSave, nid: _nid }
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Cerebrus_Respaldo_' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    notify('✓ Respaldo JSON descargado');
+  } catch (e) {
+    notify('⚠ No se pudo generar respaldo JSON: ' + (e.message || e));
+  }
 }
 
 // ============================================================
