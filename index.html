@@ -18568,13 +18568,16 @@ function splitStateForCloudParts(st) {
   const parts = {};
   PART_DEF.forEach(def => {
     const obj = {};
+    let hasAny = false;
     def.keys.forEach(k => {
       if (stripped[k] !== undefined) {
         obj[k] = stripped[k];
+        hasAny = true;
         delete stripped[k];
       }
     });
-    parts[def.id] = JSON.stringify(obj);
+    // If this client doesn't carry that module, don't overwrite remote part.
+    if (hasAny) parts[def.id] = JSON.stringify(obj);
   });
   stripped._partitioned = true;
   stripped._partitionV = 1;
