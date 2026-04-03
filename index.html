@@ -14383,14 +14383,14 @@ function infOpenEgresosSelector() {
   const k = typeof sacDataKey === 'function' ? sacDataKey() : '1';
   const periodLbl = (typeof sacPeriodLabel === 'function') ? sacPeriodLabel() : k;
   const cargas = (state.sacCargas && state.sacCargas[k]) ? state.sacCargas[k] : [];
-  const pendientes = cargas.filter(c => c.estado !== 'pagado' && !c._esPago);
+  const pendientes = sacBaseCargas(cargas).filter(c => sacCargaPendienteAcum(c) > 0);
   if (!pendientes.length) { notify('⚠ No hay cargas pendientes en la semana actual'); return; }
 
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;';
 
   const items = pendientes.map((c,i) => {
-    const monto = c.estado === 'parcial' ? (c.monto - (c.pagadoParcial||0)) : c.monto;
+    const monto = sacCargaPendienteAcum(c);
     const col = typeof sacCatColor === 'function' ? sacCatColor(c.cat) : '#94a3b8';
     return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:.1s;"
       onmouseover="this.style.background='rgba(249,115,22,.04)'" onmouseout="this.style.background=''">
@@ -14459,7 +14459,7 @@ function infOpenEgresosSelector() {
       const idx = parseInt(cb.value);
       const c = pendientes[idx];
       if (!c) return;
-      const monto = c.estado === 'parcial' ? (c.monto - (c.pagadoParcial||0)) : c.monto;
+      const monto = sacCargaPendienteAcum(c);
       infAddItem('cargas', c.nombre, monto);
       added++;
     });
@@ -17491,6 +17491,26 @@ function sacGetIngresos(key) {
   return state.sacIngresos[key];
 }
 
+// Totales/balance: sin filas _esPago (son el mismo abono que ya suma pagadoParcial en la carga base).
+function sacBaseCargas(cargas) {
+  return (cargas || []).filter(c => !c._esPago);
+}
+
+function sacCargaPagadoAcum(c) {
+  if (c.estado === 'pagado') return c.monto || 0;
+  if (c.estado === 'parcial') {
+    if (c.pagadoParcial != null && c.pagadoParcial > 0) return c.pagadoParcial;
+    return c.montoReal || 0;
+  }
+  return 0;
+}
+
+function sacCargaPendienteAcum(c) {
+  if (c.estado === 'pagado') return 0;
+  if (c.estado === 'parcial') return Math.max(0, (c.monto || 0) - sacCargaPagadoAcum(c));
+  return c.monto || 0;
+}
+
 function sacMigrateLegacySacKeys() {
   try {
     const n = new Date();
@@ -17830,19 +17850,10 @@ function sacRenderCargas() {
 
 function sacCalcCargasTotals() {
   const cargas   = sacGetCargas();
-  // Exclude auto-generated payment records from totals (they're subsets of originals)
-  const base     = cargas.filter(c => !c._esPago);
+  const base     = sacBaseCargas(cargas);
   const total    = Math.round(base.reduce((s,c)=>s+(c.monto||0),0));
-  const pagado   = Math.round(base.reduce((s,c)=>{
-    if (c.estado==='pagado')  return s+(c.monto||0);
-    if (c.estado==='parcial') return s+(c.pagadoParcial||0);
-    return s;
-  },0));
-  const pendiente= Math.round(base.reduce((s,c)=>{
-    if (c.estado==='pagado')  return s;
-    if (c.estado==='parcial') return s+(c.monto-(c.pagadoParcial||0));
-    return s+(c.monto||0);
-  },0));
+  const pagado   = Math.round(base.reduce((s,c)=>s+sacCargaPagadoAcum(c),0));
+  const pendiente= Math.round(base.reduce((s,c)=>s+sacCargaPendienteAcum(c),0));
   const mercMonto = Math.round(sacGetMercMonto());
   const grandTotal= Math.round(total + mercMonto);
   const grandPend = Math.round(pendiente + (mercMonto>0?mercMonto:0)); // mercadería always pending
@@ -17976,18 +17987,10 @@ function sacGetBalanceEstimado() {
   const bancoReal = Math.round(banco - propPend);
   const disponible= Math.round(bancoReal + efectivo);
 
-  const cargas    = sacGetCargas(key);
+  const cargas    = sacBaseCargas(sacGetCargas(key));
   const mercMonto = Math.round(sacGetMercMonto());
-  const porPagar  = Math.round(cargas.reduce((s,c)=>{
-    if (c.estado==='pagado')  return s;
-    if (c.estado==='parcial') return s+(c.monto-(c.montoReal||0));
-    return s+c.monto;
-  },0) + mercMonto);
-  const pagado    = Math.round(cargas.reduce((s,c)=>{
-    if (c.estado==='pagado')  return s+(c.montoReal??c.monto);
-    if (c.estado==='parcial') return s+(c.montoReal||0);
-    return s;
-  },0));
+  const porPagar  = Math.round(cargas.reduce((s,c)=>s+sacCargaPendienteAcum(c),0) + mercMonto);
+  const pagado    = Math.round(cargas.reduce((s,c)=>s+sacCargaPagadoAcum(c),0));
 
   const n = sacPeriodDayCount();
   const days = vsGetWeekSac(key);
