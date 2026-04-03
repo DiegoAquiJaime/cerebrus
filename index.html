@@ -714,9 +714,14 @@ td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{co
 .sync-ok{color:var(--success);}
 .sync-err{color:var(--danger);}
 .user-chip{font-size:11px;font-weight:700;color:#64748b;padding:3px 8px;background:#f1f5f9;border-radius:20px;cursor:pointer;}
-.online-strip{display:flex;align-items:center;gap:5px;font-size:10px;}
-.online-dot{width:7px;height:7px;background:var(--success);border-radius:50%;animation:pulse 2s infinite;}
+.online-strip{display:flex;align-items:center;gap:5px;font-size:10px;flex-wrap:wrap;max-width:min(420px,40vw);justify-content:flex-end;}
+.online-dot{width:7px;height:7px;background:var(--success);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0;}
+.online-dot.online-dot-idle{background:#94a3b8;animation:none;}
+.online-dot.online-dot-away{background:#f59e0b;animation:none;}
 .online-user{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.online-user.online-idle{opacity:.72;font-weight:600;}
+.online-user.online-away{opacity:.85;}
+.online-presence-hint{font-size:9px;color:#94a3b8;font-weight:600;max-width:140px;line-height:1.2;text-align:right;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
 /* Conflict banner */
 .conflict-banner{display:none;background:#fffbeb;border:1px solid #fde68a;padding:10px 18px;font-size:12px;color:#92400e;align-items:center;gap:10px;flex-wrap:wrap;}
@@ -2394,7 +2399,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="topbar">
     <button class="hamburger" onclick="toggleNav()" aria-label="Menú">☰</button>
     <h2 id="tab-title">Dashboard Resumen</h2>
-    <div id="online-strip" class="online-strip" style="margin-right:6px;"></div>
+    <div id="online-strip" class="online-strip" style="margin-right:6px;" title="Conectado = pestaña con Cerebrus abierta. Inactivo = sin clic/teclado hace unos minutos (puede estar en otra app)."></div>
     <div class="btn-group">
       <span class="sync-status" id="sync-status" title="Sincronización con Google (carga, guardado, errores)"></span>
       <span class="mode-badge mode-local" id="mode-badge" title="Modo de almacenamiento: nube o solo este equipo">💾 LOCAL</span>
@@ -2553,7 +2558,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           </div>
         </div>
       </div>
-        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">💰 Total disponible real del negocio</div>
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">💰 Total disponible real del negocio</div>
+        <div id="dash-disp-period-lbl" style="font-size:9px;font-weight:600;color:#64748b;margin:-2px 0 10px 0;"></div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px;">
           <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--success);">
             <div style="font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px;">VENTA REAL ACUMULADA</div>
@@ -2566,9 +2572,9 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <div style="font-size:9px;color:#94a3b8;" id="disp-banco-sub">última actualización</div>
           </div>
           <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent2);">
-            <div style="font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px;">CAJA FÍSICA ACUMULADA</div>
+            <div style="font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px;">CAJA FÍSICA (SAC)</div>
             <div id="disp-caja" style="font-size:16px;font-weight:800;color:var(--accent2);">$0</div>
-            <div style="font-size:9px;color:#94a3b8;">días con cierre confirmado</div>
+            <div style="font-size:9px;color:#94a3b8;" id="disp-caja-sub">Efectivo en Semana actual</div>
           </div>
         </div>
         <div style="border-top:2px solid var(--border);padding-top:10px;display:flex;align-items:center;justify-content:space-between;">
@@ -2709,12 +2715,12 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div style="font-size:9px;color:var(--success);margin-top:2px;" id="sac-pagado-lbl"></div>
         </div>
         <div class="sac-kpi" style="border-left:4px solid var(--accent);">
-          <div class="sac-kpi-lbl">⚡ Balance estimado semana <span class="sac-help" title="Fórmula: (Banco + Caja) + Ventas estimadas pendientes + Otros ingresos pendientes - Cargas por pagar. Si es negativo, falta cobertura.">?</span></div>
+          <div class="sac-kpi-lbl">⚡ Balance estimado semana <span class="sac-help" title="Período actual: (Banco + Caja física SAC) + solo ventas ESTIMADAS de días que aún no tienen venta real (lo real ya está en banco/caja) + ingresos pendientes − por pagar egresos.">?</span></div>
           <div class="sac-kpi-val" id="sac-balance" style="color:var(--accent);">$0</div>
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-balance-sub"></div>
         </div>
         <div class="sac-kpi" style="border-left:4px solid var(--success);">
-          <div class="sac-kpi-lbl">📈 Venta real acumulada <span class="sac-help" title="Suma de ventas reales ya registradas en la tabla de ventas del período. Solo considera lo marcado como real.">?</span></div>
+          <div class="sac-kpi-lbl">📈 Venta real acumulada <span class="sac-help" title="Suma de ventas reales cargadas en el período (referencia). Ese dinero se asume ya reflejado en banco/caja; no se suma otra vez al balance.">?</span></div>
           <div class="sac-kpi-val" id="sac-vreal-acum" style="color:var(--success);">$0</div>
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-vreal-acum-sub">Ya ingresada a caja/banco</div>
         </div>
@@ -10181,6 +10187,25 @@ let cloudVersion    = '0';
 let _cloudBaseVersion = '0';
 let _cloudBaseState = null;
 let _heartbeatTimer = null;
+/** Sin interacción (clic/teclado/rueda) durante este tiempo → heartbeat marca idle:true */
+const PRESENCE_IDLE_MS = 3 * 60 * 1000;
+let _lastUserActivityAt = Date.now();
+function bumpUserActivity() { _lastUserActivityAt = Date.now(); }
+function presenceIsLocalIdle() { return Date.now() - _lastUserActivityAt > PRESENCE_IDLE_MS; }
+function presenceTabFocused() { try { return document.hasFocus(); } catch (e) { return true; } }
+let _presenceListenersBound = false;
+function initPresenceTracking() {
+  if (_presenceListenersBound) return;
+  _presenceListenersBound = true;
+  const bump = () => bumpUserActivity();
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => {
+    document.addEventListener(ev, bump, { capture: true, passive: true });
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') bump();
+  });
+  window.addEventListener('focus', bump);
+}
 let _loginAttempts  = 0;
 let _pendingUser    = '';
 const MAX_ATTEMPTS  = 5;
@@ -10301,7 +10326,7 @@ function _finishLogin() {
     document.getElementById('mode-badge').textContent = '☁ NUBE';
     document.getElementById('mode-badge').className   = 'mode-badge mode-cloud mode-cloud-state-wait';
     document.getElementById('mode-badge').title       = 'Modo nube: datos en Google. El texto a la izquierda indica si la conexión/sincronización va bien.';
-    loadFromCloud(); startHeartbeat();
+    loadFromCloud(); initPresenceTracking(); bumpUserActivity(); startHeartbeat();
   } else {
     document.getElementById('mode-badge').textContent = '💾 LOCAL';
     _localInit();
@@ -10985,7 +11010,6 @@ function _postLoadSetup() {
     startVersionChecker();
     if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
     setTimeout(wxFetch, 2000); // Fetch weather after load
-    startAutoSave(); // Guardado automático cada 5 min
   }, 800);
   infInit();
 }
@@ -11290,6 +11314,28 @@ function invEnsureFamiliesState() {
     if (!state.invFamilias[f].length) state.invFamilias[f].push('Sin subfamilia');
   });
 }
+/** Orden de bloques dentro de familia Bebidas (evita que "Cervezas" quede mezclado con gaseosas por orden alfabético). */
+const INV_BEBIDAS_SUB_ORDER = [
+  'Vinos tintos', 'Vinos blancos', 'Espumantes', 'Cervezas', 'Licores y destilados',
+  'Bebidas y gaseosas', 'Jugos y pulpas', 'Aguas', 'Revisar manual', 'Sin subfamilia'
+];
+function invSubfamOrderIndexBebidas(sub) {
+  const s = String(sub || '').toLowerCase();
+  const i = INV_BEBIDAS_SUB_ORDER.findIndex(x => x.toLowerCase() === s);
+  return i >= 0 ? i : 999;
+}
+function invSortSubfamiliasForFam(familia, subs) {
+  const arr = (subs || []).slice();
+  if (familia === 'Bebidas') {
+    return arr.sort((a, b) => {
+      const ia = invSubfamOrderIndexBebidas(a);
+      const ib = invSubfamOrderIndexBebidas(b);
+      if (ia !== ib) return ia - ib;
+      return String(a).localeCompare(String(b), 'es');
+    });
+  }
+  return arr.sort((a, b) => String(a).localeCompare(String(b), 'es'));
+}
 function invGetFamilias() {
   invEnsureFamiliesState();
   return Object.keys(state.invFamilias).sort((a,b)=>a.localeCompare(b,'es'));
@@ -11297,7 +11343,7 @@ function invGetFamilias() {
 function invGetSubfamilias(familia) {
   invEnsureFamiliesState();
   const fam = familia || 'Sin familia';
-  return (state.invFamilias[fam] || ['Sin subfamilia']).slice().sort((a,b)=>a.localeCompare(b,'es'));
+  return invSortSubfamiliasForFam(fam, state.invFamilias[fam] || ['Sin subfamilia']);
 }
 function invRefreshFamiliaSubfamiliaSelects(baseId, selectedFamilia, selectedSubfamilia) {
   const famSel = document.getElementById(baseId + '-familia');
@@ -11353,8 +11399,8 @@ function invGuessFamilySubfamily(nombre, cat, unidad) {
   if (has(['sauvignon blanc','chardonnay','riesling','gewurz','blanco','pinot grigio'])) return { familia:'Bebidas', subfamilia:'Vinos blancos', conf:0.95 };
   if (has(['espumante','prosecco','champagne'])) return { familia:'Bebidas', subfamilia:'Espumantes', conf:0.95 };
   if (has(['pisco','vodka','whisky','whiskey','ron','gin','tequila','licor','aperol','campari','vermouth'])) return { familia:'Bebidas', subfamilia:'Licores y destilados', conf:0.95 };
-  if (has(['cerveza','beer','ipa','stout'])) return { familia:'Bebidas', subfamilia:'Cervezas', conf:0.95 };
-  if (has(['coca','sprite','fanta','gaseosa','bebida','soda','tonica'])) return { familia:'Bebidas', subfamilia:'Bebidas y gaseosas', conf:0.9 };
+  if (has(['cerveza','beer','ipa','stout','lager','pilsen','schop','porter','weiss','weizen','radler','michelada','barley wine'])) return { familia:'Bebidas', subfamilia:'Cervezas', conf:0.95 };
+  if (has(['coca','sprite','fanta','gaseosa','soda','tonica','pepsi','kem','canada dry','red bull','monster'])) return { familia:'Bebidas', subfamilia:'Bebidas y gaseosas', conf:0.9 };
   if (has(['jugo','nectar','pulpa'])) return { familia:'Bebidas', subfamilia:'Jugos y pulpas', conf:0.9 };
   if (has(['agua mineral','agua'])) return { familia:'Bebidas', subfamilia:'Aguas', conf:0.85 };
 
@@ -11444,6 +11490,7 @@ function invRefinePendingClassification() {
     { r: /(cabernet|merlot|carmenere|pinot noir|syrah|malbec|ensamblaje|blend)/i, fam:'Bebidas', sub:'Vinos tintos' },
     { r: /(sauvignon blanc|chardonnay|riesling|gewurz|pinot grigio)/i, fam:'Bebidas', sub:'Vinos blancos' },
     { r: /(espumante|prosecco|brut|champagne)/i, fam:'Bebidas', sub:'Espumantes' },
+    { r: /(cerveza|schop|lager|ipa|stout|pilsen|kunstmann|heineken|austral|escudo|patagonia|stella|corona|quilmes)/i, fam:'Bebidas', sub:'Cervezas' },
     { r: /(pisco|vodka|whisk|ron|gin|tequila|vermouth|campari|aperol|licor)/i, fam:'Bebidas', sub:'Licores y destilados' },
     { r: /(ostion|ostra|almeja|macha|navajuela|chorito|choro|calamar|pulpo|jibia|loco)/i, fam:'Pescados y Mariscos', sub:'Mariscos y moluscos' },
     { r: /(salmon|reineta|congrio|corvina|trucha|atun|merluza)/i, fam:'Pescados y Mariscos', sub:'Pescados' },
@@ -11475,8 +11522,31 @@ function invRefinePendingClassification() {
   notify(`🎯 Refinado aplicado: ${changed} reclasificados · ${stillPending} siguen pendientes manuales`);
 }
 
+function invFixCervezasSubfamilias() {
+  invInit();
+  const rx = /(cerveza|beer|schop|lager|ipa|stout|pilsen|kunstmann|austral|heineken|escudo|patagonia|stella|corona|pacifico|quilmes|modelo)/i;
+  let changed = 0;
+  (state.inventario || []).forEach(p => {
+    if (!rx.test(String(p.nombre || ''))) return;
+    if ((p.familia || '') !== 'Bebidas') return;
+    const sub = p.subfamilia || '';
+    if (sub === 'Cervezas') return;
+    if (sub === 'Bebidas y gaseosas' || sub === 'Revisar manual' || sub === 'Licores y destilados' || sub === 'Sin subfamilia') {
+      p.subfamilia = 'Cervezas';
+      if (!state.invFamilias.Bebidas) state.invFamilias.Bebidas = [];
+      if (!state.invFamilias.Bebidas.includes('Cervezas')) state.invFamilias.Bebidas.push('Cervezas');
+      changed++;
+    }
+  });
+  if (changed) {
+    markUnsaved();
+    notify(`🍺 ${changed} producto(s) en Bebidas pasados a subfamilia Cervezas`);
+  }
+}
+
 function invRender() {
   invInit();
+  invFixCervezasSubfamilias();
   invCheckKpis();
   invRenderCatTabs();
   invRenderTable();
@@ -11507,14 +11577,14 @@ function invRender() {
     famSel.innerHTML = fams.map(f => `<option value="${esc(f)}" ${f===famVal?'selected':''}>${f?esc(f):'Todas'}</option>`).join('');
     const subVal = subSel.value || '';
     const subsByFam = famVal
-      ? [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === famVal).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'))
+      ? invSortSubfamiliasForFam(famVal, [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === famVal).map(p => p.subfamilia || 'Sin subfamilia'))])
       : subsAll;
     const subs = [''].concat(subsByFam);
     subSel.innerHTML = subs.map(s => `<option value="${esc(s)}" ${s===subVal?'selected':''}>${s?esc(s):'Todas'}</option>`).join('');
     famSel.onchange = function() {
       const fv = famSel.value || '';
       const list = fv
-        ? [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === fv).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'))
+        ? invSortSubfamiliasForFam(fv, [...new Set((state.inventario || []).filter(p => (p.familia || 'Sin familia') === fv).map(p => p.subfamilia || 'Sin subfamilia'))])
         : [...new Set((state.inventario || []).map(p => p.subfamilia || 'Sin subfamilia'))].sort((a,b)=>a.localeCompare(b,'es'));
       subSel.innerHTML = ['<option value="">Todas</option>'].concat(list.map(s => `<option value="${esc(s)}">${esc(s)}</option>`)).join('');
       invRender();
@@ -11618,6 +11688,11 @@ function invRenderTable() {
     if (sortF === 'nombre') return (a.nombre || '').localeCompare(b.nombre || '', 'es');
     if (sortF === 'familia_nombre') {
       if ((a.familia || '') !== (b.familia || '')) return (a.familia || '').localeCompare(b.familia || '', 'es');
+      if ((a.familia || '') === 'Bebidas' && (b.familia || '') === 'Bebidas') {
+        const ia = invSubfamOrderIndexBebidas(a.subfamilia);
+        const ib = invSubfamOrderIndexBebidas(b.subfamilia);
+        if (ia !== ib) return ia - ib;
+      }
       if ((a.subfamilia || '') !== (b.subfamilia || '')) return (a.subfamilia || '').localeCompare(b.subfamilia || '', 'es');
       return (a.nombre || '').localeCompare(b.nombre || '', 'es');
     }
@@ -16218,43 +16293,6 @@ function setBancoEmpresa(val) {
   updateTotalDisponible();
 }
 
-function updateTotalDisponible() {
-  // Venta real de días cerrados de la semana activa
-  let ventaReal = 0, cajaFisica = 0, diasReal = 0;
-  for (let w=1; w<=4; w++) {
-    vsGetWeek(w).forEach(d => {
-      if (d.cerrado) {
-        ventaReal  += d.real  || 0;
-        cajaFisica += d.caja  || 0;
-        diasReal++;
-      }
-    });
-  }
-  const banco = state.cajaEmpresa?.banco || 0;
-  const total = ventaReal + banco + cajaFisica;
-
-  // Update hero input
-  const inp = document.getElementById('dash-banco-empresa');
-  if (inp && !inp.matches(':focus')) inp.value = banco > 0 ? banco : '';
-  const updEl = document.getElementById('dash-banco-upd');
-  if (updEl) updEl.textContent = state.cajaEmpresa?.bancoUpd ? 'Act. ' + state.cajaEmpresa.bancoUpd : '';
-
-  // Show/hide panel
-  const panel = document.getElementById('dash-total-disponible');
-  if (panel) panel.style.display = (ventaReal>0 || banco>0 || cajaFisica>0) ? '' : 'none';
-
-  // Update panel values
-  const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  set2('disp-venta',  fmt(ventaReal));
-  set2('disp-venta-sub', diasReal + ' día' + (diasReal!==1?'s':'') + ' confirmado' + (diasReal!==1?'s':''));
-  set2('disp-banco',  fmt(banco));
-  set2('disp-banco-sub', state.cajaEmpresa?.bancoUpd ? 'Act. ' + state.cajaEmpresa.bancoUpd : 'No ingresado');
-  set2('disp-caja',   fmt(cajaFisica));
-  set2('disp-total',  fmt(total));
-  const totEl = document.getElementById('disp-total');
-  if (totEl) totEl.style.color = total > 0 ? 'var(--success)' : 'var(--danger)';
-}
-
 // ── MERCADERÍA SIMPLIFICADA ──
 // state.mercaderiaSemanasSimple = [{id, label, monto, fecha}]
 
@@ -16491,18 +16529,25 @@ function propEliminar(idx) {
   propRender(); updateTotalDisponible();
 }
 
-// Override updateTotalDisponible to include propinas
+// Misma base que Semana actual: período SAC (sacDataKey) + banco/propinas + caja física = sacEfectivo
 function updateTotalDisponible() {
-  let ventaReal = 0, cajaFisica = 0, diasReal = 0;
-  for (let w=1; w<=4; w++) {
-    vsGetWeek(w).forEach(d => {
-      if (d.cerrado) { ventaReal += d.real||0; cajaFisica += d.caja||0; diasReal++; }
-    });
-  }
+  let ventaReal = 0, diasCerrados = 0;
+  try {
+    if (typeof sacDataKey === 'function' && typeof vsGetWeekSac === 'function') {
+      const key = sacDataKey();
+      vsGetWeekSac(key).forEach(d => {
+        if (d.cerrado) {
+          ventaReal += d.real || 0;
+          diasCerrados++;
+        }
+      });
+    }
+  } catch (e) {}
+  const cajaSac       = Math.round(state.sacEfectivo || 0);
   const banco         = state.cajaEmpresa?.banco || 0;
   const propPendiente = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
   const bancoReal     = banco - propPendiente;
-  const total         = bancoReal + ventaReal + cajaFisica;
+  const total         = bancoReal + ventaReal + cajaSac;
 
   const inp = document.getElementById('dash-banco-empresa');
   if (inp && !inp.matches(':focus')) inp.value = banco > 0 ? banco : '';
@@ -16510,14 +16555,19 @@ function updateTotalDisponible() {
   if (updEl) updEl.textContent = state.cajaEmpresa?.bancoUpd ? 'Act. '+state.cajaEmpresa.bancoUpd : '';
 
   const panel = document.getElementById('dash-total-disponible');
-  if (panel) panel.style.display = (ventaReal>0||banco>0||cajaFisica>0) ? '' : 'none';
+  if (panel) panel.style.display = (ventaReal>0||banco>0||cajaSac>0) ? '' : 'none';
+
+  const plbl = document.getElementById('dash-disp-period-lbl');
+  if (plbl) plbl.textContent = (typeof sacPeriodLabel === 'function') ? '📅 ' + sacPeriodLabel() : '';
 
   const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   set2('disp-venta',    fmt(ventaReal));
-  set2('disp-venta-sub', diasReal+' día'+(diasReal!==1?'s':'')+' confirmado'+(diasReal!==1?'s':''));
+  set2('disp-venta-sub', diasCerrados + ' día' + (diasCerrados!==1?'s':'') + ' cerrado' + (diasCerrados!==1?'s':'') + ' en período actual');
   set2('disp-banco',    fmt(bancoReal));
   set2('disp-banco-sub', propPendiente>0 ? `Banco ${fmt(banco)} − propinas ${fmt(propPendiente)}` : (state.cajaEmpresa?.bancoUpd?'Act. '+state.cajaEmpresa.bancoUpd:'No ingresado'));
-  set2('disp-caja',     fmt(cajaFisica));
+  set2('disp-caja',     fmt(cajaSac));
+  const cjSub = document.getElementById('disp-caja-sub');
+  if (cjSub) cjSub.textContent = 'Efectivo · campo Caja en Semana actual (mismo que balance SAC)';
   set2('disp-total',    fmt(total));
   const totEl = document.getElementById('disp-total');
   if (totEl) totEl.style.color = total > 0 ? 'var(--success)' : 'var(--danger)';
@@ -17190,14 +17240,19 @@ function vsGetExtraSac(key) {
 function vsHybridTotalKey(key) {
   const n = sacPeriodDayCount();
   const days = vsGetWeekSac(key);
-  const extra = vsGetExtraSac(key).monto || 0;
+  const exObj = vsGetExtraSac(key);
+  const extraM = exObj.monto || 0;
+  const extraR = exObj.realExtra || 0;
   let total = 0, realDays = 0, estDays = 0;
   for (let i = 0; i < n && i < days.length; i++) {
     const d = days[i];
-    if (d.real > 0) { total += d.real; realDays++; }
-    else if (d.est > 0) { total += d.est; estDays++; }
+    if ((d.real || 0) > 0) { realDays++; continue; }
+    if ((d.est || 0) > 0) { total += d.est; estDays++; }
   }
-  return { total: roundCLP(total + extra), realDays, estDays, extra };
+  let extraAdd = 0;
+  if (extraR > 0) { /* real extra ya contabilizado aparte */ }
+  else if (extraM > 0) extraAdd = extraM;
+  return { total: roundCLP(total + extraAdd), realDays, estDays, extra: extraM };
 }
 
 // Número de bloque 1–4 del mes (para comparar con calendario) o el de la semana slot activa
@@ -17725,6 +17780,7 @@ function sacSetBanco(val) {
 function sacSetEfectivo(val) {
   state.sacEfectivo = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
   sacCalcBalance();
+  if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
   markUnsaved();
 }
 
@@ -17999,11 +18055,15 @@ function sacGetBalanceEstimado() {
   let ventaRealAcum = 0;
   for (let i = 0; i < n && i < days.length; i++) {
     const d = days[i];
-    if (d.real > 0) ventaRealAcum += d.real;
-    else if (d.est > 0) ventasEstPendientes += d.est;
+    const est = d.est || 0;
+    const real = d.real || 0;
+    if (real > 0) ventaRealAcum += real;
+    else if (est > 0) ventasEstPendientes += est;
   }
-  if (extra.realExtra > 0) ventaRealAcum += extra.realExtra;
-  else if (extra.monto > 0) ventasEstPendientes += extra.monto;
+  const exM = extra.monto || 0;
+  const exR = extra.realExtra || 0;
+  if (exR > 0) ventaRealAcum += exR;
+  else if (exM > 0) ventasEstPendientes += exM;
   ventasEstPendientes = Math.round(ventasEstPendientes);
   ventaRealAcum = Math.round(ventaRealAcum);
 
@@ -18039,8 +18099,17 @@ function sacCalcBalance() {
   const vrSub = document.getElementById('sac-vreal-acum-sub');
   if (vrSub) {
     const nD = sacPeriodDayCount();
-    const diasReal = (days || []).slice(0, nD).filter(d => d.real > 0).length;
-    vrSub.textContent = diasReal > 0 ? `${diasReal} día${diasReal!==1?'s':''} confirmado${diasReal!==1?'s':''} · ya en caja/banco` : 'Sin ventas reales aún';
+    const slice = (days || []).slice(0, nD);
+    const conReal = slice.filter(d => (d.real || 0) > 0).length;
+    const soloEst = slice.filter(d => (d.real || 0) === 0 && (d.est || 0) > 0).length;
+    if (conReal > 0) {
+      vrSub.textContent = `Referencia: ${conReal} día${conReal!==1?'s':''} con venta real (ya debería estar en banco/caja)` +
+        (soloEst ? ` · ${soloEst} día${soloEst!==1?'s':''} aún solo estimado (sí entra al balance)` : '');
+    } else if (soloEst > 0) {
+      vrSub.textContent = `${soloEst} día${soloEst!==1?'s':''} con estimado pendiente (aún sin real)`;
+    } else {
+      vrSub.textContent = 'Sin ventas cargadas en el período';
+    }
   }
 
   const balEl  = document.getElementById('sac-balance');
@@ -18050,13 +18119,14 @@ function sacCalcBalance() {
   if (subEl) {
     let subTxt = `Disp. ${fmt(disponible)} + Vta.Est. ${fmt(ventasEstPendientes)}`;
     if (ingresosPorIngresar > 0) subTxt += ` + Ing.Pend. ${fmt(ingresosPorIngresar)}`;
-    if (otrosIngPend > 0) subTxt += ` + Ing.extra ${fmt(otrosIngPend)}`;
-    subTxt += ` − Cargas ${fmt(porPagar)}`;
+    if (otrosIngPend > 0) subTxt += ` + Ing.extra SAC ${fmt(otrosIngPend)}`;
+    subTxt += ` − Por pagar ${fmt(porPagar)}`;
     subEl.textContent = subTxt;
   }
 
   updateDashSac(disponible, porPagar, pagado, ventasEstPendientes, balance);
   sacUpdateFinPanelBalance();
+  if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
 }
 
 function sacUpdateFinPanelBalance() {
@@ -18390,6 +18460,7 @@ let _unsaved = false;
 let _closeDoubleGuardUntil = 0;
 const AUTO_SAVE_DEFAULT = false; // pedido: desactivado por defecto
 function markUnsaved() {
+  bumpUserActivity();
   _unsaved = true;
   const btn = document.getElementById('btn-save-indicator');
   if (btn) btn.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.35)';
@@ -18893,23 +18964,70 @@ function closeConflictDetails() {
 }
 
 // ── HEARTBEAT & ONLINE ──
-function startHeartbeat() { sendHeartbeat(); _heartbeatTimer = setInterval(() => { sendHeartbeat(); checkVersion(); }, 30000); }
+// Apps Script: el POST heartbeat puede incluir idle, tabFocused, activityAgeSec por usuario;
+// getOnline debe devolver por sesión { user, idle?, tabFocused? } para mostrar inactivo / otra pestaña.
+function startHeartbeat() {
+  sendHeartbeat();
+  _heartbeatTimer = setInterval(() => { sendHeartbeat(); checkVersion(); }, 30000);
+}
 async function sendHeartbeat() {
   if (!IS_CLOUD || !currentUser) return;
   try {
-    await fetch(API_URL, { method:'POST', body:JSON.stringify({action:'heartbeat',user:currentUser}) });
+    await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'heartbeat',
+        user: currentUser,
+        idle: presenceIsLocalIdle(),
+        tabFocused: presenceTabFocused(),
+        activityAgeSec: Math.floor((Date.now() - _lastUserActivityAt) / 1000)
+      })
+    });
     const res  = await fetch(API_URL + '?action=getOnline&_=' + Date.now());
     const json = await res.json();
     if (json.ok) renderOnlineUsers(json.data);
   } catch(e) {}
 }
+function _sessionPeerIdle(s) {
+  if (!s || typeof s !== 'object') return false;
+  if (s.idle === true || s.inactive === true || s.away === true) return true;
+  return false;
+}
+function _sessionPeerTabFocused(s) {
+  if (!s || typeof s !== 'object') return true;
+  if (s.tabFocused === false || s.focused === false || s.hasFocus === false) return false;
+  return true;
+}
 function renderOnlineUsers(sessions) {
   const strip = document.getElementById('online-strip');
   if (!strip) return;
-  const others = (sessions||[]).filter(s=>s.user!==currentUser);
-  if (!others.length) { strip.innerHTML=''; return; }
-  strip.innerHTML = '<span class="online-dot"></span>' +
-    others.map(s=>`<span class="online-user" style="background:${userColor(s.user)}22;color:${userColor(s.user)}">${esc(s.user)}</span>`).join('');
+  const raw = sessions || [];
+  const list = raw.map(s => (typeof s === 'string' ? { user: s } : s)).filter(s => s && s.user);
+  const others = list.filter(s => s.user !== currentUser);
+  if (!others.length) { strip.innerHTML = ''; return; }
+
+  const anyActive = others.some(s => !_sessionPeerIdle(s) && _sessionPeerTabFocused(s));
+  const dotCls = anyActive ? 'online-dot' : 'online-dot online-dot-idle';
+
+  const chips = others.map(s => {
+    const idle = _sessionPeerIdle(s);
+    const tabOk = _sessionPeerTabFocused(s);
+    const col = userColor(s.user);
+    let cls = 'online-user';
+    let title = s.user;
+    if (idle) {
+      cls += ' online-idle';
+      title += ' · inactivo (sin clic/teclado reciente; puede estar otra app al frente)';
+    } else if (!tabOk) {
+      cls += ' online-away';
+      title += ' · Cerebrus en segundo plano u otra pestaña';
+    } else {
+      title += ' · uso reciente en Cerebrus';
+    }
+    return `<span class="${cls}" style="background:${col}22;color:${col}" title="${esc(title)}">${esc(s.user)}</span>`;
+  });
+
+  strip.innerHTML = `<span class="${dotCls}" title="${anyActive ? 'Alguien activo ahora' : 'Todos inactivos o en segundo plano'}"></span>${chips.join('')}`;
 }
 
 // ── ACTIVITY LOG PANEL ──
