@@ -2246,7 +2246,10 @@ body.dark-mode textarea:focus{
 .fac-semana-head { padding: 12px 16px; background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(99,102,241,.04)); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .fac-semana-head-title { font-size: 12px; font-weight: 800; color: var(--accent2); }
 .fac-semana-total { font-size: 16px; font-weight: 900; color: var(--accent2); }
-.fac-semana-item { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+.fac-semana-item { display: grid; grid-template-columns: 26px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
+.fac-semana-item.fsi-sel-hoy { background: rgba(99,102,241,.07); }
+.fac-sem-hoy-bar { padding: 10px 14px; background: rgba(99,102,241,.06); border-bottom: 1px solid var(--border); }
+.fac-sem-hoy-bar input[type="text"] { max-width: 140px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: inherit; }
 .fac-semana-item:last-child { border-bottom: none; }
 .fac-semana-item.fsi-pagado { opacity: .55; }
 .fac-semana-item .fsi-nombre { font-weight: 600; }
@@ -3307,6 +3310,20 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <div style="font-size:9px;color:var(--success);font-weight:700;" id="fac-sem-pagado-lbl"></div>
               <div style="font-size:9px;color:var(--danger);font-weight:700;" id="fac-sem-pendiente-lbl"></div>
             </div>
+          </div>
+        </div>
+        <div class="fac-sem-hoy-bar" id="fac-sem-hoy-wrap" style="display:none;">
+          <div style="font-size:10px;font-weight:800;color:var(--accent2);margin-bottom:6px;">💵 Pago de hoy (arma el lote hasta tu disponible)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <label style="font-size:10px;font-weight:700;color:#64748b;white-space:nowrap;">Disponible hoy</label>
+            <input type="text" id="fac-sem-hoy-meta" inputmode="numeric" placeholder="Ej: 3900000" title="Monto que puedes transferir hoy; se compara con la suma de las facturas marcadas"
+              oninput="facSemHoyMetaInput(this)">
+            <span id="fac-sem-hoy-sumline" style="font-size:11px;font-weight:600;"></span>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemHoyLimpiarMarcas()">↺ Quitar marcas</button>
+            <button type="button" class="fac-btn primary" style="font-size:10px;" onclick="facSemPagarMarcadasHoy()">✓ Pagar las marcadas hoy</button>
+            <span style="font-size:9px;color:#94a3b8;">Marca facturas pendientes; la suma te ayuda a cuadrar con el monto disponible.</span>
           </div>
         </div>
         <div id="fac-sem-lista"></div>
@@ -7892,6 +7909,104 @@ function facRender() {
 // ============================================================
 function facSemInit() {
   if (!state.facSemana) state.facSemana = [];
+  if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel = [];
+  if (state.facSemHoyMeta == null || isNaN(state.facSemHoyMeta)) state.facSemHoyMeta = 0;
+  state.facSemana.forEach((s, idx) => {
+    if (!s.id) s.id = 'fs_mig_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 7);
+  });
+  state.facSemHoySel = state.facSemHoySel.filter(id => {
+    const s = state.facSemana.find(x => x.id === id);
+    return s && s.estado === 'pendiente';
+  });
+}
+
+function facSemHoyMetaInput(el) {
+  facSemInit();
+  const v = parseInt(String(el.value || '').replace(/[^\d]/g, ''), 10);
+  state.facSemHoyMeta = isNaN(v) ? 0 : v;
+  facSemHoyRefreshSummary();
+  markUnsaved();
+}
+
+function facSemHoyRefreshSummary() {
+  facSemInit();
+  const meta = Math.max(0, Number(state.facSemHoyMeta) || 0);
+  let sum = 0;
+  (state.facSemana || []).forEach(s => {
+    if (s.estado === 'pendiente' && state.facSemHoySel.includes(s.id)) sum += (s.monto || 0);
+  });
+  const line = document.getElementById('fac-sem-hoy-sumline');
+  if (!line) return;
+  if (!meta && !sum) {
+    line.textContent = '';
+    line.style.color = '';
+    return;
+  }
+  let txt = 'Suma marcada: ' + fmt(sum);
+  if (meta > 0) {
+    const diff = meta - sum;
+    txt += ' · Meta: ' + fmt(meta) + ' · ';
+    if (diff >= 0) txt += 'Restante: ' + fmt(diff);
+    else txt += '⚠ Excedes por ' + fmt(-diff);
+  }
+  line.textContent = txt;
+  line.style.color = (meta > 0 && sum > meta) ? 'var(--danger)' : (sum > 0 ? 'var(--success)' : '');
+}
+
+function facSemSetHoyIdx(i, checked) {
+  facSemInit();
+  const s = state.facSemana[i];
+  if (!s || !s.id) return;
+  const arr = state.facSemHoySel;
+  const ix = arr.indexOf(s.id);
+  if (checked && ix < 0) arr.push(s.id);
+  if (!checked && ix >= 0) arr.splice(ix, 1);
+  facSemHoyRefreshSummary();
+  markUnsaved();
+  const lista = document.getElementById('fac-sem-lista');
+  const rows = lista ? lista.querySelectorAll('.fac-semana-item') : [];
+  if (rows[i]) rows[i].classList.toggle('fsi-sel-hoy', !!checked);
+}
+
+function facSemHoyLimpiarMarcas() {
+  facSemInit();
+  state.facSemHoySel = [];
+  facSemRender();
+  markUnsaved();
+}
+
+function facSemPagarMarcadasHoy() {
+  facSemInit();
+  const sel = state.facSemHoySel || [];
+  const indices = [];
+  state.facSemana.forEach((s, i) => {
+    if (s.estado === 'pendiente' && sel.includes(s.id)) indices.push(i);
+  });
+  if (!indices.length) {
+    notify('⚠ Marca con el checkbox las facturas pendientes que pagarás hoy');
+    return;
+  }
+  indices.sort((a, b) => a - b);
+  const total = indices.reduce((acc, i) => acc + (state.facSemana[i].monto || 0), 0);
+  if (!confirm('¿Marcar como pagadas ' + indices.length + ' factura(s) · total ' + fmt(total) + '?')) return;
+  pushUndo();
+  for (let k = 0; k < indices.length; k++) {
+    const i = indices[k];
+    const s = state.facSemana[i];
+    if (!s || s.estado !== 'pendiente') continue;
+    s.estado = 'pagado';
+    s.montoReal = s.monto;
+    const facs = (state.facturas || {})[s.prov] || [];
+    const fac = facs.find(f => f.id === s.facId);
+    if (fac) fac.estado = 'inactiva';
+  }
+  state.facSemHoySel = [];
+  facSemRender();
+  facCalcKpis();
+  try { facRenderDetail(); } catch (e) {}
+  try { facRenderDashboard(); } catch (e) {}
+  markUnsaved();
+  notify('✓ ' + indices.length + ' factura(s) marcadas como pagadas');
 }
 
 function facEnviarASemana(prov, facId) {
@@ -7924,6 +8039,12 @@ function facSemRender() {
   facSemInit();
   const lista = document.getElementById('fac-sem-lista');
   const items = state.facSemana || [];
+  const hoyWrap = document.getElementById('fac-sem-hoy-wrap');
+  const metaInp = document.getElementById('fac-sem-hoy-meta');
+  if (hoyWrap) hoyWrap.style.display = items.length ? '' : 'none';
+  if (metaInp && document.activeElement !== metaInp) {
+    metaInp.value = state.facSemHoyMeta > 0 ? String(state.facSemHoyMeta) : '';
+  }
   if (!lista) return;
 
   if (!items.length) {
@@ -7931,7 +8052,14 @@ function facSemRender() {
   } else {
     lista.innerHTML = items.map((s,i) => {
       const isPagado = s.estado === 'pagado';
-      return `<div class="fac-semana-item ${isPagado?'fsi-pagado':''}">
+      const marcar = !isPagado
+        ? `<input type="checkbox" title="Incluir en pago de hoy" style="width:16px;height:16px;accent-color:var(--accent2);cursor:pointer;margin:0;"
+            ${state.facSemHoySel.includes(s.id) ? 'checked' : ''}
+            onchange="facSemSetHoyIdx(${i},this.checked)">`
+        : '';
+      const rowSel = !isPagado && state.facSemHoySel.includes(s.id) ? ' fsi-sel-hoy' : '';
+      return `<div class="fac-semana-item ${isPagado ? 'fsi-pagado' : ''}${rowSel}">
+        <div style="display:flex;align-items:center;justify-content:center;">${marcar}</div>
         <div>
           <div class="fsi-nombre">${esc(s.nro)} — ${esc(s.prov)}</div>
         </div>
@@ -7961,6 +8089,7 @@ function facSemRender() {
   set2('fac-sem-count', `${items.length} factura${items.length!==1?'s':''} seleccionada${items.length!==1?'s':''}`);
   set2('fac-sem-pagado-lbl', pagado > 0 ? `✓ Pagado: ${fmt(pagado)}` : '');
   set2('fac-sem-pendiente-lbl', pendiente > 0 ? `Pendiente: ${fmt(pendiente)}` : '');
+  facSemHoyRefreshSummary();
 }
 
 function facSemPagar(i) {
@@ -8022,6 +8151,7 @@ function facSemQuitar(i) {
   const s = state.facSemana[i];
   if (!confirm(`¿Quitar factura ${s.nro} de la lista semanal?\nLa factura seguirá en Facturas generales.`)) return;
   pushUndo();
+  state.facSemHoySel = (state.facSemHoySel || []).filter(id => id !== s.id);
   // Si fue marcada como pagada/parcial desde aquí, restaurar estado original en facturas
   if (s.estado === 'pagado') {
     const facs = (state.facturas||{})[s.prov] || [];
@@ -8055,6 +8185,8 @@ function facSemLimpiar() {
     }
   });
   state.facSemana = [];
+  state.facSemHoySel = [];
+  state.facSemHoyMeta = 0;
   facSemRender();
   facCalcKpis();
   try { facRenderDetail(); } catch(e) {}
@@ -11089,6 +11221,8 @@ function _postLoadSetup() {
   if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
+  if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel              = [];
+  if (state.facSemHoyMeta == null || isNaN(state.facSemHoyMeta)) state.facSemHoyMeta = 0;
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
@@ -13528,7 +13662,7 @@ function archCheckSize() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','sebasFinanzas',
+    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
   keys.forEach(k => {
     if (state[k]) parts[k] = JSON.stringify(state[k]).length;
@@ -18758,7 +18892,7 @@ function splitStateForCloudParts(st) {
   const PART_DEF = [
     { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario'] },
     { id: 'pFac', keys: ['facturas', 'movimientos'] },
-    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'mercaderiaSemanasSimple'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
   const stripped = JSON.parse(JSON.stringify(st));
