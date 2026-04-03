@@ -9585,7 +9585,7 @@ async function processAiPdf(file) {
           action: 'anthropicProxy',
           apiKey,
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 8192,
+          max_tokens: 16384,
           messages: [{ role: 'user', content: aiPromptTexto() + '\n\nTEXTO EXTRAÍDO (OCR de Google):\n' + textoOcr }]
         })
       });
@@ -19377,6 +19377,51 @@ function cerebrusJsonCloseTruncated(str) {
 }
 
 /**
+ * Quita una propiedad incompleta al final (p. ej. max_tokens cortó "true" en "tru").
+ * Se aplica en bucle junto a cerebrusJsonCloseTruncated hasta que JSON.parse tenga éxito.
+ */
+function cerebrusJsonTrimTruncatedTailOnce(s) {
+  const patterns = [
+    [/,\s*"[^"]+"\s*:\s*tru?$/i, ''],
+    [/,\s*"[^"]+"\s*:\s*fals?$/i, ''],
+    [/,\s*"[^"]+"\s*:\s*n(u(l)?)?$/i, ''],
+    [/,\s*"[^"]+"\s*:\s*$/ , ''],
+    [/,\s*"[^"]+"\s*:\s*"[^"]*$/ , ''],
+    [/,\s*"[^"]+"\s*:\s*-?\d+\.$/, ''],
+    [/,\s*"[^"]+"\s*:\s*-?$/, ''],
+    [/\{\s*"[^"]+"\s*:\s*tru?$/i, '{}'],
+    [/\{\s*"[^"]+"\s*:\s*fals?$/i, '{}'],
+    [/\{\s*"[^"]+"\s*:\s*n(u(l)?)?$/i, '{}'],
+  ];
+  let t = String(s);
+  for (let p = 0; p < patterns.length; p++) {
+    const n = t.replace(patterns[p][0], patterns[p][1]);
+    if (n !== t) return n;
+  }
+  return t;
+}
+
+function cerebrusJsonIterativeSalvageArray(slice) {
+  let t = String(slice || '');
+  for (let step = 0; step < 120; step++) {
+    const variants = [
+      cerebrusJsonStripTrailingCommas(cerebrusJsonCloseTruncated(t)),
+      cerebrusJsonStripTrailingCommas(cerebrusJsonCloseTruncated(cerebrusJsonEscapeNewlinesInStrings(t))),
+    ];
+    for (let v = 0; v < variants.length; v++) {
+      try {
+        const arr = JSON.parse(variants[v]);
+        if (Array.isArray(arr)) return arr;
+      } catch (e) { /* siguiente */ }
+    }
+    const t2 = cerebrusJsonTrimTruncatedTailOnce(t);
+    if (t2 === t) break;
+    t = t2;
+  }
+  return null;
+}
+
+/**
  * Extrae y parsea un array JSON desde la respuesta de Claude (markdown, texto previo, comas finales).
  * Repara: comillas tipográficas, saltos de línea en strings, JSON truncado.
  */
@@ -19449,6 +19494,13 @@ function cerebrusParseJsonArray(rawText, contextLabel) {
     } catch (e) {
       lastErr = e;
     }
+  }
+
+  const salvaged = cerebrusJsonIterativeSalvageArray(chunk);
+  if (salvaged) return salvaged;
+  if (chunk !== s) {
+    const salvagedFull = cerebrusJsonIterativeSalvageArray(s);
+    if (salvagedFull) return salvagedFull;
   }
 
   console.error('[Cerebrus JSON] parse falló — contexto:', contextLabel, lastErr && lastErr.message);
