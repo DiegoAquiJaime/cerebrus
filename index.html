@@ -3325,17 +3325,25 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
             <button type="button" class="fac-btn primary" style="font-size:10px;" onclick="facSemPagarMarcadasHoy()">✓ Pagar las marcadas hoy</button>
             <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemVistaImprimirMarcadas()">🖨 Informe (marcas)</button>
             <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemDescargarCsvMarcadas()">⬇ CSV (marcas)</button>
-            <span style="font-size:9px;color:#94a3b8;">Marca facturas pendientes; la suma te ayuda a cuadrar con el monto disponible.</span>
+            <span style="font-size:9px;color:#94a3b8;">Marca pendientes para planificar. Luego de pagar, usa abajo «pagadas aquí» o el historial verde.</span>
           </div>
         </div>
         <div id="fac-sem-lista"></div>
+        <div id="fac-sem-pagadas-actions" style="display:none;padding:8px 14px;border-top:1px solid var(--border);background:rgba(16,185,129,.06);">
+          <div style="font-size:10px;font-weight:800;color:#047857;margin-bottom:6px;">✅ Ya pagadas (siguen en esta lista)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemVistaImprimirPagadasLista()">🖨 Informe (pagadas aquí)</button>
+            <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemDescargarCsvPagadasLista()">⬇ CSV (pagadas aquí)</button>
+            <span style="font-size:9px;color:#64748b;">Todas las que aparecen como pagadas en la tabla — aunque ya no tengan checkbox.</span>
+          </div>
+        </div>
         <div id="fac-sem-informes-wrap" style="display:none;border-top:1px solid var(--border);">
           <div style="padding:10px 14px;background:rgba(16,185,129,.06);">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
               <span style="font-size:10px;font-weight:800;color:#047857;">📑 Pagos registrados (informe)</span>
               <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;" onclick="facSemLimpiarHistorialInformes()">🗑 Borrar historial</button>
             </div>
-            <p style="font-size:9px;color:#64748b;margin:0 0 8px;">Cada vez que marcas pagado (una, parcial o lote) queda un registro para imprimir o CSV.</p>
+            <p style="font-size:9px;color:#64748b;margin:0 0 8px;">Cada pago (una, parcial o lote) guarda una copia aquí. Si pagaste y no imprimiste antes, usa también «Informe (pagadas aquí)» arriba.</p>
             <div id="fac-sem-informes-list" style="max-height:220px;overflow-y:auto;font-size:10px;"></div>
           </div>
         </div>
@@ -8090,6 +8098,54 @@ function facSemDescargarCsvMarcadas() {
   notify('✓ CSV descargado');
 }
 
+function facSemInformeItemsPagadasEnLista() {
+  facSemInit();
+  const items = [];
+  (state.facSemana || []).forEach(s => {
+    if (s.estado === 'pagado') {
+      const m = s.montoReal != null ? s.montoReal : s.monto;
+      items.push({ nro: s.nro, prov: s.prov, monto: m });
+    }
+  });
+  return items;
+}
+
+function facSemVistaImprimirPagadasLista() {
+  const items = facSemInformeItemsPagadasEnLista();
+  if (!items.length) {
+    notify('⚠ No hay facturas pagadas en esta lista todavía');
+    return;
+  }
+  const total = items.reduce((a, b) => a + (b.monto || 0), 0);
+  facSemOpenInformeWindow({
+    titulo: 'Facturas pagadas (lista semanal actual)',
+    subtitulo: 'Estado: registrado como pagado en Cerebrus — filas que siguen en la lista',
+    fecha: new Date().toLocaleString('es-CL'),
+    meta: 0,
+    total,
+    items
+  });
+}
+
+function facSemDescargarCsvPagadasLista() {
+  const items = facSemInformeItemsPagadasEnLista();
+  if (!items.length) {
+    notify('⚠ No hay facturas pagadas en esta lista todavía');
+    return;
+  }
+  const total = items.reduce((a, b) => a + (b.monto || 0), 0);
+  const csv = facSemBuildCsvFromInforme({
+    titulo: 'Facturas pagadas lista semanal',
+    fecha: new Date().toLocaleString('es-CL'),
+    meta: 0,
+    total,
+    items
+  });
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  facSemDownloadCsv(csv, 'cerebrus_lista_semana_pagadas_' + stamp);
+  notify('✓ CSV descargado');
+}
+
 function facSemHistorialPush(entry) {
   facSemInit();
   if (!state.facSemHistorialPagos) state.facSemHistorialPagos = [];
@@ -8280,6 +8336,11 @@ function facSemRender() {
         </div>
       </div>`;
     }).join('');
+  }
+
+  const pagWrap = document.getElementById('fac-sem-pagadas-actions');
+  if (pagWrap) {
+    pagWrap.style.display = items.length && items.some(s => s.estado === 'pagado') ? '' : 'none';
   }
 
   // Update totals
