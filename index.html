@@ -3323,10 +3323,22 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemHoyLimpiarMarcas()">↺ Quitar marcas</button>
             <button type="button" class="fac-btn primary" style="font-size:10px;" onclick="facSemPagarMarcadasHoy()">✓ Pagar las marcadas hoy</button>
+            <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemVistaImprimirMarcadas()">🖨 Informe (marcas)</button>
+            <button type="button" class="fac-btn" style="font-size:10px;" onclick="facSemDescargarCsvMarcadas()">⬇ CSV (marcas)</button>
             <span style="font-size:9px;color:#94a3b8;">Marca facturas pendientes; la suma te ayuda a cuadrar con el monto disponible.</span>
           </div>
         </div>
         <div id="fac-sem-lista"></div>
+        <div id="fac-sem-informes-wrap" style="display:none;border-top:1px solid var(--border);">
+          <div style="padding:10px 14px;background:rgba(16,185,129,.06);">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+              <span style="font-size:10px;font-weight:800;color:#047857;">📑 Pagos registrados (informe)</span>
+              <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;" onclick="facSemLimpiarHistorialInformes()">🗑 Borrar historial</button>
+            </div>
+            <p style="font-size:9px;color:#64748b;margin:0 0 8px;">Cada vez que marcas pagado (una, parcial o lote) queda un registro para imprimir o CSV.</p>
+            <div id="fac-sem-informes-list" style="max-height:220px;overflow-y:auto;font-size:10px;"></div>
+          </div>
+        </div>
         <div style="padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;">
           <button class="fac-btn" onclick="facSemLimpiar()" style="font-size:10px;">🗑 Limpiar lista</button>
         </div>
@@ -7910,6 +7922,7 @@ function facRender() {
 function facSemInit() {
   if (!state.facSemana) state.facSemana = [];
   if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel = [];
+  if (!Array.isArray(state.facSemHistorialPagos)) state.facSemHistorialPagos = [];
   if (state.facSemHoyMeta == null || isNaN(state.facSemHoyMeta)) state.facSemHoyMeta = 0;
   state.facSemana.forEach((s, idx) => {
     if (!s.id) s.id = 'fs_mig_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 7);
@@ -7975,6 +7988,179 @@ function facSemHoyLimpiarMarcas() {
   markUnsaved();
 }
 
+function facSemInformeItemsFromSelection() {
+  facSemInit();
+  const items = [];
+  (state.facSemana || []).forEach(s => {
+    if (s.estado === 'pendiente' && state.facSemHoySel.includes(s.id)) {
+      items.push({ nro: s.nro, prov: s.prov, monto: s.monto });
+    }
+  });
+  return items;
+}
+
+function facSemCsvEscapeCell(val) {
+  const t = String(val ?? '');
+  if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+  return t;
+}
+
+function facSemBuildCsvFromInforme(d) {
+  const lines = [];
+  lines.push(['Campo', 'Valor'].map(facSemCsvEscapeCell).join(','));
+  lines.push(['Fecha', d.fecha || ''].map(facSemCsvEscapeCell).join(','));
+  lines.push(['Título', d.titulo || ''].map(facSemCsvEscapeCell).join(','));
+  if (d.meta > 0) lines.push(['Meta disponible', String(d.meta)].map(facSemCsvEscapeCell).join(','));
+  lines.push(['N° factura', 'Proveedor', 'Monto'].map(facSemCsvEscapeCell).join(','));
+  (d.items || []).forEach(it => {
+    lines.push([it.nro, it.prov, String(it.monto)].map(facSemCsvEscapeCell).join(','));
+  });
+  lines.push(['Total', '', String(d.total)].map(facSemCsvEscapeCell).join(','));
+  return lines.join('\r\n');
+}
+
+function facSemDownloadCsv(text, baseName) {
+  const blob = new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = baseName + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function facSemOpenInformeWindow(d) {
+  const rows = (d.items || []).map(it =>
+    '<tr><td>' + esc(it.nro) + '</td><td>' + esc(it.prov) + '</td><td style="text-align:right;">' + fmt(it.monto) + '</td></tr>'
+  ).join('');
+  const metaHtml = (d.meta > 0) ? '<p style="font-size:12px;color:#475569;">Meta disponible: ' + fmt(d.meta) + '</p>' : '';
+  const sub = d.subtitulo ? '<p style="color:#64748b;font-size:12px;">' + esc(d.subtitulo) + '</p>' : '';
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(d.titulo || 'Informe') + '</title>' +
+    '<style>body{font-family:system-ui,-apple-system,sans-serif;padding:24px;color:#0f172a;max-width:720px;margin:0 auto;}h1{font-size:18px;}table{border-collapse:collapse;width:100%;margin-top:16px;}th,td{border:1px solid #cbd5e1;padding:8px;font-size:12px;}th{background:#f1f5f9;text-align:left;}.foot{margin-top:16px;font-weight:700;font-size:14px;}</style></head><body>' +
+    '<h1>' + esc(d.titulo || 'Informe') + '</h1>' + sub +
+    '<p style="font-size:12px;">' + esc(d.fecha || '') + '</p>' + metaHtml +
+    '<table><thead><tr><th>N° factura</th><th>Proveedor</th><th>Monto</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '<p class="foot">Total: ' + fmt(d.total) + '</p>' +
+    '<p style="font-size:10px;color:#94a3b8;margin-top:28px;">Cerebrus — Lista semanal de pagos</p></body></html>';
+  const w = window.open('', '_blank');
+  if (!w) {
+    notify('⚠ Permite ventanas emergentes para imprimir o usa Descargar CSV');
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(function() { w.print(); }, 400);
+}
+
+function facSemVistaImprimirMarcadas() {
+  const items = facSemInformeItemsFromSelection();
+  if (!items.length) {
+    notify('⚠ Marca facturas con el checkbox para generar el informe');
+    return;
+  }
+  const meta = state.facSemHoyMeta || 0;
+  const total = items.reduce((a, b) => a + (b.monto || 0), 0);
+  facSemOpenInformeWindow({
+    titulo: 'Propuesta de pago (marcadas)',
+    subtitulo: 'Aún no registrado como pagado en Cerebrus — solo planificación',
+    fecha: new Date().toLocaleString('es-CL'),
+    meta,
+    total,
+    items
+  });
+}
+
+function facSemDescargarCsvMarcadas() {
+  const items = facSemInformeItemsFromSelection();
+  if (!items.length) {
+    notify('⚠ Marca facturas con el checkbox para exportar CSV');
+    return;
+  }
+  const meta = state.facSemHoyMeta || 0;
+  const total = items.reduce((a, b) => a + (b.monto || 0), 0);
+  const csv = facSemBuildCsvFromInforme({
+    titulo: 'Propuesta marcas lista semanal',
+    fecha: new Date().toLocaleString('es-CL'),
+    meta,
+    total,
+    items
+  });
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  facSemDownloadCsv(csv, 'cerebrus_lista_semana_marcas_' + stamp);
+  notify('✓ CSV descargado');
+}
+
+function facSemHistorialPush(entry) {
+  facSemInit();
+  if (!state.facSemHistorialPagos) state.facSemHistorialPagos = [];
+  entry.id = entry.id || ('fsh_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
+  state.facSemHistorialPagos.unshift(entry);
+  if (state.facSemHistorialPagos.length > 60) state.facSemHistorialPagos.length = 60;
+  markUnsaved();
+}
+
+function facSemRenderInformes() {
+  const wrap = document.getElementById('fac-sem-informes-wrap');
+  const list = document.getElementById('fac-sem-informes-list');
+  if (!wrap || !list) return;
+  const hist = state.facSemHistorialPagos || [];
+  if (!hist.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  wrap.style.display = '';
+  const tipoLbl = { lote: 'Lote', una: 'Una', parcial: 'Parcial' };
+  list.innerHTML = hist.map((h, idx) => {
+    const t = tipoLbl[h.tipo] || h.tipo || '—';
+    return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #e2e8f0;">' +
+      '<span style="flex:1;min-width:140px;">' + esc(h.fecha) + ' · <strong>' + fmt(h.total) + '</strong> · ' + h.items.length + ' doc. · ' + t + '</span>' +
+      '<button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;" onclick="facSemInformeImprimirIdx(' + idx + ')">🖨 Imprimir</button>' +
+      '<button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;" onclick="facSemInformeCsvIdx(' + idx + ')">⬇ CSV</button>' +
+      '</div>';
+  }).join('');
+}
+
+function facSemInformeImprimirIdx(idx) {
+  const h = (state.facSemHistorialPagos || [])[idx];
+  if (!h) return;
+  const sub = h.tipo === 'lote' ? 'Pago registrado (lote desde lista semanal)' :
+    h.tipo === 'parcial' ? 'Pago parcial registrado' : 'Pago registrado (una factura)';
+  facSemOpenInformeWindow({
+    titulo: 'Pago proveedores — lista semanal',
+    subtitulo: sub,
+    fecha: h.fecha,
+    meta: h.meta || 0,
+    total: h.total,
+    items: h.items
+  });
+}
+
+function facSemInformeCsvIdx(idx) {
+  const h = (state.facSemHistorialPagos || [])[idx];
+  if (!h) return;
+  const csv = facSemBuildCsvFromInforme({
+    titulo: 'Pago lista semanal',
+    fecha: h.fecha,
+    meta: h.meta || 0,
+    total: h.total,
+    items: h.items
+  });
+  const stamp = String(h.fechaISO || '').replace(/[^\d]/g, '').slice(0, 14) || Date.now();
+  facSemDownloadCsv(csv, 'cerebrus_pago_semana_' + stamp);
+  notify('✓ CSV descargado');
+}
+
+function facSemLimpiarHistorialInformes() {
+  if (!(state.facSemHistorialPagos || []).length) return;
+  if (!confirm('¿Borrar todo el historial de informes de pagos?\nNo afecta facturas ni la lista semanal.')) return;
+  pushUndo();
+  state.facSemHistorialPagos = [];
+  markUnsaved();
+  facSemRenderInformes();
+  notify('✓ Historial de informes vaciado');
+}
+
 function facSemPagarMarcadasHoy() {
   facSemInit();
   const sel = state.facSemHoySel || [];
@@ -7989,6 +8175,14 @@ function facSemPagarMarcadasHoy() {
   indices.sort((a, b) => a - b);
   const total = indices.reduce((acc, i) => acc + (state.facSemana[i].monto || 0), 0);
   if (!confirm('¿Marcar como pagadas ' + indices.length + ' factura(s) · total ' + fmt(total) + '?')) return;
+  const metaSnapshot = state.facSemHoyMeta || 0;
+  const itemsSnapshot = indices.map(i => ({
+    nro: state.facSemana[i].nro,
+    prov: state.facSemana[i].prov,
+    monto: state.facSemana[i].monto
+  }));
+  const fechaISO = new Date().toISOString();
+  const fecha = new Date().toLocaleString('es-CL');
   pushUndo();
   for (let k = 0; k < indices.length; k++) {
     const i = indices[k];
@@ -8001,6 +8195,14 @@ function facSemPagarMarcadasHoy() {
     if (fac) fac.estado = 'inactiva';
   }
   state.facSemHoySel = [];
+  facSemHistorialPush({
+    fechaISO,
+    fecha,
+    meta: metaSnapshot,
+    total,
+    tipo: 'lote',
+    items: itemsSnapshot
+  });
   facSemRender();
   facCalcKpis();
   try { facRenderDetail(); } catch (e) {}
@@ -8090,6 +8292,7 @@ function facSemRender() {
   set2('fac-sem-pagado-lbl', pagado > 0 ? `✓ Pagado: ${fmt(pagado)}` : '');
   set2('fac-sem-pendiente-lbl', pendiente > 0 ? `Pendiente: ${fmt(pendiente)}` : '');
   facSemHoyRefreshSummary();
+  facSemRenderInformes();
 }
 
 function facSemPagar(i) {
@@ -8103,6 +8306,14 @@ function facSemPagar(i) {
   const facs = (state.facturas||{})[s.prov] || [];
   const fac = facs.find(f=>f.id===s.facId);
   if (fac) { fac.estado = 'inactiva'; }
+  facSemHistorialPush({
+    fechaISO: new Date().toISOString(),
+    fecha: new Date().toLocaleString('es-CL'),
+    meta: 0,
+    total: s.monto,
+    tipo: 'una',
+    items: [{ nro: s.nro, prov: s.prov, monto: s.monto }]
+  });
   facSemRender();
   facCalcKpis();
   facRenderDetail();
@@ -8128,6 +8339,14 @@ function facSemPagoParcial(i) {
     if (real >= fac.monto) { fac.estado = 'inactiva'; }
     else { fac.estado = 'parcial'; }
   }
+  facSemHistorialPush({
+    fechaISO: new Date().toISOString(),
+    fecha: new Date().toLocaleString('es-CL'),
+    meta: 0,
+    total: real,
+    tipo: 'parcial',
+    items: [{ nro: s.nro, prov: s.prov, monto: real }]
+  });
   facSemRender();
   facCalcKpis();
   facRenderDetail();
@@ -11223,6 +11442,7 @@ function _postLoadSetup() {
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel              = [];
   if (state.facSemHoyMeta == null || isNaN(state.facSemHoyMeta)) state.facSemHoyMeta = 0;
+  if (!Array.isArray(state.facSemHistorialPagos)) state.facSemHistorialPagos = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
@@ -13662,7 +13882,7 @@ function archCheckSize() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','sebasFinanzas',
+    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
   keys.forEach(k => {
     if (state[k]) parts[k] = JSON.stringify(state[k]).length;
@@ -18892,7 +19112,7 @@ function splitStateForCloudParts(st) {
   const PART_DEF = [
     { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario'] },
     { id: 'pFac', keys: ['facturas', 'movimientos'] },
-    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'mercaderiaSemanasSimple'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
   const stripped = JSON.parse(JSON.stringify(st));
