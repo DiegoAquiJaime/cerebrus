@@ -608,7 +608,7 @@ body.dark-mode .ai-group-header{background:#0f172a;}
 .fac-nueva-grid input:focus,.fac-nueva-grid select:focus{outline:none;border-color:var(--accent);}
 .fac-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1500;display:none;align-items:center;justify-content:center;}
 .fac-modal-overlay.open{display:flex;}
-.fac-modal{background:var(--white);border-radius:12px;width:360px;max-width:94vw;box-shadow:0 16px 48px rgba(0,0,0,0.22);overflow:hidden;}
+.fac-modal{background:var(--white);border-radius:12px;width:400px;max-width:94vw;box-shadow:0 16px 48px rgba(0,0,0,0.22);overflow:hidden;}
 .fac-modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .fac-modal-head h3{font-size:13px;font-weight:700;}
 .fac-modal-body{padding:16px 18px;}
@@ -3665,7 +3665,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <!-- Inventario automático -->
           <div id="ai-inv-import-wrap" style="display:none;"></div>
         </div>
-        <div class="ai-api-note" style="margin-top:10px;">Las facturas se importan como "Activas". Puedes cambiar el estado después.</div>
+        <div class="ai-api-note" style="margin-top:10px;">Las facturas se importan como "Activas". Tras importar, en Facturas → abre la factura y puedes corregir N°, RUT, fechas y monto.</div>
       </div>
       <div class="ai-modal-footer">
         <button class="fac-btn" onclick="closeAiModalBtn()">Cancelar</button>
@@ -3681,7 +3681,29 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <h3 id="fac-modal-title">Editar factura</h3>
         <button onclick="closeFacModalBtn()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
       </div>
-      <div class="fac-modal-body">
+      <div class="fac-modal-body" style="max-height:min(78vh,520px);overflow-y:auto;">
+        <div class="fac-modal-row">
+          <label>N° Factura</label>
+          <input type="text" id="fac-modal-nro" placeholder="Ej: 12345" autocomplete="off">
+        </div>
+        <div class="fac-modal-row">
+          <label>RUT proveedor</label>
+          <input type="text" id="fac-modal-rut" placeholder="12.345.678-9" autocomplete="off">
+        </div>
+        <div class="fac-modal-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label>Emisión</label>
+            <input type="text" id="fac-modal-emision" placeholder="DD-MM-AAAA" autocomplete="off">
+          </div>
+          <div>
+            <label>Vencimiento</label>
+            <input type="text" id="fac-modal-vence" placeholder="DD-MM-AAAA" autocomplete="off">
+          </div>
+        </div>
+        <div class="fac-modal-row">
+          <label>Monto</label>
+          <input type="text" inputmode="numeric" id="fac-modal-monto" placeholder="">
+        </div>
         <div class="fac-modal-row">
           <label>Estado</label>
           <div class="fac-estado-grid">
@@ -3693,10 +3715,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <div class="fac-modal-row">
           <label>Comentario / Nota</label>
           <textarea id="fac-modal-comment" rows="2" placeholder="Ej: Abono $200.000 el 15/03, saldo pendiente…"></textarea>
-        </div>
-        <div class="fac-modal-row">
-          <label>Monto (editable)</label>
-          <input type="text" inputmode="numeric" id="fac-modal-monto" placeholder="">
         </div>
       </div>
       <div class="fac-modal-footer">
@@ -8239,7 +8257,15 @@ function openFacModal(prov, facId) {
   if (!fac) return;
   _facModalProv = prov;
   _facModalId   = facId;
-  set('fac-modal-title', 'Factura ' + fac.nro + ' — ' + prov);
+  set('fac-modal-title', 'Editar factura — ' + prov);
+  const elNro = document.getElementById('fac-modal-nro');
+  const elRut = document.getElementById('fac-modal-rut');
+  const elEmi = document.getElementById('fac-modal-emision');
+  const elVen = document.getElementById('fac-modal-vence');
+  if (elNro) elNro.value = fac.nro || '';
+  if (elRut) elRut.value = fac.rut || '';
+  if (elEmi) elEmi.value = fac.emision || '';
+  if (elVen) elVen.value = fac.vence || '';
   document.getElementById('fac-modal-comment').value = fac.comentario || '';
   document.getElementById('fac-modal-monto').value   = fac.monto || '';
   // Set estado buttons
@@ -8268,14 +8294,42 @@ function facSaveModal() {
   if (!_facModalProv || !_facModalId) return;
   const fac = (state.facturas[_facModalProv]||[]).find(f=>f.id===_facModalId);
   if (!fac) return;
-  pushUndo();
-  fac.estado     = facGetSelEstado();
-  fac.comentario = document.getElementById('fac-modal-comment').value.trim();
+  const nroNew = (document.getElementById('fac-modal-nro') && document.getElementById('fac-modal-nro').value || '').trim();
+  if (!nroNew) {
+    notify('⚠ Indica el N° de factura');
+    return;
+  }
+  const rutNew = normRut((document.getElementById('fac-modal-rut') && document.getElementById('fac-modal-rut').value) || '');
+  const emiNew = (document.getElementById('fac-modal-emision') && document.getElementById('fac-modal-emision').value || '').trim();
+  const venNew = (document.getElementById('fac-modal-vence') && document.getElementById('fac-modal-vence').value || '').trim();
   const newM = parseInt((document.getElementById('fac-modal-monto').value||'').replace(/[^\d]/g,''),10);
-  if (newM > 0) fac.monto = newM;
+  if (!newM || newM <= 0) {
+    notify('⚠ Monto inválido');
+    return;
+  }
+  const dupWarn = facFindDuplicate(nroNew, newM, rutNew, _facModalProv, emiNew || fac.emision, fac.id);
+  if (dupWarn) {
+    if (!confirm('⚠ Posible duplicado:\n' + dupWarn + '\n\n¿Guardar de todas formas?')) return;
+  }
+  pushUndo();
+  fac.nro = nroNew;
+  fac.rut = rutNew;
+  fac.emision = emiNew;
+  fac.vence = venNew;
+  fac.monto = newM;
+  fac.estado = facGetSelEstado();
+  fac.comentario = document.getElementById('fac-modal-comment').value.trim();
+  (state.facSemana || []).forEach(s => {
+    if (s.prov === _facModalProv && s.facId === fac.id) s.nro = fac.nro;
+  });
   closeFacModalBtn();
+  facAutoLearnRuts();
+  facRefreshWarnings();
   facRenderDetail();
+  facSemRender();
   facCalcKpis();
+  facRenderDashboard();
+  markUnsaved();
   notify('✓ Factura ' + fac.nro + ' actualizada');
 }
 
@@ -8416,13 +8470,14 @@ function facFindProvByRut(rut) {
 }
 
 // ── BUSCAR DUPLICADO en todo el sistema ──
-// emision = YYYY-MM-DD del formulario (requerida para comparar monto+fecha)
-function facFindDuplicate(nro, monto, rut, currentProv, emision) {
+// emision = misma cadena que en factura (p. ej. DD-MM-AAAA) para comparar monto+fecha
+function facFindDuplicate(nro, monto, rut, currentProv, emision, excludeFacId) {
   if (!state.facturas) return null;
   const nroNorm = (nro||'').trim().toLowerCase();
   const rkNew = rutKey(rut||'');
   for (const [pn, facs] of Object.entries(state.facturas)) {
     for (const f of facs) {
+      if (excludeFacId && f.id === excludeFacId) continue;
       // Mismo N° en el mismo proveedor
       if (pn === currentProv && f.nro && f.nro.trim().toLowerCase() === nroNorm && nroNorm.length > 1) {
         return `N° ${nro} ya existe en ${pn} (${f.emision} · ${fmt(f.monto)})`;
