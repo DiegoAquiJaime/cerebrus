@@ -3331,12 +3331,19 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <!-- Nuevo proveedor form -->
       <div class="fac-nuevo-prov-form" id="fac-nuevo-prov-form">
         <h3 style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:12px;">➕ Agregar nuevo proveedor</h3>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
-          <div style="flex:1;min-width:140px;">
-            <label style="font-size:10px;font-weight:700;color:#9aacb8;text-transform:uppercase;display:block;margin-bottom:4px;">Nombre proveedor</label>
-            <input type="text" id="fac-np-nombre" placeholder="Ej: NUEVO PROVEEDOR SPA" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+        <p style="font-size:11px;color:#64748b;margin:0 0 10px 0;">Nombre (obligatorio). RUT opcional; puedes editarlo después en la ficha del proveedor.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end;margin-bottom:10px;">
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#9aacb8;text-transform:uppercase;display:block;margin-bottom:4px;">Razón social / nombre</label>
+            <input type="text" id="fac-np-nombre" placeholder="Ej: FRUTATTO SPA" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
           </div>
-          <button class="fac-btn success" onclick="facAddProveedor()">Agregar</button>
+          <div>
+            <label style="font-size:10px;font-weight:700;color:#9aacb8;text-transform:uppercase;display:block;margin-bottom:4px;">RUT (opcional)</label>
+            <input type="text" id="fac-np-rut" placeholder="12.345.678-9" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="fac-btn success" onclick="facAddProveedor()">Agregar y abrir ficha</button>
           <button class="fac-btn" onclick="toggleNuevoProveedor()">Cancelar</button>
         </div>
       </div>
@@ -8068,7 +8075,8 @@ function facRenderDashboard() {
     const facs    = state.facturas[pn];
     if (q && !pn.toLowerCase().includes(q)) return null;
     const activas = facs.filter(f => f.estado !== 'inactiva');
-    if (_facDashFilter === 'activas' && activas.length === 0) return null;
+    // "Con deuda": ocultar solo si tiene facturas pero ninguna pendiente; los proveedores nuevos (0 facturas) sí deben verse
+    if (_facDashFilter === 'activas' && activas.length === 0 && facs.length > 0) return null;
     const total   = activas.reduce((s,f)=>s+f.monto, 0);
     const vencidas= activas.filter(f => {
       if (!f.vence) return false;
@@ -8093,10 +8101,12 @@ function facRenderDashboard() {
     }
     const color   = provColor(pn);
     const initials= pn.replace(/[^A-Z]/g,'').slice(0,2) || pn.slice(0,2).toUpperCase();
-    const badge   = vencidas > 0
-      ? `<span class="fac-prov-badge vencida">⚠ ${vencidas} venc.</span>`
-      : activas.length > 0
-        ? `<span class="fac-prov-badge ok">${activas.length} pend.</span>` : '';
+    const badge   = facs.length === 0
+      ? `<span class="fac-prov-badge" style="background:#f1f5f9;color:#64748b;">Sin facturas</span>`
+      : vencidas > 0
+        ? `<span class="fac-prov-badge vencida">⚠ ${vencidas} venc.</span>`
+        : activas.length > 0
+          ? `<span class="fac-prov-badge ok">${activas.length} pend.</span>` : '';
     const totalStr= total > 0 ? `<span class="fac-prov-total" style="color:var(--danger)">${fmt(total)}</span>` : `<span class="fac-prov-total" style="color:var(--success);font-size:11px;">✓ Al día</span>`;
     html += `<div class="fac-prov-card" onclick="facOpenProv('${esc(pn)}')">
       <div class="fac-prov-icon" style="background:${color}">${initials}</div>
@@ -8627,10 +8637,28 @@ function facDeleteProveedor() {
 }
 
 // ── NUEVO PROVEEDOR ──
+function facNormalizeProvNombre(s) {
+  return String(s || '').trim().replace(/\s+/g, ' ').toUpperCase();
+}
+
+function facFindProveedorKeyByNombre(norm) {
+  if (!state.facturas || !norm) return null;
+  for (const k of Object.keys(state.facturas)) {
+    if (facNormalizeProvNombre(k) === norm) return k;
+  }
+  return null;
+}
+
 function toggleNuevoProveedor() {
   const f = document.getElementById('fac-nuevo-prov-form');
   f.classList.toggle('open');
-  if (f.classList.contains('open')) document.getElementById('fac-np-nombre').focus();
+  if (f.classList.contains('open')) {
+    const n = document.getElementById('fac-np-nombre');
+    const r = document.getElementById('fac-np-rut');
+    if (n) n.value = '';
+    if (r) r.value = '';
+    if (n) n.focus();
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -9012,18 +9040,57 @@ function facCheckAllRutConflicts() {
 }
 
 function facAddProveedor() {
-  const nombre = (document.getElementById('fac-np-nombre').value||'').trim().toUpperCase();
+  const nombre = facNormalizeProvNombre(document.getElementById('fac-np-nombre').value || '');
   if (!nombre) { notify('⚠ Escribe el nombre del proveedor'); return; }
-  if (state.facturas && state.facturas[nombre]) { notify('⚠ Ya existe el proveedor "' + nombre + '"'); return; }
-  pushUndo();
+
+  const existente = facFindProveedorKeyByNombre(nombre);
+  if (existente) {
+    notify('⚠ Ya existe «' + existente + '» (mismo nombre normalizado). Abrimos su ficha.');
+    document.getElementById('fac-np-nombre').value = '';
+    const rEl = document.getElementById('fac-np-rut');
+    if (rEl) rEl.value = '';
+    toggleNuevoProveedor();
+    facDashFilter('todas');
+    facRenderDashboard();
+    facOpenProv(existente);
+    return;
+  }
+
+  const rutRaw = (document.getElementById('fac-np-rut')?.value || '').trim();
+  const rutClean = rutRaw ? normRut(rutRaw) : '';
+  if (rutRaw && !rutClean) {
+    notify('⚠ RUT no reconocido — corrígelo o déjalo vacío');
+    return;
+  }
   ensureProvRuts();
+  if (rutClean) {
+    const rk = rutKey(rutClean);
+    const otro = rk && state.rutMap && state.rutMap[rk];
+    if (otro && facNormalizeProvNombre(otro) !== nombre) {
+      if (!confirm('Ese RUT ya está asignado a «' + otro + '». ¿Crear igualmente este proveedor? (revisa duplicados después con Normalizar RUT)')) return;
+    }
+  }
+
+  pushUndo();
   if (!state.facturas) state.facturas = {};
   state.facturas[nombre] = [];
+  if (rutClean) {
+    state.provRuts[nombre] = rutClean;
+    const rk = rutKey(rutClean);
+    if (rk) state.rutMap[rk] = nombre;
+  }
+
   document.getElementById('fac-np-nombre').value = '';
+  const rClear = document.getElementById('fac-np-rut');
+  if (rClear) rClear.value = '';
   toggleNuevoProveedor();
+  facDashFilter('todas');
   facRenderDashboard();
   facCalcKpis();
-  notify('✅ Proveedor ' + nombre + ' agregado');
+  facCheckAllRutConflicts();
+  markUnsaved();
+  notify('✅ Proveedor «' + nombre + '» agregado');
+  facOpenProv(nombre);
 }
 
 // ============================================================
