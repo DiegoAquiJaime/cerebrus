@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.01.2",
-  "notes": "Nube: guardado por módulos (Part_*). Informe diario: base banco/cuenta, propinas en egresos. UI sincronización y clima. Medidor almacenamiento realista."
+  "version": "2026.04.01.3",
+  "notes": "Inventario Grande (PDF): altas automáticas sin duplicar existentes. Nube por módulos (Part_*), informe diario, UI sincronización/clima, medidor almacenamiento."
 }
