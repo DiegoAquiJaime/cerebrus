@@ -661,7 +661,22 @@ body.dark-mode .prov-rut-badge{background:#1e293b;}
 .nc-btn.nc-btn-ok{border-color:var(--success);color:var(--success);}
 .nc-btn.nc-btn-ok:hover{background:rgba(16,185,129,.06);}
 .ai-group-head .nc-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,.12);color:var(--danger);}
+/* Revisar papel (escaneo ilegible) */
+.rp-panel{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden;border:1px solid #fde68a;}
+.rp-panel-head{background:linear-gradient(135deg,#fffbeb,#fef9c3);padding:12px 16px;border-bottom:1px solid #fde68a;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.rp-panel-title{font-size:12px;font-weight:700;color:#92400e;flex:1;}
+.rp-item{padding:12px 16px;border-bottom:1px solid #fffbeb;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.rp-item:last-child{border-bottom:none;}
+.rp-foto-thumb{max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover;}
+.equipo-lec-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;background:var(--white);}
+.equipo-lec-meta{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
+.equipo-lec-title{font-size:13px;font-weight:800;margin:4px 0 8px;color:var(--text-strong);}
+.equipo-lec-body{font-size:12px;line-height:1.55;color:var(--text-soft);white-space:pre-wrap;}
+.equipo-lec-done{font-size:10px;color:var(--success);margin-top:8px;}
 body.dark-mode .nc-panel{background:#1e293b;}
+body.dark-mode .rp-panel{background:#1e293b;border-color:#854d0e;}
+body.dark-mode .rp-panel-head{background:linear-gradient(135deg,#422006,#713f12);border-color:#854d0e;}
+body.dark-mode .rp-item{border-color:#334155;}
 body.dark-mode .nc-item{border-color:#1e293b;}
 body.dark-mode .nc-btn{background:#1e293b;}
 @media(max-width:700px){
@@ -2303,6 +2318,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
   <div class="nav-item" id="nav-inventario" onclick="showTab('inventario')"><span class="ni">📦</span> Inventario</div>
+  <div class="nav-item" id="nav-equipo" onclick="showTab('equipo')"><span class="ni">📚</span> Equipo</div>
   <div class="nav-item" id="nav-creditos" onclick="showTab('creditos')"><span class="ni">💳</span> Créditos Informales</div>
   <div class="nav-item" id="nav-sebas" onclick="showTab('sebas')"><span class="ni">🔐</span> Finanzas Sebas</div>
   <div class="nav-item" id="nav-detalle" onclick="showTab('detalle')"><span class="ni">⚙️</span> Configuración</div>
@@ -3245,6 +3261,8 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <!-- Panel NC / documentos pendientes -->
       <div id="fac-nc-panel" style="display:none;"></div>
+      <!-- Tareas: revisar documento físico (escaneo ilegible) -->
+      <div id="fac-revisar-panel" style="display:none;"></div>
 
       <!-- Alerta vencimientos próximos -->
       <!-- Vencimientos: solo botón discreto, lista desplegable al hacer click -->
@@ -4121,6 +4139,16 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div id="propinas" class="tab-content">
     <div class="content">
       <div class="prop-wrap" id="prop-content"></div>
+    </div>
+  </div>
+
+  <!-- ======= TAB EQUIPO — micro-lecciones ======= -->
+  <div id="equipo" class="tab-content">
+    <div class="content">
+      <p style="font-size:12px;color:var(--text-soft);margin:0 0 14px;max-width:720px;">
+        Micro-lecciones (~2 min) para alinear procedimientos (HACCP, caja, cortes). Marca cada una cuando la hayas revisado con el equipo.
+      </p>
+      <div id="equipo-lessons-wrap"></div>
     </div>
   </div>
 
@@ -5688,7 +5716,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.02.3';
+const APP_VERSION = '2026.04.03.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6071,7 +6099,7 @@ function sebasModuleAllowed() {
 
 function showTab(tabId) {
   // Bodega solo puede acceder a inventario
-  if (currentUser === 'Bodega' && tabId !== 'inventario') {
+  if (currentUser === 'Bodega' && tabId !== 'inventario' && tabId !== 'equipo') {
     tabId = 'inventario';
   }
   if (tabId === 'sebas' && !sebasModuleAllowed()) {
@@ -6079,13 +6107,13 @@ function showTab(tabId) {
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
   closeNav();
-  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
+  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','equipo','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
     const nav = document.getElementById('nav-'+t);
     if (nav) nav.classList.toggle('active', t===tabId);
   });
-  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
+  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', equipo:'Equipo — Micro-lecciones', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
   set('tab-title', titles[tabId]||tabId);
   if (tabId==='sac')        sacRender();
   if (tabId==='semanas')    { renderWeeks(); calRenderWeekStrip(0); }
@@ -6094,6 +6122,7 @@ function showTab(tabId) {
   if (tabId==='creditos')   renderCreditos();
   if (tabId==='facturas')   facRender();
   if (tabId==='inventario') invRender();
+  if (tabId==='equipo')     equipoRender();
   if (tabId==='propinas')   propRender();
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
@@ -7809,6 +7838,164 @@ function facRenderNcPanel() {
   panel.style.display = 'block';
 }
 
+/** Micro-lecciones fijas (texto breve; progreso en state.equipoLeccionesHechas). */
+const EQUIPO_LECCIONES = [
+  { id: 'lec_haccp_1', area: 'HACCP', titulo: 'Cadena de frío y rotación (≈2 min)', texto: '1) Entra la mercadería a cámara o despensa sin demora.\n2) Aplica FIFO: lo más antiguo al frente para usarlo primero.\n3) Si el olor, color o textura no son los habituales, no lo sirvas: avisa al jefe de cocina.\n4) Lava y desinfecta tablas y utensilios entre tareas crudas y cocidas.' },
+  { id: 'lec_caja_1', area: 'Caja', titulo: 'Arrque y cierre básico (≈2 min)', texto: '1) Cuenta efectivo al abrir y al cerrar; anota diferencias antes de irte.\n2) No mezcles propinas con caja restaurante si el local tiene criterio separado.\n3) Todo vale distinto o nota de crédito queda registrado el mismo día.\n4) Si algo no cuadra, detén el cierre y avisa a quien corresponda.' },
+  { id: 'lec_cortes_1', area: 'Cortes', titulo: 'Cuchillo y superficies (≈2 min)', texto: '1) Cuchillo afilado y tabla estable; corta alejado del cuerpo.\n2) Tabla roja para crudos, verde para vegetales, según protocolo del local.\n3) No dejes cuchillos en el fondo del pileta.\n4) Guantes o manos limpias según la tarea; cambia cuando cambies de producto crudo a cocido.' }
+];
+
+function revisarPapelAddTask_(r, resolveProvName) {
+  if (!state.revisarPapel) state.revisarPapel = [];
+  const prov = resolveProvName(r);
+  const nro = String(r.nro || '').trim() || '(sin N°)';
+  const dup = state.revisarPapel.some(function(t) {
+    return !t.resolved && t.source === 'ai-ilegible' && t.proveedor === prov && t.nro === nro;
+  });
+  if (dup) return false;
+  state.revisarPapel.push({
+    id: 'rp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    source: 'ai-ilegible',
+    proveedor: prov,
+    nro: nro,
+    emision: r.emision || '',
+    monto: r.monto || 0,
+    observacion: r.observacion || '',
+    fotoDataUrl: '',
+    resolved: false,
+    createdAt: new Date().toISOString()
+  });
+  return true;
+}
+
+function facRenderRevisarPanel() {
+  const panel = document.getElementById('fac-revisar-panel');
+  if (!panel) return;
+  if (!state.revisarPapel) state.revisarPapel = [];
+  const pending = state.revisarPapel.filter(function(d) { return !d.resolved; });
+  if (!pending.length) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+
+  panel.innerHTML = `<div class="rp-panel">
+    <div class="rp-panel-head">
+      <span style="font-size:18px;">📄</span>
+      <div class="rp-panel-title">${pending.length} tarea${pending.length > 1 ? 's' : ''} — revisar documento físico</div>
+      <span style="font-size:10px;color:#92400e;">Escaneo ilegible: confirma datos en el papel y adjunta foto opcional</span>
+    </div>
+    ${pending.map(function(d) {
+      const fotoHtml = d.fotoDataUrl
+        ? `<div style="flex-shrink:0;"><img class="rp-foto-thumb" src="${esc(d.fotoDataUrl)}" alt="Foto"></div>`
+        : '';
+      return `<div class="rp-item">
+        ${fotoHtml}
+        <div class="nc-item-info" style="flex:1;min-width:200px;">
+          <div class="nc-item-nro" style="color:#92400e;">${esc(d.proveedor)} · doc. ${esc(d.nro)}</div>
+          <div class="nc-item-desc">${esc(d.emision || '—')} · ${fmt(d.monto)}${d.observacion ? ' · ' + esc(d.observacion) : ''}</div>
+        </div>
+        <div class="nc-actions">
+          <label class="nc-btn" style="cursor:pointer;margin:0;">
+            📷 Foto
+            <input type="file" accept="image/*" style="display:none;" onchange="revisarPapelFotoFromInput(this,'${esc(d.id)}')">
+          </label>
+          <button type="button" class="nc-btn nc-btn-ok" onclick="revisarPapelResolver('${esc(d.id)}')">✓ Listo, revisado</button>
+          <button type="button" class="nc-btn nc-btn-del" onclick="revisarPapelDescartar('${esc(d.id)}')">✕ Quitar</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+  panel.style.display = 'block';
+}
+
+function revisarPapelResolver(taskId) {
+  const t = (state.revisarPapel || []).find(function(x) { return x.id === taskId; });
+  if (!t) return;
+  pushUndo();
+  t.resolved = true;
+  markUnsaved();
+  facRender();
+  notify('✓ Tarea «revisar papel» cerrada');
+}
+
+function revisarPapelDescartar(taskId) {
+  if (!confirm('¿Quitar esta tarea de la lista? (No borra facturas importadas)')) return;
+  pushUndo();
+  state.revisarPapel = (state.revisarPapel || []).filter(function(x) { return x.id !== taskId; });
+  markUnsaved();
+  facRender();
+}
+
+function revisarPapelFotoFromInput(fileInput, taskId) {
+  const f = fileInput.files && fileInput.files[0];
+  if (!f || !/^image\//.test(f.type)) return;
+  const t = (state.revisarPapel || []).find(function(x) { return x.id === taskId; });
+  if (!t) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    const img = new Image();
+    img.onload = function() {
+      var maxW = 1200;
+      var w = img.width;
+      var h = img.height;
+      if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+      var c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      var ctx = c.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0, w, h);
+      var dataUrl = c.toDataURL('image/jpeg', 0.82);
+      if (dataUrl.length > 450000) dataUrl = c.toDataURL('image/jpeg', 0.6);
+      if (dataUrl.length > 500000) {
+        notify('⚠ La imagen sigue siendo muy grande; prueba otra foto o reduce resolución.');
+        fileInput.value = '';
+        return;
+      }
+      pushUndo();
+      t.fotoDataUrl = dataUrl;
+      markUnsaved();
+      facRender();
+      notify('📷 Foto guardada en la tarea');
+    };
+    img.onerror = function() { notify('⚠ No se pudo leer la imagen'); };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+  fileInput.value = '';
+}
+
+function equipoRender() {
+  const wrap = document.getElementById('equipo-lessons-wrap');
+  if (!wrap) return;
+  if (!state.equipoLeccionesHechas) state.equipoLeccionesHechas = {};
+  wrap.innerHTML = EQUIPO_LECCIONES.map(function(lec) {
+    const done = state.equipoLeccionesHechas[lec.id];
+    var doneLine = '';
+    if (done) {
+      try {
+        doneLine = '<div class="equipo-lec-done">✓ Revisada el ' + new Date(done).toLocaleString('es-CL') + '</div>';
+      } catch (e) {
+        doneLine = '<div class="equipo-lec-done">✓ Revisada</div>';
+      }
+    }
+    return `<div class="equipo-lec-card">
+      <div class="equipo-lec-meta">${esc(lec.area)}</div>
+      <div class="equipo-lec-title">${esc(lec.titulo)}</div>
+      <div class="equipo-lec-body">${esc(lec.texto)}</div>
+      ${doneLine}
+      <button type="button" class="fac-btn primary" style="margin-top:10px;font-size:11px;" onclick="equipoMarcarLeccion('${esc(lec.id)}')">${done ? '↻ Volver a marcar hoy' : '✓ Marcar como revisada hoy'}</button>
+    </div>`;
+  }).join('');
+}
+
+function equipoMarcarLeccion(lecId) {
+  if (!EQUIPO_LECCIONES.some(function(l) { return l.id === lecId; })) return;
+  pushUndo();
+  if (!state.equipoLeccionesHechas) state.equipoLeccionesHechas = {};
+  state.equipoLeccionesHechas[lecId] = new Date().toISOString();
+  markUnsaved();
+  equipoRender();
+  notify('✓ Lección marcada');
+}
+
 // Find invoice by number across all providers
 function facFindByNro(nro, preferredProv) {
   if (!state.facturas || !nro) return null;
@@ -7917,6 +8104,7 @@ function facRender() {
   facCalcKpis();
   facRefreshWarnings();
   facRenderNcPanel();
+  facRenderRevisarPanel();
   facRenderDashboard();
   facSemRender(); // #13 render facturas a pagar en semana
   // Show dashboard, hide detail
@@ -10577,6 +10765,12 @@ function aiConfirmImport() {
     return pn.toUpperCase().trim();
   }
 
+  let revisarPapelNuevo = 0;
+  _aiParsedRows.filter(function(r) { return r._keep && r.confianza === 'ilegible'; }).forEach(function(r) {
+    if (revisarPapelAddTask_(r, resolveProvName)) revisarPapelNuevo++;
+  });
+  if (revisarPapelNuevo) notify('📋 ' + revisarPapelNuevo + ' tarea(s) «revisar papel» — panel ámbar en Facturas Proveedores');
+
   // ── Import facturas normally ──
   facturas.forEach(r => {
     const provName = resolveProvName(r);
@@ -11571,6 +11765,8 @@ function _postLoadSetup() {
   if (state.facSemHoyMeta == null || isNaN(state.facSemHoyMeta)) state.facSemHoyMeta = 0;
   if (!Array.isArray(state.facSemHistorialPagos)) state.facSemHistorialPagos = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
+  if (!state.revisarPapel)               state.revisarPapel               = [];
+  if (!state.equipoLeccionesHechas)      state.equipoLeccionesHechas      = {};
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;

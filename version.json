@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.02.3",
-  "notes": "Facturas: badge ILA solo si totales indican ILA (+ nombre alcohólico); ilegible ILA? y confirmación al importar; prompts sin inventar ILA."
+  "version": "2026.04.03.1",
+  "notes": "Revisar papel (tareas por escaneo ilegible + foto opcional); pestaña Equipo con micro-lecciones HACCP/caja/cortes."
 }
