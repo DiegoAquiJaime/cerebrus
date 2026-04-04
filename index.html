@@ -1360,6 +1360,8 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-estado-btn.nopagado{background:rgba(239,68,68,.1);color:var(--danger);}
 .sac-estado-btn.pagado{background:rgba(16,185,129,.12);color:var(--success);}
 .sac-estado-btn.parcial{background:rgba(245,158,11,.12);color:var(--warning);}
+.sac-estado-btn.pausa{background:rgba(99,102,241,.14);color:#6366f1;}
+.sac-carga-row.pausa{background:rgba(99,102,241,.06);}
 .sac-monto{font-weight:800;font-size:12px;text-align:right;white-space:nowrap;}
 .sac-footer{background:#f8fafc;border-top:2px solid var(--border);padding:10px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 .sac-foot-kpi{text-align:center;}
@@ -2815,7 +2817,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <!-- CARGAS DE LA SEMANA -->
         <div class="sac-cargas-card">
           <div class="sac-cargas-head">
-            <div style="font-size:13px;font-weight:800;">📤 Cargas de la semana <span class="sac-help light" title="Gastos que debes pagar en el período. Puedes importar desde egresos fijos y agregar manuales. Estado pendiente/parcial/pagado impacta el cálculo de por pagar.">?</span></div>
+            <div style="font-size:13px;font-weight:800;">📤 Cargas de la semana <span class="sac-help light" title="Gastos del período. No pagado / parcial / pagado afectan por pagar y balance. PAUSA: el monto queda anotado pero no cuenta en por pagar ni en el balance hasta reactivar.">?</span></div>
             <div style="display:flex;gap:7px;flex-wrap:wrap;">
               <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
               <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
@@ -2834,6 +2836,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
               <option value="nopagado">No pagado</option>
               <option value="parcial">Parcial</option>
               <option value="pagado">Pagado</option>
+              <option value="pausa">Pausa (no cuenta)</option>
             </select>
             <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
             <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()">
@@ -5685,7 +5688,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.01.3';
+const APP_VERSION = '2026.04.02.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18115,6 +18118,7 @@ function sacBaseCargas(cargas) {
 }
 
 function sacCargaPagadoAcum(c) {
+  if (c.estado === 'pausa') return 0;
   if (c.estado === 'pagado') return c.monto || 0;
   if (c.estado === 'parcial') {
     if (c.pagadoParcial != null && c.pagadoParcial > 0) return c.pagadoParcial;
@@ -18124,6 +18128,7 @@ function sacCargaPagadoAcum(c) {
 }
 
 function sacCargaPendienteAcum(c) {
+  if (c.estado === 'pausa') return 0;
   if (c.estado === 'pagado') return 0;
   if (c.estado === 'parcial') return Math.max(0, (c.monto || 0) - sacCargaPagadoAcum(c));
   return c.monto || 0;
@@ -18392,8 +18397,8 @@ function sacRenderCargas() {
     return;
   }
 
-  // #12: Ordenar por estatus: nopagado → parcial → pagado
-  const statusOrder = { 'nopagado': 0, 'parcial': 1, 'pagado': 2 };
+  // Ordenar por estatus: nopagado → parcial → pausa → pagado
+  const statusOrder = { 'nopagado': 0, 'parcial': 1, 'pausa': 2, 'pagado': 3 };
   const sortedCargas = [...cargas].sort((a, b) => {
     const oa = statusOrder[a.estado] ?? 0;
     const ob = statusOrder[b.estado] ?? 0;
@@ -18421,8 +18426,8 @@ function sacRenderCargas() {
 
   list.innerHTML = filteredCargas.map((c,i) => {
     const col     = sacCatColor(c.cat);
-    const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : 'nopagado';
-    const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : '○ No pagado';
+    const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : c.estado === 'pausa' ? 'pausa' : 'nopagado';
+    const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : c.estado === 'pausa' ? '⏸ Pausa' : '○ No pagado';
     const pagadoParcial = c.pagadoParcial || 0;
     const pendienteParcial = c.monto - pagadoParcial;
     const montoEf = c._esPago ? c.monto :
@@ -18434,8 +18439,9 @@ function sacRenderCargas() {
                       : c.montoReal != null && c.montoReal !== c.monto
       ? `<div style="font-size:9px;${c.montoReal>c.monto?'color:var(--danger)':'color:var(--success)'};">${c.montoReal>c.monto?'+':''}${fmt(Math.abs(c.montoReal-c.monto))}</div>`
       : '';
+    const pausaNote = c.estado === 'pausa' ? `<div style="font-size:9px;color:#6366f1;font-weight:700;">No suma a por pagar / balance</div>` : '';
 
-    return `<div class="sac-carga-row ${c.estado==='pagado'?'pagado':''}" id="sac-cr-${c.id}">
+    return `<div class="sac-carga-row ${c.estado==='pagado'?'pagado':''}${c.estado==='pausa'?' pausa':''}" id="sac-cr-${c.id}">
       <div>
         <span class="sac-cat-badge" style="background:${col}22;color:${col};">${esc(c.cat||'Otro')}</span>
       </div>
@@ -18445,14 +18451,18 @@ function sacRenderCargas() {
         ${c.nota?`<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(c.nota)}</div>`:''}
       </div>
       <div style="text-align:right;min-width:90px;">
-        <div class="sac-monto" style="color:${c.estado==='pagado'?'var(--success)':'var(--danger)'};">
+        <div class="sac-monto" style="color:${c.estado==='pagado'?'var(--success)':c.estado==='pausa'?'#6366f1':'var(--danger)'};">
           ${fmt(montoEf)}</div>
         ${c.monto !== montoEf?`<div style="font-size:9px;text-decoration:line-through;color:#94a3b8;">${fmt(c.monto)}</div>`:''}
         ${diffTxt}
+        ${pausaNote}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
-        ${!c._esPago ? `<button onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>` : ''}
+        ${c.estado === 'pausa'
+          ? `<button type="button" class="sac-estado-btn pausa" onclick="sacTogglePausa('${c.id}')">⏸ PAUSA · Reactivar</button>`
+          : `<button type="button" class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
+             ${!c._esPago ? `<button type="button" onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>
+             <button type="button" onclick="sacTogglePausa('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.35);color:#6366f1;cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:700;">⏸ Pausar</button>` : ''}`}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
         <button onclick="sacDelCarga('${c.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;transition:.15s;"
@@ -18806,8 +18816,34 @@ function sacDelCarga(id) {
   sacCalcBalance();
 }
 
+function sacTogglePausa(id) {
+  const c = sacGetCargas().find(x => x.id === id);
+  if (!c || c._esPago) return;
+  if (c.estado !== 'pausa') {
+    if (!confirm('¿Poner esta carga en PAUSA?\n\n• El monto seguirá anotado.\n• NO se sumará a «Por pagar» ni al balance estimado hasta que reactives.\n\n¿Continuar?')) return;
+    pushUndo();
+    c._pausaPrevEstado = (c.estado === 'parcial' || c.estado === 'pagado' || c.estado === 'nopagado') ? c.estado : 'nopagado';
+    c.estado = 'pausa';
+  } else {
+    const prev = c._pausaPrevEstado || 'nopagado';
+    const lab = { nopagado: 'No pagado (pendiente de pago)', parcial: 'Parcial', pagado: 'Pagado' }[prev] || 'No pagado';
+    if (!confirm('¿Quitar PAUSA?\n\nVolverá a: ' + lab + '.\nVolverá a contar en por pagar y en el balance según ese estado.\n\n¿Continuar?')) return;
+    pushUndo();
+    c.estado = prev;
+    delete c._pausaPrevEstado;
+  }
+  sacRenderCargas();
+  sacCalcBalance();
+  markUnsaved();
+  notify(c.estado === 'pausa' ? '⏸ Carga en pausa (no afecta balance)' : '↩ Pausa quitada');
+}
+
 function sacCycleEstado(id) {
   const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
+  if (c.estado === 'pausa') {
+    notify('⚠ Está en PAUSA. Usa «⏸ PAUSA · Reactivar» para volver a no pagado / parcial / pagado.');
+    return;
+  }
   const order = ['nopagado','pagado','parcial'];
   const idx   = order.indexOf(c.estado||'nopagado');
   const next  = order[(idx+1)%order.length];
@@ -18841,6 +18877,7 @@ function sacEditMonto(id) {
 function sacPagarParcial(id) {
   const cargas = sacGetCargas();
   const c = cargas.find(x=>x.id===id); if(!c) return;
+  if (c.estado === 'pausa') { notify('⚠ Quita PAUSA antes de registrar pagos parciales.'); return; }
 
   const pendiente = c.monto - (c.pagadoParcial||0);
   const v = prompt(
