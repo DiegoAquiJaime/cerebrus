@@ -5688,7 +5688,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.02.2';
+const APP_VERSION = '2026.04.02.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -9969,8 +9969,12 @@ Para CADA documento extrae un objeto JSON con:
   * invProdId: si el producto coincide con alguno de la lista de inventario, pon su ID. Si no coincide, deja vacío.
   Si el documento no tiene detalle de líneas o no es una factura/guía, deja items como array vacío [].
 
+Totales e impuestos (extrae SOLO lo impreso en el documento; no inventes):
+- montoNeto, montoIVA, montoILA, montoRetencion, totalDoc: enteros en pesos o 0 si no aparecen.
+- montoILA > 0 SOLO si la factura muestra explícitamente ILA, impuesto adicional al alcohol o línea equivalente. Si solo ves IVA (19%), montoILA debe ser 0.
+
 Responde SOLO con array JSON válido. Sin texto, sin markdown, sin backticks. Sin saltos de línea dentro de valores de texto (descripción, nombres).
-Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORÍFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","items":[{"descripcion":"Lomo vetado","cantidad":15,"unidad":"kg","precioUnit":8900,"subtotal":133500,"invProdId":"inv_123"},{"descripcion":"Pollo entero","cantidad":20,"unidad":"un","precioUnit":3200,"subtotal":64000,"invProdId":""}]}]`;
+Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORÍFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","montoNeto":0,"montoIVA":0,"montoILA":0,"montoRetencion":0,"totalDoc":0,"items":[{"descripcion":"Lomo vetado","cantidad":15,"unidad":"kg","precioUnit":8900,"subtotal":133500,"invProdId":"inv_123"},{"descripcion":"Pollo entero","cantidad":20,"unidad":"un","precioUnit":3200,"subtotal":64000,"invProdId":""}]}]`;
 }
 
 // Subida en chunks: divide el archivo en trozos de 200KB
@@ -10131,7 +10135,7 @@ REGLAS DE PRECIOS — MUY IMPORTANTE:
 2. precioUnit en el resultado siempre debe ser CON IVA incluido (precio neto × 1.19)
 3. La Retención (RET) es un descuento al pago, NO afecta el precio del producto — ignórala para calcular precios unitarios
 4. monto en el JSON debe ser el SubTotal (Neto + IVA) SIN restar la retención — es lo que realmente vale la mercadería
-5. Para bebidas alcohólicas: el ILA es impuesto adicional. Si aparece, inclúyelo en precioUnit
+5. ILA: solo si la factura muestra ese impuesto en totales o líneas; si no consta, montoILA=0 y no asumas ILA por el nombre del producto
 6. Si la factura muestra precio por caja, divide por las unidades para obtener precio unitario
 
 Para CADA documento extrae un JSON con:
@@ -10149,7 +10153,7 @@ Para CADA documento extrae un JSON con:
 - tieneIVA: true si detectaste que los precios de línea incluyen IVA, false si son netos, null si no puedes determinarlo
 - montoNeto: subtotal neto sin IVA (si se puede determinar)
 - montoIVA: monto de IVA del documento
-- montoILA: impuesto adicional (alcohol/ILA) si aplica
+- montoILA: impuesto adicional (alcohol/ILA) SOLO si aparece explícito en la factura; si solo hay IVA, debe ser 0 (no inventes ILA)
 - montoRetencion: retención (ej. 5%) si aparece
 - montoFlete: flete/despacho si aparece como cargo
 - montoOtrosImpuestos: otros impuestos/cargos no clasificados
@@ -10235,6 +10239,48 @@ async function processAiText(file, ext) {
     document.getElementById('ai-progress').classList.remove('show');
     notify('⚠ ' + e.message);
   }
+}
+
+/** Nombre de producto sugiere bebida alcohólica (para cruzar con totales de factura en la UI). */
+function aiInvDescEsAlcohol_(descU) {
+  return /VINO|CERVEZA|PISCO|VODKA|\bRON\b|WHISKY|LICOR|CHAMPAGNE|ESPUMANTE|SIDRA|CAVA/.test(descU);
+}
+
+/** Texto del documento donde puede constar ILA explícito. */
+function aiInvDocBlobImpuestos_(doc) {
+  if (!doc) return '';
+  return [doc.comentario, doc.observacion].filter(Boolean).join(' ');
+}
+
+/**
+ * Los datos extraídos del documento indican ILA u otro impuesto adicional explícito (no solo IVA).
+ */
+function aiInvFacturaIndicaILA_(doc) {
+  if (!doc) return false;
+  if (invNum_(doc.montoILA) > 0) return true;
+  var t = aiInvDocBlobImpuestos_(doc);
+  if (!t.trim()) return false;
+  if (/SIN\s+ILA|NO\s+HAY\s+ILA|NO\s+CONSTA\s+ILA|SOLO\s+IVA/i.test(t)) return false;
+  if (/IMP\.?\s*ADIC|IMPUESTO\s+ADICIONAL|IMP\.\s*AL\s*ALCOHOL|IMPUESTO\s+AL\s*ALCOHOL/i.test(t)) return true;
+  if (/\bILA\b\s*[$:.\-]?\s*[\d]/i.test(t)) return true;
+  return false;
+}
+
+/**
+ * Badge junto al producto: ILA solo si la factura (totales) indica ILA + nombre alcohólico; si ilegible, ILA?
+ */
+function aiInvILABadgeHTML_(it) {
+  var doc = it._aiDoc;
+  var descU = (it.descripcion || '').toUpperCase();
+  var esAlcohol = aiInvDescEsAlcohol_(descU);
+  var ilegible = doc && doc.confianza === 'ilegible';
+  if (ilegible) {
+    if (!esAlcohol) return '';
+    return '<span style="font-size:8px;background:#fee2e2;color:#991b1b;padding:1px 4px;border-radius:3px;margin-left:3px;" title="Factura ilegible: confirma en el documento original si hay ILA además de IVA.">ILA?</span>';
+  }
+  if (!aiInvFacturaIndicaILA_(doc)) return '';
+  if (!esAlcohol) return '';
+  return '<span style="font-size:8px;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:3px;margin-left:3px;" title="En los totales de la factura consta ILA u otro impuesto adicional; verifica este ítem.">ILA</span>';
 }
 
 function aiShowPreview(rows) {
@@ -10363,8 +10409,13 @@ function aiShowPreview(rows) {
   document.getElementById('ai-preview-wrap').style.display = 'block';
   document.getElementById('ai-import-confirm').style.display = '';
 
-  // Show inventory items if any document has items
-  const allItems = rows.flatMap(r => r.items||[]).filter(it => it.descripcion);
+  // Show inventory items if any document has items (cada ítem lleva _aiDoc para ILA según totales)
+  const allItems = [];
+  rows.forEach(function(r) {
+    (r.items || []).forEach(function(it) {
+      if (it.descripcion) allItems.push(Object.assign({}, it, { _aiDoc: r }));
+    });
+  });
   const invWrap  = document.getElementById('ai-inv-import-wrap');
   if (invWrap) {
     if (allItems.length) {
@@ -10373,8 +10424,13 @@ function aiShowPreview(rows) {
       const docConIVAAplicado = rows.filter(r=>r.items?.some(it=>it.eraNetoIVA)).length;
       const docSinIVAInfo     = rows.filter(r=>r.tieneIVA===null && r.items?.length).length;
       const docNeto           = rows.filter(r=>r.tieneIVA===false && r.items?.length).length;
+      const docsIlegiblesConItems = rows.filter(function(r) {
+        return r.confianza === 'ilegible' && (r.items || []).some(function(x) { return x.descripcion; });
+      });
 
       let ivaWarning = '';
+      if (docsIlegiblesConItems.length)
+        ivaWarning += `<div style="font-size:10px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:6px 8px;border-radius:5px;margin-bottom:8px;">🚫 ${docsIlegiblesConItems.length} documento${docsIlegiblesConItems.length!==1?'s':''} ilegible${docsIlegiblesConItems.length!==1?'s':''} con detalle: no se pueden confiar los totales (IVA/ILA) leídos. Revisa el papel. Los avisos ILA? piden confirmación manual.</div>`;
       if (docConIVAAplicado > 0)
         ivaWarning = `<div style="font-size:10px;color:#059669;background:rgba(16,185,129,.08);padding:5px 8px;border-radius:5px;margin-bottom:6px;">✅ Precios con IVA incluido — verificado matemáticamente</div>`;
       else if (docNeto > 0)
@@ -10404,12 +10460,7 @@ function aiShowPreview(rows) {
               const matched  = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
               const rowId    = 'ai-inv-item-' + i;
               const chkId    = 'ai-inv-chk-' + i;
-              const descU    = (it.descripcion||'').toUpperCase();
-              // Detect if alcohol/ILA product (RON con \b: evita falso positivo en CAMARON/LANGOSTINO por subcadena "RON")
-              const esAlcohol = /VINO|CERVEZA|PISCO|VODKA|\bRON\b|WHISKY|LICOR|CHAMPAGNE|ESPUMANTE|SIDRA|CAVA/.test(descU);
-              const impuestoBadge = esAlcohol
-                ? `<span style="font-size:8px;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:3px;margin-left:3px;" title="Producto con ILA — verifica impuesto adicional al alcohol">ILA</span>`
-                : '';
+              const impuestoBadge = aiInvILABadgeHTML_(it);
               return `<div style="display:grid;grid-template-columns:20px 1fr 55px 45px 85px 60px;gap:4px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="${rowId}">
                 <input type="checkbox" class="ai-chk-prod" id="${chkId}" data-idx="${i}" checked
                   style="width:14px;height:14px;accent-color:var(--success);cursor:pointer;"
@@ -10502,6 +10553,18 @@ function aiConfirmImport() {
   }
   for (const [orig, override] of Object.entries(_aiProvOverrides)) {
     if (override === null) { notify(`⚠ Escribe el nombre del nuevo proveedor para "${orig}"`); return; }
+  }
+
+  const chkInvPre = document.getElementById('ai-chk-inv');
+  const invItemsPre = window._aiInvItems || [];
+  if (chkInvPre && chkInvPre.checked && invItemsPre.length) {
+    const needIlaConfirm = invItemsPre.some(function(it) {
+      const d = it._aiDoc;
+      return d && d.confianza === 'ilegible' && aiInvDescEsAlcohol_((it.descripcion || '').toUpperCase());
+    });
+    if (needIlaConfirm && !confirm('Hay al menos un documento ilegible con productos que suelen llevar ILA. ¿Confirmas que revisaste en el documento físico si aplica impuesto adicional (ILA) además de IVA?')) {
+      return;
+    }
   }
 
   pushUndo();
