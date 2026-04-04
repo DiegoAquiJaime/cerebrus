@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.02.1",
-  "notes": "SAC Semana actual: egresos en PAUSA (confirmación) no cuentan en por pagar ni balance hasta reactivar."
+  "version": "2026.04.02.2",
+  "notes": "Inventario desde factura: badge ILA ya no se activa por subcadena RON en CAMARON (langostino/camarón)."
 }

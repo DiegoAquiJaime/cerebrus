@@ -5688,7 +5688,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.02.1';
+const APP_VERSION = '2026.04.02.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10405,8 +10405,8 @@ function aiShowPreview(rows) {
               const rowId    = 'ai-inv-item-' + i;
               const chkId    = 'ai-inv-chk-' + i;
               const descU    = (it.descripcion||'').toUpperCase();
-              // Detect if alcohol/ILA product
-              const esAlcohol = /VINO|CERVEZA|PISCO|VODKA|RON|WHISKY|LICOR|CHAMPAGNE|ESPUMANTE|SIDRA|CAVA/.test(descU);
+              // Detect if alcohol/ILA product (RON con \b: evita falso positivo en CAMARON/LANGOSTINO por subcadena "RON")
+              const esAlcohol = /VINO|CERVEZA|PISCO|VODKA|\bRON\b|WHISKY|LICOR|CHAMPAGNE|ESPUMANTE|SIDRA|CAVA/.test(descU);
               const impuestoBadge = esAlcohol
                 ? `<span style="font-size:8px;background:#fef3c7;color:#92400e;padding:1px 4px;border-radius:3px;margin-left:3px;" title="Producto con ILA — verifica impuesto adicional al alcohol">ILA</span>`
                 : '';
