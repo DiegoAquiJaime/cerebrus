@@ -17792,6 +17792,32 @@ function vsHybridTotalKey(key) {
   return { total: roundCLP(total + extraAdd), realDays, estDays, extra: extraM };
 }
 
+/** Suma ventas reales del período: cada día + fila «extra» real (debe alinearse con KPI venta real acumulada). */
+function sacWeekSumReal(key) {
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  let s = 0;
+  for (let i = 0; i < n && i < days.length; i++) s += days[i].real || 0;
+  s += vsGetExtraSac(key).realExtra || 0;
+  return Math.round(s);
+}
+
+/** Base para % mercadería: por día usa real si hay, si no estimado; extra usa real o estimado como en el balance. */
+function sacWeekProjectionMercBase(key) {
+  const n = sacPeriodDayCount();
+  const days = vsGetWeekSac(key);
+  const ex = vsGetExtraSac(key);
+  let s = 0;
+  for (let i = 0; i < n && i < days.length; i++) {
+    const d = days[i];
+    if ((d.real || 0) > 0) s += d.real;
+    else s += d.est || 0;
+  }
+  if ((ex.realExtra || 0) > 0) s += ex.realExtra;
+  else s += ex.monto || 0;
+  return Math.round(s);
+}
+
 // Número de bloque 1–4 del mes (para comparar con calendario) o el de la semana slot activa
 function sacActiveWeek() {
   const p = sacNormalizedPeriod();
@@ -18227,16 +18253,17 @@ function sacCalcVentas() {
   const n = sacPeriodDayCount();
   const days = vsGetWeekSac(key);
   const extraEst = vsGetExtraSac(key).monto || 0;
+  const extraReal = vsGetExtraSac(key).realExtra || 0;
   let sumEst = 0, sumReal = 0;
   for (let i = 0; i < n && i < days.length; i++) {
     sumEst += days[i].est || 0;
     sumReal += days[i].real || 0;
   }
   const totalEst = Math.round(sumEst + extraEst);
-  const totalReal = Math.round(sumReal);
+  const totalReal = sacWeekSumReal(key);
 
   const hybrid = vsHybridTotalKey(key);
-  const hasReal = hybrid.realDays > 0;
+  const hasRealRecorded = totalReal > 0;
 
   const te = document.getElementById('sac-vest-total');
   const tr = document.getElementById('sac-vreal-total');
@@ -18244,17 +18271,16 @@ function sacCalcVentas() {
   // Show estimated total
   if (te) te.textContent = fmt(totalEst);
 
-  // Show real or hybrid
+  // Pie columna real = suma estricta de reales (días + extra). Antes: faltaba extra y en mixto se mostraba solo lo estimado pendiente.
   if (tr) {
-    if (hasReal && hybrid.estDays > 0) {
-      // Hybrid: some real, some estimated
-      tr.textContent = fmt(Math.round(hybrid.total||0));
-      tr.title = `${hybrid.realDays} día${hybrid.realDays!==1?'s':''} real + ${hybrid.estDays} estimado`;
-      tr.style.color = 'var(--accent2)'; // purple = hybrid
-    } else if (hasReal) {
+    if (hasRealRecorded) {
       tr.textContent = fmt(totalReal);
-      tr.title = 'Venta real acumulada';
       tr.style.color = 'var(--success)';
+      const hint = [];
+      if (hybrid.realDays > 0) hint.push(hybrid.realDays + ' día(s) con cifra real');
+      if (extraReal > 0) hint.push('incluye fila extra');
+      if (hybrid.estDays > 0) hint.push(hybrid.estDays + ' día(s) aún solo estimado (no sumados al real)');
+      tr.title = hint.length ? hint.join(' · ') : 'Suma ventas reales del período';
     } else {
       tr.textContent = '—';
       tr.title = 'Sin ventas reales aún';
@@ -18262,13 +18288,12 @@ function sacCalcVentas() {
     }
   }
 
-  // Merc % calc uses hybrid total for accuracy
-  const merc   = state.sacMerc || {mode:'monto', val:0};
-  const baseV  = hasReal ? hybrid.total : totalEst;
+  const merc = state.sacMerc || { mode: 'monto', val: 0 };
+  const baseV = merc.mode === 'pct' ? sacWeekProjectionMercBase(key) : totalEst;
   if (merc.mode === 'pct' && merc.val > 0) {
     const mercAmt = Math.round(baseV * merc.val / 100);
-    const resEl   = document.getElementById('sac-merc-result');
-    if (resEl) resEl.textContent = `= ${fmt(mercAmt)}`;
+    const resEl = document.getElementById('sac-merc-result');
+    if (resEl) resEl.textContent = '= ' + fmt(mercAmt);
   }
 }
 
@@ -18293,8 +18318,7 @@ function sacMercValChange(val) {
 function sacGetMercMonto() {
   const merc = state.sacMerc || {mode:'monto', val:0};
   if (merc.mode === 'monto') return merc.val || 0;
-  const hybrid = vsHybridTotalKey(sacDataKey());
-  const baseVenta = hybrid.total;
+  const baseVenta = sacWeekProjectionMercBase(sacDataKey());
   return Math.round(baseVenta * (merc.val || 0) / 100);
 }
 
