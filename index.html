@@ -126,6 +126,10 @@ nav{
 .nav-item{padding:10px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-muted);border-left:3px solid transparent;transition:all .2s ease;display:flex;align-items:center;gap:10px;border-radius:0;letter-spacing:-0.01em;}
 .nav-item:hover{background:rgba(0,0,0,0.03);color:var(--text-strong);}
 .nav-item.active{background:rgba(249,115,22,0.08);border-left-color:var(--accent);color:var(--accent);font-weight:600;}
+.nav-logo h1{letter-spacing:-0.03em;text-shadow:0 1px 0 rgba(255,255,255,0.6);}
+body.dark-mode .nav-logo h1{text-shadow:0 1px 2px rgba(0,0,0,0.4);}
+#mainNav{background:linear-gradient(180deg,var(--white) 0%,#fafbfc 100%);}
+body.dark-mode #mainNav{background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);}
 .nav-item .ni{width:18px;text-align:center;font-size:15px;}
 
 /* ---- MAIN ---- */
@@ -668,11 +672,6 @@ body.dark-mode .prov-rut-badge{background:#1e293b;}
 .rp-item{padding:12px 16px;border-bottom:1px solid #fffbeb;display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
 .rp-item:last-child{border-bottom:none;}
 .rp-foto-thumb{max-width:120px;max-height:90px;border-radius:6px;border:1px solid var(--border);object-fit:cover;}
-.equipo-lec-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;background:var(--white);}
-.equipo-lec-meta{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
-.equipo-lec-title{font-size:13px;font-weight:800;margin:4px 0 8px;color:var(--text-strong);}
-.equipo-lec-body{font-size:12px;line-height:1.55;color:var(--text-soft);white-space:pre-wrap;}
-.equipo-lec-done{font-size:10px;color:var(--success);margin-top:8px;}
 body.dark-mode .nc-panel{background:#1e293b;}
 body.dark-mode .rp-panel{background:#1e293b;border-color:#854d0e;}
 body.dark-mode .rp-panel-head{background:linear-gradient(135deg,#422006,#713f12);border-color:#854d0e;}
@@ -2318,7 +2317,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
   <div class="nav-item" id="nav-inventario" onclick="showTab('inventario')"><span class="ni">📦</span> Inventario</div>
-  <div class="nav-item" id="nav-equipo" onclick="showTab('equipo')"><span class="ni">📚</span> Equipo</div>
   <div class="nav-item" id="nav-creditos" onclick="showTab('creditos')"><span class="ni">💳</span> Créditos Informales</div>
   <div class="nav-item" id="nav-sebas" onclick="showTab('sebas')"><span class="ni">🔐</span> Finanzas Sebas</div>
   <div class="nav-item" id="nav-detalle" onclick="showTab('detalle')"><span class="ni">⚙️</span> Configuración</div>
@@ -4142,16 +4140,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     </div>
   </div>
 
-  <!-- ======= TAB EQUIPO — micro-lecciones ======= -->
-  <div id="equipo" class="tab-content">
-    <div class="content">
-      <p style="font-size:12px;color:var(--text-soft);margin:0 0 14px;max-width:720px;">
-        Micro-lecciones (~2 min) para alinear procedimientos (HACCP, caja, cortes). Marca cada una cuando la hayas revisado con el equipo.
-      </p>
-      <div id="equipo-lessons-wrap"></div>
-    </div>
-  </div>
-
   <!-- ======= TAB FINANZAS SEBAS ======= -->
   <div id="sebas" class="tab-content">
     <div class="content" id="sebas-content">
@@ -5716,7 +5704,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.03.1';
+const APP_VERSION = '2026.04.04.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6099,7 +6087,7 @@ function sebasModuleAllowed() {
 
 function showTab(tabId) {
   // Bodega solo puede acceder a inventario
-  if (currentUser === 'Bodega' && tabId !== 'inventario' && tabId !== 'equipo') {
+  if (currentUser === 'Bodega' && tabId !== 'inventario') {
     tabId = 'inventario';
   }
   if (tabId === 'sebas' && !sebasModuleAllowed()) {
@@ -6107,13 +6095,13 @@ function showTab(tabId) {
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
   closeNav();
-  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','equipo','propinas','sebas','informe','detalle'].forEach(t => {
+  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
     const nav = document.getElementById('nav-'+t);
     if (nav) nav.classList.toggle('active', t===tabId);
   });
-  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', equipo:'Equipo — Micro-lecciones', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
+  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
   set('tab-title', titles[tabId]||tabId);
   if (tabId==='sac')        sacRender();
   if (tabId==='semanas')    { renderWeeks(); calRenderWeekStrip(0); }
@@ -6122,7 +6110,6 @@ function showTab(tabId) {
   if (tabId==='creditos')   renderCreditos();
   if (tabId==='facturas')   facRender();
   if (tabId==='inventario') invRender();
-  if (tabId==='equipo')     equipoRender();
   if (tabId==='propinas')   propRender();
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
@@ -7838,13 +7825,6 @@ function facRenderNcPanel() {
   panel.style.display = 'block';
 }
 
-/** Micro-lecciones fijas (texto breve; progreso en state.equipoLeccionesHechas). */
-const EQUIPO_LECCIONES = [
-  { id: 'lec_haccp_1', area: 'HACCP', titulo: 'Cadena de frío y rotación (≈2 min)', texto: '1) Entra la mercadería a cámara o despensa sin demora.\n2) Aplica FIFO: lo más antiguo al frente para usarlo primero.\n3) Si el olor, color o textura no son los habituales, no lo sirvas: avisa al jefe de cocina.\n4) Lava y desinfecta tablas y utensilios entre tareas crudas y cocidas.' },
-  { id: 'lec_caja_1', area: 'Caja', titulo: 'Arrque y cierre básico (≈2 min)', texto: '1) Cuenta efectivo al abrir y al cerrar; anota diferencias antes de irte.\n2) No mezcles propinas con caja restaurante si el local tiene criterio separado.\n3) Todo vale distinto o nota de crédito queda registrado el mismo día.\n4) Si algo no cuadra, detén el cierre y avisa a quien corresponda.' },
-  { id: 'lec_cortes_1', area: 'Cortes', titulo: 'Cuchillo y superficies (≈2 min)', texto: '1) Cuchillo afilado y tabla estable; corta alejado del cuerpo.\n2) Tabla roja para crudos, verde para vegetales, según protocolo del local.\n3) No dejes cuchillos en el fondo del pileta.\n4) Guantes o manos limpias según la tarea; cambia cuando cambies de producto crudo a cocido.' }
-];
-
 function revisarPapelAddTask_(r, resolveProvName) {
   if (!state.revisarPapel) state.revisarPapel = [];
   const prov = resolveProvName(r);
@@ -7960,40 +7940,6 @@ function revisarPapelFotoFromInput(fileInput, taskId) {
   };
   reader.readAsDataURL(f);
   fileInput.value = '';
-}
-
-function equipoRender() {
-  const wrap = document.getElementById('equipo-lessons-wrap');
-  if (!wrap) return;
-  if (!state.equipoLeccionesHechas) state.equipoLeccionesHechas = {};
-  wrap.innerHTML = EQUIPO_LECCIONES.map(function(lec) {
-    const done = state.equipoLeccionesHechas[lec.id];
-    var doneLine = '';
-    if (done) {
-      try {
-        doneLine = '<div class="equipo-lec-done">✓ Revisada el ' + new Date(done).toLocaleString('es-CL') + '</div>';
-      } catch (e) {
-        doneLine = '<div class="equipo-lec-done">✓ Revisada</div>';
-      }
-    }
-    return `<div class="equipo-lec-card">
-      <div class="equipo-lec-meta">${esc(lec.area)}</div>
-      <div class="equipo-lec-title">${esc(lec.titulo)}</div>
-      <div class="equipo-lec-body">${esc(lec.texto)}</div>
-      ${doneLine}
-      <button type="button" class="fac-btn primary" style="margin-top:10px;font-size:11px;" onclick="equipoMarcarLeccion('${esc(lec.id)}')">${done ? '↻ Volver a marcar hoy' : '✓ Marcar como revisada hoy'}</button>
-    </div>`;
-  }).join('');
-}
-
-function equipoMarcarLeccion(lecId) {
-  if (!EQUIPO_LECCIONES.some(function(l) { return l.id === lecId; })) return;
-  pushUndo();
-  if (!state.equipoLeccionesHechas) state.equipoLeccionesHechas = {};
-  state.equipoLeccionesHechas[lecId] = new Date().toISOString();
-  markUnsaved();
-  equipoRender();
-  notify('✓ Lección marcada');
 }
 
 // Find invoice by number across all providers
@@ -11125,6 +11071,9 @@ function _finishLogin() {
     document.getElementById('mode-badge').textContent = '💾 LOCAL';
     _localInit();
   }
+  setTimeout(function() {
+    try { if (typeof cerebrusTtsWelcomeOnce === 'function') cerebrusTtsWelcomeOnce(); } catch (e) {}
+  }, 900);
 }
 
 // Limpiar contraseña local de un usuario (útil al cambiar de archivo)
@@ -11766,7 +11715,6 @@ function _postLoadSetup() {
   if (!Array.isArray(state.facSemHistorialPagos)) state.facSemHistorialPagos = [];
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.revisarPapel)               state.revisarPapel               = [];
-  if (!state.equipoLeccionesHechas)      state.equipoLeccionesHechas      = {};
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
@@ -19329,6 +19277,7 @@ function markSaved() {
 }
 window.addEventListener('beforeunload', function(e) {
   if (!_unsaved) return;
+  try { if (typeof cerebrusTtsUnsavedPhrase === 'function') cerebrusTtsUnsavedPhrase(); } catch (err) {}
   const now = Date.now();
   // Doble confirmación: primer intento solo arma guardia.
   if (now > _closeDoubleGuardUntil) {
@@ -20015,7 +19964,81 @@ function notify(msg, duration) {
   el.style.opacity = '1';
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.style.opacity = '0'; el.classList.remove('notif-long'); }, ms);
+  try { if (typeof cerebrusTtsOnNotify === 'function') cerebrusTtsOnNotify(msg); } catch (e) {}
 }
+
+/** TTS: frases fijas (bienvenida estilo voz grave; advertencias estilo “computadora”). Sin reconocimiento de voz. */
+(function cerebrusTtsInit() {
+  var _ttsInvalidAt = 0;
+  var _ttsUnsavedAt = 0;
+  function voices() {
+    try { return speechSynthesis.getVoices() || []; } catch (e) { return []; }
+  }
+  function pickVoice(welcome) {
+    var vs = voices();
+    var es = vs.filter(function(v) { return /es/i.test(v.lang || ''); });
+    if (welcome) {
+      var m = es.find(function(v) { return /male|masculino|MX|419|US/i.test((v.name || '') + (v.lang || '')); });
+      if (!m) m = es[0];
+      return m || null;
+    }
+    var c = es.find(function(v) { return /female|femenina|es-MX|es-419/i.test((v.name || '') + (v.lang || '')); });
+    if (!c) c = es.find(function(v) { return /es/i.test(v.lang || ''); });
+    return c || null;
+  }
+  function speak(text, welcome) {
+    if (!window.speechSynthesis || !text) return;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'es-MX';
+    var vo = pickVoice(!!welcome);
+    if (vo) u.voice = vo;
+    if (welcome) {
+      u.rate = 0.86;
+      u.pitch = 0.74;
+      u.volume = 1;
+    } else {
+      u.rate = 1.05;
+      u.pitch = 1.12;
+      u.volume = 0.96;
+    }
+    speechSynthesis.speak(u);
+  }
+  window.cerebrusTtsWelcomeOnce = function() {
+    if (!window.speechSynthesis) return;
+    try {
+      if (sessionStorage.getItem('cerebrus_voice_welcome') === '1') return;
+      sessionStorage.setItem('cerebrus_voice_welcome', '1');
+    } catch (e) {}
+    speak('Soy Cerebrus, funciono y cumplo.', true);
+  };
+  window.cerebrusTtsInvalidPhrase = function() {
+    var now = Date.now();
+    if (now - _ttsInvalidAt < 4200) return;
+    _ttsInvalidAt = now;
+    speak('Atención. Verifique el dato ingresado. Caracteres o formato no válidos.', false);
+  };
+  window.cerebrusTtsUnsavedPhrase = function() {
+    var now = Date.now();
+    if (now - _ttsUnsavedAt < 7000) return;
+    _ttsUnsavedAt = now;
+    speak('Advertencia. Existen cambios sin guardar.', false);
+  };
+  window.cerebrusTtsOnNotify = function(msg) {
+    var s = String(msg);
+    if (s.indexOf('⚠') !== 0) return;
+    if (!/válid|inválid|Completa|Escrib|caracter|formato|Debe|Ingresa|elige|selecciona|Intenta|incorrect/i.test(s)) return;
+    cerebrusTtsInvalidPhrase();
+  };
+  if (window.speechSynthesis) {
+    speechSynthesis.addEventListener('voiceschanged', function() {});
+  }
+  document.addEventListener('invalid', function(ev) {
+    var t = ev.target;
+    if (!t || (t.tagName !== 'INPUT' && t.tagName !== 'SELECT' && t.tagName !== 'TEXTAREA')) return;
+    cerebrusTtsInvalidPhrase();
+  }, true);
+})();
 
 /** Pausa antes de llamar a ocrFile para no saturar la cuota por minuto de Google Drive. */
 function cerebrusDelayBeforeOcr(ms) {
