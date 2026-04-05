@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.05.4",
-  "notes": "Marca: Gastronomy Suite by Aquí Jaime; administración Diego Palacios Brockhaus (nav, login, pie, exports). UI: pie de página global, banner conflicto, tarjetas y calendario alineados al diseño."
+  "version": "2026.04.05.8",
+  "notes": "Bitácora: editar mensajes (inline), indicador de editado; permisos alineados con borrado."
 }

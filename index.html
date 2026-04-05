@@ -989,6 +989,79 @@ body.dark-mode p[style*="color:var(--text-soft)"]{color:#b0b0b5!important;}
 body.dark-mode p[style*="color:var(--text-muted)"]{color:#b0b0b5!important;}
 
 /* ---- CALENDARIO CHILENO ---- */
+/* ---- Reloj dashboard ---- */
+.dash-clock-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding:16px 18px;border-radius:var(--radius);border:1px solid var(--card-border);background:linear-gradient(135deg,rgba(249,115,22,0.08),rgba(94,92,230,0.06));box-shadow:var(--shadow);}
+.dash-clock-inner{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.dash-clock-label{font-size:10px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.08em;}
+.dash-clock-time{font-size:26px;font-weight:800;letter-spacing:-0.03em;color:var(--text-strong);font-variant-numeric:tabular-nums;}
+.dash-clock-date{font-size:12px;font-weight:600;color:var(--text-muted);}
+body.dark-mode .dash-clock-bar{background:linear-gradient(135deg,rgba(255,159,10,0.1),rgba(94,92,230,0.08));}
+
+/* ---- Módulo Calendario interno + bitácora ---- */
+.cal-modulo-hero{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:18px;}
+.cal-modulo-clock-card{flex:1;min-width:200px;padding:16px 18px;border-radius:var(--radius);border:1px solid var(--card-border);background:var(--surface);box-shadow:var(--shadow);}
+.cal-modulo-clock-label{font-size:9px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;}
+.cal-modulo-clock{font-size:32px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:var(--text-strong);}
+.cal-modulo-date{font-size:13px;font-weight:600;color:var(--text-muted);margin-top:4px;}
+.cal-modulo-hint{font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:16px;max-width:920px;}
+.cal-modulo-layout{display:grid;grid-template-columns:minmax(280px,1fr) minmax(260px,340px);gap:18px;margin-bottom:22px;align-items:start;}
+@media(max-width:900px){.cal-modulo-layout{grid-template-columns:1fr;}}
+.cal-int-panel,.cal-int-side{background:var(--surface);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;}
+.cal-int-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.cal-int-month{font-size:13px;font-weight:800;color:var(--text-strong);}
+.cal-int-nav{display:flex;align-items:center;gap:6px;}
+.cal-int-nav button{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;color:var(--primary);}
+.cal-int-nav button:hover{border-color:var(--accent);color:var(--accent);}
+.cal-int-weekhdr{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.cal-int-weekhdr span{font-size:8px;font-weight:800;color:var(--text-soft);text-align:center;text-transform:uppercase;}
+.cal-int-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-int-day{min-height:34px;border-radius:8px;border:1px solid transparent;background:rgba(0,0,0,0.02);text-align:center;padding:4px 2px;cursor:pointer;font-size:11px;font-weight:700;transition:.12s;position:relative;}
+.cal-int-day:hover{border-color:rgba(249,115,22,0.35);background:rgba(249,115,22,0.06);}
+.cal-int-day.other{opacity:.35;cursor:default;}
+.cal-int-day.today{box-shadow:0 0 0 2px var(--accent);}
+.cal-int-day.sel{background:rgba(249,115,22,0.18);border-color:rgba(249,115,22,0.45);}
+.cal-int-day.has::after{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--accent2);}
+.cal-int-side h4{font-size:11px;font-weight:800;color:var(--text-soft);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.cal-int-date-lbl{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-strong);}
+.cal-int-inp{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:8px;background:rgba(0,0,0,0.02);}
+.cal-int-inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
+.cal-int-ta{min-height:56px;resize:vertical;}
+.cal-int-add{width:100%;border:none;border-radius:8px;padding:9px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--accent);color:white;margin-bottom:12px;}
+.cal-int-add:hover{filter:brightness(1.05);}
+.cal-int-evlist{display:flex;flex-direction:column;gap:8px;max-height:220px;overflow-y:auto;}
+.cal-int-ev{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;background:rgba(0,0,0,0.02);}
+.cal-int-ev-title{font-weight:700;margin-bottom:2px;}
+.cal-int-ev-meta{font-size:10px;color:var(--text-soft);}
+.cal-int-ev-del{float:right;border:none;background:none;cursor:pointer;color:var(--text-soft);font-size:14px;line-height:1;padding:0 4px;}
+.cal-int-ev-del:hover{color:var(--danger);}
+.bitacora-panel{background:var(--surface);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-top:8px;}
+.bitacora-panel h3{font-size:14px;font-weight:800;margin-bottom:6px;letter-spacing:-0.02em;}
+.bitacora-panel .tip{font-size:11px;margin-bottom:12px;}
+.bitacora-ta{width:100%;min-height:72px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:10px;background:rgba(0,0,0,0.02);}
+.bitacora-ta:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
+.bitacora-btn{border:none;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;}
+.bitacora-btn:hover{opacity:.95;}
+.bitacora-list{display:flex;flex-direction:column;gap:10px;margin-top:16px;max-height:min(55vh,480px);overflow-y:auto;}
+.bitacora-item{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:rgba(0,0,0,0.02);}
+.bitacora-item-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;font-size:10px;color:var(--text-soft);font-weight:600;}
+.bitacora-item-by{color:var(--accent);font-weight:700;}
+.bitacora-item-text{font-size:13px;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+.bitacora-actions{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.bitacora-edit,.bitacora-del{border:none;background:none;cursor:pointer;font-size:12px;padding:2px 8px;border-radius:4px;font-family:inherit;font-weight:600;}
+.bitacora-edit{color:var(--accent2);}
+.bitacora-edit:hover{background:rgba(94,92,230,0.1);}
+.bitacora-del{color:var(--text-soft);}
+.bitacora-del:hover{color:var(--danger);background:rgba(255,69,58,0.08);}
+.bitacora-item-editing{border-color:rgba(94,92,230,0.35)!important;}
+.bitacora-edit-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.bitacora-btn-save{background:var(--success);color:white;border:none;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.bitacora-btn-save:hover{filter:brightness(1.05);}
+.bitacora-btn-cancel{background:rgba(0,0,0,0.06);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.bitacora-btn-cancel:hover{background:rgba(0,0,0,0.08);}
+.bitacora-edited{font-size:9px;color:var(--text-soft);font-weight:500;}
+body.dark-mode .cal-int-day{background:rgba(255,255,255,0.04);}
+body.dark-mode .cal-int-ev,body.dark-mode .bitacora-item{background:rgba(255,255,255,0.04);}
+
 .cal-widget{background:var(--surface);border-radius:var(--radius);border:1px solid var(--card-border);box-shadow:var(--shadow);padding:10px 14px;margin-bottom:14px;}
 .cal-widget-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:5px;}
 .cal-widget-title{font-size:11px;font-weight:700;}
@@ -1160,6 +1233,7 @@ body.user-bodega #nav-facturas,
 body.user-bodega #nav-informe,
 body.user-bodega #nav-propinas,
 body.user-bodega #nav-detalle,
+body.user-bodega #nav-calendario,
 body.user-bodega .nav-sep:last-of-type,
 body.user-bodega .nav-item[onclick*="goto"] { display:none!important; }
 body.user-bodega .export-menu { display:none!important; }
@@ -2397,6 +2471,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;"><span class="ni">📈</span> Venta Semanal</div>
   <div class="nav-item" id="nav-historial" onclick="showTab('historial')"><span class="ni">🗓</span> Historial Meses</div>
   <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
+  <div class="nav-item" id="nav-calendario" onclick="showTab('calendario')"><span class="ni">📆</span> Calendario</div>
   <div class="nav-sep">Secciones</div>
   <div class="nav-item" onclick="goto('sec-ingresos')"><span class="ni">💰</span> Ingresos</div>
   <div class="nav-item" onclick="goto('sec-mercaderia')" style="display:none;"><span class="ni">🛒</span> Mercadería</div>
@@ -2522,20 +2597,13 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div id="resumen" class="tab-content active">
     <div class="content">
 
-      <!-- 🌤 Widget Clima Concón / Caleta Higuerillas -->
-      <div id="weather-widget" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;color:white;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div style="display:flex;align-items:center;gap:14px;">
-          <div id="wx-icon" style="font-size:36px;">⛅</div>
-          <div>
-            <div style="font-size:11px;opacity:.8;font-weight:600;">📍 Caleta Higuerillas · Concón</div>
-            <div style="display:flex;align-items:baseline;gap:6px;">
-              <div id="wx-temp" style="font-size:28px;font-weight:900;">—°C</div>
-              <div id="wx-cond" style="font-size:12px;opacity:.85;">Cargando…</div>
-            </div>
-          </div>
+      <!-- Reloj — hora Chile -->
+      <div class="dash-clock-bar" id="dash-clock-bar">
+        <div class="dash-clock-inner">
+          <span class="dash-clock-label">🕐 Chile</span>
+          <span class="dash-clock-time" id="dash-clock-time">—</span>
         </div>
-        <div id="wx-forecast" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
-        <div style="font-size:9px;opacity:.5;width:100%;text-align:right;" id="wx-updated"></div>
+        <div class="dash-clock-date" id="dash-clock-date">—</div>
       </div>
 
       <!-- Calendario chileno widget -->
@@ -2778,6 +2846,52 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     </div>
   </div>
 
+  <!-- ======= TAB CALENDARIO (interno + bitácora equipo) ======= -->
+  <div id="calendario" class="tab-content">
+    <div class="content">
+      <div class="cal-modulo-hero">
+        <div class="cal-modulo-clock-card">
+          <div class="cal-modulo-clock-label">Hora local · America/Santiago</div>
+          <div class="cal-modulo-clock" id="cal-modulo-clock">—</div>
+          <div class="cal-modulo-date" id="cal-modulo-date">—</div>
+        </div>
+      </div>
+      <p class="cal-modulo-hint">Calendario y mensajes viven en CEREBRUS (se guardan con el resto de datos en nube). Así todos ven lo mismo sin iniciar sesión en Google aquí.</p>
+
+      <div class="cal-modulo-layout">
+        <div class="cal-int-panel">
+          <div class="cal-int-head">
+            <span class="cal-int-month" id="cal-int-month-label">—</span>
+            <div class="cal-int-nav">
+              <button type="button" onclick="cerebrusCalMonthNav(-1)">‹</button>
+              <button type="button" onclick="cerebrusCalMonthNav(0)">Hoy</button>
+              <button type="button" onclick="cerebrusCalMonthNav(1)">›</button>
+            </div>
+          </div>
+          <div class="cal-int-weekhdr">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div class="cal-int-grid" id="cal-int-grid"></div>
+        </div>
+        <div class="cal-int-side">
+          <h4>Eventos y recordatorios</h4>
+          <div class="cal-int-date-lbl" id="cal-int-sel-label">Selecciona un día</div>
+          <input type="text" class="cal-int-inp" id="cal-int-title" placeholder="Título (ej. reunión, pedido, cierre…)" maxlength="120">
+          <textarea class="cal-int-inp cal-int-ta" id="cal-int-note" placeholder="Detalle opcional" maxlength="800"></textarea>
+          <button type="button" class="cal-int-add" onclick="cerebrusCalAddEvent()">Agregar a este día</button>
+          <div class="cal-int-evlist" id="cal-int-ev-list"></div>
+        </div>
+      </div>
+
+      <div class="bitacora-panel">
+        <h3>Bitácora del equipo</h3>
+        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Publicar, <strong>editar</strong> o <strong>eliminar</strong> tus mensajes; Diego y Sebastián pueden moderar cualquiera. Los más recientes arriba.</p>
+        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Escribe un mensaje o recordatorio para el equipo…" maxlength="2000"></textarea>
+        <button type="button" class="bitacora-btn" onclick="cerebrusBitacoraPost()">Publicar en la bitácora</button>
+        <div class="bitacora-list" id="bitacora-list"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- ======= TAB SEMANA ACTUAL ======= -->
   <div id="sac" class="tab-content">
@@ -5796,7 +5910,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.4';
+const APP_VERSION = '2026.04.05.8';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6188,13 +6302,13 @@ function showTab(tabId) {
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
   closeNav();
-  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
+  ['resumen','calendario','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
     const nav = document.getElementById('nav-'+t);
     if (nav) nav.classList.toggle('active', t===tabId);
   });
-  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
+  const titles = {resumen:'Dashboard', calendario:'📆 Calendario', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
   set('tab-title', titles[tabId]||tabId);
   if (tabId==='sac')        sacRender();
   if (tabId==='semanas')    { renderWeeks(); calRenderWeekStrip(0); }
@@ -6207,12 +6321,12 @@ function showTab(tabId) {
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
   if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
+  if (tabId==='calendario')  { calModuloRender(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
     const _w = sacCurrentWeek ? sacActiveWeek() : 1;
     if (typeof sacCalcBalance === 'function') sacCalcBalance(_w);
-    wxFetch();
   }
 }
 
@@ -11165,7 +11279,7 @@ function _finishLogin() {
     _localInit();
   }
   setTimeout(function() {
-    try { if (typeof cerebrusTtsWelcomeOnce === 'function') cerebrusTtsWelcomeOnce(); } catch (e) {}
+    try { if (typeof cerebrusTtsWelcomeOnce === 'function') cerebrusTtsWelcomeOnce(currentUser); } catch (e) {}
   }, 900);
 }
 
@@ -11850,7 +11964,7 @@ function _postLoadSetup() {
     if (typeof cerebrusTtsUpdateButton === 'function') cerebrusTtsUpdateButton();
     startVersionChecker();
     if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
-    setTimeout(wxFetch, 2000); // Fetch weather after load
+    if (typeof cerebrusClockStart === 'function') cerebrusClockStart();
   }, 800);
   infInit();
 }
@@ -17078,51 +17192,281 @@ function sebPagoClose() {
   _sebPagoCtx = null;
 }
 
-// ── CLIMA CONCÓN / CALETA HIGUERILLAS ──
-const WX_LAT = -32.9167, WX_LON = -71.5167;
-const WX_ICONS = { 0:'☀️', 1:'🌤', 2:'⛅', 3:'☁️', 45:'🌫', 48:'🌫', 51:'🌦', 53:'🌦', 55:'🌧', 61:'🌧', 63:'🌧', 65:'🌧', 71:'🌨', 73:'🌨', 75:'❄️', 80:'🌦', 81:'🌧', 82:'⛈', 95:'⛈', 96:'⛈', 99:'⛈' };
-const WX_DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+// ── RELOJ (Chile) + calendario interno + bitácora equipo ──
+let _cerebrusClockTimer = null;
+let _cintY = null;
+let _cintM = null;
+let _cintSelIso = '';
+let _bitacoraEditingId = null;
 
-async function wxFetch() {
-  try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}&current_weather=true&daily=temperature_2m_max,precipitation_probability_max,weathercode&timezone=America%2FSantiago&forecast_days=5`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    const cw   = data.current_weather;
-    const icon = WX_ICONS[cw.weathercode] || '🌡';
-    const el_icon = document.getElementById('wx-icon');
-    const el_temp = document.getElementById('wx-temp');
-    const el_cond = document.getElementById('wx-cond');
-    const el_upd  = document.getElementById('wx-updated');
-    if (el_icon) el_icon.textContent = icon;
-    if (el_temp) el_temp.textContent = Math.round(cw.temperature) + '°C';
-    if (el_cond) el_cond.textContent = wxCondText(cw.weathercode);
-    if (el_upd)  el_upd.textContent  = 'Act. ' + new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
-    const fc = document.getElementById('wx-forecast');
-    if (fc && data.daily?.time) {
-      const dates = data.daily.time;
-      const maxT  = data.daily.temperature_2m_max || [];
-      const codes = data.daily.weathercode || [];
-      const rain  = data.daily.precipitation_probability_max || [];
-      fc.innerHTML = dates.slice(0,5).map((d,i) => {
-        const day  = WX_DIAS[new Date(d+'T12:00:00').getDay()];
-        const ico  = WX_ICONS[codes[i]] || '🌡';
-        const prob = rain[i] > 0 ? `<div style="font-size:9px;opacity:.7;">💧${rain[i]}%</div>` : '';
-        return `<div style="text-align:center;min-width:36px;">
-          <div style="font-size:9px;opacity:.75;font-weight:700;">${day}</div>
-          <div style="font-size:18px;">${ico}</div>
-          <div style="font-size:11px;font-weight:800;">${Math.round(maxT[i])}°</div>${prob}
-        </div>`;
+/** Texto dentro de <textarea> generado por plantilla (evita romper cierre de etiqueta). */
+function escTextareaVal(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+}
+function cerebrusBitacoraCanModify(m) {
+  return m && (m.by === currentUser || currentUser === 'Diego' || currentUser === 'Sebastián');
+}
+
+function cerebrusEquipoEnsure() {
+  if (!Array.isArray(state.cerebrusCalEventos)) state.cerebrusCalEventos = [];
+  if (!Array.isArray(state.cerebrusBitacora)) state.cerebrusBitacora = [];
+}
+function cerebrusDateToIsoLocal(y, m, d) {
+  return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+function cerebrusIsoToday() {
+  const t = new Date();
+  return cerebrusDateToIsoLocal(t.getFullYear(), t.getMonth(), t.getDate());
+}
+function cerebrusCalMonthNav(delta) {
+  cerebrusEquipoEnsure();
+  if (_cintY == null) {
+    const n = new Date();
+    _cintY = n.getFullYear();
+    _cintM = n.getMonth();
+  }
+  if (delta === 0) {
+    const n = new Date();
+    _cintY = n.getFullYear();
+    _cintM = n.getMonth();
+  } else {
+    _cintM += delta;
+    if (_cintM < 0) { _cintM = 11; _cintY--; }
+    if (_cintM > 11) { _cintM = 0; _cintY++; }
+  }
+  if (!_cintSelIso) _cintSelIso = cerebrusIsoToday();
+  calModuloRender();
+}
+function cerebrusCintEventsOnDate(iso) {
+  cerebrusEquipoEnsure();
+  return state.cerebrusCalEventos.filter(function(e) { return e && e.date === iso; });
+}
+function cerebrusCalAddEvent() {
+  cerebrusEquipoEnsure();
+  if (!currentUser) { notify('⚠ Inicia sesión para agregar eventos.'); return; }
+  const iso = _cintSelIso || cerebrusIsoToday();
+  const title = (document.getElementById('cal-int-title') || {}).value || '';
+  const note = (document.getElementById('cal-int-note') || {}).value || '';
+  if (!String(title).trim()) { notify('⚠ Escribe un título para el evento.'); return; }
+  state.cerebrusCalEventos.push({
+    id: 'cev_' + Date.now() + '_' + Math.floor(Math.random() * 1e6),
+    date: iso,
+    title: String(title).trim().slice(0, 120),
+    note: String(note).trim().slice(0, 800),
+    by: currentUser,
+    at: new Date().toISOString()
+  });
+  const ti = document.getElementById('cal-int-title');
+  const no = document.getElementById('cal-int-note');
+  if (ti) ti.value = '';
+  if (no) no.value = '';
+  markUnsaved();
+  notify('📅 Evento agregado');
+  calModuloRender();
+}
+function cerebrusCalDeleteEvent(id) {
+  cerebrusEquipoEnsure();
+  const ix = state.cerebrusCalEventos.findIndex(function(e) { return e.id === id; });
+  if (ix < 0) return;
+  const ev = state.cerebrusCalEventos[ix];
+  if (ev.by !== currentUser && currentUser !== 'Diego' && currentUser !== 'Sebastián') {
+    notify('⚠ Solo puedes borrar tus propios eventos, o Diego/Sebastián pueden borrar cualquiera.');
+    return;
+  }
+  state.cerebrusCalEventos.splice(ix, 1);
+  markUnsaved();
+  calModuloRender();
+}
+function cerebrusBitacoraPost() {
+  cerebrusEquipoEnsure();
+  if (!currentUser) { notify('⚠ Inicia sesión para publicar.'); return; }
+  const el = document.getElementById('bitacora-input');
+  const text = el && el.value ? String(el.value).trim() : '';
+  if (!text) { notify('⚠ Escribe un mensaje.'); return; }
+  state.cerebrusBitacora.unshift({
+    id: 'cbt_' + Date.now() + '_' + Math.floor(Math.random() * 1e6),
+    text: text.slice(0, 2000),
+    by: currentUser,
+    at: new Date().toISOString()
+  });
+  while (state.cerebrusBitacora.length > 200) state.cerebrusBitacora.pop();
+  if (el) el.value = '';
+  markUnsaved();
+  notify('💬 Mensaje publicado');
+  calModuloRender();
+}
+function cerebrusBitacoraDelete(id) {
+  cerebrusEquipoEnsure();
+  const ix = state.cerebrusBitacora.findIndex(function(m) { return m.id === id; });
+  if (ix < 0) return;
+  const m = state.cerebrusBitacora[ix];
+  if (!cerebrusBitacoraCanModify(m)) {
+    notify('⚠ Solo puedes borrar tus mensajes (o Diego/Sebastián pueden borrar cualquiera).');
+    return;
+  }
+  if (_bitacoraEditingId === id) _bitacoraEditingId = null;
+  state.cerebrusBitacora.splice(ix, 1);
+  markUnsaved();
+  notify('🗑 Mensaje eliminado');
+  calModuloRender();
+}
+function cerebrusBitacoraStartEdit(id) {
+  cerebrusEquipoEnsure();
+  const m = state.cerebrusBitacora.find(function(x) { return x.id === id; });
+  if (!m || !cerebrusBitacoraCanModify(m)) {
+    notify('⚠ No puedes editar este mensaje.');
+    return;
+  }
+  _bitacoraEditingId = id;
+  calModuloRender();
+  setTimeout(function() {
+    const ta = document.getElementById('bitacora-edit-active');
+    if (ta) {
+      ta.focus();
+      try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+    }
+  }, 0);
+}
+function cerebrusBitacoraCancelEdit() {
+  _bitacoraEditingId = null;
+  calModuloRender();
+}
+function cerebrusBitacoraSaveEdit() {
+  cerebrusEquipoEnsure();
+  if (!_bitacoraEditingId) return;
+  const ix = state.cerebrusBitacora.findIndex(function(m) { return m.id === _bitacoraEditingId; });
+  if (ix < 0) { cerebrusBitacoraCancelEdit(); return; }
+  const m = state.cerebrusBitacora[ix];
+  if (!cerebrusBitacoraCanModify(m)) {
+    notify('⚠ No puedes editar este mensaje.');
+    cerebrusBitacoraCancelEdit();
+    return;
+  }
+  const ta = document.getElementById('bitacora-edit-active');
+  const text = ta && ta.value ? String(ta.value).trim() : '';
+  if (!text) { notify('⚠ El mensaje no puede quedar vacío.'); return; }
+  m.text = text.slice(0, 2000);
+  m.editedAt = new Date().toISOString();
+  m.editedBy = currentUser;
+  _bitacoraEditingId = null;
+  markUnsaved();
+  notify('✏️ Mensaje actualizado');
+  calModuloRender();
+}
+function calModuloRender() {
+  cerebrusEquipoEnsure();
+  if (_cintY == null) {
+    const n = new Date();
+    _cintY = n.getFullYear();
+    _cintM = n.getMonth();
+  }
+  if (!_cintSelIso) _cintSelIso = cerebrusIsoToday();
+
+  const lab = document.getElementById('cal-int-month-label');
+  if (lab) lab.textContent = CAL_MONTHS_ES[_cintM] + ' ' + _cintY;
+
+  const grid = document.getElementById('cal-int-grid');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysInMonth = new Date(_cintY, _cintM + 1, 0).getDate();
+  const daysInPrev = new Date(_cintY, _cintM, 0).getDate();
+  const firstWd = new Date(_cintY, _cintM, 1).getDay();
+  const startPad = (firstWd + 6) % 7;
+
+  let html = '';
+  for (let i = startPad; i > 0; i--) {
+    const d = daysInPrev - i + 1;
+    html += '<div class="cal-int-day other">' + d + '</div>';
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = cerebrusDateToIsoLocal(_cintY, _cintM, d);
+    const dt = new Date(_cintY, _cintM, d);
+    const isToday = dt.getTime() === today.getTime();
+    const nEv = cerebrusCintEventsOnDate(iso).length;
+    let cls = 'cal-int-day';
+    if (isToday) cls += ' today';
+    if (iso === _cintSelIso) cls += ' sel';
+    if (nEv) cls += ' has';
+    html += '<div class="' + cls + '" data-ciso="' + iso + '" onclick="cerebrusCintPickDate(this.dataset.ciso)">' + d + '</div>';
+  }
+  const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
+  for (let d = 1; d <= totalCells - startPad - daysInMonth; d++) {
+    html += '<div class="cal-int-day other">' + d + '</div>';
+  }
+  if (grid) grid.innerHTML = html;
+
+  const sel = _cintSelIso;
+  const sl = document.getElementById('cal-int-sel-label');
+  if (sl) {
+    try {
+      const parts = sel.split('-');
+      const dd = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+      sl.textContent = dd.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) { sl.textContent = sel; }
+  }
+
+  const evl = document.getElementById('cal-int-ev-list');
+  if (evl) {
+    const evs = cerebrusCintEventsOnDate(sel);
+    if (!evs.length) evl.innerHTML = '<span style="font-size:11px;color:var(--text-soft);">Sin eventos este día.</span>';
+    else {
+      evl.innerHTML = evs.map(function(ev) {
+        const when = ev.at ? new Date(ev.at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        const note = ev.note ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + esc(ev.note) + '</div>' : '';
+        return '<div class="cal-int-ev" data-evid="' + esc(ev.id) + '"><button type="button" class="cal-int-ev-del" onclick="cerebrusCalDeleteEvent(this.closest(\'.cal-int-ev\').getAttribute(\'data-evid\'))" title="Eliminar">✕</button><div class="cal-int-ev-title">' + esc(ev.title) + '</div><div class="cal-int-ev-meta">' + esc(ev.by || '') + (when ? ' · ' + when : '') + '</div>' + note + '</div>';
       }).join('');
     }
-  } catch(e) {
-    const el = document.getElementById('wx-cond');
-    if (el) el.textContent = 'Clima no disponible';
+  }
+
+  const bl = document.getElementById('bitacora-list');
+  if (bl) {
+    const rows = state.cerebrusBitacora.slice();
+    if (!rows.length) bl.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Aún no hay mensajes.</span>';
+    else {
+      bl.innerHTML = rows.map(function(m) {
+        const when = m.at ? new Date(m.at).toLocaleString('es-CL') : '';
+        const can = cerebrusBitacoraCanModify(m);
+        const editedNote = m.editedAt
+          ? '<span class="bitacora-edited"> · Editado' + (m.editedBy ? ' por ' + esc(m.editedBy) : '') + ' · ' + esc(new Date(m.editedAt).toLocaleString('es-CL')) + '</span>'
+          : '';
+        if (_bitacoraEditingId === m.id && can) {
+          return '<div class="bitacora-item bitacora-item-editing"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span></div>' +
+            '<textarea id="bitacora-edit-active" class="bitacora-ta" maxlength="2000">' + escTextareaVal(m.text || '') + '</textarea>' +
+            '<div class="bitacora-edit-actions"><button type="button" class="bitacora-btn-save" onclick="cerebrusBitacoraSaveEdit()">Guardar</button>' +
+            '<button type="button" class="bitacora-btn-cancel" onclick="cerebrusBitacoraCancelEdit()">Cancelar</button></div></div>';
+        }
+        const act = can
+          ? '<div class="bitacora-actions"><button type="button" class="bitacora-edit" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStartEdit(this.getAttribute(\'data-bid\'))">Editar</button>' +
+            '<button type="button" class="bitacora-del" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraDelete(this.getAttribute(\'data-bid\'))">Eliminar</button></div>'
+          : '';
+        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div><div class="bitacora-item-text">' + esc(m.text || '') + '</div></div>';
+      }).join('');
+    }
   }
 }
-function wxCondText(code) {
-  const m = {0:'Despejado',1:'Mayormente despejado',2:'Parcialmente nublado',3:'Nublado',45:'Neblina',51:'Llovizna',53:'Llovizna',55:'Llovizna',61:'Lluvia leve',63:'Lluvia',65:'Lluvia intensa',80:'Chubascos',81:'Chubascos',82:'Chubascos fuertes',95:'Tormenta',96:'Tormenta',99:'Tormenta'};
-  return m[code] || 'Variable';
+function cerebrusCintPickDate(iso) {
+  if (!iso) return;
+  _cintSelIso = iso;
+  calModuloRender();
+}
+
+function cerebrusClockTick() {
+  const now = new Date();
+  const tStr = now.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const dStr = now.toLocaleDateString('es-CL', { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  ['dash-clock-time', 'cal-modulo-clock'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = tStr;
+  });
+  ['dash-clock-date', 'cal-modulo-date'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = dStr.charAt(0).toUpperCase() + dStr.slice(1);
+  });
+}
+function cerebrusClockStart() {
+  if (_cerebrusClockTimer) return;
+  cerebrusClockTick();
+  _cerebrusClockTimer = setInterval(cerebrusClockTick, 1000);
 }
 
 function setBancoEmpresa(val) {
@@ -19539,7 +19883,7 @@ function splitStateForCloudParts(st) {
     { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario'] },
     { id: 'pFac', keys: ['facturas', 'movimientos'] },
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
-    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
+    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
   ];
   const stripped = JSON.parse(JSON.stringify(st));
   const parts = {};
@@ -20129,15 +20473,20 @@ function notify(msg, duration) {
     }
     speechSynthesis.speak(u);
   }
-  window.cerebrusTtsWelcomeOnce = function() {
+  window.cerebrusTtsWelcomeOnce = function(userName) {
     if (!window.speechSynthesis || isMuted()) return;
     try {
       if (sessionStorage.getItem('cerebrus_voice_welcome') === '1') return;
       sessionStorage.setItem('cerebrus_voice_welcome', '1');
     } catch (e) {}
+    var raw = userName != null && userName !== '' ? String(userName) : '';
+    var name = raw.trim();
+    var phrase = name
+      ? 'Hola, ' + name + ', soy Cerebrus, funciono y cumplo.'
+      : 'Hola, soy Cerebrus, funciono y cumplo.';
     var run = function() {
       try { speechSynthesis.getVoices(); } catch (e) {}
-      speak('Soy Cerebrus, funciono y cumplo.', true);
+      speak(phrase, true);
     };
     if (voices().length < 2) setTimeout(run, 350);
     else run();
