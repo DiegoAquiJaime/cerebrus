@@ -1,6 +1,7 @@
 .DS_Store
 
 # Local docs/utilities not part of deployed app
+CEREBRUS_OFFLINE_TEST.html
 CEREBRUS_GUIA_COMPLETA.md
 CEREBRUS_MAC_Y_GITHUB.md
 cerebrus-google-apps-script.js

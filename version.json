@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.04.1",
-  "notes": "TTS: bienvenida y advertencias por validación/cierre sin guardar; sin módulo Equipo (capacitación vía Forms). Ajustes visuales nav."
+  "version": "2026.04.05.4",
+  "notes": "Marca: Gastronomy Suite by Aquí Jaime; administración Diego Palacios Brockhaus (nav, login, pie, exports). UI: pie de página global, banner conflicto, tarjetas y calendario alineados al diseño."
 }
