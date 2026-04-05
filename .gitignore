@@ -1,8 +1,5 @@
 .DS_Store
 
-# Copia local para pruebas offline (regenerar: cp index.html CEREBRUS_OFFLINE_TEST.html)
-CEREBRUS_OFFLINE_TEST.html
-
 # Local docs/utilities not part of deployed app
 CEREBRUS_GUIA_COMPLETA.md
 CEREBRUS_MAC_Y_GITHUB.md
