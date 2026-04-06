@@ -6008,7 +6008,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.14';
+const APP_VERSION = '2026.04.05.16';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18355,8 +18355,7 @@ function updateTotalDisponible() {
   const cajaSac       = Math.round(state.sacEfectivo || 0);
   const banco         = state.cajaEmpresa?.banco || 0;
   const propPendiente = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
-  const bancoReal     = banco - propPendiente;
-  const total         = bancoReal + ventaReal + cajaSac;
+  const total         = (banco - propPendiente) + cajaSac;
 
   const inp = document.getElementById('dash-banco-empresa');
   if (inp && !inp.matches(':focus')) inp.value = banco > 0 ? banco : '';
@@ -18371,8 +18370,8 @@ function updateTotalDisponible() {
 
   const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   set2('disp-venta',    fmt(ventaReal));
-  set2('disp-venta-sub', diasCerrados + ' día' + (diasCerrados!==1?'s':'') + ' cerrado' + (diasCerrados!==1?'s':'') + ' en período actual');
-  set2('disp-banco',    fmt(bancoReal));
+  set2('disp-venta-sub', diasCerrados + ' día' + (diasCerrados!==1?'s':'') + ' cerrado' + (diasCerrados!==1?'s':'') + ' en período actual (referencia, no sumada)');
+  set2('disp-banco',    fmt(banco - propPendiente));
   set2('disp-banco-sub', propPendiente>0 ? `Banco ${fmt(banco)} − propinas ${fmt(propPendiente)}` : (state.cajaEmpresa?.bancoUpd?'Act. '+state.cajaEmpresa.bancoUpd:'No ingresado'));
   set2('disp-caja',     fmt(cajaSac));
   const cjSub = document.getElementById('disp-caja-sub');
@@ -18661,7 +18660,7 @@ function refreshMobileDash() {
   const banco     = state.cajaEmpresa?.banco || 0;
   const propPend  = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
   const bancoReal = banco - propPend;
-  const total     = bancoReal + ventaReal + cajaFisica;
+  const total     = bancoReal + cajaFisica;
 
   set2('mob-total',     fmt(total));
   set2('mob-banco',     fmt(bancoReal));
