@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.05.9",
-  "notes": "Bitácora: resumen en Semana Actual; Calendario tras SAC en nav y DOM; aviso no leídos (parpadeo nav + badge)."
+  "version": "2026.04.05.12",
+  "notes": "Sala voz: PTT (API Jitsi), contraseñas, canal general vs solo equipo; Bodega puede entrar a voz."
 }
