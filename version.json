@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.05.16",
-  "notes": "Total disponible corregido: Banco - propinas pendientes + Caja. Al pagar propina, el total se actualiza automáticamente."
+  "version": "2026.04.05.17",
+  "notes": "Inventario Pedido Semanal: corregido botón 'Iniciar semana' cuando no hay semana activa."
 }

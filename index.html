@@ -6008,7 +6008,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.16';
+const APP_VERSION = '2026.04.05.17';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -12959,9 +12959,12 @@ function invRenderPedido() {
     set('inv-sem-titulo','Ninguna semana iniciada');
     set('inv-sem-estado','Presiona ▶ Iniciar semana para comenzar');
     if (document.getElementById('inv-sem-kpis')) document.getElementById('inv-sem-kpis').style.display='none';
+    if (btnInit) btnInit.style.display = '';
     if (btnAdd) btnAdd.style.display='none';
     if (btnCerrar) btnCerrar.style.display='none';
     if (btnExport) btnExport.style.display='none';
+    const btnTransfer = document.getElementById('inv-btn-transfer');
+    if (btnTransfer) btnTransfer.style.display = 'none';
     wrap.innerHTML=''; invRenderSugerencias(); return;
   }
 
