@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.05.17",
-  "notes": "Inventario Pedido Semanal: corregido botón 'Iniciar semana' cuando no hay semana activa."
+  "version": "2026.04.06.1",
+  "notes": "Facturas proveedores: unificar proveedores por clic en lista (base + hasta 2 adicionales), filtro y sin escribir nombres a mano."
 }

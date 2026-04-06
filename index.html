@@ -659,7 +659,17 @@ body.dark-mode .ai-group-header{background:#0f172a;}
 .fac-modal-row label{font-size:10px;font-weight:700;color:#9aacb8;text-transform:uppercase;display:block;margin-bottom:4px;}
 .fac-modal-row select,.fac-modal-row textarea,.fac-modal-row input{width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;}
 .fac-modal-row select:focus,.fac-modal-row textarea:focus,.fac-modal-row input:focus{outline:none;border-color:var(--accent);}
-.fac-modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.fac-modal-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.fac-merge-list{max-height:min(48vh,320px);overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:8px;}
+.fac-merge-row{display:block;width:100%;text-align:left;padding:8px 10px;border:none;border-bottom:1px solid var(--border);background:var(--white);cursor:pointer;font-size:11px;color:var(--primary);font-family:inherit;}
+.fac-merge-row:last-child{border-bottom:none;}
+.fac-merge-row:hover{background:rgba(99,102,241,.08);}
+.fac-merge-row.fac-merge-base{background:rgba(34,197,94,.14);font-weight:700;}
+.fac-merge-row.fac-merge-other{background:rgba(245,158,11,.14);}
+body.dark-mode .fac-merge-row{background:#1c1c1e;}
+body.dark-mode .fac-merge-row:hover{background:rgba(99,102,241,.18);}
+body.dark-mode .fac-merge-row.fac-merge-base{background:rgba(22,163,74,.22);}
+body.dark-mode .fac-merge-row.fac-merge-other{background:rgba(217,119,6,.22);}
 .fac-estado-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
 .fac-estado-btn{border:1.5px solid var(--border);border-radius:6px;padding:8px 4px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--white);text-align:center;transition:.15s;}
 .fac-estado-btn.sel-activa{background:var(--danger);color:white;border-color:var(--danger);}
@@ -3668,7 +3678,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </button>
         <button class="fac-btn" onclick="toggleNuevoProveedor()">+ Proveedor</button>
         <button class="fac-btn" onclick="facNormalizeAndUnifyProviders()" title="Unifica proveedores por RUT y normaliza formatos">🪪 Normalizar RUT</button>
-        <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Fusiona 2 proveedores manualmente">🔀 Unificar 2 proveedores</button>
+        <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Elige base y uno o dos proveedores a fusionar (clic en la lista)">🔀 Unificar proveedores</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
       </div>
@@ -4065,6 +4075,29 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
       <div class="fac-modal-footer">
         <button class="fac-btn" onclick="closeFacModalBtn()">Cancelar</button>
         <button class="fac-btn primary" onclick="facSaveModal()">✓ Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal unificar proveedores (selección por clic) -->
+  <div class="fac-modal-overlay" id="facMergeModal" onclick="facMergeModalBackdrop(event)">
+    <div class="fac-modal" style="max-width:460px;" onclick="event.stopPropagation()">
+      <div class="fac-modal-head">
+        <h3>🔀 Unificar proveedores</h3>
+        <button type="button" onclick="facMergeModalClose()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
+      </div>
+      <div class="fac-modal-body" style="max-height:min(85vh,560px);overflow-y:auto;">
+        <p id="fac-merge-instr" style="font-size:11px;color:#64748b;margin:0 0 8px;line-height:1.45;"></p>
+        <div class="fac-modal-row" style="margin-bottom:8px;">
+          <input type="search" id="fac-merge-filter" placeholder="🔍 Filtrar por nombre…" autocomplete="off" oninput="facMergeModalRenderList()">
+        </div>
+        <div id="fac-merge-list" class="fac-merge-list" onclick="facMergeModalListClick(event)"></div>
+        <p id="fac-merge-summary" style="font-size:10px;color:#64748b;margin:10px 0 0;line-height:1.4;"></p>
+      </div>
+      <div class="fac-modal-footer">
+        <button type="button" class="fac-btn" onclick="facMergeModalReset()">↺ Reiniciar</button>
+        <button type="button" class="fac-btn" onclick="facMergeModalClose()">Cancelar</button>
+        <button type="button" class="fac-btn primary" id="fac-merge-btn-go" onclick="facMergeModalConfirm()" disabled>Unificar</button>
       </div>
     </div>
   </div>
@@ -6008,7 +6041,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.17';
+const APP_VERSION = '2026.04.06.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -8048,6 +8081,9 @@ let _facDashFilter  = 'activas';
 let _facModalId     = null;
 let _facModalProv   = null;
 let _facDupGroups   = [];
+let _facMergeBase = null;
+let _facMergeOthers = [];
+let _facMergeProvsList = [];
 
 function facInit() {
   if (!state.facturas) state.facturas = makeDefaultFacturas();
@@ -9435,22 +9471,13 @@ function facResolveDupGroup(group) {
   return removed;
 }
 
-function facMergeTwoProvidersPrompt() {
-  facInit();
-  const provs = Object.keys(state.facturas || {}).sort();
-  if (provs.length < 2) { notify('⚠ No hay suficientes proveedores para unificar'); return; }
-  const listado = provs.slice(0, 60).join('\n');
-  const a = prompt(`Proveedor 1 (base):\n\n${listado}\n\nEscribe el nombre exacto:`, '');
-  if (!a) return;
-  const b = prompt('Proveedor 2 (se fusionará dentro del proveedor 1):', '');
-  if (!b) return;
-  const p1 = a.trim();
-  const p2 = b.trim();
-  if (p1 === p2) { notify('⚠ Deben ser dos proveedores distintos'); return; }
-  if (!state.facturas[p1] || !state.facturas[p2]) { notify('⚠ No encontré uno de los proveedores (revisa el nombre exacto)'); return; }
-  if (!confirm(`¿Unificar "${p2}" dentro de "${p1}"?\nSe moverán todas las facturas y luego se eliminará "${p2}".`)) return;
+function _facEscMerge(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-  pushUndo();
+/** Mueve todas las facturas de p2 dentro de p1 y elimina p2. */
+function facMergeOneInto(p1, p2) {
+  if (!state.facturas[p1] || !state.facturas[p2] || p1 === p2) return false;
   state.facturas[p1] = [...(state.facturas[p1] || []), ...(state.facturas[p2] || [])];
   delete state.facturas[p2];
   if (state.facSemana) state.facSemana.forEach(s => { if (s.prov === p2) s.prov = p1; });
@@ -9459,13 +9486,145 @@ function facMergeTwoProvidersPrompt() {
     delete state.provRuts[p2];
   }
   if (_facCurrentProv === p2) _facCurrentProv = p1;
+  return true;
+}
 
+function facMergeTwoProvidersPrompt() {
+  facInit();
+  const provs = Object.keys(state.facturas || {}).sort();
+  if (provs.length < 2) { notify('⚠ No hay suficientes proveedores para unificar'); return; }
+  _facMergeBase = null;
+  _facMergeOthers = [];
+  _facMergeProvsList = provs;
+  const f = document.getElementById('fac-merge-filter');
+  if (f) f.value = '';
+  facMergeModalRenderList();
+  const el = document.getElementById('facMergeModal');
+  if (el) el.classList.add('open');
+}
+
+function facMergeModalBackdrop(e) {
+  if (e.target && e.target.id === 'facMergeModal') facMergeModalClose();
+}
+
+function facMergeModalClose() {
+  const el = document.getElementById('facMergeModal');
+  if (el) el.classList.remove('open');
+  _facMergeBase = null;
+  _facMergeOthers = [];
+  _facMergeProvsList = [];
+}
+
+function facMergeModalReset() {
+  _facMergeBase = null;
+  _facMergeOthers = [];
+  facMergeModalRenderList();
+}
+
+function facMergeModalListClick(e) {
+  const btn = e.target.closest('[data-fac-merge-p]');
+  if (!btn) return;
+  e.preventDefault();
+  facMergeModalPick(decodeURIComponent(btn.getAttribute('data-fac-merge-p')));
+}
+
+function facMergeModalPick(p) {
+  if (!_facMergeBase) {
+    _facMergeBase = p;
+    facMergeModalRenderList();
+    return;
+  }
+  if (p === _facMergeBase) {
+    notify('ℹ️ Ese es el proveedor base. Usa «Reiniciar» si quieres elegir otra base.');
+    return;
+  }
+  const i = _facMergeOthers.indexOf(p);
+  if (i >= 0) {
+    _facMergeOthers.splice(i, 1);
+  } else {
+    if (_facMergeOthers.length >= 2) {
+      notify('⚠️ Máximo 2 proveedores adicionales (3 en total). Haz clic en uno resaltado en naranja para quitarlo.');
+      return;
+    }
+    _facMergeOthers.push(p);
+  }
+  facMergeModalRenderList();
+}
+
+function facMergeModalRenderList() {
+  const listEl = document.getElementById('fac-merge-list');
+  const instrEl = document.getElementById('fac-merge-instr');
+  const sumEl = document.getElementById('fac-merge-summary');
+  const goBtn = document.getElementById('fac-merge-btn-go');
+  if (!listEl || !instrEl || !sumEl || !goBtn) return;
+
+  const q = ((document.getElementById('fac-merge-filter') || {}).value || '').trim().toLowerCase();
+  const provs = (_facMergeProvsList || []).filter(p => !q || p.toLowerCase().includes(q));
+
+  if (!_facMergeBase) {
+    instrEl.textContent = '1) Haz clic en el proveedor base (donde quedarán todas las facturas).';
+  } else if (!_facMergeOthers.length) {
+    instrEl.textContent = '2) Haz clic en otro proveedor para fusionarlo en «' + _facMergeBase + '». Puedes elegir hasta 2 adicionales. Otro clic en un nombre naranja lo quita de la lista.';
+  } else {
+    instrEl.textContent = 'Puedes añadir otro proveedor (máx. 2 fusionados) o pulsar «Unificar». Clic otra vez en un nombre naranja lo quita.';
+  }
+
+  let sumParts = [];
+  if (_facMergeBase) sumParts.push('Base: ' + _facMergeBase);
+  if (_facMergeOthers.length) sumParts.push('Fusionar: ' + _facMergeOthers.join(' · '));
+  sumEl.textContent = sumParts.length ? sumParts.join('  ·  ') : '';
+
+  goBtn.disabled = !(_facMergeBase && _facMergeOthers.length >= 1);
+
+  if (!provs.length) {
+    listEl.innerHTML = '<div style="padding:12px;font-size:11px;color:#64748b;">No hay coincidencias con el filtro.</div>';
+    return;
+  }
+
+  listEl.innerHTML = provs.map(p => {
+    let cls = 'fac-merge-row';
+    if (p === _facMergeBase) cls += ' fac-merge-base';
+    else if (_facMergeOthers.includes(p)) cls += ' fac-merge-other';
+    const n = (state.facturas[p] || []).length;
+    const enc = encodeURIComponent(p);
+    return '<button type="button" class="' + cls + '" data-fac-merge-p="' + enc + '">' + _facEscMerge(p) + ' <span style="opacity:.75;font-size:10px;">(' + n + ' fact.)</span></button>';
+  }).join('');
+}
+
+function facMergeModalConfirm() {
+  if (!_facMergeBase || !_facMergeOthers.length) return;
+  const p1 = _facMergeBase;
+  const others = _facMergeOthers.slice().filter((p, i, a) => a.indexOf(p) === i);
+  const labelOthers = others.map(o => '"' + o + '"').join(' y ');
+  if (!confirm('¿Unificar ' + labelOthers + ' dentro de "' + p1 + '"?\nSe moverán todas las facturas y se eliminarán los proveedores fusionados.')) return;
+
+  facInit();
+  if (!state.facturas[p1]) {
+    notify('⚠️ No encontré el proveedor base.');
+    return;
+  }
+  const missing = others.filter(p => !state.facturas[p]);
+  if (missing.length) {
+    notify('⚠️ No encontré uno de los proveedores (quizá ya fueron fusionados).');
+    return;
+  }
+
+  pushUndo();
+  const merged = [];
+  for (const p2 of others) {
+    if (!state.facturas[p1] || !state.facturas[p2]) continue;
+    if (p2 === p1) continue;
+    facMergeOneInto(p1, p2);
+    merged.push(p2);
+  }
+
+  facMergeModalClose();
   facRefreshWarnings();
   facRenderDashboard();
   if (_facCurrentProv) facRenderDetail();
   facCalcKpis();
   markUnsaved();
-  notify(`✅ Proveedores unificados: "${p2}" → "${p1}"`);
+  notify('✅ Proveedores unificados: ' + merged.join(', ') + ' → "' + p1 + '"');
 }
 
 // ── SCAN GLOBAL DE DUPLICADOS (estricto para unificación automática) ──
