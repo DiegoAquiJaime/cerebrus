@@ -1059,6 +1059,25 @@ body.dark-mode .dash-clock-bar{background:linear-gradient(135deg,rgba(255,159,10
 .bitacora-btn-cancel{background:rgba(0,0,0,0.06);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
 .bitacora-btn-cancel:hover{background:rgba(0,0,0,0.08);}
 .bitacora-edited{font-size:9px;color:var(--text-soft);font-weight:500;}
+.bitacora-sac-wrap{background:var(--surface);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:14px;}
+.bitacora-sac-wrap.bitacora-sac-unread{border-color:rgba(249,115,22,0.45);box-shadow:0 0 0 1px rgba(249,115,22,0.12),var(--shadow);}
+.bitacora-sac-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px;}
+.bitacora-sac-title{font-size:14px;font-weight:800;margin:0 0 4px 0;letter-spacing:-0.02em;}
+.bitacora-sac-sub{font-size:11px;color:var(--text-muted);margin:0;line-height:1.4;}
+.bitacora-sac-link{background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-decoration:underline;}
+.bitacora-sac-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.bitacora-sac-new{display:inline-flex;align-items:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;background:linear-gradient(135deg,rgba(249,115,22,0.2),rgba(234,88,12,0.12));color:var(--accent);padding:4px 10px;border-radius:999px;animation:bitacoraNewBadge 1.2s ease-in-out infinite;}
+@keyframes bitacoraNewBadge{0%,100%{opacity:1;}50%{opacity:.72;}}
+.bitacora-sac-btn-cal{font-size:11px!important;padding:6px 12px!important;}
+.bitacora-list-sac{max-height:min(38vh,320px);margin-top:0;}
+.bitacora-item-sac .bitacora-item-text{font-size:12px;line-height:1.4;}
+.bitacora-sac-foot{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.bitacora-sac-mark{background:none;border:none;padding:0;font:inherit;font-size:11px;font-weight:600;color:var(--accent2);cursor:pointer;text-decoration:underline;}
+.bitacora-sac-mark:hover{color:var(--accent);}
+#nav-calendario.nav-bitacora-pulse{animation:navCalBitacoraPulse 1.25s ease-in-out infinite;}
+@keyframes navCalBitacoraPulse{0%,100%{background:transparent;box-shadow:none;}50%{background:rgba(249,115,22,0.14);box-shadow:inset 0 0 0 1px rgba(249,115,22,0.25);}}
+body.dark-mode #nav-calendario.nav-bitacora-pulse{animation-name:navCalBitacoraPulseDark;}
+@keyframes navCalBitacoraPulseDark{0%,100%{background:transparent;}50%{background:rgba(255,159,10,0.12);box-shadow:inset 0 0 0 1px rgba(255,159,10,0.2);}}
 body.dark-mode .cal-int-day{background:rgba(255,255,255,0.04);}
 body.dark-mode .cal-int-ev,body.dark-mode .bitacora-item{background:rgba(255,255,255,0.04);}
 
@@ -2460,6 +2479,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   </div>
   <div class="nav-sep">Vistas</div>
   <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
+  <div class="nav-item" id="nav-calendario" onclick="showTab('calendario')"><span class="ni">📆</span> Calendario</div>
   <div class="nav-item" id="nav-informe" onclick="showTab('informe')"><span class="ni">📋</span> Informe Diario</div>
   <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
@@ -2471,7 +2491,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;"><span class="ni">📈</span> Venta Semanal</div>
   <div class="nav-item" id="nav-historial" onclick="showTab('historial')"><span class="ni">🗓</span> Historial Meses</div>
   <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
-  <div class="nav-item" id="nav-calendario" onclick="showTab('calendario')"><span class="ni">📆</span> Calendario</div>
   <div class="nav-sep">Secciones</div>
   <div class="nav-item" onclick="goto('sec-ingresos')"><span class="ni">💰</span> Ingresos</div>
   <div class="nav-item" onclick="goto('sec-mercaderia')" style="display:none;"><span class="ni">🛒</span> Mercadería</div>
@@ -2846,56 +2865,26 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     </div>
   </div>
 
-  <!-- ======= TAB CALENDARIO (interno + bitácora equipo) ======= -->
-  <div id="calendario" class="tab-content">
-    <div class="content">
-      <div class="cal-modulo-hero">
-        <div class="cal-modulo-clock-card">
-          <div class="cal-modulo-clock-label">Hora local · America/Santiago</div>
-          <div class="cal-modulo-clock" id="cal-modulo-clock">—</div>
-          <div class="cal-modulo-date" id="cal-modulo-date">—</div>
-        </div>
-      </div>
-      <p class="cal-modulo-hint">Calendario y mensajes viven en CEREBRUS (se guardan con el resto de datos en nube). Así todos ven lo mismo sin iniciar sesión en Google aquí.</p>
-
-      <div class="cal-modulo-layout">
-        <div class="cal-int-panel">
-          <div class="cal-int-head">
-            <span class="cal-int-month" id="cal-int-month-label">—</span>
-            <div class="cal-int-nav">
-              <button type="button" onclick="cerebrusCalMonthNav(-1)">‹</button>
-              <button type="button" onclick="cerebrusCalMonthNav(0)">Hoy</button>
-              <button type="button" onclick="cerebrusCalMonthNav(1)">›</button>
-            </div>
-          </div>
-          <div class="cal-int-weekhdr">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-          </div>
-          <div class="cal-int-grid" id="cal-int-grid"></div>
-        </div>
-        <div class="cal-int-side">
-          <h4>Eventos y recordatorios</h4>
-          <div class="cal-int-date-lbl" id="cal-int-sel-label">Selecciona un día</div>
-          <input type="text" class="cal-int-inp" id="cal-int-title" placeholder="Título (ej. reunión, pedido, cierre…)" maxlength="120">
-          <textarea class="cal-int-inp cal-int-ta" id="cal-int-note" placeholder="Detalle opcional" maxlength="800"></textarea>
-          <button type="button" class="cal-int-add" onclick="cerebrusCalAddEvent()">Agregar a este día</button>
-          <div class="cal-int-evlist" id="cal-int-ev-list"></div>
-        </div>
-      </div>
-
-      <div class="bitacora-panel">
-        <h3>Bitácora del equipo</h3>
-        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Publicar, <strong>editar</strong> o <strong>eliminar</strong> tus mensajes; Diego y Sebastián pueden moderar cualquiera. Los más recientes arriba.</p>
-        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Escribe un mensaje o recordatorio para el equipo…" maxlength="2000"></textarea>
-        <button type="button" class="bitacora-btn" onclick="cerebrusBitacoraPost()">Publicar en la bitácora</button>
-        <div class="bitacora-list" id="bitacora-list"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- ======= TAB SEMANA ACTUAL ======= -->
   <div id="sac" class="tab-content">
     <div class="content">
+
+      <div id="bitacora-sac-wrap" class="bitacora-sac-wrap">
+        <div class="bitacora-sac-head">
+          <div>
+            <h3 class="bitacora-sac-title">💬 Bitácora del equipo</h3>
+            <p class="bitacora-sac-sub">Avisos recientes. Publicar y editar en la pestaña <button type="button" class="bitacora-sac-link" onclick="showTab('calendario')">Calendario</button>.</p>
+          </div>
+          <div class="bitacora-sac-head-actions">
+            <span id="bitacora-sac-badge" class="bitacora-sac-new" style="display:none;">Nuevo</span>
+            <button type="button" class="fac-btn bitacora-sac-btn-cal" onclick="showTab('calendario')">📆 Calendario</button>
+          </div>
+        </div>
+        <div id="bitacora-list-sac" class="bitacora-list bitacora-list-sac"></div>
+        <div class="bitacora-sac-foot" id="bitacora-sac-foot" style="display:none;">
+          <button type="button" class="bitacora-sac-mark" onclick="cerebrusBitacoraMarkSeen(); cerebrusBitacoraRenderLists();">Marcar avisos como vistos</button>
+        </div>
+      </div>
 
       <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 8px 22px rgba(15,23,42,.05);overflow:hidden;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;">📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></div>
@@ -3071,6 +3060,53 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <div id="sac-fin-panel-wrap" style="display:none;margin-top:4px;"></div>
 
+    </div>
+  </div>
+
+  <!-- ======= TAB CALENDARIO (interno + bitácora equipo) — tras Semana Actual ======= -->
+  <div id="calendario" class="tab-content">
+    <div class="content">
+      <div class="cal-modulo-hero">
+        <div class="cal-modulo-clock-card">
+          <div class="cal-modulo-clock-label">Hora local · America/Santiago</div>
+          <div class="cal-modulo-clock" id="cal-modulo-clock">—</div>
+          <div class="cal-modulo-date" id="cal-modulo-date">—</div>
+        </div>
+      </div>
+      <p class="cal-modulo-hint">Calendario y mensajes viven en CEREBRUS (se guardan con el resto de datos en nube). Así todos ven lo mismo sin iniciar sesión en Google aquí.</p>
+
+      <div class="cal-modulo-layout">
+        <div class="cal-int-panel">
+          <div class="cal-int-head">
+            <span class="cal-int-month" id="cal-int-month-label">—</span>
+            <div class="cal-int-nav">
+              <button type="button" onclick="cerebrusCalMonthNav(-1)">‹</button>
+              <button type="button" onclick="cerebrusCalMonthNav(0)">Hoy</button>
+              <button type="button" onclick="cerebrusCalMonthNav(1)">›</button>
+            </div>
+          </div>
+          <div class="cal-int-weekhdr">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div class="cal-int-grid" id="cal-int-grid"></div>
+        </div>
+        <div class="cal-int-side">
+          <h4>Eventos y recordatorios</h4>
+          <div class="cal-int-date-lbl" id="cal-int-sel-label">Selecciona un día</div>
+          <input type="text" class="cal-int-inp" id="cal-int-title" placeholder="Título (ej. reunión, pedido, cierre…)" maxlength="120">
+          <textarea class="cal-int-inp cal-int-ta" id="cal-int-note" placeholder="Detalle opcional" maxlength="800"></textarea>
+          <button type="button" class="cal-int-add" onclick="cerebrusCalAddEvent()">Agregar a este día</button>
+          <div class="cal-int-evlist" id="cal-int-ev-list"></div>
+        </div>
+      </div>
+
+      <div class="bitacora-panel">
+        <h3>Bitácora del equipo</h3>
+        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Publicar, <strong>editar</strong> o <strong>eliminar</strong> tus mensajes; Diego y Sebastián pueden moderar cualquiera. Los más recientes arriba; en <strong>Semana Actual</strong> ves un resumen arriba del todo.</p>
+        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Escribe un mensaje o recordatorio para el equipo…" maxlength="2000"></textarea>
+        <button type="button" class="bitacora-btn" onclick="cerebrusBitacoraPost()">Publicar en la bitácora</button>
+        <div class="bitacora-list" id="bitacora-list"></div>
+      </div>
     </div>
   </div>
 
@@ -5910,7 +5946,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.8';
+const APP_VERSION = '2026.04.05.9';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6321,7 +6357,7 @@ function showTab(tabId) {
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
   if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
-  if (tabId==='calendario')  { calModuloRender(); }
+  if (tabId==='calendario')  { cerebrusBitacoraMarkSeen(); calModuloRender(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
@@ -11950,6 +11986,7 @@ function _postLoadSetup() {
   _calMap = buildCalMap(_calYear);
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
+  try { cerebrusBitacoraInitSeenIfNeeded(); } catch (e) {}
   // Bodega solo ve inventario, los demás abren Semana Actual
   if (currentUser === 'Bodega') {
     showTab('inventario');
@@ -17293,6 +17330,7 @@ function cerebrusBitacoraPost() {
   if (el) el.value = '';
   markUnsaved();
   notify('💬 Mensaje publicado');
+  cerebrusBitacoraMarkSeen();
   calModuloRender();
 }
 function cerebrusBitacoraDelete(id) {
@@ -17353,6 +17391,118 @@ function cerebrusBitacoraSaveEdit() {
   notify('✏️ Mensaje actualizado');
   calModuloRender();
 }
+
+var BITACORA_SEEN_KEY = 'cerebrusBitacoraSeenAt';
+function cerebrusBitacoraNewestAt() {
+  cerebrusEquipoEnsure();
+  var max = 0;
+  (state.cerebrusBitacora || []).forEach(function(m) {
+    if (!m || !m.at) return;
+    var t = new Date(m.at).getTime();
+    if (!isNaN(t) && t > max) max = t;
+  });
+  return max;
+}
+function cerebrusBitacoraGetSeenTs() {
+  try {
+    var s = localStorage.getItem(BITACORA_SEEN_KEY);
+    if (!s) return null;
+    var t = Date.parse(s);
+    return isNaN(t) ? null : t;
+  } catch (e) { return null; }
+}
+function cerebrusBitacoraInitSeenIfNeeded() {
+  cerebrusEquipoEnsure();
+  try {
+    if (localStorage.getItem(BITACORA_SEEN_KEY) != null) return;
+    var n = cerebrusBitacoraNewestAt();
+    if (n) localStorage.setItem(BITACORA_SEEN_KEY, new Date(n).toISOString());
+  } catch (e) {}
+}
+function cerebrusBitacoraHasUnread() {
+  var newest = cerebrusBitacoraNewestAt();
+  if (!newest) return false;
+  var seen = cerebrusBitacoraGetSeenTs();
+  if (seen == null) return true;
+  return newest > seen;
+}
+function cerebrusBitacoraMarkSeen() {
+  var n = cerebrusBitacoraNewestAt();
+  try {
+    if (n) localStorage.setItem(BITACORA_SEEN_KEY, new Date(n).toISOString());
+    else localStorage.removeItem(BITACORA_SEEN_KEY);
+  } catch (e) {}
+  cerebrusBitacoraUpdateNavIndicator();
+  var badge = document.getElementById('bitacora-sac-badge');
+  if (badge) badge.style.display = 'none';
+  var foot = document.getElementById('bitacora-sac-foot');
+  if (foot) foot.style.display = 'none';
+  var wrap = document.getElementById('bitacora-sac-wrap');
+  if (wrap) wrap.classList.remove('bitacora-sac-unread');
+}
+function cerebrusBitacoraUpdateNavIndicator() {
+  var nav = document.getElementById('nav-calendario');
+  if (!nav) return;
+  if (typeof currentUser !== 'undefined' && currentUser === 'Bodega') {
+    nav.classList.remove('nav-bitacora-pulse');
+    return;
+  }
+  nav.classList.toggle('nav-bitacora-pulse', cerebrusBitacoraHasUnread());
+}
+
+/** Lista completa (Calendario) + vista compacta (Semana Actual). */
+function cerebrusBitacoraRenderLists() {
+  cerebrusEquipoEnsure();
+  var bl = document.getElementById('bitacora-list');
+  if (bl) {
+    var rows = state.cerebrusBitacora.slice();
+    if (!rows.length) bl.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Aún no hay mensajes.</span>';
+    else {
+      bl.innerHTML = rows.map(function(m) {
+        var when = m.at ? new Date(m.at).toLocaleString('es-CL') : '';
+        var can = cerebrusBitacoraCanModify(m);
+        var editedNote = m.editedAt
+          ? '<span class="bitacora-edited"> · Editado' + (m.editedBy ? ' por ' + esc(m.editedBy) : '') + ' · ' + esc(new Date(m.editedAt).toLocaleString('es-CL')) + '</span>'
+          : '';
+        if (_bitacoraEditingId === m.id && can) {
+          return '<div class="bitacora-item bitacora-item-editing"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span></div>' +
+            '<textarea id="bitacora-edit-active" class="bitacora-ta" maxlength="2000">' + escTextareaVal(m.text || '') + '</textarea>' +
+            '<div class="bitacora-edit-actions"><button type="button" class="bitacora-btn-save" onclick="cerebrusBitacoraSaveEdit()">Guardar</button>' +
+            '<button type="button" class="bitacora-btn-cancel" onclick="cerebrusBitacoraCancelEdit()">Cancelar</button></div></div>';
+        }
+        var act = can
+          ? '<div class="bitacora-actions"><button type="button" class="bitacora-edit" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStartEdit(this.getAttribute(\'data-bid\'))">Editar</button>' +
+            '<button type="button" class="bitacora-del" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraDelete(this.getAttribute(\'data-bid\'))">Eliminar</button></div>'
+          : '';
+        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div><div class="bitacora-item-text">' + esc(m.text || '') + '</div></div>';
+      }).join('');
+    }
+  }
+  var bs = document.getElementById('bitacora-list-sac');
+  if (bs) {
+    var prev = state.cerebrusBitacora.slice(0, 5);
+    if (!prev.length) {
+      bs.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Sin mensajes aún. Publica desde la pestaña Calendario.</span>';
+    } else {
+      bs.innerHTML = prev.map(function(m) {
+        var when = m.at ? new Date(m.at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+        var raw = String(m.text || '');
+        var txt = esc(raw);
+        if (raw.length > 200) txt = esc(raw.slice(0, 200)) + '…';
+        return '<div class="bitacora-item bitacora-item-sac"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + '</span></div><div class="bitacora-item-text">' + txt + '</div></div>';
+      }).join('');
+    }
+  }
+  var unread = cerebrusBitacoraHasUnread();
+  var badge = document.getElementById('bitacora-sac-badge');
+  if (badge) badge.style.display = unread ? 'inline-flex' : 'none';
+  var foot = document.getElementById('bitacora-sac-foot');
+  if (foot) foot.style.display = unread ? 'block' : 'none';
+  var wrap = document.getElementById('bitacora-sac-wrap');
+  if (wrap) wrap.classList.toggle('bitacora-sac-unread', unread);
+  cerebrusBitacoraUpdateNavIndicator();
+}
+
 function calModuloRender() {
   cerebrusEquipoEnsure();
   if (_cintY == null) {
@@ -17418,31 +17568,7 @@ function calModuloRender() {
     }
   }
 
-  const bl = document.getElementById('bitacora-list');
-  if (bl) {
-    const rows = state.cerebrusBitacora.slice();
-    if (!rows.length) bl.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Aún no hay mensajes.</span>';
-    else {
-      bl.innerHTML = rows.map(function(m) {
-        const when = m.at ? new Date(m.at).toLocaleString('es-CL') : '';
-        const can = cerebrusBitacoraCanModify(m);
-        const editedNote = m.editedAt
-          ? '<span class="bitacora-edited"> · Editado' + (m.editedBy ? ' por ' + esc(m.editedBy) : '') + ' · ' + esc(new Date(m.editedAt).toLocaleString('es-CL')) + '</span>'
-          : '';
-        if (_bitacoraEditingId === m.id && can) {
-          return '<div class="bitacora-item bitacora-item-editing"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span></div>' +
-            '<textarea id="bitacora-edit-active" class="bitacora-ta" maxlength="2000">' + escTextareaVal(m.text || '') + '</textarea>' +
-            '<div class="bitacora-edit-actions"><button type="button" class="bitacora-btn-save" onclick="cerebrusBitacoraSaveEdit()">Guardar</button>' +
-            '<button type="button" class="bitacora-btn-cancel" onclick="cerebrusBitacoraCancelEdit()">Cancelar</button></div></div>';
-        }
-        const act = can
-          ? '<div class="bitacora-actions"><button type="button" class="bitacora-edit" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStartEdit(this.getAttribute(\'data-bid\'))">Editar</button>' +
-            '<button type="button" class="bitacora-del" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraDelete(this.getAttribute(\'data-bid\'))">Eliminar</button></div>'
-          : '';
-        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div><div class="bitacora-item-text">' + esc(m.text || '') + '</div></div>';
-      }).join('');
-    }
-  }
+  cerebrusBitacoraRenderLists();
 }
 function cerebrusCintPickDate(iso) {
   if (!iso) return;
@@ -18856,6 +18982,7 @@ function sacRender() {
   sacCalcAll();
   sacUpdateToolbarDesc();
   sacRenderHistorialCierres();
+  if (typeof cerebrusBitacoraRenderLists === 'function') cerebrusBitacoraRenderLists();
 }
 
 function sacLoadVentas() {
