@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.05.12",
-  "notes": "Sala voz: PTT (API Jitsi), contraseñas, canal general vs solo equipo; Bodega puede entrar a voz."
+  "version": "2026.04.05.14",
+  "notes": "Bitácora: quitar adjuntos por mensaje; limpieza masiva por antigüedad (Diego/Sebastián); recordatorio opcional cada 2 días / semana / 2 semanas."
 }

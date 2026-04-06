@@ -1078,26 +1078,26 @@ body.dark-mode .dash-clock-bar{background:linear-gradient(135deg,rgba(255,159,10
 @keyframes navCalBitacoraPulse{0%,100%{background:transparent;box-shadow:none;}50%{background:rgba(249,115,22,0.14);box-shadow:inset 0 0 0 1px rgba(249,115,22,0.25);}}
 body.dark-mode #nav-calendario.nav-bitacora-pulse{animation-name:navCalBitacoraPulseDark;}
 @keyframes navCalBitacoraPulseDark{0%,100%{background:transparent;}50%{background:rgba(255,159,10,0.12);box-shadow:inset 0 0 0 1px rgba(255,159,10,0.2);}}
-.cerebrus-voz-panel{background:var(--surface);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:14px;}
-.cerebrus-voz-panel h3{font-size:15px;font-weight:800;margin:0 0 8px 0;letter-spacing:-0.02em;}
-.cerebrus-voz-hint{font-size:11px;color:var(--text-muted);line-height:1.45;margin:0 0 12px 0;}
-.cerebrus-voz-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;}
-.cerebrus-voz-room{flex:1;min-width:180px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;background:rgba(0,0,0,0.02);}
-.cerebrus-voz-room:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
-.cerebrus-voz-iframe-wrap{position:relative;width:100%;min-height:min(62vh,560px);border-radius:12px;overflow:hidden;border:1px solid var(--card-border);background:#1a1a1e;}
-.cerebrus-voz-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
-#cerebrus-voz-meet{position:absolute;inset:0;width:100%;height:100%;}
-#cerebrus-voz-meet iframe{position:absolute;inset:0;width:100%!important;height:100%!important;}
-.cerebrus-voz-mode{display:flex;flex-direction:column;gap:8px;margin:10px 0 14px 0;}
-.cerebrus-voz-mode label{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;cursor:pointer;}
-body.user-bodega .cerebrus-voz-staff-only{display:none!important;}
-.cerebrus-voz-pass-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;}
-.cerebrus-voz-pass-row input[type="password"],.cerebrus-voz-pass-row input[type="text"].cerebrus-voz-pass-inp{min-width:160px;max-width:280px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;}
-.cerebrus-voz-ptt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 16px;background:linear-gradient(180deg,rgba(249,115,22,.08),transparent);border-radius:12px;margin-bottom:12px;border:1px solid rgba(249,115,22,.2);}
-.cerebrus-voz-ptt-btn{touch-action:none;user-select:none;-webkit-user-select:none;width:100%;max-width:420px;padding:18px 22px;font-size:15px;font-weight:800;font-family:inherit;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,#ea580c,#f97316);color:white;box-shadow:0 4px 14px rgba(234,88,12,.35);}
-.cerebrus-voz-ptt-btn:active{background:linear-gradient(135deg,#c2410c,#ea580c);}
-.cerebrus-voz-ptt-hint{font-size:11px;color:var(--text-muted);}
-.cerebrus-voz-legal{font-size:10px;color:var(--text-soft);line-height:1.4;margin-top:8px;}
+.bitacora-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;}
+.bitacora-toolbtn{border:1px solid var(--border);background:rgba(0,0,0,0.03);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--primary);}
+.bitacora-toolbtn:hover{border-color:var(--accent);color:var(--accent);}
+.bitacora-toolbtn.recording{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);color:var(--danger);}
+.bitacora-pending{font-size:11px;color:var(--text-muted);margin-bottom:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:10px;background:rgba(0,0,0,0.02);}
+.bitacora-pchip{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.1);border-radius:8px;padding:4px 8px;margin:3px 6px 3px 0;font-size:11px;}
+.bitacora-pchip button{border:none;background:none;cursor:pointer;color:var(--danger);font-size:14px;padding:0 2px;}
+.bitacora-att{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.bitacora-img{max-width:100%;max-height:280px;border-radius:8px;border:1px solid var(--border);}
+.bitacora-att-a{font-size:12px;font-weight:600;color:var(--accent2);}
+.bitacora-audio{width:100%;max-width:420px;margin-top:6px;}
+body.dark-mode .bitacora-toolbtn{background:rgba(255,255,255,0.06);}
+.bitacora-strip{color:var(--text-muted);font-size:11px;font-weight:600;background:none;border:none;cursor:pointer;padding:2px 6px;font-family:inherit;text-decoration:underline;}
+.bitacora-strip:hover{color:var(--accent);}
+.bitacora-cleanup{margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:rgba(0,0,0,0.02);}
+.bitacora-cleanup > summary{cursor:pointer;font-size:12px;font-weight:700;color:var(--primary);user-select:none;}
+.bitacora-cleanup-body{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);}
+.bitacora-cleanup-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;}
+.bitacora-cleanup-row select{border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;font-family:inherit;background:var(--surface);}
+body.dark-mode .bitacora-cleanup{background:rgba(255,255,255,0.04);}
 body.dark-mode .cal-int-day{background:rgba(255,255,255,0.04);}
 body.dark-mode .cal-int-ev,body.dark-mode .bitacora-item{background:rgba(255,255,255,0.04);}
 
@@ -2500,7 +2500,6 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
   <div class="nav-sep">Vistas</div>
   <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
   <div class="nav-item" id="nav-calendario" onclick="showTab('calendario')"><span class="ni">📆</span> Calendario</div>
-  <div class="nav-item" id="nav-voz" onclick="showTab('voz')"><span class="ni">🎙️</span> Sala de voz</div>
   <div class="nav-item" id="nav-informe" onclick="showTab('informe')"><span class="ni">📋</span> Informe Diario</div>
   <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
@@ -3123,72 +3122,52 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
       <div class="bitacora-panel">
         <h3>Bitácora del equipo</h3>
-        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Publicar, <strong>editar</strong> o <strong>eliminar</strong> tus mensajes; Diego y Sebastián pueden moderar cualquiera. Los más recientes arriba; en <strong>Semana Actual</strong> ves un resumen arriba del todo.</p>
-        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Escribe un mensaje o recordatorio para el equipo…" maxlength="2000"></textarea>
+        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Podés adjuntar <strong>imágenes</strong>, <strong>PDF o texto</strong>, y <strong>notas de voz</strong> cortas (se guardan en la nube con el resto de datos; tamaños limitados).</p>
+        <input type="file" id="bitacora-file-input" style="display:none;" multiple accept="image/*,.pdf,.txt,text/plain,application/pdf" onchange="cerebrusBitacoraOnFilesPick(event)">
+        <div class="bitacora-toolbar">
+          <button type="button" class="bitacora-toolbtn" onclick="document.getElementById('bitacora-file-input').click()">📎 Adjuntar archivos</button>
+          <button type="button" class="bitacora-toolbtn" id="bitacora-voice-btn" onclick="cerebrusBitacoraVoiceToggle()">🎤 Nota de voz</button>
+        </div>
+        <div class="bitacora-pending" id="bitacora-pending" style="display:none;"></div>
+        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Texto del mensaje (opcional si adjuntás algo)…" maxlength="2000"></textarea>
         <button type="button" class="bitacora-btn" onclick="cerebrusBitacoraPost()">Publicar en la bitácora</button>
+        <details class="bitacora-cleanup" id="bitacora-cleanup-box">
+          <summary>Liberar espacio (adjuntos y mensajes viejos)</summary>
+          <div class="bitacora-cleanup-body">
+            <p class="tip" style="font-size:11px;margin:0 0 10px 0;">Los adjuntos viven en el mismo archivo que guarda la nube; al quitarlos se reduce el tamaño total. Podés hacerlo por mensaje (abajo) o por antigüedad aquí.</p>
+            <div class="bitacora-cleanup-row">
+              <label for="bitacora-reminder-days">Recordatorio al abrir la app:</label>
+              <select id="bitacora-reminder-days" onchange="cerebrusBitacoraReminderSet(this.value)">
+                <option value="0">No recordar</option>
+                <option value="2">Cada 2 días</option>
+                <option value="7">Cada semana</option>
+                <option value="14">Cada 2 semanas</option>
+              </select>
+            </div>
+            <div class="bitacora-cleanup-row">
+              <span>Quitar adjuntos de mensajes más viejos que</span>
+              <select id="bitacora-strip-age">
+                <option value="2">2 días</option>
+                <option value="7" selected>7 días</option>
+                <option value="14">14 días</option>
+                <option value="30">30 días</option>
+              </select>
+              <button type="button" class="bitacora-toolbtn" onclick="cerebrusBitacoraBulkStripOlderThan()">Ejecutar</button>
+            </div>
+            <p class="tip" style="font-size:10px;color:var(--text-muted);margin:0 0 8px 0;">La limpieza por fecha solo la pueden hacer Diego o Sebastián. Cualquiera con permiso puede usar «Quitar adjuntos» en cada mensaje.</p>
+            <div class="bitacora-cleanup-row">
+              <span>Eliminar mensajes completos más viejos que</span>
+              <select id="bitacora-delete-age">
+                <option value="7">7 días</option>
+                <option value="14">14 días</option>
+                <option value="30" selected>30 días</option>
+                <option value="90">90 días</option>
+              </select>
+              <button type="button" class="bitacora-toolbtn" onclick="cerebrusBitacoraBulkDeleteOlderThan()">Eliminar…</button>
+            </div>
+          </div>
+        </details>
         <div class="bitacora-list" id="bitacora-list"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======= TAB SALA DE VOZ (Jitsi API + PTT; meet.jit.si) ======= -->
-  <div id="voz" class="tab-content">
-    <div class="content">
-      <div class="cerebrus-voz-panel">
-        <h3>🎙️ Sala de voz (PTT + salas)</h3>
-        <p class="cerebrus-voz-hint">
-          <strong>PTT:</strong> mantené pulsado el botón naranja para hablar; al soltar, el micrófono queda silenciado.
-          Servidor: <strong>meet.jit.si</strong> (no es la nube de CEREBRUS).
-        </p>
-        <p class="cerebrus-voz-legal">
-          <strong>Privacidad:</strong> ningún sistema solo en el navegador puede garantizar que solo usuarios CEREBRUS entren: la sala es una URL pública de Jitsi.
-          Para acercarte a eso: <strong>nombre de sala poco obvio + contraseña</strong> compartida solo por el equipo (y otra sala/contraseña para reuniones sin Bodega).
-          Quien tenga nombre + contraseña puede entrar desde cualquier sitio; no compartas la contraseña fuera del local.
-        </p>
-
-        <div class="cerebrus-voz-mode cerebrus-voz-staff-only">
-          <span style="font-size:11px;font-weight:800;color:var(--text-soft);text-transform:uppercase;">Tipo de reunión</span>
-          <label><input type="radio" name="cerebrus-voz-mode" value="general" checked onchange="cerebrusVozModeChange()"> Canal general <span style="color:var(--text-muted);font-weight:500;">(todos, incluye Bodega)</span></label>
-          <label><input type="radio" name="cerebrus-voz-mode" value="staff" onchange="cerebrusVozModeChange()"> Solo equipo <span style="color:var(--text-muted);font-weight:500;">(otro nombre de sala; Bodega no ve esta opción)</span></label>
-        </div>
-
-        <div class="cerebrus-voz-row">
-          <label style="font-size:11px;font-weight:700;color:var(--text-soft);width:100%;">Nombre sala — canal general</label>
-          <input type="text" class="cerebrus-voz-room" id="cerebrus-voz-room-input" placeholder="CerebrusAquiJaime" maxlength="64" autocomplete="off">
-        </div>
-        <div class="cerebrus-voz-pass-row">
-          <label style="font-size:11px;font-weight:700;color:var(--text-soft);">Contraseña sala general (opcional)</label>
-          <input type="password" class="cerebrus-voz-pass-inp" id="cerebrus-voz-pass-input" placeholder="La pone el primer moderador o la compartís antes" maxlength="64" autocomplete="new-password">
-        </div>
-
-        <div class="cerebrus-voz-staff-only" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-          <div class="cerebrus-voz-row">
-            <label style="font-size:11px;font-weight:700;color:var(--text-soft);width:100%;">Nombre sala — solo equipo</label>
-            <input type="text" class="cerebrus-voz-room" id="cerebrus-voz-room-staff-input" placeholder="CerebrusEquipo" maxlength="64" autocomplete="off">
-          </div>
-          <div class="cerebrus-voz-pass-row">
-            <label style="font-size:11px;font-weight:700;color:var(--text-soft);">Contraseña solo equipo (opcional)</label>
-            <input type="password" class="cerebrus-voz-pass-inp" id="cerebrus-voz-pass-staff-input" placeholder="Distinta a la general" maxlength="64" autocomplete="new-password">
-          </div>
-        </div>
-
-        <div class="cerebrus-voz-row" style="margin-top:12px;">
-          <button type="button" class="fac-btn primary" onclick="cerebrusVozSaveAll()">Guardar y conectar</button>
-          <button type="button" class="fac-btn" onclick="cerebrusVozReloadMeet()" title="Reiniciar la sala">↻ Recargar sala</button>
-        </div>
-      </div>
-
-      <div class="cerebrus-voz-ptt" id="cerebrus-voz-ptt">
-        <button type="button" class="cerebrus-voz-ptt-btn" id="cerebrus-voz-ptt-btn"
-          onpointerdown="cerebrusVozPttDown(event)" onpointerup="cerebrusVozPttUp(event)" onpointerleave="cerebrusVozPttUp(event)"
-          ontouchstart="cerebrusVozPttDown(event)" ontouchend="cerebrusVozPttUp(event)" ontouchcancel="cerebrusVozPttUp(event)">
-          🎙️ Mantén pulsado para hablar (PTT)
-        </button>
-        <span class="cerebrus-voz-ptt-hint">Soltá el botón para cortar el micrófono. Entrá primero con «Guardar y conectar».</span>
-      </div>
-
-      <div class="cerebrus-voz-iframe-wrap" id="cerebrus-voz-iframe-wrap">
-        <div id="cerebrus-voz-meet" aria-label="Videoconferencia Jitsi"></div>
       </div>
     </div>
   </div>
@@ -6029,7 +6008,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.05.12';
+const APP_VERSION = '2026.04.05.14';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6411,212 +6390,9 @@ function sebasModuleAllowed() {
   return currentUser === 'Diego' || currentUser === 'Sebastián';
 }
 
-var _jitsiApi = null;
-var _cerebrusVozMicOut = true;
-var _cerebrusVozLastBuildKey = '';
-
-function cerebrusVozRoomSlug() {
-  try {
-    var c = localStorage.getItem('cerebrus_voz_room');
-    if (c && String(c).trim()) {
-      var s = String(c).trim().replace(/[^a-zA-Z0-9_-]/g, '');
-      if (s.length >= 3) return s.slice(0, 64);
-    }
-  } catch (e) {}
-  return 'CerebrusAquiJaime';
-}
-function cerebrusVozRoomStaffSlug() {
-  try {
-    var c = localStorage.getItem('cerebrus_voz_room_staff');
-    if (c && String(c).trim()) {
-      var s = String(c).trim().replace(/[^a-zA-Z0-9_-]/g, '');
-      if (s.length >= 3) return s.slice(0, 64);
-    }
-  } catch (e) {}
-  return 'CerebrusEquipo';
-}
-function cerebrusVozIsStaffMode() {
-  if (typeof currentUser !== 'undefined' && currentUser === 'Bodega') return false;
-  try {
-    var r = document.querySelector('input[name="cerebrus-voz-mode"]:checked');
-    if (r && r.value === 'staff') return true;
-  } catch (e) {}
-  try { return localStorage.getItem('cerebrus_voz_mode') === 'staff'; } catch (e) {}
-  return false;
-}
-function cerebrusVozActiveRoomName() {
-  return cerebrusVozIsStaffMode() ? cerebrusVozRoomStaffSlug() : cerebrusVozRoomSlug();
-}
-function cerebrusVozActivePassword() {
-  if (cerebrusVozIsStaffMode()) {
-    try { return localStorage.getItem('cerebrus_voz_pass_staff') || ''; } catch (e) {}
-    return '';
-  }
-  try { return localStorage.getItem('cerebrus_voz_pass') || ''; } catch (e) {}
-  return '';
-}
-function cerebrusVozSyncFormFromStorage() {
-  var ri = document.getElementById('cerebrus-voz-room-input');
-  if (ri) ri.value = cerebrusVozRoomSlug();
-  var rs = document.getElementById('cerebrus-voz-room-staff-input');
-  if (rs) rs.value = cerebrusVozRoomStaffSlug();
-  var pg = document.getElementById('cerebrus-voz-pass-input');
-  if (pg) try { pg.value = localStorage.getItem('cerebrus_voz_pass') || ''; } catch (e) {}
-  var ps = document.getElementById('cerebrus-voz-pass-staff-input');
-  if (ps) try { ps.value = localStorage.getItem('cerebrus_voz_pass_staff') || ''; } catch (e) {}
-  var mode = 'general';
-  try { mode = localStorage.getItem('cerebrus_voz_mode') === 'staff' ? 'staff' : 'general'; } catch (e) {}
-  var r1 = document.querySelector('input[name="cerebrus-voz-mode"][value="general"]');
-  var r2 = document.querySelector('input[name="cerebrus-voz-mode"][value="staff"]');
-  if (r1 && r2) {
-    r1.checked = mode !== 'staff';
-    r2.checked = mode === 'staff';
-  }
-}
-function cerebrusVozModeChange() {
-  try {
-    var r = document.querySelector('input[name="cerebrus-voz-mode"]:checked');
-    localStorage.setItem('cerebrus_voz_mode', r && r.value === 'staff' ? 'staff' : 'general');
-  } catch (e) {}
-  _cerebrusVozLastBuildKey = '';
-  cerebrusVozEnsureMeet(true);
-}
-function cerebrusVozSaveAll() {
-  var ri = document.getElementById('cerebrus-voz-room-input');
-  var rs = document.getElementById('cerebrus-voz-room-staff-input');
-  var pg = document.getElementById('cerebrus-voz-pass-input');
-  var ps = document.getElementById('cerebrus-voz-pass-staff-input');
-  var v = ri ? String(ri.value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '') : '';
-  if (v.length < 3) {
-    notify('⚠ Sala general: mínimo 3 caracteres (solo letras, números, guiones).');
-    return;
-  }
-  try { localStorage.setItem('cerebrus_voz_room', v.slice(0, 64)); } catch (e) {}
-  if (ri) ri.value = v.slice(0, 64);
-  var vs = rs ? String(rs.value || '').trim().replace(/[^a-zA-Z0-9_-]/g, '') : '';
-  if (vs.length >= 3) {
-    try { localStorage.setItem('cerebrus_voz_room_staff', vs.slice(0, 64)); } catch (e) {}
-    if (rs) rs.value = vs.slice(0, 64);
-  } else {
-    try { localStorage.setItem('cerebrus_voz_room_staff', 'CerebrusEquipo'); } catch (e) {}
-    if (rs) rs.value = 'CerebrusEquipo';
-  }
-  try {
-    if (pg) localStorage.setItem('cerebrus_voz_pass', String(pg.value || ''));
-    if (ps) localStorage.setItem('cerebrus_voz_pass_staff', String(ps.value || ''));
-  } catch (e) {}
-  try {
-    var r = document.querySelector('input[name="cerebrus-voz-mode"]:checked');
-    localStorage.setItem('cerebrus_voz_mode', r && r.value === 'staff' ? 'staff' : 'general');
-  } catch (e) {}
-  _cerebrusVozLastBuildKey = '';
-  cerebrusVozEnsureMeet(true);
-  notify('✓ Conectando…');
-}
-function cerebrusVozDispose() {
-  if (_jitsiApi) {
-    try { _jitsiApi.dispose(); } catch (e) {}
-    _jitsiApi = null;
-  }
-  var el = document.getElementById('cerebrus-voz-meet');
-  if (el) el.innerHTML = '';
-  _cerebrusVozMicOut = true;
-}
-function cerebrusVozLoadScript(cb) {
-  if (window.JitsiMeetExternalAPI) { cb(); return; }
-  var s = document.createElement('script');
-  s.src = 'https://meet.jit.si/external_api.js';
-  s.async = true;
-  s.onload = function() { cb(); };
-  s.onerror = function() { notify('⚠ No se pudo cargar Jitsi (red o bloqueo).'); };
-  document.head.appendChild(s);
-}
-function cerebrusVozBuildKey() {
-  return cerebrusVozActiveRoomName() + '|' + (typeof currentUser !== 'undefined' ? currentUser : '') + '|' + (cerebrusVozActivePassword() || '');
-}
-function cerebrusVozEnsureMeet(force) {
-  var parent = document.getElementById('cerebrus-voz-meet');
-  if (!parent) return;
-  var key = cerebrusVozBuildKey();
-  if (!force && key === _cerebrusVozLastBuildKey && _jitsiApi) return;
-  _cerebrusVozLastBuildKey = key;
-  cerebrusVozDispose();
-  var room = cerebrusVozActiveRoomName();
-  var displayName = (typeof currentUser !== 'undefined' && currentUser) ? String(currentUser) : 'Invitado';
-  cerebrusVozLoadScript(function() {
-    if (!window.JitsiMeetExternalAPI) return;
-    var domain = 'meet.jit.si';
-    var options = {
-      roomName: room,
-      parentNode: parent,
-      width: '100%',
-      height: '100%',
-      userInfo: { displayName: displayName },
-      configOverwrite: {
-        startWithAudioMuted: true,
-        startWithVideoMuted: true,
-        prejoinPageEnabled: false,
-        disableDeepLinking: true
-      }
-    };
-    try {
-      _jitsiApi = new JitsiMeetExternalAPI(domain, options);
-    } catch (e) {
-      notify('⚠ No se pudo abrir la sala.');
-      return;
-    }
-    _cerebrusVozMicOut = true;
-    if (!_jitsiApi) return;
-    _jitsiApi.addEventListener('passwordRequired', function() {
-      var p = cerebrusVozActivePassword();
-      if (p && _jitsiApi) {
-        try { _jitsiApi.executeCommand('password', p); } catch (e2) {}
-      }
-    });
-    _jitsiApi.addEventListener('participantRoleChanged', function(event) {
-      var p = cerebrusVozActivePassword();
-      if (event && event.role === 'moderator' && p && _jitsiApi) {
-        try { _jitsiApi.executeCommand('password', p); } catch (e2) {}
-      }
-    });
-    _jitsiApi.addEventListener('videoConferenceJoined', function() {
-      _cerebrusVozMicOut = true;
-      var p = cerebrusVozActivePassword();
-      if (p && _jitsiApi) {
-        setTimeout(function() {
-          try {
-            if (_jitsiApi) _jitsiApi.executeCommand('password', p);
-          } catch (e2) {}
-        }, 600);
-      }
-    });
-  });
-}
-function cerebrusVozReloadMeet() {
-  _cerebrusVozLastBuildKey = '';
-  cerebrusVozEnsureMeet(true);
-}
-function cerebrusVozPttDown(e) {
-  if (e && e.button !== undefined && e.button !== 0) return;
-  if (e) e.preventDefault();
-  if (!_jitsiApi) return;
-  if (_cerebrusVozMicOut) {
-    try { _jitsiApi.executeCommand('toggleAudio'); } catch (e2) {}
-    _cerebrusVozMicOut = false;
-  }
-}
-function cerebrusVozPttUp(e) {
-  if (e) e.preventDefault();
-  if (!_jitsiApi) return;
-  if (!_cerebrusVozMicOut) {
-    try { _jitsiApi.executeCommand('toggleAudio'); } catch (e2) {}
-    _cerebrusVozMicOut = true;
-  }
-}
-
 function showTab(tabId) {
-  // Bodega: inventario o sala de voz
-  if (currentUser === 'Bodega' && tabId !== 'inventario' && tabId !== 'voz') {
+  // Bodega: solo inventario
+  if (currentUser === 'Bodega' && tabId !== 'inventario') {
     tabId = 'inventario';
   }
   if (tabId === 'sebas' && !sebasModuleAllowed()) {
@@ -6624,13 +6400,13 @@ function showTab(tabId) {
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
   closeNav();
-  ['resumen','calendario','voz','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
+  ['resumen','calendario','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
     const nav = document.getElementById('nav-'+t);
     if (nav) nav.classList.toggle('active', t===tabId);
   });
-  const titles = {resumen:'Dashboard', calendario:'📆 Calendario', voz:'🎙️ Sala de voz', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
+  const titles = {resumen:'Dashboard', calendario:'📆 Calendario', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
   set('tab-title', titles[tabId]||tabId);
   if (tabId==='sac')        sacRender();
   if (tabId==='semanas')    { renderWeeks(); calRenderWeekStrip(0); }
@@ -6644,10 +6420,6 @@ function showTab(tabId) {
   if (tabId==='informe')    infInit();
   if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
   if (tabId==='calendario')  { cerebrusBitacoraMarkSeen(); calModuloRender(); }
-  if (tabId==='voz') {
-    cerebrusVozSyncFormFromStorage();
-    cerebrusVozEnsureMeet(false);
-  }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
@@ -12277,6 +12049,9 @@ function _postLoadSetup() {
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
   try { cerebrusBitacoraInitSeenIfNeeded(); } catch (e) {}
+  setTimeout(function() {
+    try { cerebrusBitacoraCleanupReminderMaybe(); } catch (e) {}
+  }, 5200);
   // Bodega solo ve inventario, los demás abren Semana Actual
   if (currentUser === 'Bodega') {
     showTab('inventario');
@@ -17530,6 +17305,215 @@ let _cintY = null;
 let _cintM = null;
 let _cintSelIso = '';
 let _bitacoraEditingId = null;
+var _bitacoraPending = [];
+var _bitacoraVoiceRec = null;
+var BITACORA_MAX_ATTACHMENTS = 5;
+var BITACORA_MAX_DATA_URL_CHARS = 450000;
+var BITACORA_MAX_MSG_ATTACH_CHARS = 2000000;
+var BITACORA_VOICE_MAX_SEC = 60;
+
+function cerebrusBitacoraPendingRemove(ix) {
+  if (ix < 0 || ix >= _bitacoraPending.length) return;
+  _bitacoraPending.splice(ix, 1);
+  cerebrusBitacoraPendingRender();
+}
+function cerebrusBitacoraPendingRender() {
+  var wrap = document.getElementById('bitacora-pending');
+  if (!wrap) return;
+  if (!_bitacoraPending.length) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+  wrap.style.display = 'block';
+  wrap.innerHTML = '<span style="font-size:11px;color:var(--text-soft);">Pendiente de publicar:</span> ' +
+    _bitacoraPending.map(function(p, i) {
+      var label = p.kind === 'voice' ? '🎤 Nota de voz' : esc(p.name || 'archivo');
+      return '<span class="bitacora-pchip">' + label + ' <button type="button" aria-label="Quitar" onclick="cerebrusBitacoraPendingRemove(' + i + ')">×</button></span>';
+    }).join('');
+}
+function cerebrusBitacoraShrinkImage(dataUrl, cb) {
+  try {
+    var img = new Image();
+    img.onload = function() {
+      var maxW = 1600;
+      var w = img.width;
+      var h = img.height;
+      if (w <= maxW) { cb(dataUrl); return; }
+      var nh = Math.round(h * (maxW / w));
+      var c = document.createElement('canvas');
+      c.width = maxW;
+      c.height = nh;
+      var ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, maxW, nh);
+      try {
+        cb(c.toDataURL('image/jpeg', 0.82));
+      } catch (e) { cb(dataUrl); }
+    };
+    img.onerror = function() { cb(dataUrl); };
+    img.src = dataUrl;
+  } catch (e) { cb(dataUrl); }
+}
+function cerebrusBitacoraProcessOneFile(f, then) {
+  var isImg = /^image\//i.test(f.type);
+  var isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  var isTxt = f.type === 'text/plain' || /\.txt$/i.test(f.name);
+  if (!isImg && !isPdf && !isTxt) {
+    notify('⚠ Solo imágenes, PDF o texto (.txt): ' + f.name);
+    then();
+    return;
+  }
+  if (f.size > 420000) {
+    notify('⚠ Archivo demasiado grande (máx. ~400 KB): ' + f.name);
+    then();
+    return;
+  }
+  var r = new FileReader();
+  r.onload = function() {
+    var data = r.result;
+    if (String(data).length > BITACORA_MAX_DATA_URL_CHARS) {
+      notify('⚠ Archivo demasiado grande al codificar: ' + f.name);
+      then();
+      return;
+    }
+    if (isImg) {
+      cerebrusBitacoraShrinkImage(data, function(shrunk) {
+        if (String(shrunk).length > BITACORA_MAX_DATA_URL_CHARS) {
+          notify('⚠ Imagen demasiado grande: ' + f.name);
+          then();
+          return;
+        }
+        if (_bitacoraPending.length < BITACORA_MAX_ATTACHMENTS) {
+          _bitacoraPending.push({ kind: 'image', name: String(f.name || 'imagen').slice(0, 120), mime: 'image/jpeg', data: shrunk });
+        }
+        then();
+      });
+    } else {
+      if (_bitacoraPending.length < BITACORA_MAX_ATTACHMENTS) {
+        _bitacoraPending.push({ kind: 'file', name: String(f.name || 'archivo').slice(0, 120), mime: f.type || 'application/octet-stream', data: data });
+      }
+      then();
+    }
+  };
+  r.onerror = function() { notify('⚠ No se pudo leer: ' + f.name); then(); };
+  r.readAsDataURL(f);
+}
+function cerebrusBitacoraOnFilesPick(ev) {
+  var input = ev && ev.target;
+  var files = input && input.files;
+  if (!files || !files.length) return;
+  var list = Array.prototype.slice.call(files, 0);
+  var i = 0;
+  function next() {
+    if (i >= list.length) {
+      if (input) input.value = '';
+      cerebrusBitacoraPendingRender();
+      return;
+    }
+    if (_bitacoraPending.length >= BITACORA_MAX_ATTACHMENTS) {
+      notify('⚠ Máximo ' + BITACORA_MAX_ATTACHMENTS + ' adjuntos por mensaje.');
+      if (input) input.value = '';
+      cerebrusBitacoraPendingRender();
+      return;
+    }
+    var f = list[i++];
+    cerebrusBitacoraProcessOneFile(f, next);
+  }
+  next();
+}
+function cerebrusBitacoraVoiceCleanup() {
+  if (!_bitacoraVoiceRec) return;
+  if (_bitacoraVoiceRec.timer) { try { clearTimeout(_bitacoraVoiceRec.timer); } catch (e) {} _bitacoraVoiceRec.timer = null; }
+  _bitacoraVoiceRec = null;
+  var btn = document.getElementById('bitacora-voice-btn');
+  if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤 Nota de voz'; }
+}
+function cerebrusBitacoraVoiceFinishRecording() {
+  if (!_bitacoraVoiceRec || !_bitacoraVoiceRec.mr) return;
+  if (_bitacoraVoiceRec.timer) { try { clearTimeout(_bitacoraVoiceRec.timer); } catch (e) {} _bitacoraVoiceRec.timer = null; }
+  try { _bitacoraVoiceRec.mr.stop(); } catch (e) { cerebrusBitacoraVoiceCleanup(); }
+}
+function cerebrusBitacoraVoiceToggle() {
+  if (typeof MediaRecorder === 'undefined') {
+    notify('⚠ Este navegador no permite grabar notas de voz.');
+    return;
+  }
+  if (_bitacoraVoiceRec && _bitacoraVoiceRec.mr && _bitacoraVoiceRec.mr.state === 'recording') {
+    cerebrusBitacoraVoiceFinishRecording();
+    return;
+  }
+  if (_bitacoraPending.length >= BITACORA_MAX_ATTACHMENTS) {
+    notify('⚠ Máximo ' + BITACORA_MAX_ATTACHMENTS + ' adjuntos por mensaje.');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    notify('⚠ Este entorno no permite usar el micrófono (HTTPS o permisos).');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+    var mime = '';
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) mime = 'audio/webm;codecs=opus';
+    else if (MediaRecorder.isTypeSupported('audio/webm')) mime = 'audio/webm';
+    else if (MediaRecorder.isTypeSupported('audio/mp4')) mime = 'audio/mp4';
+    var mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    var chunks = [];
+    mr.ondataavailable = function(e) { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = function() {
+      try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) {}
+      var blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+      var fr = new FileReader();
+      fr.onload = function() {
+        var data = fr.result;
+        if (String(data).length > BITACORA_MAX_DATA_URL_CHARS) {
+          notify('⚠ Nota de voz demasiado larga; probá menos de ' + BITACORA_VOICE_MAX_SEC + ' s.');
+        } else if (_bitacoraPending.length < BITACORA_MAX_ATTACHMENTS) {
+          var ext = (blob.type && blob.type.indexOf('mp4') >= 0) ? 'm4a' : 'webm';
+          _bitacoraPending.push({ kind: 'voice', name: 'nota-voz.' + ext, mime: blob.type || 'audio/webm', data: data });
+        }
+        cerebrusBitacoraPendingRender();
+        cerebrusBitacoraVoiceCleanup();
+      };
+      fr.onerror = function() { notify('⚠ No se pudo guardar la nota de voz.'); cerebrusBitacoraVoiceCleanup(); };
+      fr.readAsDataURL(blob);
+    };
+    var btn = document.getElementById('bitacora-voice-btn');
+    if (btn) { btn.classList.add('recording'); btn.textContent = '⏹ Detener'; }
+    try { mr.start(200); }
+    catch (e) {
+      notify('⚠ No se pudo iniciar la grabación.');
+      try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e2) {}
+      if (btn) { btn.classList.remove('recording'); btn.textContent = '🎤 Nota de voz'; }
+      return;
+    }
+    _bitacoraVoiceRec = {
+      mr: mr,
+      stream: stream,
+      timer: setTimeout(function() {
+        if (_bitacoraVoiceRec && _bitacoraVoiceRec.mr && _bitacoraVoiceRec.mr.state === 'recording') {
+          notify('⏱ Máximo ' + BITACORA_VOICE_MAX_SEC + ' s; se detuvo la grabación.');
+          cerebrusBitacoraVoiceFinishRecording();
+        }
+      }, BITACORA_VOICE_MAX_SEC * 1000)
+    };
+  }).catch(function() {
+    notify('⚠ No se pudo acceder al micrófono.');
+  });
+}
+function cerebrusBitacoraHtmlAttachments(m) {
+  var atts = m.attachments;
+  if (!Array.isArray(atts) || !atts.length) return '';
+  var parts = [];
+  atts.forEach(function(a) {
+    if (!a || !a.data) return;
+    var name = esc(String(a.name || 'archivo').slice(0, 140));
+    var mime = String(a.mime || '');
+    var k = a.kind;
+    if (k === 'image' || /^image\//i.test(mime)) {
+      parts.push('<div class="bitacora-att"><img class="bitacora-img" src="' + esc(a.data) + '" alt=""></div>');
+    } else if (k === 'voice' || /^audio\//i.test(mime)) {
+      parts.push('<div class="bitacora-att"><audio class="bitacora-audio" controls preload="metadata" src="' + esc(a.data) + '"></audio></div>');
+    } else {
+      parts.push('<div class="bitacora-att"><a class="bitacora-att-a" href="' + esc(a.data) + '" download="' + name + '" target="_blank" rel="noopener">' + name + '</a></div>');
+    }
+  });
+  return parts.join('');
+}
 
 /** Texto dentro de <textarea> generado por plantilla (evita romper cierre de etiqueta). */
 function escTextareaVal(s) {
@@ -17617,17 +17601,36 @@ function cerebrusCalDeleteEvent(id) {
 function cerebrusBitacoraPost() {
   cerebrusEquipoEnsure();
   if (!currentUser) { notify('⚠ Inicia sesión para publicar.'); return; }
+  if (_bitacoraVoiceRec && _bitacoraVoiceRec.mr && _bitacoraVoiceRec.mr.state === 'recording') {
+    notify('⚠ Detené la grabación de voz antes de publicar.');
+    return;
+  }
   const el = document.getElementById('bitacora-input');
   const text = el && el.value ? String(el.value).trim() : '';
-  if (!text) { notify('⚠ Escribe un mensaje.'); return; }
-  state.cerebrusBitacora.unshift({
+  var attachments = _bitacoraPending.map(function(p) {
+    return { kind: p.kind, name: p.name, mime: p.mime, data: p.data };
+  });
+  if (!text && !attachments.length) { notify('⚠ Escribí algo o adjuntá archivo o nota de voz.'); return; }
+  var totalChars = 0;
+  attachments.forEach(function(a) { if (a.data) totalChars += String(a.data).length; });
+  if (totalChars > BITACORA_MAX_MSG_ATTACH_CHARS) {
+    notify('⚠ Los adjuntos superan el tamaño máximo por mensaje; quitá algunos o archivos más chicos.');
+    return;
+  }
+  var msg = {
     id: 'cbt_' + Date.now() + '_' + Math.floor(Math.random() * 1e6),
     text: text.slice(0, 2000),
     by: currentUser,
     at: new Date().toISOString()
-  });
+  };
+  if (attachments.length) msg.attachments = attachments;
+  state.cerebrusBitacora.unshift(msg);
   while (state.cerebrusBitacora.length > 200) state.cerebrusBitacora.pop();
   if (el) el.value = '';
+  _bitacoraPending = [];
+  cerebrusBitacoraPendingRender();
+  var fi = document.getElementById('bitacora-file-input');
+  if (fi) fi.value = '';
   markUnsaved();
   notify('💬 Mensaje publicado');
   cerebrusBitacoraMarkSeen();
@@ -17649,6 +17652,123 @@ function cerebrusBitacoraDelete(id) {
   markUnsaved();
   notify('🗑 Mensaje eliminado');
   calModuloRender();
+}
+var BITACORA_REMINDER_STORAGE = 'cerebrus_bitacora_cleanup_reminder_days';
+var BITACORA_REMINDER_LAST_MS = 'cerebrus_bitacora_cleanup_last_prompt_ms';
+function cerebrusBitacoraReminderSet(val) {
+  try {
+    localStorage.setItem(BITACORA_REMINDER_STORAGE, String(val));
+  } catch (e) {}
+}
+function cerebrusBitacoraReminderSyncUI() {
+  var rem = document.getElementById('bitacora-reminder-days');
+  if (!rem) return;
+  try {
+    var v = localStorage.getItem(BITACORA_REMINDER_STORAGE);
+    rem.value = v === '2' || v === '7' || v === '14' ? v : '0';
+  } catch (e) { rem.value = '0'; }
+}
+function cerebrusBitacoraCleanupReminderMaybe() {
+  if (typeof currentUser === 'undefined' || !currentUser || currentUser === 'Bodega') return;
+  var days = 0;
+  try { days = parseInt(localStorage.getItem(BITACORA_REMINDER_STORAGE) || '0', 10); } catch (e) {}
+  if (!days || days < 1) return;
+  var last = 0;
+  try { last = parseInt(localStorage.getItem(BITACORA_REMINDER_LAST_MS) || '0', 10); } catch (e) {}
+  var now = Date.now();
+  if (last && now - last < days * 86400000) return;
+  cerebrusEquipoEnsure();
+  var hasAtt = (state.cerebrusBitacora || []).some(function(m) { return m && m.attachments && m.attachments.length; });
+  if (!hasAtt) {
+    try { localStorage.setItem(BITACORA_REMINDER_LAST_MS, String(now)); } catch (e) {}
+    return;
+  }
+  try { localStorage.setItem(BITACORA_REMINDER_LAST_MS, String(now)); } catch (e) {}
+  if (typeof notify === 'function') {
+    notify('📎 Recordatorio: en Calendario → Bitácora, sección «Liberar espacio», podés quitar adjuntos viejos y aligerar la copia en nube.');
+  }
+}
+function cerebrusBitacoraStripAttachments(id) {
+  cerebrusEquipoEnsure();
+  var m = state.cerebrusBitacora.find(function(x) { return x.id === id; });
+  if (!m || !cerebrusBitacoraCanModify(m)) {
+    notify('⚠ No podés quitar adjuntos de este mensaje.');
+    return;
+  }
+  if (!m.attachments || !m.attachments.length) return;
+  delete m.attachments;
+  var hasT = String(m.text || '').trim();
+  if (!hasT) {
+    var ix = state.cerebrusBitacora.findIndex(function(x) { return x.id === id; });
+    if (ix >= 0) state.cerebrusBitacora.splice(ix, 1);
+    if (_bitacoraEditingId === id) _bitacoraEditingId = null;
+    notify('🗑 Mensaje vacío eliminado (solo tenía adjuntos).');
+  } else {
+    m.editedAt = new Date().toISOString();
+    m.editedBy = currentUser;
+    notify('✓ Adjuntos quitados; el texto se mantiene.');
+  }
+  markUnsaved();
+  calModuloRender();
+}
+function cerebrusBitacoraBulkStripOlderThan() {
+  if (currentUser !== 'Diego' && currentUser !== 'Sebastián') {
+    notify('⚠ Solo Diego o Sebastián pueden ejecutar limpieza masiva por antigüedad.');
+    return;
+  }
+  cerebrusEquipoEnsure();
+  var sel = document.getElementById('bitacora-strip-age');
+  var days = sel ? parseInt(sel.value, 10) : 7;
+  if (isNaN(days) || days < 1) days = 7;
+  var cutoff = Date.now() - days * 86400000;
+  var stripped = 0;
+  var removedEmpty = 0;
+  for (var i = state.cerebrusBitacora.length - 1; i >= 0; i--) {
+    var m = state.cerebrusBitacora[i];
+    if (!m || !m.at || !m.attachments || !m.attachments.length) continue;
+    var t = new Date(m.at).getTime();
+    if (isNaN(t) || t >= cutoff) continue;
+    delete m.attachments;
+    stripped++;
+    if (!String(m.text || '').trim()) {
+      if (_bitacoraEditingId === m.id) _bitacoraEditingId = null;
+      state.cerebrusBitacora.splice(i, 1);
+      removedEmpty++;
+    }
+  }
+  markUnsaved();
+  calModuloRender();
+  var msg = '✓ Adjuntos quitados en ' + stripped + ' mensaje(s).';
+  if (removedEmpty) msg += ' Eliminados ' + removedEmpty + ' que quedaron sin texto.';
+  notify(msg);
+}
+function cerebrusBitacoraBulkDeleteOlderThan() {
+  if (currentUser !== 'Diego' && currentUser !== 'Sebastián') {
+    notify('⚠ Solo Diego o Sebastián pueden borrar mensajes masivamente por antigüedad.');
+    return;
+  }
+  cerebrusEquipoEnsure();
+  var sel = document.getElementById('bitacora-delete-age');
+  var days = sel ? parseInt(sel.value, 10) : 30;
+  if (isNaN(days) || days < 1) days = 30;
+  var cutoff = Date.now() - days * 86400000;
+  var toDelete = state.cerebrusBitacora.filter(function(m) {
+    if (!m || !m.at) return false;
+    var t = new Date(m.at).getTime();
+    return !isNaN(t) && t < cutoff;
+  });
+  if (!toDelete.length) {
+    notify('No hay mensajes más viejos que ese plazo.');
+    return;
+  }
+  if (!confirm('Se eliminarán ' + toDelete.length + ' mensaje(s) con fecha anterior a unos ' + days + ' días. No se puede deshacer. ¿Continuar?')) return;
+  var ids = {};
+  toDelete.forEach(function(m) { ids[m.id] = true; });
+  state.cerebrusBitacora = state.cerebrusBitacora.filter(function(m) { return !m || !ids[m.id]; });
+  if (_bitacoraEditingId && ids[_bitacoraEditingId]) _bitacoraEditingId = null;
+  markUnsaved();
+  calModuloRender();
+  notify('🗑 Eliminados ' + toDelete.length + ' mensajes.');
 }
 function cerebrusBitacoraStartEdit(id) {
   cerebrusEquipoEnsure();
@@ -17684,7 +17804,8 @@ function cerebrusBitacoraSaveEdit() {
   }
   const ta = document.getElementById('bitacora-edit-active');
   const text = ta && ta.value ? String(ta.value).trim() : '';
-  if (!text) { notify('⚠ El mensaje no puede quedar vacío.'); return; }
+  var hasAtt = Array.isArray(m.attachments) && m.attachments.some(function(a) { return a && a.data; });
+  if (!text && !hasAtt) { notify('⚠ El mensaje no puede quedar vacío si no hay adjuntos.'); return; }
   m.text = text.slice(0, 2000);
   m.editedAt = new Date().toISOString();
   m.editedBy = currentUser;
@@ -17830,16 +17951,26 @@ function cerebrusBitacoraRenderLists() {
           ? '<span class="bitacora-edited"> · Editado' + (m.editedBy ? ' por ' + esc(m.editedBy) : '') + ' · ' + esc(new Date(m.editedAt).toLocaleString('es-CL')) + '</span>'
           : '';
         if (_bitacoraEditingId === m.id && can) {
+          var attEdit = cerebrusBitacoraHtmlAttachments(m);
           return '<div class="bitacora-item bitacora-item-editing"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span></div>' +
+            (attEdit ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 8px 0;">Solo se edita el texto; los adjuntos no se cambian aquí.</p>' + attEdit : '') +
             '<textarea id="bitacora-edit-active" class="bitacora-ta" maxlength="2000">' + escTextareaVal(m.text || '') + '</textarea>' +
             '<div class="bitacora-edit-actions"><button type="button" class="bitacora-btn-save" onclick="cerebrusBitacoraSaveEdit()">Guardar</button>' +
             '<button type="button" class="bitacora-btn-cancel" onclick="cerebrusBitacoraCancelEdit()">Cancelar</button></div></div>';
         }
+        var hasAtt = Array.isArray(m.attachments) && m.attachments.length;
+        var stripBtn = (can && hasAtt)
+          ? '<button type="button" class="bitacora-strip" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStripAttachments(this.getAttribute(\'data-bid\'))" title="Quita archivos, imágenes y notas de voz del mensaje para liberar espacio">Quitar adjuntos</button>'
+          : '';
         var act = can
           ? '<div class="bitacora-actions"><button type="button" class="bitacora-edit" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStartEdit(this.getAttribute(\'data-bid\'))">Editar</button>' +
+            stripBtn +
             '<button type="button" class="bitacora-del" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraDelete(this.getAttribute(\'data-bid\'))">Eliminar</button></div>'
           : '';
-        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div><div class="bitacora-item-text">' + esc(m.text || '') + '</div></div>';
+        var attHtml = cerebrusBitacoraHtmlAttachments(m);
+        var tx = String(m.text || '').trim();
+        var textBlock = tx ? '<div class="bitacora-item-text">' + esc(m.text || '') + '</div>' : (attHtml ? '' : '<div class="bitacora-item-text" style="color:var(--text-muted);">(sin texto)</div>');
+        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div>' + textBlock + attHtml + '</div>';
       }).join('');
     }
   }
@@ -17851,7 +17982,8 @@ function cerebrusBitacoraRenderLists() {
     } else {
       bs.innerHTML = prev.map(function(m) {
         var when = m.at ? new Date(m.at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-        var raw = String(m.text || '');
+        var attMark = (Array.isArray(m.attachments) && m.attachments.length) ? '📎 ' : '';
+        var raw = attMark + String(m.text || '');
         var txt = esc(raw);
         if (raw.length > 200) txt = esc(raw.slice(0, 200)) + '…';
         return '<div class="bitacora-item bitacora-item-sac"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + '</span></div><div class="bitacora-item-text">' + txt + '</div></div>';
@@ -17866,6 +17998,7 @@ function cerebrusBitacoraRenderLists() {
   var wrap = document.getElementById('bitacora-sac-wrap');
   if (wrap) wrap.classList.toggle('bitacora-sac-unread', unread);
   cerebrusBitacoraUpdateNavIndicator();
+  cerebrusBitacoraReminderSyncUI();
 }
 
 function calModuloRender() {
