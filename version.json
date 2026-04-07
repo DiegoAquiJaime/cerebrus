@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.4",
-  "notes": "Glass unificado en modo oscuro (CSS); más superficies; tailwind-play.html para prototipar con CDN."
+  "version": "2026.04.07.5",
+  "notes": "Glass en modo oscuro: solo HTML/CSS en index.html; sin Tailwind en el proyecto."
 }
