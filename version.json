@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.1",
-  "notes": "Semana Actual: egresos con pestañas Por pagar/Pagados, lista con scroll y cabecera fija; tarjeta estilo cristal."
+  "version": "2026.04.07.2",
+  "notes": "Semana Actual egresos: lista con scroll sin encadenar a la página; cabecera siempre arriba del bloque; sombras UI ligeras."
 }
