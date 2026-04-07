@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.2",
-  "notes": "Semana Actual egresos: lista con scroll sin encadenar a la página; cabecera siempre arriba del bloque; sombras UI ligeras."
+  "version": "2026.04.07.4",
+  "notes": "Glass unificado en modo oscuro (CSS); más superficies; tailwind-play.html para prototipar con CDN."
 }

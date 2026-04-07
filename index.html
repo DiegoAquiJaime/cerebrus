@@ -1640,6 +1640,151 @@ body.dark-mode .sac-head-btn.success{background:#10b981;border-color:#6ee7b7;col
 body.dark-mode .sac-help{background:rgba(148,163,184,.24);color:#e2e8f0;border-color:rgba(148,163,184,.45);}
 body.dark-mode .sac-help.light{background:rgba(255,255,255,.24);color:#fff;border-color:rgba(255,255,255,.5);}
 
+/* ---- CEREBRUS GLASS UI (modo oscuro: superficies tipo cristal; solo visual) ---- */
+body.dark-mode{
+  background:
+    radial-gradient(ellipse 110% 70% at 50% -25%, rgba(99,102,241,0.26), transparent 52%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, rgba(249,115,22,0.14), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 0% 80%, rgba(14,165,233,0.1), transparent 45%),
+    linear-gradient(168deg,#020617 0%,#0b1224 45%,#030712 100%) fixed !important;
+}
+body.dark-mode nav{
+  background:rgba(15,23,42,.68)!important;
+  backdrop-filter:saturate(1.3) blur(28px)!important;
+  -webkit-backdrop-filter:saturate(1.3) blur(28px)!important;
+  border-right-color:rgba(148,163,184,.12)!important;
+  box-shadow:8px 0 48px rgba(0,0,0,.4)!important;
+}
+body.dark-mode .topbar{
+  background:rgba(15,23,42,.58)!important;
+  backdrop-filter:saturate(1.25) blur(22px)!important;
+  -webkit-backdrop-filter:saturate(1.25) blur(22px)!important;
+  border-bottom-color:rgba(148,163,184,.12)!important;
+  box-shadow:0 12px 40px rgba(0,0,0,.38)!important;
+}
+body.dark-mode main{background:transparent!important;}
+body.dark-mode .content{padding-bottom:72px;}
+body.dark-mode .sac-kpi,
+body.dark-mode .sac-ventas-card,
+body.dark-mode .sac-cargas-card,
+body.dark-mode .sac-ingresos-card,
+body.dark-mode .sac-toolbar,
+body.dark-mode .kpi-card,
+body.dark-mode .breakdown-card,
+body.dark-mode .week-sum-card,
+body.dark-mode .meta-card,
+body.dark-mode .fac-prov-card,
+body.dark-mode .week-card,
+body.dark-mode .table-wrap{
+  background:rgba(30,41,59,.48)!important;
+  backdrop-filter:blur(22px) saturate(1.2);
+  -webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border:1px solid rgba(148,163,184,.14)!important;
+  box-shadow:0 16px 48px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+body.dark-mode .sac-cargas-card.sac-cargas-glass{
+  background:rgba(30,41,59,.42)!important;
+  border-color:rgba(129,140,248,.18)!important;
+}
+body.dark-mode .sac-cargas-sticky{
+  background:rgba(15,23,42,.75)!important;
+  border-bottom-color:rgba(148,163,184,.15)!important;
+}
+body.dark-mode .sac-v-total,
+body.dark-mode .sac-footer{
+  background:rgba(15,23,42,.55)!important;
+  backdrop-filter:blur(12px);
+  border-color:rgba(51,65,85,.6)!important;
+}
+body.dark-mode .btn,
+body.dark-mode .fac-btn{
+  border-radius:12px;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+}
+body.dark-mode .export-menu-list{
+  background:rgba(30,41,59,.92)!important;
+  backdrop-filter:blur(20px);
+  border:1px solid rgba(148,163,184,.2)!important;
+}
+body.dark-mode .nav-item:hover{
+  background:rgba(99,102,241,.14)!important;
+}
+body.dark-mode .fac-modal,
+body.dark-mode .cred-modal,
+body.dark-mode .ing-modal,
+body.dark-mode .ai-modal,
+body.dark-mode .conflict-modal,
+body.dark-mode .ia-scan-modal{
+  background:rgba(30,41,59,.78)!important;
+  backdrop-filter:blur(22px) saturate(1.2);
+  -webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border:1px solid rgba(148,163,184,.16)!important;
+  box-shadow:0 24px 64px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+body.dark-mode .ai-modal-footer{
+  background:rgba(15,23,42,.55)!important;
+  backdrop-filter:blur(12px);
+  border-top-color:rgba(148,163,184,.12)!important;
+}
+body.dark-mode .cred-modal-info{
+  background:rgba(15,23,42,.45)!important;
+  border:1px solid rgba(148,163,184,.1)!important;
+}
+body.dark-mode .fac-modal-head,
+body.dark-mode .fac-modal-body,
+body.dark-mode .fac-modal-footer{
+  background:rgba(15,23,42,.28)!important;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+body.dark-mode .fac-modal-overlay,
+body.dark-mode .cred-modal-overlay,
+body.dark-mode .ing-modal-overlay,
+body.dark-mode .ai-modal-overlay,
+body.dark-mode .conflict-overlay{
+  background:rgba(2,6,23,.58)!important;
+  backdrop-filter:blur(10px)!important;
+  -webkit-backdrop-filter:blur(10px)!important;
+}
+body.dark-mode .bitacora-sac-wrap,
+body.dark-mode .cal-widget,
+body.dark-mode .cal-modulo-clock-card,
+body.dark-mode .cal-int-panel,
+body.dark-mode .cal-int-side{
+  background:rgba(30,41,59,.48)!important;
+  backdrop-filter:blur(22px) saturate(1.2);
+  -webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border:1px solid rgba(148,163,184,.14)!important;
+  box-shadow:0 16px 48px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+body.dark-mode .inv-orden-card,
+body.dark-mode .prop-table,
+body.dark-mode .fac-table-wrap,
+body.dark-mode .cred-table-wrap,
+body.dark-mode .hist-month-card{
+  background:rgba(30,41,59,.48)!important;
+  backdrop-filter:blur(22px) saturate(1.2);
+  -webkit-backdrop-filter:blur(22px) saturate(1.2);
+  border:1px solid rgba(148,163,184,.14)!important;
+  box-shadow:0 16px 48px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.05)!important;
+}
+body.dark-mode .inv-table{
+  background:rgba(30,41,59,.35)!important;
+  backdrop-filter:blur(12px);
+}
+body.dark-mode .mobile-overlay{
+  background:
+    radial-gradient(ellipse 100% 50% at 50% 0%, rgba(99,102,241,0.12), transparent 50%),
+    linear-gradient(180deg,#020617 0%,#0b1224 100%)!important;
+}
+body.dark-mode .login-box{
+  background:rgba(15,23,42,.72)!important;
+  backdrop-filter:saturate(1.2) blur(28px)!important;
+  -webkit-backdrop-filter:saturate(1.2) blur(28px)!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+  box-shadow:0 24px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)!important;
+}
+
 /* ---- IA SCANNER UNIVERSAL ---- */
 .ia-scan-overlay{display:none;position:fixed;inset:0;z-index:160;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
 .ia-scan-overlay.show{display:flex;}
@@ -6090,7 +6235,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.07.2';
+const APP_VERSION = '2026.04.07.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
