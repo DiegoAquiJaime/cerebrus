@@ -1524,7 +1524,14 @@ body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
 .sac-v-total{background:#f8fafc;border-top:2px solid var(--border);padding:8px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:800;}
 #sac-ventas-dias{max-height:min(52vh,520px);overflow-y:auto;}
 /* cargas */
-.sac-cargas-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.2);overflow:hidden;}
+.sac-cargas-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.2);overflow:visible;display:flex;flex-direction:column;}
+.sac-cargas-card.sac-cargas-glass{background:rgba(255,255,255,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 12px 40px rgba(15,23,42,.1);border-color:rgba(148,163,184,.28);}
+.sac-cargas-sticky{position:sticky;top:0;z-index:8;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(148,163,184,.22);}
+.sac-cargas-tabs{display:flex;gap:6px;padding:8px 12px 0;flex-wrap:wrap;}
+.sac-cargas-tab{border:1px solid rgba(148,163,184,.35);background:rgba(248,250,252,.9);color:var(--primary);border-radius:999px;padding:6px 12px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;transition:.15s;}
+.sac-cargas-tab:hover{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.35);}
+.sac-cargas-tab.sel{background:linear-gradient(135deg,rgba(99,102,241,.18),rgba(14,165,233,.12));border-color:rgba(99,102,241,.45);color:#1e293b;box-shadow:0 2px 10px rgba(99,102,241,.12);}
+.sac-cargas-list-scroll{max-height:min(52vh,560px);overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:48px;}
 .sac-ingresos-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(16,185,129,.24);overflow:hidden;}
 .sac-ingresos-head{background:linear-gradient(135deg, rgba(16,185,129,.12), rgba(16,185,129,.04));}
 .sac-carga-row.ingreso-recibido{opacity:.65;}
@@ -1585,6 +1592,10 @@ body.dark-mode .sac-v-total,.dark-mode .sac-footer,.dark-mode .sac-ventas-head+*
 body.dark-mode .sac-v-inp,.dark-mode .sac-edit-inp{color:#e2e8f0;border-color:#334155;}
 body.dark-mode .sac-v-row:hover,body.dark-mode .sac-carga-row:hover{background:rgba(100,116,139,.16);}
 body.dark-mode .sac-cargas-filters{background:#0f172a;border-color:#334155;}
+body.dark-mode .sac-cargas-sticky{background:rgba(15,23,42,.92);border-color:rgba(51,65,85,.9);}
+body.dark-mode .sac-cargas-card.sac-cargas-glass{background:rgba(30,41,59,.78);border-color:rgba(51,65,85,.85);}
+body.dark-mode .sac-cargas-tab{background:rgba(15,23,42,.6);border-color:#334155;color:#e2e8f0;}
+body.dark-mode .sac-cargas-tab.sel{background:linear-gradient(135deg,rgba(99,102,241,.35),rgba(14,165,233,.2));border-color:rgba(129,140,248,.45);color:#f8fafc;}
 body.dark-mode .sac-filter-inp,body.dark-mode .sac-filter-sel{background:#1e293b;color:#e2e8f0;border-color:#334155;}
 body.dark-mode .sac-sel-modal{background:#1e293b;}
 body.dark-mode .sac-help-sheet{background:#1e293b;border-color:#334155;}
@@ -3040,36 +3051,44 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </div>
 
         <!-- CARGAS DE LA SEMANA -->
-        <div class="sac-cargas-card">
-          <div class="sac-cargas-head">
-            <div style="font-size:13px;font-weight:800;">📤 Cargas de la semana <span class="sac-help light" title="Gastos del período. No pagado / parcial / pagado afectan por pagar y balance. PAUSA: el monto queda anotado pero no cuenta en por pagar ni en el balance hasta reactivar.">?</span></div>
-            <div style="display:flex;gap:7px;flex-wrap:wrap;">
-              <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
-              <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
+        <div class="sac-cargas-card sac-cargas-glass">
+          <div class="sac-cargas-sticky">
+            <div class="sac-cargas-head">
+              <div style="font-size:13px;font-weight:800;">📤 Cargas de la semana <span class="sac-help light" title="Gastos del período. No pagado / parcial / pagado afectan por pagar y balance. PAUSA: el monto queda anotado pero no cuenta en por pagar ni en el balance hasta reactivar.">?</span></div>
+              <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
+                <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
+              </div>
+            </div>
+            <div class="sac-cargas-tabs" role="tablist" aria-label="Vista egresos semana">
+              <button type="button" class="sac-cargas-tab sel" id="sac-tab-activos" onclick="sacSetCargaTab('activos')" title="Solo pendientes de pago, parciales y en pausa">Por pagar · Pausa</button>
+              <button type="button" class="sac-cargas-tab" id="sac-tab-pagados" onclick="sacSetCargaTab('pagados')" title="Egresos ya pagados (total o parcial completado)">Pagados</button>
+            </div>
+            <div class="sac-cargas-filters">
+              <select id="sac-fil-cat" class="sac-filter-sel" onchange="sacSetCargaFilters()">
+                <option value="">Todas las clases</option>
+                <option value="Crédito">Crédito</option><option value="TC">TC</option><option value="Retiro">Retiro</option>
+                <option value="Proveedor">Proveedor</option><option value="Impuesto">Impuesto</option><option value="Servicio">Servicio</option>
+                <option value="Bono">Bono</option><option value="Arriendo">Arriendo</option><option value="Compra">Compra</option>
+                <option value="RRHH">RRHH</option><option value="Otro">Otro</option>
+              </select>
+              <select id="sac-fil-est" class="sac-filter-sel" onchange="sacSetCargaFilters()">
+                <option value="">Todos los estados</option>
+                <option value="nopagado">No pagado</option>
+                <option value="parcial">Parcial</option>
+                <option value="pagado">Pagado</option>
+                <option value="pausa">Pausa (no cuenta)</option>
+              </select>
+              <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
+              <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()">
+              <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()">
+              <button class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
             </div>
           </div>
-          <div class="sac-cargas-filters">
-            <select id="sac-fil-cat" class="sac-filter-sel" onchange="sacSetCargaFilters()">
-              <option value="">Todas las clases</option>
-              <option value="Crédito">Crédito</option><option value="TC">TC</option><option value="Retiro">Retiro</option>
-              <option value="Proveedor">Proveedor</option><option value="Impuesto">Impuesto</option><option value="Servicio">Servicio</option>
-              <option value="Bono">Bono</option><option value="Arriendo">Arriendo</option><option value="Compra">Compra</option>
-              <option value="RRHH">RRHH</option><option value="Otro">Otro</option>
-            </select>
-            <select id="sac-fil-est" class="sac-filter-sel" onchange="sacSetCargaFilters()">
-              <option value="">Todos los estados</option>
-              <option value="nopagado">No pagado</option>
-              <option value="parcial">Parcial</option>
-              <option value="pagado">Pagado</option>
-              <option value="pausa">Pausa (no cuenta)</option>
-            </select>
-            <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
-            <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()">
-            <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()">
-            <button class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
-          </div>
-          <div id="sac-cargas-list">
-            <!-- rendered by sacRenderCargas() -->
+          <div class="sac-cargas-list-scroll">
+            <div id="sac-cargas-list">
+              <!-- rendered by sacRenderCargas() -->
+            </div>
           </div>
           <div class="sac-footer">
             <div class="sac-foot-kpi">
@@ -6042,7 +6061,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
-const APP_VERSION = '2026.04.06.1';
+const APP_VERSION = '2026.04.07.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -19791,6 +19810,13 @@ const SAC_CAT_COLORS = {
   'Compra':'#64748b','RRHH':'#27ae60','Otro':'#94a3b8'
 };
 let _sacCargaFilter = { cat:'', estado:'', name:'', min:null, max:null };
+/** 'activos' = nopagado + parcial + pausa | 'pagados' = solo pagado */
+let _sacCargaTab = 'activos';
+
+function sacSetCargaTab(tab) {
+  _sacCargaTab = tab === 'pagados' ? 'pagados' : 'activos';
+  sacRenderCargas();
+}
 function sacCatColor(cat) {
   for (const [k,v] of Object.entries(SAC_CAT_COLORS)) if ((cat||'').toLowerCase().includes(k.toLowerCase())) return v;
   return '#94a3b8';
@@ -19821,6 +19847,11 @@ function sacClearCargaFilters() {
 
 function sacRenderCargas() {
   const list = document.getElementById('sac-cargas-list'); if (!list) return;
+  const tabA = document.getElementById('sac-tab-activos');
+  const tabP = document.getElementById('sac-tab-pagados');
+  if (tabA) tabA.classList.toggle('sel', _sacCargaTab === 'activos');
+  if (tabP) tabP.classList.toggle('sel', _sacCargaTab === 'pagados');
+
   const cargas = sacGetCargas();
 
   if (!cargas.length) {
@@ -19848,6 +19879,12 @@ function sacRenderCargas() {
     return catOk && estOk && nameOk && minOk && maxOk;
   });
 
+  const tabFiltered = filteredCargas.filter(c => {
+    const es = c.estado || 'nopagado';
+    if (_sacCargaTab === 'pagados') return es === 'pagado';
+    return es !== 'pagado';
+  });
+
   const CAT_LIST = ['Crédito','TC','Retiro','Proveedor','Impuesto','Servicio','Bono','Arriendo','Compra','RRHH','Otro'];
 
   if (!filteredCargas.length) {
@@ -19858,7 +19895,16 @@ function sacRenderCargas() {
     return;
   }
 
-  list.innerHTML = filteredCargas.map((c,i) => {
+  if (!tabFiltered.length) {
+    const msg = _sacCargaTab === 'pagados'
+      ? 'No hay egresos pagados en esta vista (revisa filtros o la pestaña Por pagar).'
+      : 'No hay egresos pendientes ni en pausa — todo está pagado o revisa filtros.';
+    list.innerHTML = `<div style="padding:20px;text-align:center;color:#94a3b8;font-size:11px;font-style:italic;line-height:1.45;">${msg}</div>`;
+    sacCalcCargasTotals();
+    return;
+  }
+
+  list.innerHTML = tabFiltered.map((c,i) => {
     const col     = sacCatColor(c.cat);
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : c.estado === 'pausa' ? 'pausa' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : c.estado === 'pausa' ? '⏸ Pausa' : '○ No pagado';
