@@ -2634,6 +2634,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         <div class="export-menu-list" id="exportList">
           <div class="export-menu-item" onclick="exportHTML()"><span class="emi">🌐</span> Archivo HTML <span style="font-size:10px;color:#9aacb8;margin-left:auto;">portátil</span></div>
           <div class="export-menu-item" onclick="exportJSON()"><span class="emi">🧩</span> Respaldo JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">estado completo</span></div>
+          <div class="export-menu-item" onclick="importJSON()"><span class="emi">📥</span> Importar JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">restaurar estado</span></div>
           <hr class="export-sep-line">
           <div class="export-menu-item" onclick="exportExcel()"><span class="emi">📊</span> Excel (.xlsx)</div>
           <div class="export-menu-item" onclick="exportPDF()"><span class="emi">🖨</span> PDF / Imprimir</div>
@@ -21770,6 +21771,41 @@ function exportJSON() {
   } catch (e) {
     notify('⚠ No se pudo generar respaldo JSON: ' + (e.message || e));
   }
+}
+
+function importJSON() {
+  const list = document.getElementById('exportList');
+  if (list) list.classList.remove('open');
+  if (!confirm('¿Importar un respaldo JSON y reemplazar el estado actual?\n\nRecomendado: exporta un respaldo antes de continuar.')) return;
+
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.style.display = 'none';
+  inp.onchange = async function(ev) {
+    const f = ev.target && ev.target.files ? ev.target.files[0] : null;
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      const payload = JSON.parse(txt);
+      const imported = (payload && payload.data && payload.data.state) || payload.state || payload;
+      if (!imported || typeof imported !== 'object') throw new Error('El archivo no contiene un estado válido');
+      state = imported;
+      if (payload && payload.data && payload.data.nid) _nid = payload.data.nid;
+      else if (payload && payload.nid) _nid = payload.nid;
+      decompressVsData(state);
+      _postLoadSetup();
+      markUnsaved();
+      saveLocalRaw();
+      notify('✅ Respaldo importado correctamente');
+    } catch (e) {
+      notify('⚠ No se pudo importar JSON: ' + (e.message || e));
+    } finally {
+      try { document.body.removeChild(inp); } catch (_) {}
+    }
+  };
+  document.body.appendChild(inp);
+  inp.click();
 }
 
 // ============================================================
