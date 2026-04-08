@@ -20741,19 +20741,14 @@ window.addEventListener('beforeunload', function(e) {
 // ── Guardado automático cada 5 minutos (solo si hay cambios) ──
 let _autoSaveTimer = null;
 function isAutoSaveEnabled() {
-  try {
-    const v = localStorage.getItem('cerebrus_autosave');
-    if (v == null) return AUTO_SAVE_DEFAULT;
-    return v === '1';
-  } catch(e) {
-    return AUTO_SAVE_DEFAULT;
-  }
+  // Pedido explícito: desactivar autoguardado siempre.
+  return false;
 }
 function setAutoSaveEnabled(on) {
-  try { localStorage.setItem('cerebrus_autosave', on ? '1' : '0'); } catch(e){}
-  if (!on && _autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
-  if (on) startAutoSave();
-  notify(on ? '✅ Autoguardado activado (5 min)' : '⏸ Autoguardado desactivado');
+  try { localStorage.setItem('cerebrus_autosave', '0'); } catch(e){}
+  if (_autoSaveTimer) { clearInterval(_autoSaveTimer); _autoSaveTimer = null; }
+  if (on) notify('⏸ Autoguardado bloqueado por configuración (solo guardado manual)');
+  else notify('⏸ Autoguardado desactivado');
 }
 function startAutoSave() {
   if (_autoSaveTimer) clearInterval(_autoSaveTimer);
