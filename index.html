@@ -2669,6 +2669,87 @@ body.dark-mode textarea:focus{
 body.dark-mode .fac-semana-panel { background: #1e293b; border-color: rgba(99,102,241,.3); }
 body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
 
+/* ---- GLASS FINAL OVERRIDE (se aplica al final para ganar cascada) ---- */
+body.dark-mode{
+  background:
+    radial-gradient(120% 70% at 50% -22%, rgba(99,102,241,.30), transparent 54%),
+    radial-gradient(70% 45% at 100% 0%, rgba(249,115,22,.18), transparent 50%),
+    radial-gradient(60% 40% at 0% 80%, rgba(14,165,233,.14), transparent 48%),
+    linear-gradient(168deg,#020617 0%,#0b1224 46%,#030712 100%) fixed !important;
+}
+body.dark-mode nav{
+  background:rgba(15,23,42,.74)!important;
+  backdrop-filter:blur(26px) saturate(1.25)!important;
+  -webkit-backdrop-filter:blur(26px) saturate(1.25)!important;
+  border-right-color:rgba(148,163,184,.16)!important;
+}
+body.dark-mode .topbar{
+  background:rgba(15,23,42,.62)!important;
+  backdrop-filter:blur(22px) saturate(1.22)!important;
+  -webkit-backdrop-filter:blur(22px) saturate(1.22)!important;
+  border-bottom-color:rgba(148,163,184,.15)!important;
+}
+body.dark-mode .kpi-card,
+body.dark-mode .breakdown-card,
+body.dark-mode .wfall-card,
+body.dark-mode .table-wrap,
+body.dark-mode .meta-card,
+body.dark-mode .hist-month-card,
+body.dark-mode .week-sum-card,
+body.dark-mode .week-card,
+body.dark-mode .week-body,
+body.dark-mode .fac-table-wrap,
+body.dark-mode .cred-table-wrap,
+body.dark-mode .fac-semana-panel,
+body.dark-mode .sac-kpi,
+body.dark-mode .sac-ventas-card,
+body.dark-mode .sac-cargas-card,
+body.dark-mode .sac-ingresos-card,
+body.dark-mode .bitacora-sac-wrap,
+body.dark-mode .cal-widget,
+body.dark-mode .cal-modulo-clock-card,
+body.dark-mode .cal-int-panel,
+body.dark-mode .cal-int-side{
+  background:rgba(30,41,59,.56)!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+  box-shadow:0 18px 52px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.06)!important;
+  backdrop-filter:blur(20px) saturate(1.2)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(1.2)!important;
+}
+body.dark-mode .fac-prov-card{
+  background:rgba(15,23,42,.32)!important;
+}
+body.dark-mode .fac-prov-card:hover{
+  background:rgba(99,102,241,.16)!important;
+}
+body.dark-mode .login-box{
+  background:rgba(15,23,42,.76)!important;
+  backdrop-filter:blur(28px) saturate(1.2)!important;
+  -webkit-backdrop-filter:blur(28px) saturate(1.2)!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+}
+body.dark-mode .fac-modal,
+body.dark-mode .cred-modal,
+body.dark-mode .ing-modal,
+body.dark-mode .ai-modal,
+body.dark-mode .conflict-modal,
+body.dark-mode .ia-scan-modal{
+  background:rgba(30,41,59,.80)!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+  box-shadow:0 24px 64px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.05)!important;
+  backdrop-filter:blur(20px) saturate(1.2)!important;
+  -webkit-backdrop-filter:blur(20px) saturate(1.2)!important;
+}
+body.dark-mode .fac-modal-overlay,
+body.dark-mode .cred-modal-overlay,
+body.dark-mode .ing-modal-overlay,
+body.dark-mode .ai-modal-overlay,
+body.dark-mode .conflict-overlay{
+  background:rgba(2,6,23,.62)!important;
+  backdrop-filter:blur(10px)!important;
+  -webkit-backdrop-filter:blur(10px)!important;
+}
+
 </style>
 </head>
 <body>
@@ -6255,7 +6336,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.9';
+const APP_VERSION = '2026.04.07.10';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
