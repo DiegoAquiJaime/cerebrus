@@ -2091,6 +2091,13 @@ input.val-warn{border-color:#e67e22!important;background:#fef9f0!important;}
 .export-menu-item:hover{background:#f6f8fa;}
 .export-menu-item .emi{font-size:14px;}
 .export-sep-line{border:none;border-top:1px solid var(--border);margin:3px 0;}
+.fac-menu{position:relative;display:inline-block;}
+.fac-menu-list{display:none;position:absolute;left:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);min-width:230px;z-index:120;overflow:hidden;}
+.fac-menu-list.open{display:block;}
+.fac-menu-item{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;font-size:11px;font-weight:600;color:var(--primary);transition:.12s;white-space:nowrap;}
+.fac-menu-item:hover{background:#f6f8fa;}
+body.dark-mode .fac-menu-list{background:#1c1c1e;border-color:rgba(255,255,255,.1);}
+body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
 
 /* ---- PRINT STYLES ---- */
 @media print {
@@ -3875,8 +3882,13 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
           <span class="ai-spark">✦</span> Importar desde PDF con IA
         </button>
         <button class="fac-btn" onclick="toggleNuevoProveedor()">+ Proveedor</button>
-        <button class="fac-btn" onclick="facNormalizeAndUnifyProviders()" title="Unifica proveedores por RUT y normaliza formatos">🪪 Normalizar RUT</button>
-        <button class="fac-btn" onclick="facAuditRutDuplicates()" title="Revisa proveedores que comparten RUT o no tienen RUT">🔎 Auditar RUT duplicados</button>
+        <div class="fac-menu" id="fac-rut-menu-wrap">
+          <button class="fac-btn" onclick="facToggleRutMenu()" title="Herramientas de RUT: auditar o normalizar/unificar">🪪 RUT ▾</button>
+          <div class="fac-menu-list" id="fac-rut-menu">
+            <div class="fac-menu-item" onclick="facRutMenuAction('audit')">🔎 Auditar RUT duplicados <span style="font-size:10px;color:#9aacb8;margin-left:auto;">solo revisar</span></div>
+            <div class="fac-menu-item" onclick="facRutMenuAction('normalize')">🧩 Normalizar y unificar <span style="font-size:10px;color:#9aacb8;margin-left:auto;">modifica datos</span></div>
+          </div>
+        </div>
         <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Elige base y uno o dos proveedores a fusionar (clic en la lista)">🔀 Unificar proveedores</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
@@ -6243,7 +6255,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.8';
+const APP_VERSION = '2026.04.07.9';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -9703,6 +9715,31 @@ function facMergeTwoProvidersPrompt() {
   facMergeModalRenderList();
   const el = document.getElementById('facMergeModal');
   if (el) el.classList.add('open');
+}
+
+function facToggleRutMenu() {
+  const menu = document.getElementById('fac-rut-menu');
+  if (!menu) return;
+  menu.classList.toggle('open');
+}
+function facCloseRutMenu() {
+  const menu = document.getElementById('fac-rut-menu');
+  if (menu) menu.classList.remove('open');
+}
+function facRutMenuAction(action) {
+  facCloseRutMenu();
+  if (action === 'normalize') facNormalizeAndUnifyProviders();
+  else facAuditRutDuplicates();
+}
+if (!window.__facRutMenuBound) {
+  window.__facRutMenuBound = true;
+  document.addEventListener('click', function(ev) {
+    const wrap = document.getElementById('fac-rut-menu-wrap');
+    if (!wrap) return;
+    const t = ev && ev.target;
+    if (wrap.contains(t)) return;
+    facCloseRutMenu();
+  });
 }
 
 function facMergeModalBackdrop(e) {

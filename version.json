@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.8",
-  "notes": "Auditoría RUT con botón Abrir proveedor; Egresos ordena por último movimiento (por pagar y pagados)."
+  "version": "2026.04.07.9",
+  "notes": "Facturas: botón único RUT con menú (Auditar / Normalizar y unificar); egresos mantienen último movimiento arriba."
 }
