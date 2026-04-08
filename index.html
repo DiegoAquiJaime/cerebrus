@@ -777,6 +777,8 @@ td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{co
 .mode-cloud.mode-cloud-state-err{background:rgba(239,68,68,.12);color:var(--danger);}
 .mode-local{background:#f1f5f9;color:#64748b;}
 .sync-status{font-size:10px;color:#94a3b8;font-weight:600;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sync-risk{font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.25px;background:rgba(245,158,11,.14);color:#b45309;border:1px solid rgba(245,158,11,.35);}
+body.dark-mode .sync-risk{background:rgba(251,191,36,.14);color:#fcd34d;border-color:rgba(251,191,36,.35);}
 .sync-ok{color:var(--success);}
 .sync-err{color:var(--danger);}
 .user-chip{font-size:11px;font-weight:700;color:#64748b;padding:3px 8px;background:#f1f5f9;border-radius:20px;cursor:pointer;}
@@ -2806,6 +2808,7 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
     <div id="online-strip" class="online-strip" style="margin-right:6px;" title="Conectado = pestaña con Cerebrus abierta. Inactivo = sin clic/teclado hace unos minutos (puede estar en otra app)."></div>
     <div class="btn-group">
       <span class="sync-status" id="sync-status" title="Sincronización con Google (carga, guardado, errores)"></span>
+      <span class="sync-risk" id="sync-risk" style="display:none;" title="Edición concurrente: si dos usuarios guardan la misma área al mismo tiempo puede haber conflicto y requerir recarga.">⚠ Concurrencia</span>
       <span class="mode-badge mode-local" id="mode-badge" title="Modo de almacenamiento: nube o solo este equipo">💾 LOCAL</span>
       <span class="user-chip" id="user-chip" onclick="openLogPanel()" title="Ver registro de actividad">👤 —</span>
       <button class="btn-undo" id="btn-undo" onclick="undo()" disabled title="Deshacer último cambio (Ctrl+Z)">↩ Deshacer</button>
@@ -6235,6 +6238,7 @@ function ingConfirmar() {
 // ── SISTEMA DE ALERTAS DE CRÉDITOS ──
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
+let _lastConflictVoiceKey = '';
 const APP_VERSION = '2026.04.07.5';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
@@ -11724,9 +11728,17 @@ function _finishLogin() {
     document.getElementById('mode-badge').textContent = '☁ NUBE';
     document.getElementById('mode-badge').className   = 'mode-badge mode-cloud mode-cloud-state-wait';
     document.getElementById('mode-badge').title       = 'Modo nube: datos en Google. El texto a la izquierda indica si la conexión/sincronización va bien.';
+    try {
+      var risk = document.getElementById('sync-risk');
+      if (risk) risk.style.display = 'inline-flex';
+    } catch(e){}
     loadFromCloud(); initPresenceTracking(); bumpUserActivity(); startHeartbeat();
   } else {
     document.getElementById('mode-badge').textContent = '💾 LOCAL';
+    try {
+      var riskL = document.getElementById('sync-risk');
+      if (riskL) riskL.style.display = 'none';
+    } catch(e){}
     _localInit();
   }
   setTimeout(function() {
@@ -21195,7 +21207,13 @@ function showConflict(user, date, keys) {
   _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: Array.isArray(keys)?keys:[] };
   set('conflict-msg', user + ' guardó cambios el ' + date + ' mientras estabas editando.');
   document.getElementById('conflict-banner').classList.add('show');
-  try { if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(user); } catch (e) {}
+  try {
+    var voiceKey = String(user || 'Otro usuario') + '|' + String(date || '');
+    if (voiceKey !== _lastConflictVoiceKey) {
+      _lastConflictVoiceKey = voiceKey;
+      if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(user, voiceKey);
+    }
+  } catch (e) {}
 }
 function dismissConflict() { document.getElementById('conflict-banner').classList.remove('show'); }
 function openConflictDetails() {
@@ -21528,13 +21546,18 @@ function notify(msg, duration) {
     } catch (e) {}
     speak('Nueva versión disponible.', false);
   };
-  /** Otro usuario guardó en nube; antirrebote por persona (~9 s). */
-  window.cerebrusTtsPeerSaved = function(userRaw) {
+  /** Otro usuario guardó en nube; anunciar solo una vez por evento. */
+  window.cerebrusTtsPeerSaved = function(userRaw, eventKey) {
     if (!window.speechSynthesis || isMuted()) return;
     var name = window.cerebrusTtsPeerDisplayName(userRaw);
-    var dedupe = String(userRaw || '') + '|' + name;
+    var dedupe = String(eventKey || (String(userRaw || '') + '|' + name));
+    var sessionKey = 'cerebrus_tts_peer_' + dedupe;
+    try {
+      if (sessionStorage.getItem(sessionKey) === '1') return;
+      sessionStorage.setItem(sessionKey, '1');
+    } catch (e) {}
     var now = Date.now();
-    if (dedupe === _ttsPeerKey && now - _ttsPeerAt < 9000) return;
+    if (dedupe === _ttsPeerKey && now - _ttsPeerAt < 30000) return;
     _ttsPeerKey = dedupe;
     _ttsPeerAt = now;
     speak(name + ' guardó datos ahora en Cerebrus.', false);
