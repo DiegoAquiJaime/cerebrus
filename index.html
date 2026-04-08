@@ -922,6 +922,7 @@ body.dark-mode .inf-saldo-sec{background:#2c2c2e!important;}
 body.dark-mode .fac-btn{border-color:rgba(255,255,255,0.12)!important;color:#f5f5f7!important;}
 body.dark-mode .fac-btn.primary{color:white!important;}
 body.dark-mode .fac-btn.danger{color:white!important;}
+body.dark-mode #fac-rut-audit-box{background:#0f172a!important;border-color:#334155!important;color:#cbd5e1!important;}
 body.dark-mode .fac-modal{background:#1c1c1e!important;}
 body.dark-mode .fac-modal-body{background:#1c1c1e!important;}
 body.dark-mode .fac-detail-wrap{background:#1c1c1e!important;}
@@ -3875,10 +3876,12 @@ body.dark-mode .fac-semana-head { background: rgba(99,102,241,.1); }
         </button>
         <button class="fac-btn" onclick="toggleNuevoProveedor()">+ Proveedor</button>
         <button class="fac-btn" onclick="facNormalizeAndUnifyProviders()" title="Unifica proveedores por RUT y normaliza formatos">🪪 Normalizar RUT</button>
+        <button class="fac-btn" onclick="facAuditRutDuplicates()" title="Revisa proveedores que comparten RUT o no tienen RUT">🔎 Auditar RUT duplicados</button>
         <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Elige base y uno o dos proveedores a fusionar (clic en la lista)">🔀 Unificar proveedores</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
       </div>
+      <div id="fac-rut-audit-box" style="display:none;margin:-6px 0 12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#f8fafc;font-size:11px;color:#475569;"></div>
 
       <!-- Nuevo proveedor form -->
       <div class="fac-nuevo-prov-form" id="fac-nuevo-prov-form">
@@ -6240,7 +6243,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.6';
+const APP_VERSION = '2026.04.07.7';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10110,6 +10113,69 @@ function facNormalizeAndUnifyProviders() {
   } else {
     notify('ℹ️ No se fusionó ningún proveedor: hace falta el mismo RUT en facturas o en 🪪 del proveedor (si un nombre no tiene RUT, asígnalo y vuelve a unificar).');
   }
+}
+
+function facAuditRutDuplicates() {
+  ensureProvRuts();
+  facAutoLearnRuts();
+  facSpreadProvRutToInvoices();
+
+  const rutToProv = {};
+  const withoutRut = [];
+  const provs = Object.keys(state.facturas || {}).sort();
+  provs.forEach(prov => {
+    const fromProv = normRut((state.provRuts && state.provRuts[prov]) || '');
+    let rut = fromProv;
+    if (!rut) {
+      const fromFac = (state.facturas[prov] || [])
+        .map(f => normRut((f && f.rut) || ''))
+        .find(Boolean) || '';
+      rut = fromFac;
+    }
+    if (!rut) {
+      withoutRut.push(prov);
+      return;
+    }
+    if (!rutToProv[rut]) rutToProv[rut] = new Set();
+    rutToProv[rut].add(prov);
+  });
+
+  const duplicates = Object.entries(rutToProv)
+    .filter(([, set]) => set.size > 1)
+    .map(([rut, set]) => ({ rut, provs: Array.from(set).sort() }))
+    .sort((a, b) => b.provs.length - a.provs.length || a.rut.localeCompare(b.rut));
+
+  const box = document.getElementById('fac-rut-audit-box');
+  if (!box) {
+    notify('⚠ No se pudo mostrar el reporte de auditoría RUT.');
+    return;
+  }
+
+  if (!duplicates.length && !withoutRut.length) {
+    box.style.display = 'block';
+    box.innerHTML = '<strong>✅ Auditoría RUT:</strong> sin proveedores duplicados por RUT y sin proveedores sin RUT.';
+    notify('✅ Auditoría RUT completada: todo OK');
+    return;
+  }
+
+  const dupHtml = duplicates.length
+    ? `<div style="margin-top:6px;"><strong>RUT compartido por más de un proveedor (${duplicates.length}):</strong>` +
+      `<ul style="margin:6px 0 0 16px;">` +
+      duplicates.map(d => `<li><code>${esc(d.rut)}</code> → ${d.provs.map(esc).join(' · ')}</li>`).join('') +
+      `</ul></div>`
+    : '<div style="margin-top:6px;"><strong>RUT duplicados:</strong> ninguno.</div>';
+
+  const missingHtml = withoutRut.length
+    ? `<div style="margin-top:8px;"><strong>Proveedores sin RUT (${withoutRut.length}):</strong> ${withoutRut.map(esc).join(' · ')}</div>`
+    : '<div style="margin-top:8px;"><strong>Proveedores sin RUT:</strong> ninguno.</div>';
+
+  box.style.display = 'block';
+  box.innerHTML =
+    `<strong>🔎 Auditoría RUT de proveedores</strong>` +
+    `<div style="margin-top:4px;color:#64748b;">Solo informe (no modifica datos).</div>` +
+    dupHtml + missingHtml;
+
+  notify(`🔎 Auditoría RUT: ${duplicates.length} RUT duplicado(s), ${withoutRut.length} proveedor(es) sin RUT.`);
 }
 
 // ── Detectar conflictos RUT ──

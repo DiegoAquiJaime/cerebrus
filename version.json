@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.6",
-  "notes": "Concurrencia visible solo con otros online o conflicto; aviso de respaldo cada 14 días; voz peer-save sin repetición."
+  "version": "2026.04.07.7",
+  "notes": "Auditoría RUT en Facturas (botón + reporte), concurrencia visible solo con pares/conflicto, respaldo cada 14 días."
 }
