@@ -6239,7 +6239,8 @@ function ingConfirmar() {
 let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
-const APP_VERSION = '2026.04.07.5';
+let _hasOtherOnlineUsers = false;
+const APP_VERSION = '2026.04.07.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -11728,17 +11729,13 @@ function _finishLogin() {
     document.getElementById('mode-badge').textContent = '☁ NUBE';
     document.getElementById('mode-badge').className   = 'mode-badge mode-cloud mode-cloud-state-wait';
     document.getElementById('mode-badge').title       = 'Modo nube: datos en Google. El texto a la izquierda indica si la conexión/sincronización va bien.';
-    try {
-      var risk = document.getElementById('sync-risk');
-      if (risk) risk.style.display = 'inline-flex';
-    } catch(e){}
+    _hasOtherOnlineUsers = false;
+    updateConcurrencyBadge();
     loadFromCloud(); initPresenceTracking(); bumpUserActivity(); startHeartbeat();
   } else {
     document.getElementById('mode-badge').textContent = '💾 LOCAL';
-    try {
-      var riskL = document.getElementById('sync-risk');
-      if (riskL) riskL.style.display = 'none';
-    } catch(e){}
+    _hasOtherOnlineUsers = false;
+    updateConcurrencyBadge();
     _localInit();
   }
   setTimeout(function() {
@@ -21207,6 +21204,7 @@ function showConflict(user, date, keys) {
   _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: Array.isArray(keys)?keys:[] };
   set('conflict-msg', user + ' guardó cambios el ' + date + ' mientras estabas editando.');
   document.getElementById('conflict-banner').classList.add('show');
+  updateConcurrencyBadge();
   try {
     var voiceKey = String(user || 'Otro usuario') + '|' + String(date || '');
     if (voiceKey !== _lastConflictVoiceKey) {
@@ -21215,7 +21213,10 @@ function showConflict(user, date, keys) {
     }
   } catch (e) {}
 }
-function dismissConflict() { document.getElementById('conflict-banner').classList.remove('show'); }
+function dismissConflict() {
+  document.getElementById('conflict-banner').classList.remove('show');
+  updateConcurrencyBadge();
+}
 function openConflictDetails() {
   const o = document.getElementById('conflict-overlay');
   const u = document.getElementById('conflict-detail-user');
@@ -21274,6 +21275,8 @@ function renderOnlineUsers(sessions) {
   const raw = sessions || [];
   const list = raw.map(s => (typeof s === 'string' ? { user: s } : s)).filter(s => s && s.user);
   const others = list.filter(s => s.user !== currentUser);
+  _hasOtherOnlineUsers = others.length > 0;
+  updateConcurrencyBadge();
   if (!others.length) { strip.innerHTML = ''; return; }
 
   const anyActive = others.some(s => !_sessionPeerIdle(s) && _sessionPeerTabFocused(s));
@@ -21298,6 +21301,14 @@ function renderOnlineUsers(sessions) {
   });
 
   strip.innerHTML = `<span class="${dotCls}" title="${anyActive ? 'Alguien activo ahora' : 'Todos inactivos o en segundo plano'}"></span>${chips.join('')}`;
+}
+
+function updateConcurrencyBadge() {
+  const el = document.getElementById('sync-risk');
+  if (!el) return;
+  if (!IS_CLOUD) { el.style.display = 'none'; return; }
+  const conflictVisible = !!document.getElementById('conflict-banner')?.classList.contains('show');
+  el.style.display = (_hasOtherOnlineUsers || conflictVisible) ? 'inline-flex' : 'none';
 }
 
 // ── ACTIVITY LOG PANEL ──
