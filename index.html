@@ -12672,10 +12672,10 @@ async function cereBackupNowAll() {
 function cereBackupWeeklyReminder() {
   try {
     const last = parseInt(localStorage.getItem('cerebrus_last_weekly_backup') || '0', 10) || 0;
-    const weekMs = 7 * 24 * 60 * 60 * 1000;
-    if (!last || (Date.now() - last) > weekMs) {
+    const reminderMs = 14 * 24 * 60 * 60 * 1000;
+    if (!last || (Date.now() - last) > reminderMs) {
       setTimeout(() => {
-        if (confirm('Han pasado más de 7 días sin respaldo JSON.\n¿Crear respaldos de Inventario, Facturas y Estado completo ahora?')) {
+        if (confirm('Han pasado más de 14 días sin respaldo JSON.\n¿Crear respaldos de Inventario, Facturas y Estado completo ahora?')) {
           cereBackupNowAll();
         }
       }, 1200);
