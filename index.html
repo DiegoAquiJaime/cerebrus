@@ -6243,7 +6243,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.7';
+const APP_VERSION = '2026.04.07.8';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10161,12 +10161,16 @@ function facAuditRutDuplicates() {
   const dupHtml = duplicates.length
     ? `<div style="margin-top:6px;"><strong>RUT compartido por más de un proveedor (${duplicates.length}):</strong>` +
       `<ul style="margin:6px 0 0 16px;">` +
-      duplicates.map(d => `<li><code>${esc(d.rut)}</code> → ${d.provs.map(esc).join(' · ')}</li>`).join('') +
+      duplicates.map(d => `<li><code>${esc(d.rut)}</code> → ` +
+        d.provs.map(p => `${esc(p)} <button type="button" class="fac-btn" style="font-size:9px;padding:1px 6px;margin-left:4px;" onclick="facAuditOpenProv('${encodeURIComponent(p)}')">Abrir</button>`).join(' · ') +
+      `</li>`).join('') +
       `</ul></div>`
     : '<div style="margin-top:6px;"><strong>RUT duplicados:</strong> ninguno.</div>';
 
   const missingHtml = withoutRut.length
-    ? `<div style="margin-top:8px;"><strong>Proveedores sin RUT (${withoutRut.length}):</strong> ${withoutRut.map(esc).join(' · ')}</div>`
+    ? `<div style="margin-top:8px;"><strong>Proveedores sin RUT (${withoutRut.length}):</strong> ` +
+      withoutRut.map(p => `${esc(p)} <button type="button" class="fac-btn" style="font-size:9px;padding:1px 6px;margin-left:4px;" onclick="facAuditOpenProv('${encodeURIComponent(p)}')">Abrir</button>`).join(' · ') +
+      `</div>`
     : '<div style="margin-top:8px;"><strong>Proveedores sin RUT:</strong> ninguno.</div>';
 
   box.style.display = 'block';
@@ -10176,6 +10180,17 @@ function facAuditRutDuplicates() {
     dupHtml + missingHtml;
 
   notify(`🔎 Auditoría RUT: ${duplicates.length} RUT duplicado(s), ${withoutRut.length} proveedor(es) sin RUT.`);
+}
+
+function facAuditOpenProv(encProv) {
+  const prov = decodeURIComponent(String(encProv || ''));
+  if (!prov) return;
+  showTab('facturas');
+  facOpenProv(prov);
+  try {
+    const anchor = document.getElementById('fac-detail-title');
+    if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {}
 }
 
 // ── Detectar conflictos RUT ──
@@ -10728,7 +10743,7 @@ function iaImportarResultados() {
     const prov   = document.getElementById('ia-res-prov')?.value.trim()  || item.proveedor || '';
     if (!monto) { notify('⚠ El monto es 0 — verifica la imagen'); return; }
     pushUndo();
-    sacGetCargas().push({
+    const itemCarga = {
       id:       'sc_'+Date.now(),
       nombre:   desc,
       cat:      'Compra',
@@ -10737,7 +10752,9 @@ function iaImportarResultados() {
       estado:   'nopagado',
       resp:     prov,
       nota:     item.fecha||''
-    });
+    };
+    sacTouchCarga(itemCarga);
+    sacGetCargas().push(itemCarga);
     iaCerrarScanner();
     sacRenderCargas();
     sacCalcBalance();
@@ -20111,13 +20128,7 @@ function sacRenderCargas() {
     return;
   }
 
-  // Ordenar por estatus: nopagado → parcial → pausa → pagado
-  const statusOrder = { 'nopagado': 0, 'parcial': 1, 'pausa': 2, 'pagado': 3 };
-  const sortedCargas = [...cargas].sort((a, b) => {
-    const oa = statusOrder[a.estado] ?? 0;
-    const ob = statusOrder[b.estado] ?? 0;
-    return oa - ob;
-  });
+  const sortedCargas = [...cargas].sort((a, b) => sacCargaSortTs(b) - sacCargaSortTs(a));
   const filteredCargas = sortedCargas.filter(c => {
     const catOk = !_sacCargaFilter.cat || (c.cat || '').toLowerCase().includes(_sacCargaFilter.cat.toLowerCase());
     const estOk = !_sacCargaFilter.estado || (c.estado || 'nopagado') === _sacCargaFilter.estado;
@@ -20202,6 +20213,18 @@ function sacRenderCargas() {
   }).join('');
 
   sacCalcCargasTotals();
+}
+
+function sacCargaSortTs(c) {
+  if (!c || typeof c !== 'object') return 0;
+  if (c._updatedAt) return Number(c._updatedAt) || 0;
+  const id = String(c.id || '');
+  const m = id.match(/(\d{10,})/);
+  if (m) return Number(m[1]) || 0;
+  return 0;
+}
+function sacTouchCarga(c) {
+  if (c && typeof c === 'object') c._updatedAt = Date.now();
 }
 
 function sacCalcCargasTotals() {
@@ -20517,7 +20540,7 @@ function sacCalcAll() {
 // ── CARGA ACTIONS ──
 function sacAddCargaManual() {
   pushUndo();
-  sacGetCargas().push({
+  const item = {
     id:       'sc_'+Date.now(),
     nombre:   '',
     cat:      'Otro',
@@ -20526,7 +20549,9 @@ function sacAddCargaManual() {
     estado:   'nopagado',
     resp:     currentUser || '',
     nota:     ''
-  });
+  };
+  sacTouchCarga(item);
+  sacGetCargas().push(item);
   sacRenderCargas();
   sacCalcBalance();
   const cargas = sacGetCargas();
@@ -20561,6 +20586,7 @@ function sacTogglePausa(id) {
     c.estado = prev;
     delete c._pausaPrevEstado;
   }
+  sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
   markUnsaved();
@@ -20581,6 +20607,7 @@ function sacCycleEstado(id) {
   pushUndo();
   c.estado = next;
   if (c.estado==='pagado' && c.montoReal==null) c.montoReal = c.monto;
+  sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
   notify(c.estado==='pagado'?`✓ ${c.nombre} — Pagado`:c.estado==='parcial'?`◑ ${c.nombre} — Parcial`:`○ ${c.nombre} — No pagado`);
@@ -20594,6 +20621,7 @@ function sacEditMonto(id) {
   pushUndo();
   c.montoReal = real;
   c.estado    = real === c.monto ? 'pagado' : real < c.monto ? 'parcial' : 'pagado';
+  sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
   notify(`✓ Monto real: ${fmt(real)}`);
@@ -20628,6 +20656,7 @@ function sacPagarParcial(id) {
     c.pagadoParcial = nuevoTotal;
     c.montoReal     = nuevoTotal;
     c.estado        = 'pagado';
+    sacTouchCarga(c);
     notify(`✅ "${c.nombre}" ajustado a ${fmt(nuevoTotal)} y saldado completamente`);
   } else {
     // Actualizar la carga original
@@ -20638,11 +20667,13 @@ function sacPagarParcial(id) {
       // Saldada completamente
       c.estado    = 'pagado';
       c.montoReal = c.monto;
+      sacTouchCarga(c);
       notify(`✅ "${c.nombre}" — ¡Saldado completamente! ${fmt(c.monto)}`);
     } else {
       c.estado = 'parcial';
+      sacTouchCarga(c);
       // Crear registro del abono pagado
-      cargas.push({
+      const pago = {
         id:       'sc_pago_'+Date.now(),
         nombre:   `✓ Pago parcial — ${c.nombre}`,
         cat:      c.cat,
@@ -20652,7 +20683,9 @@ function sacPagarParcial(id) {
         resp:     c.resp || '',
         nota:     `Abono ${fmt(abono)} de ${fmt(c.monto)} total · Pendiente: ${fmt(nuevoPendiente)}`,
         _esPago:  true  // marca para no mostrar botón de pago parcial en este registro
-      });
+      };
+      sacTouchCarga(pago);
+      cargas.push(pago);
       notify(`◑ Abono de ${fmt(abono)} registrado · Pendiente: ${fmt(nuevoPendiente)}`);
     }
   }
@@ -20689,6 +20722,7 @@ function sacSaveEdit(id) {
   c.monto  = parseInt((document.getElementById('se-monto-'+id)?.value||'0').replace(/[^\d]/g,''),10)||0;
   c.resp   = document.getElementById('se-resp-'+id)?.value   || '';
   c.nota   = document.getElementById('se-nota-'+id)?.value   || '';
+  sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
 }
@@ -20763,7 +20797,7 @@ function sacImportSelected() {
     const [secKey, itemId] = cb.value.split('|');
     const item = (state[secKey]||[]).find(x=>String(x.id)===itemId);
     if (!item) return;
-    sacGetCargas().push({
+    const itemCarga = {
       id:       'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       nombre:   item.name,
       cat:      keyLabels[secKey] || 'Otro',
@@ -20773,7 +20807,9 @@ function sacImportSelected() {
       resp:     '',
       nota:     freqLabel(item.freq),
       _fixedId: secKey+'-'+item.id
-    });
+    };
+    sacTouchCarga(itemCarga);
+    sacGetCargas().push(itemCarga);
     added++;
   });
   sacCloseSel();

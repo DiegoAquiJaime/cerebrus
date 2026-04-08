@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.7",
-  "notes": "Auditoría RUT en Facturas (botón + reporte), concurrencia visible solo con pares/conflicto, respaldo cada 14 días."
+  "version": "2026.04.07.8",
+  "notes": "Auditoría RUT con botón Abrir proveedor; Egresos ordena por último movimiento (por pagar y pagados)."
 }
