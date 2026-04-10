@@ -6698,8 +6698,53 @@ function set(id, val) { const el=document.getElementById(id); if(el) el.textCont
 // ============================================================
 //  FORMAT
 // ============================================================
+function parseNumCL(raw, allowNegative) {
+  if (raw == null || raw === '') return 0;
+  let s = String(raw).trim().replace(/\s/g, '');
+  if (!s) return 0;
+  let neg = false;
+  if (allowNegative && s.startsWith('-')) {
+    neg = true;
+    s = s.slice(1);
+  }
+  // Keep only separators and digits; Chilean style: 1.234,56
+  s = s.replace(/[^\d.,]/g, '');
+  if (!s) return 0;
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+  let n = 0;
+  if (hasComma && hasDot) {
+    // decimal separator = rightmost among comma/dot
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) n = parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+    else n = parseFloat(s.replace(/,/g, '')) || 0;
+  } else if (hasComma) {
+    n = parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  } else {
+    // only dot or plain digits
+    const parts = s.split('.');
+    if (parts.length > 2) n = parseFloat(parts.join('')) || 0; // dots as thousand separators
+    else n = parseFloat(s) || 0;
+  }
+  return neg ? -n : n;
+}
+function fmtCL(v, minD, maxD) {
+  const n = Number(v || 0);
+  const min = minD == null ? 0 : minD;
+  const max = maxD == null ? 2 : maxD;
+  return new Intl.NumberFormat('es-CL', { minimumFractionDigits: min, maximumFractionDigits: max }).format(n);
+}
 function fmt(v) {
-  return new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(v||0);
+  const n = Number(v || 0);
+  const hasDec = Math.abs(n % 1) > 0.0000001;
+  return '$' + fmtCL(n, 0, hasDec ? 2 : 0);
+}
+function formatNumericInputValue(inp) {
+  if (!inp) return;
+  const mode = String(inp.getAttribute('inputmode') || '').toLowerCase();
+  if (mode !== 'numeric' && mode !== 'decimal') return;
+  const n = parseNumCL(inp.value, mode === 'decimal');
+  const hasDec = Math.abs(n % 1) > 0.0000001;
+  inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
 }
 
 // ============================================================
@@ -7588,16 +7633,14 @@ function vsApplyRowState(i, d) {
 // ── Called on onchange (blur/enter) — saves to state, recalcs, NEVER touches other inputs ──
 function vsFieldChange(dayIdx, field, rawVal) {
   const days = vsGetWeek(vsWeek);
-  const val  = parseInt((rawVal||'0').replace(/[^\d]/g,''), 10) || 0;
+  const val  = Math.max(0, parseNumCL(rawVal, false));
   if (days[dayIdx].cerrado && field !== 'est') return;
   days[dayIdx][field] = val;
   vsCalcTotals();
 }
 
 function vsFieldBlur(inp) {
-  // Clean non-digits on blur but never remove what was typed
-  const cleaned = (inp.value||'').replace(/[^\d]/g,'');
-  if (inp.value !== cleaned) inp.value = cleaned;
+  formatNumericInputValue(inp);
 }
 
 // ── vsSetVal kept for compatibility (e.g. called from saved weeks load) ──
@@ -8716,8 +8759,9 @@ function facSemInit() {
 
 function facSemHoyMetaInput(el) {
   facSemInit();
-  const v = parseInt(String(el.value || '').replace(/[^\d]/g, ''), 10);
+  const v = parseNumCL(el.value, false);
   state.facSemHoyMeta = isNaN(v) ? 0 : v;
+  formatNumericInputValue(el);
   facSemHoyRefreshSummary();
   markUnsaved();
 }
@@ -16175,13 +16219,13 @@ function infOpenEgresosSelector() {
 // Real-time balance calculation as user fills the form
 function infCalcLive() {
   const bancoRaw = document.getElementById('inf-banco')?.value || '';
-  const bancoManual = parseFloat(bancoRaw);
+  const bancoManual = parseNumCL(bancoRaw, true);
   const banco = bancoRaw !== '' && !Number.isNaN(bancoManual)
     ? bancoManual
     : (state.cajaEmpresa?.banco || 0);
-  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
-  const ingMontos = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseFloat(i.value)||0);
-  const carMontos = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseFloat(i.value)||0);
+  const propina = parseNumCL(document.getElementById('inf-propina')?.value, false) || 0;
+  const ingMontos = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseNumCL(i.value, true)||0);
+  const carMontos = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseNumCL(i.value, true)||0);
   const totalIng  = ingMontos.reduce((a,b)=>a+b, 0);
   const totalCar  = carMontos.reduce((a,b)=>a+b, 0);
   const entrada   = banco + totalIng;
@@ -16210,7 +16254,7 @@ function infGuardarEnState() {
   if (!state.informesDiarios) state.informesDiarios = [];
   const d = _infData;
   if (!d) return;
-  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
+  const propina = parseNumCL(document.getElementById('inf-propina')?.value, false)||0;
   // Check if already exists for this date
   const existIdx = state.informesDiarios.findIndex(i => i.fecha === d.fecha);
   const registro = {
@@ -16299,7 +16343,7 @@ function infAddItem(tipo, nombre='', monto='') {
   row.className = 'inf-item-row';
   row.innerHTML = `
     <input type="text"   placeholder="Descripción" value="${esc(nombre)}" class="inf-${tipo}-nombre">
-    <input type="number" placeholder="$0"           value="${monto}"       class="inf-${tipo}-monto" inputmode="numeric" oninput="infCalcLive()">
+    <input type="text" placeholder="$0"             value="${monto}"       class="inf-${tipo}-monto" inputmode="decimal" oninput="infCalcLive()" onblur="formatNumericInputValue(this)">
     <button class="inf-rm-btn" onclick="this.parentElement.remove();infCalcLive()">×</button>`;
   list.appendChild(row);
   infCalcLive();
@@ -16323,18 +16367,18 @@ function infFechaLegible(val) {
 function infRecolectar() {
   const fecha = document.getElementById('inf-fecha').value;
   const bancoRaw = document.getElementById('inf-banco').value || '';
-  const bancoManual = parseFloat(bancoRaw);
+  const bancoManual = parseNumCL(bancoRaw, true);
   const banco = bancoRaw !== '' && !Number.isNaN(bancoManual)
     ? bancoManual
     : (state.cajaEmpresa?.banco || 0);
-  const venta = parseFloat(document.getElementById('inf-venta').value)||0;
-  const caja  = parseFloat(document.getElementById('inf-caja').value)||0;
-  const propina = parseFloat(document.getElementById('inf-propina')?.value)||0;
+  const venta = parseNumCL(document.getElementById('inf-venta').value, false)||0;
+  const caja  = parseNumCL(document.getElementById('inf-caja').value, false)||0;
+  const propina = parseNumCL(document.getElementById('inf-propina')?.value, false)||0;
   const notas = document.getElementById('inf-notas').value.trim();
   const ingNombres = [...document.querySelectorAll('.inf-ingresos-nombre')].map(i=>i.value.trim());
-  const ingMontos  = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseFloat(i.value)||0);
+  const ingMontos  = [...document.querySelectorAll('.inf-ingresos-monto')].map(i=>parseNumCL(i.value, true)||0);
   const carNombres = [...document.querySelectorAll('.inf-cargas-nombre')].map(i=>i.value.trim());
-  const carMontos  = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseFloat(i.value)||0);
+  const carMontos  = [...document.querySelectorAll('.inf-cargas-monto')].map(i=>parseNumCL(i.value, true)||0);
   const totalIng = ingMontos.reduce((a,b)=>a+b,0);
   const totalCar = carMontos.reduce((a,b)=>a+b,0);
   return { fecha, banco, venta, caja, propina, ingNombres, ingMontos, totalIng,
@@ -18660,10 +18704,12 @@ function cerebrusClockStart() {
 }
 
 function setBancoEmpresa(val) {
-  const n = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  const n = parseNumCL(val, false);
   if (!state.cajaEmpresa) state.cajaEmpresa = {};
   state.cajaEmpresa.banco    = n;
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  const inp = document.getElementById('dash-banco-empresa');
+  if (inp && document.activeElement !== inp) formatNumericInputValue(inp);
   markUnsaved();
   updateTotalDisponible();
 }
@@ -20072,7 +20118,7 @@ function sacLoadVentas() {
 
 function sacVChange(dayIdx, field, rawVal) {
   const key = sacDataKey();
-  const val = parseInt((rawVal || '0').replace(/[^\d]/g, ''), 10) || 0;
+  const val = Math.max(0, parseNumCL(rawVal, false));
   if (dayIdx === 'extra') {
     if (field === 'est') vsGetExtraSac(key).monto = val;
     if (field === 'real') vsGetExtraSac(key).realExtra = val;
@@ -20086,8 +20132,7 @@ function sacVChange(dayIdx, field, rawVal) {
 }
 
 function sacVBlur(inp) {
-  const c = (inp.value||'').replace(/[^\d]/g,'');
-  if (inp.value !== c) inp.value = c;
+  formatNumericInputValue(inp);
 }
 
 function sacCalcVentas() {
@@ -20152,7 +20197,7 @@ function sacMercModeChange() {
 
 function sacMercValChange(val) {
   if (!state.sacMerc) state.sacMerc = {mode:'monto', val:0};
-  state.sacMerc.val = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  state.sacMerc.val = Math.max(0, parseNumCL(val, false));
   sacCalcAll();
   markUnsaved();
 }
@@ -20166,13 +20211,12 @@ function sacGetMercMonto() {
 
 // ── BANCO / EFECTIVO ──
 function sacSetBanco(val) {
-  const raw = String(val||'').trim();
-  const neg = raw.startsWith('-');
-  const abs = parseInt(raw.replace(/[^\d]/g,''),10)||0;
-  const n = neg ? -abs : abs;
+  const n = parseNumCL(val, true);
   if (!state.cajaEmpresa) state.cajaEmpresa = {};
   state.cajaEmpresa.banco    = n;
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  const inp = document.getElementById('sac-banco');
+  if (inp && document.activeElement !== inp) formatNumericInputValue(inp);
   const upd = document.getElementById('sac-banco-upd');
   if (upd) upd.textContent = 'Act. ' + state.cajaEmpresa.bancoUpd;
   sacCalcBalance();
@@ -20181,7 +20225,9 @@ function sacSetBanco(val) {
 }
 
 function sacSetEfectivo(val) {
-  state.sacEfectivo = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  state.sacEfectivo = Math.max(0, parseNumCL(val, false));
+  const inp = document.getElementById('sac-efectivo');
+  if (inp && document.activeElement !== inp) formatNumericInputValue(inp);
   sacCalcBalance();
   if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
   markUnsaved();
@@ -20901,6 +20947,16 @@ if (!window.__sacHelpBound) {
     ev.preventDefault();
     sacHelpOpen(txt);
   });
+}
+
+if (!window.__cerebrusNumericFormatBound) {
+  window.__cerebrusNumericFormatBound = true;
+  document.addEventListener('blur', function(ev) {
+    const t = ev && ev.target;
+    if (!t || t.tagName !== 'INPUT') return;
+    if (t.type !== 'text') return;
+    formatNumericInputValue(t);
+  }, true);
 }
 
 function sacImportSelected() {
