@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.12",
-  "notes": "Formato Chile extendido en más módulos: egresos, facturas, créditos, informe e inventario; parseo coma decimal y miles con punto en blur."
+  "version": "2026.04.07.14",
+  "notes": "Informe Diario: campos monto en texto/inputmode decimal (evita 580.000→580) y ancho mayor en filas de cargas/ingresos."
 }
