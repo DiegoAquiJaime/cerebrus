@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.18",
-  "notes": "Semana Actual: agregar Caja Chica + nota al disponible/balance. Informe Diario: popup de vista previa de texto WhatsApp antes de copiar."
+  "version": "2026.04.07.19",
+  "notes": "OCR Google Drive: más espacio entre peticiones y reintentos automáticos ante límite de cuota (rate limit)."
 }

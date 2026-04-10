@@ -6430,7 +6430,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.18';
+const APP_VERSION = '2026.04.07.19';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -10942,15 +10942,7 @@ async function iaProcessPdf(file) {
     });
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo');
-    iaSetProgress(32, 'Pausa breve (cuota Google Drive)…');
-    await cerebrusDelayBeforeOcr();
-    iaSetProgress(35, 'Google extrayendo texto (OCR)…');
-    const ocrRes = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'ocrFile', fileId: uploadData.fileId })
-    });
-    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
-    if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
+    const ocrData = await cerebrusOcrFileWithBackoff(uploadData.fileId, { onProgress: iaSetProgress });
     var texto = (ocrData.text || '').trim();
     if (texto.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o una imagen.');
     iaSetProgress(55, 'Claude analizando texto…');
@@ -11215,17 +11207,7 @@ async function processAiPdf(file) {
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo PDF');
 
-    setAiProgress(32, 'Pausa breve (cuota Google Drive)…');
-    await cerebrusDelayBeforeOcr();
-
-    setAiProgress(35, 'Google extrayendo texto (OCR)…');
-
-    const ocrRes = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'ocrFile', fileId: uploadData.fileId })
-    });
-    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
-    if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
+    const ocrData = await cerebrusOcrFileWithBackoff(uploadData.fileId, { onProgress: setAiProgress });
     var textoOcr = (ocrData.text || '').trim();
     if (textoOcr.length < 10) throw new Error('No se pudo leer el PDF. Prueba otra copia o exporta como imagen.');
 
@@ -16040,17 +16022,10 @@ async function processAiInvFile(file, ext) {
     const uploadData = await cerebrusReadJson(uploadRes, 'Subida a Drive');
     if (!uploadData.ok) throw new Error(uploadData.error || 'Error subiendo archivo');
 
-    // PASO 2: Google hace OCR — extrae texto del archivo (pausa para no saturar cuota Drive)
-    setInvProgress(36, 'Pausa breve (cuota Google Drive)…');
-    await cerebrusDelayBeforeOcr();
-    setInvProgress(40, 'Google extrayendo texto (OCR)…');
-
-    const ocrRes = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action:'ocrFile', fileId: uploadData.fileId })
+    // PASO 2: Google hace OCR (espaciado + reintento si hay límite de cuota)
+    const ocrData = await cerebrusOcrFileWithBackoff(uploadData.fileId, {
+      onProgress: function(pct, msg) { setInvProgress(Math.max(36, pct), msg); }
     });
-    const ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
-    if (!ocrData.ok) throw new Error(ocrData.error || 'Error en OCR');
 
     const textoExtraido = ocrData.text || '';
     if (textoExtraido.length < 10) throw new Error('No se pudo extraer texto del documento. Intenta con una foto más clara.');
@@ -22166,8 +22141,82 @@ function notify(msg, duration) {
 
 /** Pausa antes de llamar a ocrFile para no saturar la cuota por minuto de Google Drive. */
 function cerebrusDelayBeforeOcr(ms) {
-  const n = typeof ms === 'number' && ms > 0 ? ms : 4500;
+  const n = typeof ms === 'number' && ms > 0 ? ms : 8000;
   return new Promise(function(resolve) { setTimeout(resolve, n); });
+}
+
+/** Marca cuándo terminó la última petición OCR (éxito o error final) para espaciar la siguiente. */
+let _cerebrusLastOcrEndMs = 0;
+function cerebrusMarkOcrEnded() {
+  _cerebrusLastOcrEndMs = Date.now();
+}
+
+/** Evita lanzar otro OCR inmediatamente tras el anterior (varios PDF seguidos / pestañas). */
+async function cerebrusWaitOcrSpacing(minMs) {
+  const min = typeof minMs === 'number' && minMs > 0 ? minMs : 12000;
+  const gap = Date.now() - _cerebrusLastOcrEndMs;
+  if (gap < min) await new Promise(function(r) { setTimeout(r, min - gap); });
+}
+
+function cerebrusIsDriveOcrRateLimitError(msg) {
+  const s = String(msg || '');
+  return /rate limit|User rate limit|cuota|L[ií]mite temporal|drive\.files\.insert|403|429|Exceeded/i.test(s);
+}
+
+/**
+ * Llama action ocrFile con espaciado + pausa y reintentos si Google devuelve límite de OCR.
+ * onProgress(pct, msg) es opcional (para barras de progreso).
+ */
+async function cerebrusOcrFileWithBackoff(fileId, options) {
+  const opts = options || {};
+  const preDelay = typeof opts.preDelay === 'number' ? opts.preDelay : 8000;
+  const spacingMs = typeof opts.spacingMs === 'number' ? opts.spacingMs : 12000;
+  const maxRetries = typeof opts.maxRetries === 'number' ? opts.maxRetries : 4;
+  const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+
+  await cerebrusWaitOcrSpacing(spacingMs);
+  onProgress && onProgress(32, 'Pausa entre OCR de Google Drive (evita cuota)…');
+  await cerebrusDelayBeforeOcr(preDelay);
+
+  let lastErr = '';
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0) {
+      const sec = Math.min(180, 45 + attempt * 45);
+      onProgress && onProgress(33, 'Cuota Google OCR: esperando ' + sec + 's (reintento ' + (attempt + 1) + '/' + maxRetries + ')…');
+      await new Promise(function(r) { setTimeout(r, sec * 1000); });
+    }
+    onProgress && onProgress(35, 'Google extrayendo texto (OCR)…');
+    let ocrRes;
+    try {
+      ocrRes = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'ocrFile', fileId: fileId })
+      });
+    } catch (netErr) {
+      lastErr = String(netErr && netErr.message ? netErr.message : netErr);
+      cerebrusMarkOcrEnded();
+      throw netErr;
+    }
+    let ocrData;
+    try {
+      ocrData = await cerebrusReadJson(ocrRes, 'OCR (Google)');
+    } catch (e) {
+      lastErr = e.message;
+      if (cerebrusIsDriveOcrRateLimitError(lastErr) && attempt < maxRetries - 1) continue;
+      cerebrusMarkOcrEnded();
+      throw e;
+    }
+    if (ocrData.ok) {
+      cerebrusMarkOcrEnded();
+      return ocrData;
+    }
+    lastErr = ocrData.error || 'Error en OCR';
+    if (cerebrusIsDriveOcrRateLimitError(lastErr) && attempt < maxRetries - 1) continue;
+    cerebrusMarkOcrEnded();
+    throw new Error(lastErr);
+  }
+  cerebrusMarkOcrEnded();
+  throw new Error(lastErr || 'Error en OCR');
 }
 
 /** Respuesta del Web App como JSON; si no es JSON, muestra trozo del error (p. ej. HTML de Google). */
