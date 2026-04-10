@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.16",
-  "notes": "Créditos: pago con fecha manual y usuario; historial por crédito y columna de último pago en tabla."
+  "version": "2026.04.07.18",
+  "notes": "Semana Actual: agregar Caja Chica + nota al disponible/balance. Informe Diario: popup de vista previa de texto WhatsApp antes de copiar."
 }

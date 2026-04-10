@@ -1444,11 +1444,14 @@ body.dark-mode .seb-tag-pagado{background:#334155;color:#94a3b8;}
 .inf-gen-btn{display:block;width:100%;background:var(--accent);color:white;border:none;border-radius:8px;padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;margin-bottom:10px;}
 .inf-gen-btn:hover{opacity:.9;}
 .inf-share-btns{display:none;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.inf-share-btns.has-preview{grid-template-columns:1fr 1fr 1fr;}
 .inf-btn-wa{background:#25D366;color:white;border:none;border-radius:8px;padding:12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
 .inf-btn-wa:disabled{opacity:.5;cursor:not-allowed;}
 .inf-btn-txt{background:var(--white);color:var(--primary);border:1.5px solid var(--border);border-radius:8px;padding:12px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;}
 .inf-btn-txt:hover{border-color:var(--accent);color:var(--accent);}
 .inf-btn-txt.copied{border-color:var(--success);color:var(--success);}
+.inf-btn-prev{background:var(--primary);color:var(--white);border:none;border-radius:8px;padding:12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.inf-btn-prev:hover{opacity:.92;}
 .inf-reset-btn{background:none;border:none;color:#94a3b8;font-size:11px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;display:block;margin:0 auto 16px;transition:.15s;}
 .inf-reset-btn:hover{color:var(--primary);}
 /* Preview */
@@ -1491,6 +1494,40 @@ body.dark-mode .seb-tag-pagado{background:#334155;color:#94a3b8;}
 body.dark-mode .inf-block,.dark-mode .inf-preview{background:#1e293b;}
 body.dark-mode .inf-field input,.dark-mode .inf-field textarea,.dark-mode .inf-item-row input{background:#0f172a;color:#e2e8f0;}
 body.dark-mode .inf-prev-kpis,.dark-mode .inf-prev-sec{border-color:#334155;}
+body.dark-mode .inf-btn-prev{background:#334155;color:#f8fafc;}
+
+.inf-img-modal{position:fixed;inset:0;background:rgba(0,0,0,.56);z-index:1600;display:none;align-items:center;justify-content:center;padding:20px;}
+.inf-img-modal.open{display:flex;}
+.inf-img-card{width:min(760px,96vw);max-height:92vh;background:var(--white);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;}
+.inf-img-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
+.inf-img-title{font-size:12px;font-weight:800;color:var(--primary);}
+.inf-img-close{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;line-height:1;}
+.inf-img-body{padding:12px;overflow:auto;display:flex;justify-content:center;background:#f8fafc;}
+.inf-img-body img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.22);}
+.inf-img-status{font-size:12px;color:#64748b;padding:32px 10px;text-align:center;}
+.inf-img-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);}
+.inf-img-actions button{flex:1;border-radius:8px;padding:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--primary);}
+.inf-img-actions .ok{background:var(--accent);border-color:var(--accent);color:#fff;}
+.inf-wa-modal{position:fixed;inset:0;background:rgba(0,0,0,.56);z-index:1602;display:none;align-items:center;justify-content:center;padding:20px;}
+.inf-wa-modal.open{display:flex;}
+.inf-wa-card{width:min(760px,96vw);max-height:92vh;background:var(--white);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;}
+.inf-wa-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
+.inf-wa-title{font-size:12px;font-weight:800;color:var(--primary);}
+.inf-wa-close{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;line-height:1;}
+.inf-wa-body{padding:12px;background:#f8fafc;overflow:auto;}
+.inf-wa-pre{white-space:pre-wrap;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;line-height:1.55;color:var(--primary);}
+.inf-wa-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);}
+.inf-wa-actions button{flex:1;border-radius:8px;padding:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--primary);}
+.inf-wa-actions .ok{background:#25D366;border-color:#25D366;color:#fff;}
+body.dark-mode .inf-img-card{background:#111827;}
+body.dark-mode .inf-img-body{background:#0f172a;}
+body.dark-mode .inf-img-actions button{background:#1f2937;border-color:#334155;color:#f8fafc;}
+body.dark-mode .inf-img-actions .ok{background:var(--accent);border-color:var(--accent);}
+body.dark-mode .inf-wa-card{background:#111827;}
+body.dark-mode .inf-wa-body{background:#0f172a;}
+body.dark-mode .inf-wa-pre{background:#111827;border-color:#334155;color:#f8fafc;}
+body.dark-mode .inf-wa-actions button{background:#1f2937;border-color:#334155;color:#f8fafc;}
+body.dark-mode .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color:#fff;}
 
 /* ---- SEMANA ACTUAL (SAC) ---- */
 .sac-header{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
@@ -3214,8 +3251,15 @@ body.dark-mode .conflict-overlay{
           <input class="sac-kpi-inp" id="sac-efectivo" type="text" inputmode="numeric" placeholder="$0"
             onchange="sacSetEfectivo(this.value)" style="color:var(--accent2);">
         </div>
+        <div class="sac-kpi" style="border-left:4px solid #0ea5e9;">
+          <div class="sac-kpi-lbl">🔐 Caja chica / caja fuerte <span class="sac-help" title="Dinero adicional disponible (p.ej. dólares convertidos o caja fuerte). Se suma al disponible y al balance de la semana.">?</span></div>
+          <input class="sac-kpi-inp" id="sac-caja-chica" type="text" inputmode="numeric" placeholder="$0"
+            onchange="sacSetCajaChica(this.value)" style="color:#0ea5e9;">
+          <input class="sac-v-inp" id="sac-caja-chica-nota" type="text" placeholder="Nota opcional (ej: USD en caja fuerte)"
+            onchange="sacSetCajaChicaNota(this.value)" style="margin-top:6px;text-align:left;font-weight:600;">
+        </div>
         <div class="sac-kpi" style="border-left:4px solid var(--success);">
-          <div class="sac-kpi-lbl">💰 Total disponible <span class="sac-help" title="Cálculo automático: Banco + Caja. Es la base para estimar si alcanza para cubrir cargas del período.">?</span></div>
+          <div class="sac-kpi-lbl">💰 Total disponible <span class="sac-help" title="Cálculo automático: Banco + Caja + Caja Chica. Es la base para estimar si alcanza para cubrir cargas del período.">?</span></div>
           <div class="sac-kpi-val" id="sac-total-disp" style="color:var(--success);">$0</div>
         </div>
         <div class="sac-kpi" style="border-left:4px solid var(--danger);">
@@ -4881,9 +4925,10 @@ body.dark-mode .conflict-overlay{
         </div>
 
         <!-- Share buttons -->
-        <div class="inf-share-btns" id="inf-share-btns">
+        <div class="inf-share-btns has-preview" id="inf-share-btns">
+          <button class="inf-btn-prev" id="inf-btn-prev" onclick="infOpenImagePreview()">👁 Vista imagen</button>
           <button class="inf-btn-wa" id="inf-btn-img" onclick="infGuardarImagen()">📸 Guardar imagen</button>
-          <button class="inf-btn-txt" id="inf-btn-txt" onclick="infCopiarTexto()">💬 Copiar WhatsApp</button>
+          <button class="inf-btn-txt" id="inf-btn-txt" onclick="infOpenWhatsappPreview()">💬 Copiar WhatsApp</button>
         </div>
         <button class="inf-reset-btn" id="inf-reset-btn" onclick="infReset()" style="display:none;">Limpiar formulario</button>
 
@@ -4925,6 +4970,41 @@ body.dark-mode .conflict-overlay{
     <div class="ci-footer">
       <div class="ci-footer-line">CEREBRUS · Gastronomy Suite by Aquí Jaime</div>
       <div class="ci-footer-admin">Administrado por Diego Palacios Brockhaus</div>
+    </div>
+  </div>
+
+  <!-- Modal preview imagen Informe Diario -->
+  <div class="inf-img-modal" id="inf-img-preview-modal" onclick="infCloseImagePreview(event)">
+    <div class="inf-img-card">
+      <div class="inf-img-head">
+        <div class="inf-img-title">Vista previa de imagen (WhatsApp)</div>
+        <button class="inf-img-close" onclick="infCloseImagePreview()">×</button>
+      </div>
+      <div class="inf-img-body">
+        <div id="inf-img-preview-status" class="inf-img-status">Generando vista previa…</div>
+        <img id="inf-img-preview-el" alt="Vista previa informe diario" style="display:none;">
+      </div>
+      <div class="inf-img-actions">
+        <button onclick="infPreviewDownload()">📥 Descargar</button>
+        <button onclick="infPreviewShare()" class="ok">📲 Compartir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal preview texto WhatsApp -->
+  <div class="inf-wa-modal" id="inf-wa-modal" onclick="infCloseWhatsappPreview(event)">
+    <div class="inf-wa-card">
+      <div class="inf-wa-head">
+        <div class="inf-wa-title">Vista previa texto WhatsApp</div>
+        <button class="inf-wa-close" onclick="infCloseWhatsappPreview()">×</button>
+      </div>
+      <div class="inf-wa-body">
+        <div class="inf-wa-pre" id="inf-wa-preview">Genera el informe para ver el texto.</div>
+      </div>
+      <div class="inf-wa-actions">
+        <button onclick="infCloseWhatsappPreview()">Cerrar</button>
+        <button class="ok" onclick="infCopiarTextoDesdePreview()">Copiar texto</button>
+      </div>
     </div>
   </div>
 
@@ -6350,7 +6430,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.16';
+const APP_VERSION = '2026.04.07.18';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -12688,6 +12768,8 @@ function _postLoadSetup() {
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
+  if (!state.sacCajaChica)              state.sacCajaChica              = 0;
+  if (typeof state.sacCajaChicaNota !== 'string') state.sacCajaChicaNota = '';
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
@@ -16474,6 +16556,128 @@ function infCiPropinaRowHTML(propina) {
   return `<div class="ci-row"><span class="ci-row-name">Propina del día</span><span class="ci-row-amt">${infFmt(propina)}</span></div>`;
 }
 
+let _infPreviewDataUrl = '';
+function infBuildImageCanvas() {
+  const card = document.getElementById('inf-card-imagen');
+  card.style.left   = '0';
+  card.style.top    = '0';
+  card.style.zIndex = '-1';
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      html2canvas(card, { scale:2.5, useCORS:true, backgroundColor:'#0f0e0c', logging:false })
+        .then((canvas) => {
+          card.style.left = '-9999px';
+          card.style.zIndex = '';
+          resolve(canvas);
+        })
+        .catch((err) => {
+          card.style.left = '-9999px';
+          card.style.zIndex = '';
+          reject(err);
+        });
+    }, 140);
+  });
+}
+
+function infOpenImagePreview() {
+  if (!_infData) { notify('⚠ Genera el informe primero'); return; }
+  const modal = document.getElementById('inf-img-preview-modal');
+  const img = document.getElementById('inf-img-preview-el');
+  const status = document.getElementById('inf-img-preview-status');
+  if (!modal || !img || !status) return;
+  modal.classList.add('open');
+  img.style.display = 'none';
+  status.style.display = '';
+  status.textContent = 'Generando vista previa…';
+  infBuildImageCanvas()
+    .then(canvas => {
+      _infPreviewDataUrl = canvas.toDataURL('image/png');
+      img.src = _infPreviewDataUrl;
+      img.style.display = '';
+      status.style.display = 'none';
+    })
+    .catch(() => {
+      status.textContent = 'No se pudo generar la imagen.';
+      notify('⚠ Error al generar vista previa');
+    });
+}
+
+function infCloseImagePreview(e) {
+  if (e && e.target !== document.getElementById('inf-img-preview-modal')) return;
+  const modal = document.getElementById('inf-img-preview-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function infPreviewDownload() {
+  if (!_infPreviewDataUrl) { notify('⚠ Primero genera la vista previa'); return; }
+  const link = document.createElement('a');
+  link.download = `informe-aqui-jaime-${_infData?.fecha||'hoy'}.png`;
+  link.href = _infPreviewDataUrl;
+  link.click();
+  notify('📸 Imagen descargada');
+}
+
+function infPreviewShare() {
+  if (!_infPreviewDataUrl) { notify('⚠ Primero genera la vista previa'); return; }
+  fetch(_infPreviewDataUrl)
+    .then(r => r.blob())
+    .then(blob => {
+      const file = new File([blob], 'informe-aqui-jaime.png', {type:'image/png'});
+      if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+        return navigator.share({files:[file], title:'Informe Aquí Jaime'});
+      }
+      infPreviewDownload();
+      return null;
+    })
+    .catch(() => notify('⚠ No se pudo compartir la imagen'));
+}
+
+function infBuildWhatsappText() {
+  const d = _infData; if (!d) return '';
+  const hayIng = d.ingNombres.some((n,i)=>n||d.ingMontos[i]);
+  const hayCar = d.carNombres.some((n,i)=>n||d.carMontos[i]) || !!d.propina;
+  const totalEgresos = d.totalCar + (d.propina||0);
+  let t = `*Informe Diario Financiero — Aquí Jaime*\n`;
+  t += `📅 ${infFechaLegible(d.fecha)}\n\n`;
+  t += `🏦 Banco inicial / cuenta empresa:  ${infFmt(d.banco)}\n`;
+  t += `📊 Venta de ayer:  ${infFmt(d.venta)}\n`;
+  t += `🗃 Caja:           ${infFmt(d.caja)}\n`;
+  t += `\n`;
+  t += `💚 *INGRESOS*\n`;
+  if (!hayIng) t += `Sin ingresos registrados\n`;
+  else d.ingNombres.forEach((n,i)=>{ if(!n&&!d.ingMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.ingMontos[i])}\n`; });
+  t += `*Total ▸ ${infFmt(d.totalIng)}*\n\n`;
+  t += `🔴 *EGRESOS*\n`;
+  if (!hayCar) t += `Sin cargas registradas\n`;
+  else d.carNombres.forEach((n,i)=>{ if(!n&&!d.carMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.carMontos[i])}\n`; });
+  if (d.propina) t += `├ Propina del día: ${infFmt(d.propina)}\n`;
+  t += `*Total ▸ ${infFmt(totalEgresos)}*\n\n`;
+  t += `━━━━━━━━━━━━━━━━━\n`;
+  t += (d.saldo<0?`⚠️`:`✅`) + ` *SALDO FINAL: ${infFmt(d.saldo)}*\n`;
+  t += `━━━━━━━━━━━━━━━━━`;
+  if (d.notas) t += `\n\n📝 ${d.notas}`;
+  return t;
+}
+
+function infOpenWhatsappPreview() {
+  if (!_infData) { notify('⚠ Genera el informe primero'); return; }
+  const modal = document.getElementById('inf-wa-modal');
+  const pre = document.getElementById('inf-wa-preview');
+  if (!modal || !pre) return;
+  pre.textContent = infBuildWhatsappText();
+  modal.classList.add('open');
+}
+
+function infCloseWhatsappPreview(e) {
+  if (e && e.target !== document.getElementById('inf-wa-modal')) return;
+  const modal = document.getElementById('inf-wa-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function infCopiarTextoDesdePreview() {
+  infCopiarTexto(true);
+}
+
 function infGenerar() {
   const d = infRecolectar();
   const totalEgresos = d.totalCar + d.propina;
@@ -16525,6 +16729,7 @@ function infGenerar() {
   document.getElementById('inf-btn-txt').textContent = '💬 Copiar WhatsApp';
 
   setTimeout(() => document.getElementById('inf-preview').scrollIntoView({behavior:'smooth',block:'start'}), 120);
+  setTimeout(() => infOpenImagePreview(), 180);
 
   // #5: Auto-save to state for persistence
   infGuardarEnState();
@@ -16533,29 +16738,22 @@ function infGenerar() {
 function infGuardarImagen() {
   if (!_infData) return;
   const btn  = document.getElementById('inf-btn-img');
-  const card = document.getElementById('inf-card-imagen');
   btn.textContent = '⏳ Generando...'; btn.disabled = true;
-  card.style.left   = '0';
-  card.style.top    = '0';
-  card.style.zIndex = '-1';
-
-  setTimeout(() => {
-    html2canvas(card, { scale:2.5, useCORS:true, backgroundColor:'#0f0e0c', logging:false })
-      .then(canvas => {
-        card.style.left = '-9999px'; card.style.zIndex = '';
-        btn.textContent = '📸 Guardar imagen'; btn.disabled = false;
-        canvas.toBlob(blob => {
-          const file = new File([blob], 'informe-aqui-jaime.png', {type:'image/png'});
-          if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
-            navigator.share({files:[file], title:'Informe Aquí Jaime'}).catch(()=>infDescargar(canvas));
-          } else { infDescargar(canvas); }
-        }, 'image/png');
-      })
-      .catch(() => {
-        card.style.left='-9999px'; btn.textContent='📸 Guardar imagen'; btn.disabled=false;
-        notify('⚠ Error al generar la imagen');
-      });
-  }, 150);
+  infBuildImageCanvas()
+    .then(canvas => {
+      btn.textContent = '📸 Guardar imagen'; btn.disabled = false;
+      _infPreviewDataUrl = canvas.toDataURL('image/png');
+      canvas.toBlob(blob => {
+        const file = new File([blob], 'informe-aqui-jaime.png', {type:'image/png'});
+        if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+          navigator.share({files:[file], title:'Informe Aquí Jaime'}).catch(()=>infDescargar(canvas));
+        } else { infDescargar(canvas); }
+      }, 'image/png');
+    })
+    .catch(() => {
+      btn.textContent='📸 Guardar imagen'; btn.disabled=false;
+      notify('⚠ Error al generar la imagen');
+    });
 }
 
 function infDescargar(canvas) {
@@ -16566,41 +16764,21 @@ function infDescargar(canvas) {
   notify('📸 Imagen guardada — compártela por WhatsApp');
 }
 
-function infCopiarTexto() {
-  const d = _infData; if (!d) return;
-  const hayIng = d.ingNombres.some((n,i)=>n||d.ingMontos[i]);
-  const hayCar = d.carNombres.some((n,i)=>n||d.carMontos[i]) || !!d.propina;
-  const totalEgresos = d.totalCar + (d.propina||0);
-  let t = `*Informe Diario Financiero — Aquí Jaime*\n`;
-  t += `📅 ${infFechaLegible(d.fecha)}\n\n`;
-  t += `🏦 Banco inicial / cuenta empresa:  ${infFmt(d.banco)}\n`;
-  t += `📊 Venta de ayer:  ${infFmt(d.venta)}\n`;
-  t += `🗃 Caja:           ${infFmt(d.caja)}\n`;
-  t += `\n`;
-  t += `💚 *INGRESOS*\n`;
-  if (!hayIng) t += `Sin ingresos registrados\n`;
-  else d.ingNombres.forEach((n,i)=>{ if(!n&&!d.ingMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.ingMontos[i])}\n`; });
-  t += `*Total ▸ ${infFmt(d.totalIng)}*\n\n`;
-  t += `🔴 *EGRESOS*\n`;
-  if (!hayCar) t += `Sin cargas registradas\n`;
-  else d.carNombres.forEach((n,i)=>{ if(!n&&!d.carMontos[i])return; t+=`├ ${n||'—'}: ${infFmt(d.carMontos[i])}\n`; });
-  if (d.propina) t += `├ Propina del día: ${infFmt(d.propina)}\n`;
-  t += `*Total ▸ ${infFmt(totalEgresos)}*\n\n`;
-  t += `━━━━━━━━━━━━━━━━━\n`;
-  t += (d.saldo<0?`⚠️`:`✅`) + ` *SALDO FINAL: ${infFmt(d.saldo)}*\n`;
-  t += `━━━━━━━━━━━━━━━━━`;
-  if (d.notas) t += `\n\n📝 ${d.notas}`;
-
+function infCopiarTexto(fromPreview) {
+  const t = infBuildWhatsappText();
+  if (!t) return;
   navigator.clipboard.writeText(t).then(()=>{
     const btn = document.getElementById('inf-btn-txt');
     btn.textContent = '¡Copiado! ✓'; btn.classList.add('copied');
     notify('💬 Texto copiado para WhatsApp');
+    if (fromPreview) infCloseWhatsappPreview();
     setTimeout(()=>{ btn.textContent='💬 Copiar WhatsApp'; btn.classList.remove('copied'); }, 3000);
   }).catch(()=>{
     const ta = document.createElement('textarea');
     ta.value=t; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
     notify('💬 Texto copiado para WhatsApp');
+    if (fromPreview) infCloseWhatsappPreview();
   });
 }
 
@@ -19013,7 +19191,7 @@ function propEliminar(idx) {
   propRender(); updateTotalDisponible();
 }
 
-// Misma base que Semana actual: período SAC (sacDataKey) + banco/propinas + caja física = sacEfectivo
+// Misma base que Semana actual: período SAC (sacDataKey) + banco/propinas + caja física + caja chica
 function updateTotalDisponible() {
   let ventaReal = 0, diasCerrados = 0;
   try {
@@ -19028,9 +19206,11 @@ function updateTotalDisponible() {
     }
   } catch (e) {}
   const cajaSac       = Math.round(state.sacEfectivo || 0);
+  const cajaChica     = Math.round(state.sacCajaChica || 0);
+  const cajaChicaNota = (state.sacCajaChicaNota || '').trim();
   const banco         = state.cajaEmpresa?.banco || 0;
   const propPendiente = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
-  const total         = (banco - propPendiente) + cajaSac;
+  const total         = (banco - propPendiente) + cajaSac + cajaChica;
 
   const inp = document.getElementById('dash-banco-empresa');
   if (inp && !inp.matches(':focus')) inp.value = banco > 0 ? banco : '';
@@ -19038,7 +19218,7 @@ function updateTotalDisponible() {
   if (updEl) updEl.textContent = state.cajaEmpresa?.bancoUpd ? 'Act. '+state.cajaEmpresa.bancoUpd : '';
 
   const panel = document.getElementById('dash-total-disponible');
-  if (panel) panel.style.display = (ventaReal>0||banco>0||cajaSac>0) ? '' : 'none';
+  if (panel) panel.style.display = (ventaReal>0||banco>0||cajaSac>0||cajaChica>0) ? '' : 'none';
 
   const plbl = document.getElementById('dash-disp-period-lbl');
   if (plbl) plbl.textContent = (typeof sacPeriodLabel === 'function') ? '📅 ' + sacPeriodLabel() : '';
@@ -19048,9 +19228,9 @@ function updateTotalDisponible() {
   set2('disp-venta-sub', diasCerrados + ' día' + (diasCerrados!==1?'s':'') + ' cerrado' + (diasCerrados!==1?'s':'') + ' en período actual (referencia, no sumada)');
   set2('disp-banco',    fmt(banco - propPendiente));
   set2('disp-banco-sub', propPendiente>0 ? `Banco ${fmt(banco)} − propinas ${fmt(propPendiente)}` : (state.cajaEmpresa?.bancoUpd?'Act. '+state.cajaEmpresa.bancoUpd:'No ingresado'));
-  set2('disp-caja',     fmt(cajaSac));
+  set2('disp-caja',     fmt(cajaSac + cajaChica));
   const cjSub = document.getElementById('disp-caja-sub');
-  if (cjSub) cjSub.textContent = 'Efectivo · campo Caja en Semana actual (mismo que balance SAC)';
+  if (cjSub) cjSub.textContent = `Caja ${fmt(cajaSac)} + Caja Chica ${fmt(cajaChica)}${cajaChicaNota ? ' · ' + cajaChicaNota : ''}`;
   set2('disp-total',    fmt(total));
   const totEl = document.getElementById('disp-total');
   if (totEl) totEl.style.color = total > 0 ? 'var(--success)' : 'var(--danger)';
@@ -20139,6 +20319,12 @@ function sacRender() {
   const efInp = document.getElementById('sac-efectivo');
   if (efInp && document.activeElement !== efInp)
     efInp.value = state.sacEfectivo || '';
+  const ccInp = document.getElementById('sac-caja-chica');
+  if (ccInp && document.activeElement !== ccInp)
+    ccInp.value = state.sacCajaChica || '';
+  const ccNotaInp = document.getElementById('sac-caja-chica-nota');
+  if (ccNotaInp && document.activeElement !== ccNotaInp)
+    ccNotaInp.value = state.sacCajaChicaNota || '';
 
   const merc = state.sacMerc || {mode:'monto', val:0};
   const rMonto = document.getElementById('sac-merc-monto');
@@ -20292,6 +20478,21 @@ function sacSetEfectivo(val) {
   const inp = document.getElementById('sac-efectivo');
   if (inp && document.activeElement !== inp) formatNumericInputValue(inp);
   sacCalcBalance();
+  if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
+  markUnsaved();
+}
+
+function sacSetCajaChica(val) {
+  state.sacCajaChica = Math.max(0, parseNumCL(val, false));
+  const inp = document.getElementById('sac-caja-chica');
+  if (inp && document.activeElement !== inp) formatNumericInputValue(inp);
+  sacCalcBalance();
+  if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
+  markUnsaved();
+}
+
+function sacSetCajaChicaNota(val) {
+  state.sacCajaChicaNota = String(val || '').trim();
   if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
   markUnsaved();
 }
@@ -20589,9 +20790,10 @@ function sacGetBalanceEstimado() {
   const key = sacDataKey();
   const banco     = state.cajaEmpresa?.banco || 0;
   const efectivo  = state.sacEfectivo || 0;
+  const cajaChica = state.sacCajaChica || 0;
   const propPend  = (state.propinas||[]).reduce((s,p)=>s+(p.estado==='pendiente'?p.monto:0),0);
   const bancoReal = Math.round(banco - propPend);
-  const disponible= Math.round(bancoReal + efectivo);
+  const disponible= Math.round(bancoReal + efectivo + cajaChica);
 
   const cargas    = sacBaseCargas(sacGetCargas(key));
   const mercMonto = Math.round(sacGetMercMonto());
@@ -20667,7 +20869,7 @@ function sacCalcBalance() {
   if (balEl) balEl.style.color = balance >= 0 ? 'var(--success)' : 'var(--danger)';
   if (balEl) balEl.textContent = (balance<0?'-':'')+fmt(Math.abs(balance));
   if (subEl) {
-    let subTxt = `Disp. ${fmt(disponible)} + Vta.Est. ${fmt(ventasEstPendientes)}`;
+    let subTxt = `Disp. ${fmt(disponible)} (Caja ${fmt(state.sacEfectivo||0)} + C.Chica ${fmt(state.sacCajaChica||0)}) + Vta.Est. ${fmt(ventasEstPendientes)}`;
     if (ingresosPorIngresar > 0) subTxt += ` + Ing.Pend. ${fmt(ingresosPorIngresar)}`;
     if (otrosIngPend > 0) subTxt += ` + Ing.extra SAC ${fmt(otrosIngPend)}`;
     subTxt += ` − Por pagar ${fmt(porPagar)}`;
