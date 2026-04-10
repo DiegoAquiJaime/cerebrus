@@ -3243,18 +3243,18 @@ body.dark-mode .conflict-overlay{
         <div class="sac-kpi" style="border-left:4px solid #3b82f6;">
           <div class="sac-kpi-lbl">🏦 Cuenta bancaria empresa <span class="sac-help" title="Saldo actual en cuenta bancaria de la empresa. Lo ingresas manualmente y se usa en: Total disponible = Banco + Caja.">?</span></div>
           <input class="sac-kpi-inp" id="sac-banco" type="text" inputmode="decimal" placeholder="$0 (usa - para negativo)"
-            onchange="sacSetBanco(this.value)" style="color:#3b82f6;">
+            onchange="sacSetBanco(this.value)" onblur="formatNumericInputValue(this)" style="color:#3b82f6;">
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-banco-upd"></div>
         </div>
         <div class="sac-kpi" style="border-left:4px solid var(--accent2);">
           <div class="sac-kpi-lbl">🗃 Efectivo en caja <span class="sac-help" title="Efectivo físico disponible hoy. Lo ingresas manualmente y se suma al banco para calcular el total disponible.">?</span></div>
           <input class="sac-kpi-inp" id="sac-efectivo" type="text" inputmode="numeric" placeholder="$0"
-            onchange="sacSetEfectivo(this.value)" style="color:var(--accent2);">
+            onchange="sacSetEfectivo(this.value)" onblur="formatNumericInputValue(this)" style="color:var(--accent2);">
         </div>
         <div class="sac-kpi" style="border-left:4px solid #0ea5e9;">
           <div class="sac-kpi-lbl">🔐 Caja chica / caja fuerte <span class="sac-help" title="Dinero adicional disponible (p.ej. dólares convertidos o caja fuerte). Se suma al disponible y al balance de la semana.">?</span></div>
           <input class="sac-kpi-inp" id="sac-caja-chica" type="text" inputmode="numeric" placeholder="$0"
-            onchange="sacSetCajaChica(this.value)" style="color:#0ea5e9;">
+            onchange="sacSetCajaChica(this.value)" onblur="formatNumericInputValue(this)" style="color:#0ea5e9;">
           <input class="sac-v-inp" id="sac-caja-chica-nota" type="text" placeholder="Nota opcional (ej: USD en caja fuerte)"
             onchange="sacSetCajaChicaNota(this.value)" style="margin-top:6px;text-align:left;font-weight:600;">
         </div>
@@ -20314,14 +20314,14 @@ function sacRender() {
 
   const bancoInp = document.getElementById('sac-banco');
   if (bancoInp && document.activeElement !== bancoInp)
-    bancoInp.value = state.cajaEmpresa?.banco || '';
+    bancoInp.value = (state.cajaEmpresa?.banco || 0) ? fmtCL(state.cajaEmpresa?.banco || 0, 0, 2) : '';
 
   const efInp = document.getElementById('sac-efectivo');
   if (efInp && document.activeElement !== efInp)
-    efInp.value = state.sacEfectivo || '';
+    efInp.value = (state.sacEfectivo || 0) ? fmtCL(state.sacEfectivo || 0, 0, 2) : '';
   const ccInp = document.getElementById('sac-caja-chica');
   if (ccInp && document.activeElement !== ccInp)
-    ccInp.value = state.sacCajaChica || '';
+    ccInp.value = (state.sacCajaChica || 0) ? fmtCL(state.sacCajaChica || 0, 0, 2) : '';
   const ccNotaInp = document.getElementById('sac-caja-chica-nota');
   if (ccNotaInp && document.activeElement !== ccNotaInp)
     ccNotaInp.value = state.sacCajaChicaNota || '';
