@@ -7601,9 +7601,9 @@ function vsLoadWeekIntoTable() {
     const eInp = document.getElementById('vs-est-'+i);
     const rInp = document.getElementById('vs-real-'+i);
     const cInp = document.getElementById('vs-caja-'+i);
-    if (eInp && document.activeElement !== eInp) eInp.value = d.est  || '';
-    if (rInp && document.activeElement !== rInp) rInp.value = d.real || '';
-    if (cInp && document.activeElement !== cInp) cInp.value = d.caja || '';
+    if (eInp && document.activeElement !== eInp) eInp.value = d.est  ? fmtCL(d.est,0,2) : '';
+    if (rInp && document.activeElement !== rInp) rInp.value = d.real ? fmtCL(d.real,0,2) : '';
+    if (cInp && document.activeElement !== cInp) cInp.value = d.caja ? fmtCL(d.caja,0,2) : '';
     vsApplyRowState(i, d);
   });
   vsCalcTotals();
@@ -7652,7 +7652,7 @@ function vsSetVal(dayIdx, field, val) {
   days[dayIdx][field] = Math.max(0, parseNumCL(val, false)||0);
   // Only update the single input that owns this field
   const inp = document.getElementById('vs-'+field+'-'+dayIdx);
-  if (inp && document.activeElement !== inp) inp.value = days[dayIdx][field] || '';
+  if (inp && document.activeElement !== inp) inp.value = days[dayIdx][field] ? fmtCL(days[dayIdx][field],0,2) : '';
   vsCalcTotals();
 }
 
@@ -7716,7 +7716,7 @@ function vsCalcTotals() {
   const extraSub = document.getElementById('vs-extra-sub');
   if (extraSub) extraSub.textContent = extraMonto>0?'Meta con extra: '+fmt(totalEstConExtra):'Manejado manualmente';
   const extraInp = document.getElementById('vs-extra-inp');
-  if (extraInp && document.activeElement !== extraInp) extraInp.value = extraMonto||'';
+  if (extraInp && document.activeElement !== extraInp) extraInp.value = extraMonto ? fmtCL(extraMonto,0,2) : '';
 
   // Summary cards
   const diff    = totalReal - totalEstConExtra;
@@ -7782,7 +7782,7 @@ function vsRender() {
 }
 
 function vsSetExtra(val) {
-  const monto = parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  const monto = Math.max(0, parseNumCL(val, false));
   vsGetExtra(vsWeek).monto = monto;
   vsCalcTotals();
 }
@@ -20107,13 +20107,13 @@ function sacLoadVentas() {
     const eInp = document.getElementById('sac-vest-' + i);
     const rInp = document.getElementById('sac-vreal-' + i);
     const d = days[i] || {};
-    if (eInp && document.activeElement !== eInp) eInp.value = d.est || '';
-    if (rInp && document.activeElement !== rInp) rInp.value = d.real || '';
+    if (eInp && document.activeElement !== eInp) eInp.value = d.est ? fmtCL(d.est,0,2) : '';
+    if (rInp && document.activeElement !== rInp) rInp.value = d.real ? fmtCL(d.real,0,2) : '';
   }
   const exEInp = document.getElementById('sac-vest-extra');
   const exRInp = document.getElementById('sac-vreal-extra');
-  if (exEInp && document.activeElement !== exEInp) exEInp.value = extraMonto || '';
-  if (exRInp && document.activeElement !== exRInp) exRInp.value = extraReal || '';
+  if (exEInp && document.activeElement !== exEInp) exEInp.value = extraMonto ? fmtCL(extraMonto,0,2) : '';
+  if (exRInp && document.activeElement !== exRInp) exRInp.value = extraReal ? fmtCL(extraReal,0,2) : '';
 
   sacCalcVentas();
 }
