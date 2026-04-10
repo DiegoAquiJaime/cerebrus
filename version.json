@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.10",
-  "notes": "Override final de Glass en dark-mode para que sí se note visualmente (fondo, nav/topbar, cards, modales y overlays)."
+  "version": "2026.04.07.12",
+  "notes": "Formato Chile extendido en más módulos: egresos, facturas, créditos, informe e inventario; parseo coma decimal y miles con punto en blur."
 }

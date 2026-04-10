@@ -5757,7 +5757,7 @@ function handleAmountInput(inputEl, key, id) {
   const item = (state[key]||[]).find(i => i.id===id);
   if (!item) return;
   const raw = inputEl.value;
-  const parsed = parseFloat(raw.replace(/[^\d.-]/g,''));
+  const parsed = parseNumCL(raw, true);
   // Only update state + calc if parseable; don't block typing
   if (!isNaN(parsed)) {
     item.amount = parsed;
@@ -5783,8 +5783,9 @@ function handleAmountBlur(inputEl, key, id) {
   const item = (state[key]||[]).find(i => i.id===id);
   if (!item) return;
   const raw = inputEl.value;
-  const parsed = parseFloat(raw.replace(/[^\d.-]/g,''));
+  const parsed = parseNumCL(raw, true);
   validateAmount(key, item.name, raw, isNaN(parsed) ? raw : parsed, inputEl);
+  formatNumericInputValue(inputEl);
 }
 
 function setField(key, id, field, value) {
@@ -6050,8 +6051,9 @@ function doSearch(q) {
 //  META DE VENTA
 // ============================================================
 function calcMeta() {
-  const raw  = (document.getElementById('meta-input').value||'').replace(/[^\d]/g,'');
-  const meta  = parseInt(raw,10) || 0;
+  const metaEl = document.getElementById('meta-input');
+  const raw  = metaEl ? metaEl.value : '';
+  const meta  = parseNumCL(raw, false) || 0;
   const venta = (state.ingresos&&state.ingresos[0]) ? state.ingresos[0].amount*state.ingresos[0].freq : 0;
   const merc  = secTotal('mercaderia');
   const margen = venta - merc;
@@ -6251,8 +6253,8 @@ function ingUpdateSaldo() {
   const item = (_ingModalKey && _ingModalId) ? (state[_ingModalKey]||[]).find(i=>i.id===_ingModalId) : null;
   if (!item) return;
   const montoEsp = item.amount * item.freq;
-  const raw  = (document.getElementById('ing-monto-real').value||'').replace(/[^\d]/g,'');
-  const real = parseInt(raw||'0', 10);
+  const raw  = (document.getElementById('ing-monto-real').value||'');
+  const real = parseNumCL(raw, false);
   if (!raw || _ingMontoSel === 'igual') return;
   const diff = real - montoEsp;
   const lbl  = document.getElementById('ing-diff-label');
@@ -6286,8 +6288,8 @@ function ingConfirmar() {
   if (!item) return;
   if (!_ingMontoSel) { notify('⚠ Elige si el monto fue el mismo, más o menos'); return; }
   const montoEsp = item.amount * item.freq;
-  const rawReal  = (document.getElementById('ing-monto-real').value||'').replace(/[^\d]/g,'');
-  const realAmt  = _ingMontoSel === 'igual' ? montoEsp : parseInt(rawReal||'0', 10);
+  const rawReal  = (document.getElementById('ing-monto-real').value||'');
+  const realAmt  = _ingMontoSel === 'igual' ? montoEsp : parseNumCL(rawReal, false);
   if (_ingMontoSel !== 'igual' && !realAmt) { notify('⚠ Ingresa el monto real recibido'); return; }
   if (_ingMontoSel === 'menos' && realAmt < montoEsp && !_ingSaldoSel) {
     notify('⚠ Elige qué hacer con el saldo pendiente'); return;
@@ -6336,7 +6338,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.10';
+const APP_VERSION = '2026.04.07.12';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7647,7 +7649,7 @@ function vsFieldBlur(inp) {
 function vsSetVal(dayIdx, field, val) {
   const days = vsGetWeek(vsWeek);
   if (days[dayIdx].cerrado && field !== 'est') return;
-  days[dayIdx][field] = Math.max(0, parseFloat(val)||0);
+  days[dayIdx][field] = Math.max(0, parseNumCL(val, false)||0);
   // Only update the single input that owns this field
   const inp = document.getElementById('vs-'+field+'-'+dayIdx);
   if (inp && document.activeElement !== inp) inp.value = days[dayIdx][field] || '';
@@ -8015,7 +8017,7 @@ function confirmCredPago() {
   if (!_credModal) return;
   const c = (state.creditos||[]).find(x=>x.id===_credModal);
   if (!c) return;
-  const monto = parseInt((document.getElementById('cred-modal-amount').value||'').replace(/[^\d]/g,''),10);
+  const monto = parseNumCL(document.getElementById('cred-modal-amount').value||'', false);
   if (!monto || monto <= 0) { notify('⚠ Ingresa un monto válido'); return; }
   const saldo = credSaldo(c);
   if (monto > saldo + 1) { notify('⚠ El monto supera el saldo de ' + fmt(saldo)); return; }
@@ -8059,8 +8061,8 @@ function saveCred() {
     otor = (document.getElementById('cn-otorgado-custom').value||'').trim();
     if (!otor) { notify('⚠ Escribe el nombre del acreedor'); document.getElementById('cn-otorgado-custom').focus(); return; }
   }
-  const valor  = parseInt((document.getElementById('cn-valor').value||'').replace(/[^\d]/g,''),10);
-  const total  = parseInt((document.getElementById('cn-total').value||'').replace(/[^\d]/g,''),10);
+  const valor  = parseNumCL(document.getElementById('cn-valor').value||'', false);
+  const total  = parseNumCL(document.getElementById('cn-total').value||'', false);
   const cuotas = parseInt(document.getElementById('cn-cuotas').value,10) || 16;
   const fecha  = document.getElementById('cn-fecha').value;
   if (!nro||!valor||!total||!fecha) { notify('⚠ Completa todos los campos'); return; }
@@ -9413,10 +9415,10 @@ function facRenderDetail() {
   const desde   = document.getElementById('fac-date-desde').value;
   const hasta   = document.getElementById('fac-date-hasta').value;
   const estFil  = document.getElementById('fac-filter-estado').value;
-  const montoMinRaw = (document.getElementById('fac-monto-min').value||'').replace(/[^\d]/g,'');
-  const montoMaxRaw = (document.getElementById('fac-monto-max').value||'').replace(/[^\d]/g,'');
-  const montoMin = montoMinRaw ? parseInt(montoMinRaw) : null;
-  const montoMax = montoMaxRaw ? parseInt(montoMaxRaw) : null;
+  const montoMinRaw = (document.getElementById('fac-monto-min').value||'');
+  const montoMaxRaw = (document.getElementById('fac-monto-max').value||'');
+  const montoMin = montoMinRaw ? parseNumCL(montoMinRaw, false) : null;
+  const montoMax = montoMaxRaw ? parseNumCL(montoMaxRaw, false) : null;
   const today   = new Date();
 
   function parseDate(str) {
@@ -9531,7 +9533,7 @@ function facSaveModal() {
   const rutNew = normRut((document.getElementById('fac-modal-rut') && document.getElementById('fac-modal-rut').value) || '');
   const emiNew = (document.getElementById('fac-modal-emision') && document.getElementById('fac-modal-emision').value || '').trim();
   const venNew = (document.getElementById('fac-modal-vence') && document.getElementById('fac-modal-vence').value || '').trim();
-  const newM = parseInt((document.getElementById('fac-modal-monto').value||'').replace(/[^\d]/g,''),10);
+  const newM = parseNumCL(document.getElementById('fac-modal-monto').value||'', false);
   if (!newM || newM <= 0) {
     notify('⚠ Monto inválido');
     return;
@@ -9598,7 +9600,7 @@ function facSaveNuevaFactura() {
   const nro  = (document.getElementById('fn-nro').value||'').trim();
   const rut  = normRut(document.getElementById('fn-rut').value||'');
   const em   = document.getElementById('fn-emision').value;
-  const monto= parseInt((document.getElementById('fn-monto').value||'').replace(/[^\d]/g,''),10);
+  const monto= parseNumCL(document.getElementById('fn-monto').value||'', false);
   const vence= document.getElementById('fn-vence').value;
   const est  = document.getElementById('fn-estado').value;
   const com  = (document.getElementById('fn-comment').value||'').trim();
@@ -13628,7 +13630,7 @@ function invRenderPedido() {
 function invFindOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.id!==semId)return null;return sem.ordenes.find(o=>o.id===ordenId);}
 function invFindItem(orden,prodId){return orden?.items.find(it=>it.prodId===prodId);}
 
-function invSetOrdenQty(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.qty=parseFloat((val||'0').replace(/[^\d.]/g,''))||0;invUpdateSemKpis();}
+function invSetOrdenQty(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.qty=parseNumCL(val,false)||0;invUpdateSemKpis();}
 function invSetOrdenProv(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.prov=val;const prod=state.inventario.find(p=>p.id===prodId);const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===val);if(pe&&pe.precio)it.precio=pe.precio;invRenderPedido();}
 function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
 function invToggleRecibido(semId,ordenId,prodId){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.recibido=!it.recibido;if(it.recibido&&!it.qtyRecibida)it.qtyRecibida=it.qty;invRenderPedido();}
@@ -13700,7 +13702,7 @@ function cuadAbrir(sem) {
 
 function cuadActualizarDiff(prodId, ini, pedido, unidad) {
   const inp   = document.getElementById(`cuad-sf-${prodId}`); if(!inp) return;
-  const final = parseFloat(inp.value) || 0;
+  const final = parseNumCL(inp.value, false) || 0;
   const consumo = ini + pedido - final;
   const diffEl  = document.getElementById(`cuad-diff-${prodId}`); if(!diffEl) return;
   if (consumo > 0) {
@@ -13725,7 +13727,7 @@ function cuadRenderMermas() {
       <input class="cuad-inp" type="text" value="${esc(m.desc)}"
         onchange="_cuadMermas[${i}].desc=this.value" placeholder="Descripción (Ej: Salmón en mal estado)">
       <input class="cuad-inp" type="text" inputmode="decimal" value="${m.qty}"
-        onchange="_cuadMermas[${i}].qty=parseFloat(this.value)||0;cuadActualizarResumen(invGetSemana())"
+        onchange="_cuadMermas[${i}].qty=parseNumCL(this.value,false)||0;cuadActualizarResumen(invGetSemana())"
         placeholder="Qty">
       <div style="display:flex;gap:6px;align-items:center;">
         <input class="cuad-inp" type="text" value="${esc(m.unidad)}" placeholder="u/kg/L"
@@ -13763,7 +13765,7 @@ function cuadActualizarResumen(sem) {
     const ini    = sem.stockInicial[prodId]||0;
     const pedido = sem.ordenes.reduce((s,o)=>{const it=o.items.find(x=>x.prodId===prodId);return s+(it?.qty||0);},0);
     const inp    = document.getElementById(`cuad-sf-${prodId}`);
-    const final  = inp ? parseFloat(inp.value)||0 : prod.stock||0;
+    const final  = inp ? parseNumCL(inp.value, false)||0 : prod.stock||0;
     const consumo = ini + pedido - final;
     totalConsumo += Math.max(0, consumo);
     if (Math.abs(consumo - pedido) > 0.01) hayDiff = true;
@@ -13802,7 +13804,7 @@ function cuadConfirmar() {
   for (const prodId of prodsPedidos) {
     const prod = state.inventario.find(p=>p.id===prodId); if(!prod) continue;
     const inp  = document.getElementById(`cuad-sf-${prodId}`);
-    const val  = inp ? parseFloat(inp.value) : prod.stock||0;
+    const val  = inp ? parseNumCL(inp.value, false) : prod.stock||0;
     stockFinal[prodId] = isNaN(val) ? 0 : val;
     prod.stock = stockFinal[prodId];
   }
@@ -13896,11 +13898,11 @@ function invRenderSugerencias() {
   }).join('');
 }
 
-function invSugUpdate(prodId,val){const prod=state.inventario.find(p=>p.id===prodId);if(!prod)return;const qty=parseFloat(val)||0;set('sug-tot-'+prodId,qty*invBestPrice(prod)>0?fmt(qty*invBestPrice(prod)):'—');}
+function invSugUpdate(prodId,val){const prod=state.inventario.find(p=>p.id===prodId);if(!prod)return;const qty=parseNumCL(val,false)||0;set('sug-tot-'+prodId,qty*invBestPrice(prod)>0?fmt(qty*invBestPrice(prod)):'—');}
 
 function invAceptarSugerencia(prodId) {
   const sem=invGetSemana(); if(!sem||sem.cerrada){notify('⚠ Inicia una semana primero');return;}
-  const qty=parseFloat(document.getElementById('sug-qty-'+prodId)?.value||0)||0; if(!qty){notify('⚠ Cantidad es 0');return;}
+  const qty=parseNumCL(document.getElementById('sug-qty-'+prodId)?.value||0,false)||0; if(!qty){notify('⚠ Cantidad es 0');return;}
   const it=sem.ordenes[0]?.items.find(x=>x.prodId===prodId); if(!it) return;
   pushUndo(); it.qty=qty;
   const prod=state.inventario.find(p=>p.id===prodId);
@@ -13983,7 +13985,7 @@ function invExportPorProveedor() {
 
 function invTogglePedido(){ invSubTab('pedido'); }
 function invExportPedido(){ invExportPorProveedor(); }
-function invUpdateQty(id,val){const p=state.inventario.find(x=>x.id===id);if(!p)return;pushUndo();p.qty=parseFloat(val||0)||0;invCheckKpis();}
+function invUpdateQty(id,val){const p=state.inventario.find(x=>x.id===id);if(!p)return;pushUndo();p.qty=parseNumCL(val||0,false)||0;invCheckKpis();}
 
 function invToggleForm() {
   const f = document.getElementById('inv-form');
@@ -14073,8 +14075,8 @@ function invSave() {
     familia: famVal,
     subfamilia: subVal,
     unidad: document.getElementById('inv-f-unidad').value||'unidad',
-    stock:  parseFloat(document.getElementById('inv-f-stock').value||0)||0,
-    minimo: parseFloat(document.getElementById('inv-f-minimo')?.value||0)||0,
+    stock:  parseNumCL(document.getElementById('inv-f-stock').value||0,false)||0,
+    minimo: parseNumCL(document.getElementById('inv-f-minimo')?.value||0,false)||0,
     qty:    0, prov, precios: prov?[{prov,precio:0}]:[]
   });
   invToggleForm(); invRender();
@@ -14180,7 +14182,7 @@ function invQuickMov(prodId, tipo, opts) {
   overlay.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('qm-save').click(); });
 
   document.getElementById('qm-save').onclick = () => {
-    const cantidad = parseFloat(document.getElementById('qm-qty').value) || 0;
+    const cantidad = parseNumCL(document.getElementById('qm-qty').value, false) || 0;
     if (!cantidad) { notify('⚠ Ingresa una cantidad'); return; }
     const unidad   = document.getElementById('qm-unidad').value || prod.unidad || 'u';
     const destino  = document.getElementById('qm-dest')?.value || cfg.destDefault;
@@ -14251,7 +14253,7 @@ function invQuickMovMenu(prodId) {
 
 function invQuickMovFromRow(prodId, tipo, qtyInputId) {
   const raw = (document.getElementById(qtyInputId)?.value || '').trim().replace(',', '.');
-  const qty = parseFloat(raw) || 0;
+  const qty = parseNumCL(raw, false) || 0;
   if (qty <= 0) {
     notify('⚠ Indica la cantidad a mover en "cant."');
     return;
@@ -14400,7 +14402,7 @@ function movEliminar(id) {
         notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
       } else if (accion === '2') {
         const val = prompt(`¿Cuánto devolver al stock? (máx: ${mov.cantidad})`, '');
-        const qty = parseFloat(val)||0;
+        const qty = parseNumCL(val,false)||0;
         if (qty > 0) {
           prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
           notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
@@ -14424,7 +14426,7 @@ function movEliminar(id) {
         notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} descontados del stock`);
       } else if (accion === '2') {
         const val = prompt(`¿Cuánto descontar del stock? (máx: ${mov.cantidad})`, '');
-        const qty = parseFloat(val)||0;
+        const qty = parseNumCL(val,false)||0;
         if (qty > 0) {
           prod.stock = Math.max(0, (prod.stock||0) - Math.min(qty, mov.cantidad));
           notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} descontados del stock`);
@@ -14447,7 +14449,7 @@ function movEliminar(id) {
         notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} recuperados al stock`);
       } else if (accion === '2') {
         const val = prompt(`¿Cuánto recuperar al stock? (máx: ${mov.cantidad})`, '');
-        const qty = parseFloat(val)||0;
+        const qty = parseNumCL(val,false)||0;
         if (qty > 0) {
           prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
           notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} recuperados al stock`);
@@ -14469,7 +14471,7 @@ function movEliminar(id) {
         notify(`↩ ${mov.cantidad} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
       } else if (accion === '2') {
         const val = prompt(`¿Cuánto devolver al stock? (máx: ${mov.cantidad})`, '');
-        const qty = parseFloat(val)||0;
+        const qty = parseNumCL(val,false)||0;
         if (qty > 0) {
           prod.stock = (prod.stock||0) + Math.min(qty, mov.cantidad);
           notify(`↩ ${Math.min(qty, mov.cantidad)} ${mov.unidad||'u'} de ${prod.nombre} devueltos al stock`);
@@ -14603,7 +14605,7 @@ function movAbrirModal(tipo) {
     const prod     = (state.inventario||[]).find(p=>p.id===prodId);
     if (!prod) { notify('⚠ Selecciona un producto'); return; }
 
-    const cantidad = parseFloat(document.getElementById('mov-cantidad').value)||0;
+    const cantidad = parseNumCL(document.getElementById('mov-cantidad').value,false)||0;
     if (!cantidad) { notify('⚠ Ingresa una cantidad'); return; }
 
     const destino  = document.getElementById('mov-destino').value;
@@ -14639,10 +14641,10 @@ function movAbrirModal(tipo) {
       }
 
     } else if (tipo === 'preelaboracion') {
-      const regresa = parseFloat(document.getElementById('mov-qty-regresa')?.value)||0;
-      const merma   = parseFloat(document.getElementById('mov-qty-merma')?.value)||0;
+      const regresa = parseNumCL(document.getElementById('mov-qty-regresa')?.value,false)||0;
+      const merma   = parseNumCL(document.getElementById('mov-qty-merma')?.value,false)||0;
       const valorUnitRaw = (document.getElementById('mov-valor-unit')?.value || '').replace(/\./g,'').replace(',','.');
-      const valorUnit = parseFloat(valorUnitRaw) || 0;
+      const valorUnit = parseNumCL(valorUnitRaw,false) || 0;
 
       // Descontar del stock los que entran a preelaboración
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
@@ -15170,7 +15172,7 @@ function conteoSetStock(prodId, val) {
   const p = (state.inventario||[]).find(x=>x.id===prodId);
   if (!p) return;
   pushUndo();
-  p.stock = parseFloat(val) || 0;
+  p.stock = parseNumCL(val,false) || 0;
   markUnsaved();
   // Update border color instantly
   const inp = document.getElementById('conteo-inp-'+prodId);
@@ -15511,8 +15513,8 @@ function invEditProd(id) {
     if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
     if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
     p.unidad = document.getElementById('inv-ep-unidad').value;
-    p.stock  = parseFloat(document.getElementById('inv-ep-stock').value)||0;
-    p.minimo = parseFloat(document.getElementById('inv-ep-minimo').value)||0;
+    p.stock  = parseNumCL(document.getElementById('inv-ep-stock').value,false)||0;
+    p.minimo = parseNumCL(document.getElementById('inv-ep-minimo').value,false)||0;
     close();
     invRender();
     markUnsaved();
@@ -20515,7 +20517,7 @@ function sacSaveIngresoEdit(id) {
   if (!it) return;
   pushUndo();
   it.nombre = (document.getElementById('sin-nombre-' + id)?.value || '').trim() || it.nombre;
-  it.monto = parseInt((document.getElementById('sin-monto-' + id)?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  it.monto = parseNumCL(document.getElementById('sin-monto-' + id)?.value || '0', false) || 0;
   it.nota = (document.getElementById('sin-nota-' + id)?.value || '').trim() || '';
   sacRenderIngresos();
   sacCalcBalance();
@@ -20636,7 +20638,7 @@ function sacRenderFinanciamientoPanel() {
 
 function sacGuardarFinanciamientoRegistro() {
   const B = sacGetBalanceEstimado();
-  const monto = parseInt((document.getElementById('sac-fin-monto')?.value || '0').replace(/[^\d]/g, ''), 10) || 0;
+  const monto = parseNumCL(document.getElementById('sac-fin-monto')?.value || '0', false) || 0;
   const detalle = (document.getElementById('sac-fin-detalle')?.value || '').trim();
   if (!monto) { notify('⚠ Ingresa el monto que aportó o financió Sebas'); return; }
   if (B.balance >= 0) {
@@ -20781,7 +20783,7 @@ function sacEditMonto(id) {
   const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   const v = prompt(`Monto real pagado para "${c.nombre}"\n(Proyectado: ${fmt(c.monto)})`, c.montoReal??c.monto);
   if (v === null) return;
-  const real = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
+  const real = parseNumCL((v||'0'), false)||0;
   pushUndo();
   c.montoReal = real;
   c.estado    = real === c.monto ? 'pagado' : real < c.monto ? 'parcial' : 'pagado';
@@ -20808,7 +20810,7 @@ function sacPagarParcial(id) {
     ''
   );
   if (v === null) return;
-  const abono = parseInt((v||'0').replace(/[^\d]/g,''),10)||0;
+  const abono = parseNumCL((v||'0'), false)||0;
   if (!abono) { notify('⚠ Ingresa un monto válido'); return; }
 
   pushUndo();
@@ -20883,7 +20885,7 @@ function sacSaveEdit(id) {
   pushUndo();
   c.nombre = document.getElementById('se-nombre-'+id)?.value || c.nombre;
   c.cat    = document.getElementById('se-cat-'+id)?.value    || c.cat;
-  c.monto  = parseInt((document.getElementById('se-monto-'+id)?.value||'0').replace(/[^\d]/g,''),10)||0;
+  c.monto  = parseNumCL((document.getElementById('se-monto-'+id)?.value||'0'), false)||0;
   c.resp   = document.getElementById('se-resp-'+id)?.value   || '';
   c.nota   = document.getElementById('se-nota-'+id)?.value   || '';
   sacTouchCarga(c);
