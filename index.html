@@ -6338,7 +6338,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.14';
+const APP_VERSION = '2026.04.07.15';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6724,8 +6724,17 @@ function parseNumCL(raw, allowNegative) {
   } else {
     // only dot or plain digits
     const parts = s.split('.');
-    if (parts.length > 2) n = parseFloat(parts.join('')) || 0; // dots as thousand separators
-    else n = parseFloat(s) || 0;
+    if (parts.length === 1) {
+      n = parseFloat(s) || 0;
+    } else if (parts.length === 2) {
+      const left = parts[0], right = parts[1];
+      // Chilean common case: "580.000" (thousands, not decimals)
+      if (/^\d+$/.test(left) && /^\d{3}$/.test(right)) n = parseFloat(left + right) || 0;
+      else n = parseFloat(s) || 0;
+    } else {
+      // multiple dots => treat as thousands separators
+      n = parseFloat(parts.join('')) || 0;
+    }
   }
   return neg ? -n : n;
 }
@@ -20361,7 +20370,7 @@ function sacRenderCargas() {
         ${c.resp?`<div style="font-size:9px;color:#94a3b8;">→ ${esc(c.resp)}</div>`:''}
         ${c.nota?`<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(c.nota)}</div>`:''}
       </div>
-      <div style="text-align:right;min-width:90px;">
+      <div style="text-align:right;min-width:128px;">
         <div class="sac-monto" style="color:${c.estado==='pagado'?'var(--success)':c.estado==='pausa'?'#6366f1':'var(--danger)'};">
           ${fmt(montoEf)}</div>
         ${c.monto !== montoEf?`<div style="font-size:9px;text-decoration:line-through;color:#94a3b8;">${fmt(c.monto)}</div>`:''}
@@ -20450,7 +20459,7 @@ function sacRenderIngresos() {
         <div class="sac-nombre">${esc(it.nombre || '(sin nombre)')}</div>
         ${it.nota ? `<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(it.nota)}</div>` : ''}
       </div>
-      <div style="text-align:right;min-width:90px;">
+      <div style="text-align:right;min-width:128px;">
         <div class="sac-monto" style="color:${esRec ? '#94a3b8' : 'var(--success)'};">${fmt(it.monto || 0)}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
