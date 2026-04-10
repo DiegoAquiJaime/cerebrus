@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.15",
-  "notes": "Fix parser Chile para casos con punto de miles (ej. 580.000) y ampliar ancho de montos en listas de egresos."
+  "version": "2026.04.07.16",
+  "notes": "Créditos: pago con fecha manual y usuario; historial por crédito y columna de último pago en tabla."
 }

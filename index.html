@@ -506,6 +506,8 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-modal-input-label{font-size:11px;font-weight:700;color:#9aacb8;text-transform:uppercase;margin-bottom:6px;}
 .cred-modal-input{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:10px 12px;font-family:inherit;font-size:14px;text-align:right;color:var(--primary);background:transparent;margin-bottom:12px;}
 .cred-modal-input:focus{outline:none;border-color:var(--success);}
+.cred-modal-input-date,.cred-modal-input-user{width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;margin-bottom:10px;}
+.cred-modal-input-date:focus,.cred-modal-input-user:focus{outline:none;border-color:var(--accent);}
 .cred-modal-footer{display:flex;gap:8px;}
 .cred-modal-ok{flex:1;background:var(--success);color:white;border:none;border-radius:6px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
 .cred-modal-cancel{background:none;border:1px solid var(--border);border-radius:6px;padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--primary);}
@@ -3808,6 +3810,7 @@ body.dark-mode .conflict-overlay{
             <th>Cuotas Rest.</th>
             <th>Progreso</th>
             <th>Fecha</th>
+            <th>Último pago</th>
             <th>Estado</th>
             <th></th>
           </tr></thead>
@@ -3829,6 +3832,15 @@ body.dark-mode .conflict-overlay{
         <div class="cred-modal-info" id="cred-modal-info"></div>
         <div class="cred-modal-input-label">Monto a registrar</div>
         <input type="text" inputmode="numeric" class="cred-modal-input" id="cred-modal-amount" placeholder="$750.000">
+        <div class="cred-modal-input-label">Fecha de pago (manual)</div>
+        <input type="date" class="cred-modal-input-date" id="cred-modal-paydate">
+        <div class="cred-modal-input-label">Pagado por</div>
+        <select class="cred-modal-input-user" id="cred-modal-user">
+          <option value="Diego">Diego</option>
+          <option value="Sebastián">Sebastián</option>
+          <option value="Alberto">Alberto</option>
+          <option value="Otro">Otro</option>
+        </select>
         <div style="font-size:10px;color:#9aacb8;margin-bottom:12px;" id="cred-modal-hint"></div>
         <div class="cred-modal-footer">
           <button class="cred-modal-cancel" onclick="closeCredModalBtn()">Cancelar</button>
@@ -6338,7 +6350,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.15';
+const APP_VERSION = '2026.04.07.16';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7910,6 +7922,18 @@ let _credModal  = null;
 function credSaldo(c)   { return Math.max(0, (c.valorPagar||0) - (c.totalPagado||0)); }
 function credCuotaVal(c){ return (c.totalCuotas||0) > 0 ? Math.round((c.valorPagar||0) / c.totalCuotas) : CRED_CUOTA_STD; }
 function credPaid(c)    { return credSaldo(c) <= 0; }
+function credLastPago(c){
+  const arr = Array.isArray(c && c.pagosHist) ? c.pagosHist : [];
+  if (!arr.length) return null;
+  return arr.slice().sort((a,b)=>(b.ts||0)-(a.ts||0))[0] || null;
+}
+function credLastPagoTxt(c){
+  const p = credLastPago(c);
+  if (!p) return '—';
+  const f = p.fecha || '';
+  const u = p.user || '—';
+  return `${f} · ${u}`;
+}
 
 function calcCredKpis() {
   if (!state.creditos) return;
@@ -7954,7 +7978,7 @@ function renderCreditos() {
   if (!tbody) return;
   const visible = state.creditos.filter(credVisible);
   if (!visible.length) {
-    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#9aacb8;padding:24px 0;">No hay créditos en esta categoría.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#9aacb8;padding:24px 0;">No hay créditos en esta categoría.</td></tr>';
     return;
   }
   tbody.innerHTML = visible.map(c => {
@@ -7985,6 +8009,7 @@ function renderCreditos() {
         </div>
       </td>
       <td style="font-size:10px;color:#9aacb8;">${c.fechaEmision}</td>
+      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;">${esc(credLastPagoTxt(c))}</td>
       <td>${badge}</td>
       <td>${pagarBtn}</td>
     </tr>`;
@@ -8009,6 +8034,14 @@ function openCredModal(credId) {
          <div class="cred-modal-info-val" style="color:var(--success)">${fmt(cuotaV)}</div></div>`;
   const inp = document.getElementById('cred-modal-amount');
   inp.value = cuotaV;
+  const pd = document.getElementById('cred-modal-paydate');
+  if (pd) pd.value = new Date().toISOString().slice(0,10);
+  const pu = document.getElementById('cred-modal-user');
+  if (pu) {
+    const by = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'Diego';
+    const allowed = ['Diego','Sebastián','Alberto'];
+    pu.value = allowed.includes(by) ? by : 'Otro';
+  }
   set('cred-modal-hint', 'Cuota estándar: ' + fmt(cuotaV) + '. Puedes cambiar el monto si el pago es distinto.');
   document.getElementById('credModal').classList.add('open');
   setTimeout(() => { inp.focus(); inp.select(); }, 80);
@@ -8030,14 +8063,28 @@ function confirmCredPago() {
   if (!monto || monto <= 0) { notify('⚠ Ingresa un monto válido'); return; }
   const saldo = credSaldo(c);
   if (monto > saldo + 1) { notify('⚠ El monto supera el saldo de ' + fmt(saldo)); return; }
+  const payDateRaw = document.getElementById('cred-modal-paydate')?.value || '';
+  if (!payDateRaw) { notify('⚠ Ingresa la fecha de pago'); return; }
+  const [yy,mm,dd] = payDateRaw.split('-');
+  const payDate = `${dd}-${mm}-${yy}`;
+  let payUser = (document.getElementById('cred-modal-user')?.value || '').trim();
+  if (!payUser) payUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '—';
+  if (payUser === 'Otro') {
+    const u = prompt('¿Quién realizó este pago?', (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '');
+    if (!u || !u.trim()) { notify('⚠ Debes indicar quién realizó el pago'); return; }
+    payUser = u.trim();
+  }
   pushUndo();
   c.totalPagado  = Math.min(c.valorPagar, c.totalPagado + monto);
   const nuevoSaldo = credSaldo(c);
   c.cuotasRest   = nuevoSaldo <= 0 ? 0 : Math.max(0, Math.round(nuevoSaldo / credCuotaVal(c)));
+  if (!Array.isArray(c.pagosHist)) c.pagosHist = [];
+  c.pagosHist.unshift({ monto, fecha: payDate, user: payUser, ts: Date.now() });
+  if (c.pagosHist.length > 80) c.pagosHist.length = 80;
   closeCredModalBtn();
   renderCreditos();
-  if (nuevoSaldo <= 0) notify('🎉 ¡' + c.id + ' completamente pagado!');
-  else notify('✓ Pago registrado en ' + c.id + ' — saldo: ' + fmt(nuevoSaldo));
+  if (nuevoSaldo <= 0) notify('🎉 ¡' + c.id + ' completamente pagado! · ' + payDate + ' · ' + payUser);
+  else notify('✓ Pago registrado en ' + c.id + ' — saldo: ' + fmt(nuevoSaldo) + ' · ' + payDate + ' · ' + payUser);
 }
 
 function toggleNuevoCred() {
@@ -8082,7 +8129,7 @@ function saveCred() {
   state.creditos.push({
     id:nro, otorgado:otor, valorOtorgado:valor, valorPagar:total,
     totalPagado:0, cuotasRest:cuotas, totalCuotas:cuotas,
-    fechaEmision:`${dd}-${mm}-${yyyy}`
+    fechaEmision:`${dd}-${mm}-${yyyy}`, pagosHist:[]
   });
   // Resetear formulario
   document.getElementById('cn-otorgado').value = 'alberto';
