@@ -1538,6 +1538,25 @@ body.dark-mode .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color
 .sac-kpi-val{font-size:19px;font-weight:900;letter-spacing:-.5px;}
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
 .sac-kpi-inp:focus{border-color:var(--accent);}
+.sac-reserva-panel{background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.28);box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px 16px;margin-bottom:18px;}
+.sac-reserva-title{font-size:12px;font-weight:800;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.sac-reserva-grid{display:grid;grid-template-columns:minmax(120px,160px) 1fr 1.4fr;gap:14px;align-items:start;}
+@media(max-width:1000px){.sac-reserva-grid{grid-template-columns:1fr;}}
+.sac-reserva-saldo-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
+.sac-reserva-saldo-val{font-size:22px;font-weight:900;color:#a855f7;letter-spacing:-.02em;}
+.sac-reserva-sub{font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;}
+.sac-reserva-col input[type="text"]{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:6px;font-family:inherit;background:transparent;color:var(--primary);}
+.sac-reserva-salida-row{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;}
+@media(max-width:520px){.sac-reserva-salida-row{grid-template-columns:1fr;}}
+.sac-reserva-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.sac-reserva-btns .fac-btn{font-size:10px;padding:7px 10px;}
+.sac-reserva-hist{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
+.sac-reserva-hist-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;}
+.sac-res-mov{font-size:11px;padding:5px 0;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.sac-res-mov:last-child{border-bottom:none;}
+.sac-res-mov .muted{color:#94a3b8;font-size:10px;}
+body.dark-mode .sac-reserva-panel{background:#1c1c1e;border-color:rgba(255,255,255,.08);}
+body.dark-mode .sac-res-mov{border-color:#334155;}
 .sac-main{display:flex;flex-direction:column;gap:16px;align-items:stretch;}
 .sac-row-ing-cargas{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:16px;align-items:start;}
 @media(max-width:900px){.sac-row-ing-cargas{grid-template-columns:1fr;}}
@@ -3276,6 +3295,42 @@ body.dark-mode .conflict-overlay{
           <div class="sac-kpi-lbl">📈 Venta real acumulada <span class="sac-help" title="Suma de ventas reales cargadas en el período (referencia). Ese dinero se asume ya reflejado en banco/caja; no se suma otra vez al balance.">?</span></div>
           <div class="sac-kpi-val" id="sac-vreal-acum" style="color:var(--success);">$0</div>
           <div style="font-size:9px;color:#94a3b8;margin-top:2px;" id="sac-vreal-acum-sub">Ya ingresada a caja/banco</div>
+        </div>
+      </div>
+
+      <!-- Reserva: no entra al balance; transferencias a cajas/banco actualizan esos campos -->
+      <div class="sac-reserva-panel" id="sac-reserva-panel">
+        <div class="sac-reserva-title">
+          🛡️ Reserva <span class="sac-help" title="Fondo aparte que NO suma al balance estimado de la semana. Ingresa dinero aquí y luego puedes moverlo por partes a Caja principal, Caja chica, Banco u otro destino (solo registro).">?</span>
+        </div>
+        <div class="sac-reserva-grid">
+          <div>
+            <div class="sac-reserva-saldo-lbl">Saldo en Reserva</div>
+            <div class="sac-reserva-saldo-val" id="sac-reserva-saldo-val">$0</div>
+          </div>
+          <div class="sac-reserva-col">
+            <div class="sac-reserva-sub">Ingreso a Reserva</div>
+            <input type="text" inputmode="decimal" id="sac-reserva-ing-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
+            <input type="text" id="sac-reserva-ing-concepto" placeholder="Concepto (opcional)">
+            <button type="button" class="fac-btn primary" style="font-size:11px;padding:8px 12px;" onclick="sacReservaIngresar()">Agregar a Reserva</button>
+          </div>
+          <div class="sac-reserva-col">
+            <div class="sac-reserva-sub">Salida desde Reserva (parcial)</div>
+            <div class="sac-reserva-salida-row">
+              <input type="text" inputmode="decimal" id="sac-reserva-salida-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
+              <input type="text" id="sac-reserva-salida-concepto" placeholder="Para qué es *">
+            </div>
+            <div class="sac-reserva-btns">
+              <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja')">→ Caja principal</button>
+              <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja_chica')">→ Caja chica</button>
+              <button type="button" class="fac-btn" onclick="sacReservaTransferir('banco')">→ Banco empresa</button>
+              <button type="button" class="fac-btn" title="Solo descuenta de Reserva (pago externo u otro destino)" onclick="sacReservaTransferir('otro')">→ Otro</button>
+            </div>
+          </div>
+        </div>
+        <div class="sac-reserva-hist">
+          <div class="sac-reserva-hist-title">Últimos movimientos</div>
+          <div id="sac-reserva-movs"></div>
         </div>
       </div>
 
@@ -6430,7 +6485,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.19';
+const APP_VERSION = '2026.04.07.20';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -12752,6 +12807,8 @@ function _postLoadSetup() {
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
   if (!state.sacCajaChica)              state.sacCajaChica              = 0;
   if (typeof state.sacCajaChicaNota !== 'string') state.sacCajaChicaNota = '';
+  if (typeof state.sacReservaSaldo !== 'number' || isNaN(state.sacReservaSaldo)) state.sacReservaSaldo = 0;
+  if (!Array.isArray(state.sacReservaMovs)) state.sacReservaMovs = [];
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
@@ -20316,6 +20373,7 @@ function sacRender() {
   sacUpdateToolbarDesc();
   sacRenderHistorialCierres();
   if (typeof cerebrusBitacoraRenderLists === 'function') cerebrusBitacoraRenderLists();
+  sacRenderReservaPanel();
 }
 
 function sacLoadVentas() {
@@ -20470,6 +20528,88 @@ function sacSetCajaChicaNota(val) {
   state.sacCajaChicaNota = String(val || '').trim();
   if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
   markUnsaved();
+}
+
+function sacReservaEnsure() {
+  if (typeof state.sacReservaSaldo !== 'number' || isNaN(state.sacReservaSaldo)) state.sacReservaSaldo = 0;
+  if (!Array.isArray(state.sacReservaMovs)) state.sacReservaMovs = [];
+}
+
+function sacReservaIngresar() {
+  sacReservaEnsure();
+  const m = parseNumCL(document.getElementById('sac-reserva-ing-monto')?.value || '', false);
+  if (!m || m <= 0) { notify('⚠ Ingresa un monto válido'); return; }
+  const concepto = (document.getElementById('sac-reserva-ing-concepto')?.value || '').trim();
+  pushUndo();
+  state.sacReservaSaldo = (state.sacReservaSaldo || 0) + m;
+  state.sacReservaMovs.unshift({
+    id: 'r' + Date.now(),
+    ts: Date.now(),
+    tipo: 'ingreso',
+    monto: m,
+    concepto: concepto,
+    destino: ''
+  });
+  if (state.sacReservaMovs.length > 80) state.sacReservaMovs.length = 80;
+  const im = document.getElementById('sac-reserva-ing-monto');
+  const ic = document.getElementById('sac-reserva-ing-concepto');
+  if (im) im.value = '';
+  if (ic) ic.value = '';
+  sacRenderReservaPanel();
+  markUnsaved();
+  notify('✓ Ingreso a Reserva: ' + fmt(m));
+}
+
+function sacReservaTransferir(dest) {
+  sacReservaEnsure();
+  const m = parseNumCL(document.getElementById('sac-reserva-salida-monto')?.value || '', false);
+  const concepto = (document.getElementById('sac-reserva-salida-concepto')?.value || '').trim();
+  if (!concepto) { notify('⚠ Indica para qué es el egreso'); return; }
+  if (!m || m <= 0) { notify('⚠ Ingresa un monto válido'); return; }
+  const saldo = state.sacReservaSaldo || 0;
+  if (m > saldo + 0.01) { notify('⚠ Saldo insuficiente en Reserva (' + fmt(saldo) + ')'); return; }
+  pushUndo();
+  state.sacReservaSaldo = saldo - m;
+  const mov = { id: 'r' + Date.now(), ts: Date.now(), tipo: 'salida', monto: m, concepto: concepto, destino: dest };
+  if (dest === 'caja') {
+    state.sacEfectivo = (state.sacEfectivo || 0) + m;
+  } else if (dest === 'caja_chica') {
+    state.sacCajaChica = (state.sacCajaChica || 0) + m;
+  } else if (dest === 'banco') {
+    if (!state.cajaEmpresa) state.cajaEmpresa = {};
+    state.cajaEmpresa.banco = (state.cajaEmpresa.banco || 0) + m;
+    state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  }
+  state.sacReservaMovs.unshift(mov);
+  if (state.sacReservaMovs.length > 80) state.sacReservaMovs.length = 80;
+  const sm = document.getElementById('sac-reserva-salida-monto');
+  const sc = document.getElementById('sac-reserva-salida-concepto');
+  if (sm) sm.value = '';
+  if (sc) sc.value = '';
+  sacRender();
+  markUnsaved();
+  const destTxt = { caja: 'Caja principal', caja_chica: 'Caja chica', banco: 'Banco empresa', otro: 'Otro (solo egreso)' }[dest] || dest;
+  notify('✓ ' + fmt(m) + ' desde Reserva → ' + destTxt);
+}
+
+function sacRenderReservaPanel() {
+  sacReservaEnsure();
+  const v = document.getElementById('sac-reserva-saldo-val');
+  if (v) v.textContent = fmt(state.sacReservaSaldo || 0);
+  const el = document.getElementById('sac-reserva-movs');
+  if (!el) return;
+  const movs = (state.sacReservaMovs || []).slice(0, 25);
+  const dl = { caja: '→ Caja principal', caja_chica: '→ Caja chica', banco: '→ Banco empresa', otro: '→ Otro' };
+  if (!movs.length) {
+    el.innerHTML = '<div style="font-size:11px;color:#94a3b8;">Sin movimientos aún.</div>';
+    return;
+  }
+  el.innerHTML = movs.map(function(m) {
+    const isIn = m.tipo === 'ingreso';
+    const side = isIn ? '<span style="color:var(--success);font-weight:800;">+</span>' : '<span style="color:var(--danger);font-weight:800;">−</span>';
+    const dest = !isIn && m.destino ? '<span class="muted">' + (dl[m.destino] || m.destino) + '</span>' : '';
+    return '<div class="sac-res-mov"><span>' + side + ' ' + fmt(m.monto) + ' · ' + esc(m.concepto || '—') + '</span> ' + dest + '</div>';
+  }).join('');
 }
 
 // ── CARGAS RENDER ──

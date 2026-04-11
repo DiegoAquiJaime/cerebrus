@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.19",
-  "notes": "OCR Google Drive: más espacio entre peticiones y reintentos automáticos ante límite de cuota (rate limit)."
+  "version": "2026.04.07.20",
+  "notes": "Semana Actual: Reserva (no afecta balance) con ingresos, egresos parciales y transferencias a Caja principal, Caja chica, Banco u Otro."
 }
