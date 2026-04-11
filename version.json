@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.20",
-  "notes": "Semana Actual: Reserva (no afecta balance) con ingresos, egresos parciales y transferencias a Caja principal, Caja chica, Banco u Otro."
+  "version": "2026.04.07.21",
+  "notes": "Semana Actual ingresos: monto total con recepciones parciales (◑ Recibir parcial) y saldo pendiente en balance."
 }

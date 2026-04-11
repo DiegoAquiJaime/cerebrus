@@ -3400,10 +3400,10 @@ body.dark-mode .conflict-overlay{
         <!-- OTROS INGRESOS (semana) -->
         <div class="sac-ingresos-card">
           <div class="sac-cargas-head sac-ingresos-head">
-            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Aportes o ingresos extra fuera de la venta diaria. Pendiente suma al balance; Recibido se considera ya ingresado en caja/banco.">?</span></div>
+            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></div>
             <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
           </div>
-          <p style="font-size:9px;color:#64748b;padding:5px 12px 0;margin:0;line-height:1.35;">Aportes fuera de venta diaria · Pendiente suma al balance; Recibido = ya en caja (actualizá banco/caja).</p>
+          <p style="font-size:9px;color:#64748b;padding:5px 12px 0;margin:0;line-height:1.35;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
           <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
           <div class="sac-footer" style="border-top:1px solid var(--border);">
             <div class="sac-foot-kpi">
@@ -6485,7 +6485,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.07.20';
+const APP_VERSION = '2026.04.07.21';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -20796,10 +20796,23 @@ function sacCalcCargasTotals() {
   }
 }
 
+/** Monto ya recibido (total o parcial acumulado). */
+function sacIngresoRecibidoAcum(it) {
+  if (!it) return 0;
+  if (typeof it.recibidoAcum === 'number' && it.recibidoAcum > 0) return Math.min(it.monto || 0, it.recibidoAcum);
+  if (it.estado === 'recibido') return it.monto || 0;
+  return 0;
+}
+/** Lo que falta por ingresar respecto al monto total del ítem. */
+function sacIngresoPendiente(it) {
+  const m = it.monto || 0;
+  return Math.max(0, m - sacIngresoRecibidoAcum(it));
+}
+
 function sacCalcIngresosTotals() {
   const arr = sacGetIngresos();
-  const pend = Math.round(arr.filter(x => x.estado !== 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
-  const rec = Math.round(arr.filter(x => x.estado === 'recibido').reduce((s, x) => s + (x.monto || 0), 0));
+  const pend = Math.round(arr.reduce((s, x) => s + sacIngresoPendiente(x), 0));
+  const rec = Math.round(arr.reduce((s, x) => s + sacIngresoRecibidoAcum(x), 0));
   const set2 = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   set2('sac-ing-pend', fmt(pend));
   set2('sac-ing-recib', fmt(rec));
@@ -20815,18 +20828,28 @@ function sacRenderIngresos() {
     return;
   }
   list.innerHTML = arr.map(it => {
-    const esRec = it.estado === 'recibido';
-    return `<div class="sac-carga-row ingreso${esRec ? ' ingreso-recibido' : ''}" id="sac-ir-${it.id}">
-      <div><span class="sac-cat-badge" style="background:${esRec ? 'rgba(148,163,184,.2)' : 'rgba(16,185,129,.22)'};color:${esRec ? '#94a3b8' : 'var(--success)'};">${esRec ? 'Recibido' : 'Pendiente'}</span></div>
+    const recA = sacIngresoRecibidoAcum(it);
+    const pend = sacIngresoPendiente(it);
+    const esFullRec = pend <= 0.01 && (it.monto || 0) > 0;
+    const esParcial = recA > 0 && pend > 0.01;
+    let badgeTxt = 'Pendiente';
+    let badgeBg = 'rgba(16,185,129,.22)';
+    let badgeCol = 'var(--success)';
+    if (esFullRec) { badgeTxt = 'Recibido'; badgeBg = 'rgba(148,163,184,.2)'; badgeCol = '#94a3b8'; }
+    else if (esParcial) { badgeTxt = 'Parcial'; badgeBg = 'rgba(245,158,11,.18)'; badgeCol = 'var(--warning)'; }
+    return `<div class="sac-carga-row ingreso${esFullRec ? ' ingreso-recibido' : ''}" id="sac-ir-${it.id}">
+      <div><span class="sac-cat-badge" style="background:${badgeBg};color:${badgeCol};">${badgeTxt}</span></div>
       <div>
         <div class="sac-nombre">${esc(it.nombre || '(sin nombre)')}</div>
         ${it.nota ? `<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(it.nota)}</div>` : ''}
       </div>
       <div style="text-align:right;min-width:128px;">
-        <div class="sac-monto" style="color:${esRec ? '#94a3b8' : 'var(--success)'};">${fmt(it.monto || 0)}</div>
+        <div class="sac-monto" style="color:${esFullRec ? '#94a3b8' : 'var(--success)'};">Total ${fmt(it.monto || 0)}</div>
+        ${(it.monto || 0) > 0 ? `<div style="font-size:9px;color:#94a3b8;">Recib. ${fmt(recA)} · Falta ${fmt(pend)}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button type="button" class="sac-estado-btn ${esRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado('${it.id}')">${esRec ? '✓ Recibido' : '○ Pendiente'}</button>
+        ${pend > 0.5 ? `<button type="button" class="sac-estado-btn parcial" onclick="sacIngresoRecibirParcial('${it.id}')" title="Registrar solo una parte del monto total">◑ Recibir parcial</button>` : ''}
+        <button type="button" class="sac-estado-btn ${esFullRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado('${it.id}')">${esFullRec ? '✓ Todo recibido' : '○ Marcar todo'}</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
         <button type="button" onclick="sacDelIngreso('${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
@@ -20866,11 +20889,42 @@ function sacCycleIngresoEstado(id) {
   const it = sacGetIngresos().find(x => x.id === id);
   if (!it) return;
   pushUndo();
-  it.estado = it.estado === 'recibido' ? 'pendiente' : 'recibido';
+  const eraFull = sacIngresoPendiente(it) <= 0.01 && (it.monto || 0) > 0;
+  if (eraFull) {
+    it.estado = 'pendiente';
+    it.recibidoAcum = 0;
+  } else {
+    it.estado = 'recibido';
+    it.recibidoAcum = it.monto || 0;
+  }
   sacRenderIngresos();
   sacCalcBalance();
   markUnsaved();
-  notify(it.estado === 'recibido' ? '✓ Marcado como recibido — actualiza banco/caja si aplica' : '○ Pendiente otra vez (suma al balance estimado)');
+  notify(eraFull ? '○ Vuelve a pendiente (sin lo recibido)' : '✓ Marcado todo el monto como recibido — actualiza banco/caja si aplica');
+}
+
+function sacIngresoRecibirParcial(id) {
+  const it = sacGetIngresos().find(x => x.id === id);
+  if (!it) return;
+  const pend = sacIngresoPendiente(it);
+  if (pend <= 0) { notify('⚠ No hay monto pendiente en este ítem'); return; }
+  const raw = prompt('¿Cuánto ingresas ahora? (falta ' + fmt(pend) + ' de ' + fmt(it.monto || 0) + ')', '');
+  if (raw == null) return;
+  const add = parseNumCL(String(raw).trim(), false);
+  if (!add || add <= 0) { notify('⚠ Ingresa un monto válido'); return; }
+  if (add > pend + 0.5) { notify('⚠ No puede superar lo pendiente (' + fmt(pend) + ')'); return; }
+  pushUndo();
+  it.recibidoAcum = (typeof it.recibidoAcum === 'number' ? it.recibidoAcum : 0) + add;
+  if (it.recibidoAcum > (it.monto || 0)) it.recibidoAcum = it.monto || 0;
+  if (sacIngresoPendiente(it) <= 0.5) {
+    it.estado = 'recibido';
+  } else {
+    it.estado = 'parcial';
+  }
+  sacRenderIngresos();
+  sacCalcBalance();
+  markUnsaved();
+  notify('✓ Recibido ' + fmt(add) + ' · Falta ' + fmt(sacIngresoPendiente(it)));
 }
 
 function sacEditIngreso(id) {
@@ -20896,6 +20950,16 @@ function sacSaveIngresoEdit(id) {
   it.nombre = (document.getElementById('sin-nombre-' + id)?.value || '').trim() || it.nombre;
   it.monto = parseNumCL(document.getElementById('sin-monto-' + id)?.value || '0', false) || 0;
   it.nota = (document.getElementById('sin-nota-' + id)?.value || '').trim() || '';
+  if (typeof it.recibidoAcum === 'number' && it.recibidoAcum > it.monto) it.recibidoAcum = it.monto;
+  if (sacIngresoPendiente(it) <= 0.5) {
+    it.estado = 'recibido';
+    if (typeof it.recibidoAcum !== 'number' || it.recibidoAcum < it.monto) it.recibidoAcum = it.monto;
+  } else if ((it.recibidoAcum || 0) > 0) {
+    it.estado = 'parcial';
+  } else {
+    it.estado = 'pendiente';
+    it.recibidoAcum = 0;
+  }
   sacRenderIngresos();
   sacCalcBalance();
   markUnsaved();
@@ -20938,7 +21002,7 @@ function sacGetBalanceEstimado() {
     return s + (!i.confirmed ? (i.amount||0) : 0);
   }, 0));
 
-  const otrosIngPend = Math.round(sacGetIngresos(key).reduce((s, x) => s + (x.estado === 'recibido' ? 0 : (x.monto || 0)), 0));
+  const otrosIngPend = Math.round(sacGetIngresos(key).reduce((s, x) => s + sacIngresoPendiente(x), 0));
 
   const balance = Math.round(disponible + ventasEstPendientes + ingresosPorIngresar + otrosIngPend - porPagar);
 
