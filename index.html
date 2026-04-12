@@ -4314,6 +4314,12 @@ body.dark-mode .conflict-overlay{
             Stock + agregar productos nuevos
           </label>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;cursor:pointer;max-width:100%;box-sizing:border-box;">
+          <input type="checkbox" id="ai-inv-cantidad-en-cajas" style="margin-top:2px;flex-shrink:0;">
+          <span style="font-size:11px;color:#166534;line-height:1.45;">
+            <strong>Cantidades en cajas / embalaje</strong> (ficha o factura lista en cajas). Al aplicar, en cada <strong>producto que ya exista</strong> y tenga configurado “piezas por caja” en Editar, el stock se guardará como <strong>unidades de cocina</strong> (cantidad leída × ese número). Si el producto no tiene factor, se deja el número tal cual.
+          </span>
+        </label>
         <div class="ai-drop-zone" id="ai-inv-drop-zone"
           onclick="document.getElementById('ai-inv-file').click()"
           ondragover="event.preventDefault();this.classList.add('drag-over')"
@@ -4350,7 +4356,7 @@ body.dark-mode .conflict-overlay{
           </div>
           <div id="ai-inv-alerts" style="margin-top:10px;"></div>
         </div>
-        <div class="ai-api-note">Cantidades como 0,3 kg o 1.234,5 se interpretan al importar. Puedes editarlas con coma o punto. Los productos existentes actualizan stock; los nuevos solo en modo completo.</div>
+        <div class="ai-api-note">Cantidades como 0,3 kg o 1.234,5 se interpretan al importar. Puedes editarlas con coma o punto. Los productos existentes actualizan stock; los nuevos solo en modo completo. Si te equivocaste de escala, en <strong>Editar producto</strong> podés usar “Corregir conteo: el stock actual son cajas” o volver a importar con la casilla de cajas bien marcada.</div>
       </div>
       <div class="ai-modal-footer">
         <button class="fac-btn" onclick="closeAiInvModalBtn()">Cancelar</button>
@@ -4366,7 +4372,7 @@ body.dark-mode .conflict-overlay{
       <div class="ai-modal-head" style="background:linear-gradient(135deg,#0d9488,#059669);">
         <div>
           <h3 style="margin:0;">🔗 Importar desde facturas</h3>
-          <p style="margin:4px 0 0;font-size:12px;opacity:.95;">Elige qué facturas usar. Se importan líneas de detalle y precios por proveedor (facturas importadas con IA desde marzo 2026 guardan líneas). Los nombres se emparejan con tu inventario (incluso si la factura no escribe igual); solo en casos dudosos se pregunta.</p>
+          <p style="margin:4px 0 0;font-size:12px;opacity:.95;">Elige qué facturas usar. Se importan líneas de detalle y <strong>precios por proveedor</strong> (no se suma stock al inventario desde aquí). Los nombres se emparejan con tu inventario; solo en casos dudosos se pregunta.</p>
         </div>
       </div>
       <div class="ai-modal-body" style="overflow:auto;flex:1;">
@@ -16420,6 +16426,8 @@ function openAiInvImport() {
     if (saved) document.getElementById('ai-inv-api-key').value = saved;
     if (saved) document.getElementById('ai-api-key').value = saved;
   } catch(e){}
+  const cajChk = document.getElementById('ai-inv-cantidad-en-cajas');
+  if (cajChk) cajChk.checked = false;
   _aiInvRows = [];
   document.getElementById('ai-inv-preview').style.display   = 'none';
   document.getElementById('ai-inv-confirm').style.display   = 'none';
@@ -16645,11 +16653,13 @@ function aiInvRemoveRow(i) {
 function aiInvConfirm() {
   invInit();
   const mode     = document.querySelector('input[name="inv-mode"]:checked').value; // 'stock' o 'full'
+  const cantEnCajas = !!(document.getElementById('ai-inv-cantidad-en-cajas') && document.getElementById('ai-inv-cantidad-en-cajas').checked);
   const toImport = _aiInvRows.filter(r=>r._keep);
   if (!toImport.length) { notify('⚠ No hay productos para importar'); return; }
 
   pushUndo();
   let updated = 0, added = 0, skipped = 0;
+  let facConv = 0, facSinFactor = 0;
 
   toImport.forEach(r => {
     const targetName = r.nombreMatch || r.nombre;
@@ -16662,7 +16672,17 @@ function aiInvConfirm() {
     );
 
     if (existing) {
-      existing.stock = stock;
+      let stockFinal = stock;
+      if (cantEnCajas) {
+        const uxc = invPiezasPorEmbalaje(existing);
+        if (uxc > 0) {
+          stockFinal = stock * uxc;
+          facConv++;
+        } else {
+          facSinFactor++;
+        }
+      }
+      existing.stock = stockFinal;
       if (r.unidad && !existing.unidad) existing.unidad = r.unidad;
       if (r.categoria && (!existing.cat || existing.cat === 'Sin categoría' || existing.cat === 'Importado')) existing.cat = r.categoria;
       // Save price if present
@@ -16702,6 +16722,8 @@ function aiInvConfirm() {
   let msg = `✦ Inventario actualizado: ${updated} stock actualizado`;
   if (added)   msg += `, ${added} productos nuevos`;
   if (skipped) msg += `, ${skipped} nuevos omitidos (modo stock)`;
+  if (cantEnCajas && facConv) msg += ` · ${facConv} convertido(s) caja→unidad (factor configurado)`;
+  if (cantEnCajas && facSinFactor) msg += ` · ${facSinFactor} sin factor en ficha (stock sin multiplicar — configurá “piezas por caja” en Editar)`;
   notify(msg);
 }
 
