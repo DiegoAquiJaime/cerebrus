@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.07.21",
-  "notes": "Semana Actual ingresos: monto total con recepciones parciales (◑ Recibir parcial) y saldo pendiente en balance."
+  "version": "2026.04.11.1",
+  "notes": "Inventario Bodega N°3: plantilla en data/inventario-bodega-n3-plantilla.csv; inv-bodega-n3-data.js generado con scripts/parse-bodega-csv.mjs (orden proveedor, invOrden)."
 }
