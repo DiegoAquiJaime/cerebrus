@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.3",
-  "notes": "SAC: contraste títulos Otros ingresos, panel Reserva más compacto, más espacio columna ingresos/cargas y botones con wrap."
+  "version": "2026.04.11.4",
+  "notes": "SAC rediseño: columna única Ventas → Ingresos → Egresos; cabeceras contraste; Reserva compacta + movimientos en details."
 }
