@@ -270,14 +270,16 @@ tr:last-child td{border-bottom:none;}
 tr:hover td{background:rgba(0,0,0,0.015);}
 input[type="number"],input[type="text"]{border:1px solid var(--border);border-radius:10px;padding:8px 12px;width:100%;font-family:inherit;font-size:13px;background:rgba(0,0,0,0.02);color:var(--primary);transition:all .2s ease;}
 input[type="number"]{text-align:right;}
+/* Montos es-CL (miles con punto): evitar texto cortado en campos angostos */
+input[type="text"][inputmode="decimal"],input[type="text"][inputmode="numeric"]{box-sizing:border-box;min-width:min(100%,12ch);font-variant-numeric:tabular-nums;}
 input:focus{outline:none;border-color:var(--accent);background:white;box-shadow:0 0 0 3px var(--ring);}
 select{border:1px solid var(--border);border-radius:10px;padding:8px 10px;width:100%;font-family:inherit;font-size:13px;background:rgba(0,0,0,0.02);color:var(--primary);cursor:pointer;-webkit-appearance:none;appearance:none;}
 select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
 .impact-cell{font-weight:700;text-align:right;color:var(--primary);white-space:nowrap;}
 .col-name{min-width:170px;}
-.col-amt{width:130px;}
+.col-amt{min-width:148px;width:14%;}
 .col-frq{width:105px;}
-.col-imp{width:125px;text-align:right;}
+.col-imp{min-width:138px;width:13%;text-align:right;}
 .col-del{width:34px;text-align:center;}
 .col-dup{width:28px;text-align:center;}
 .col-note{width:28px;text-align:center;}
@@ -314,7 +316,7 @@ select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--
 .meta-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:12px;flex-wrap:wrap;}
 .meta-label{font-size:10px;font-weight:600;color:var(--text-soft);text-transform:uppercase;letter-spacing:.5px;}
 .meta-input-wrap{display:flex;align-items:center;gap:6px;}
-.meta-input-wrap input{border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:14px;font-family:inherit;width:160px;text-align:right;color:var(--primary);background:rgba(0,0,0,0.02);transition:.2s;font-weight:600;}
+.meta-input-wrap input{border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:14px;font-family:inherit;min-width:min(100%,11rem);max-width:100%;flex:1 1 10rem;text-align:right;color:var(--primary);background:rgba(0,0,0,0.02);transition:.2s;font-weight:600;}
 .meta-input-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);background:white;}
 .meta-prog-bar{height:8px;background:rgba(0,0,0,0.04);border-radius:6px;overflow:hidden;margin-bottom:8px;}
 .meta-prog-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);}
@@ -1188,7 +1190,7 @@ body.dark-mode .cal-day.weekend,.dark-mode .wcs-day.weekend{background:#0f172a;}
 .inv-sug-row:last-child{border-bottom:none;}
 .inv-sug-name{flex:1;min-width:120px;font-size:12px;font-weight:600;}
 .inv-sug-hist{font-size:10px;color:#94a3b8;min-width:80px;}
-.inv-sug-qty{width:80px;border:1.5px solid var(--accent);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px;text-align:right;color:var(--primary);background:transparent;font-weight:700;}
+.inv-sug-qty{min-width:6.5rem;width:100%;max-width:120px;border:1.5px solid var(--accent);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:12px;text-align:right;color:var(--primary);background:transparent;font-weight:700;box-sizing:border-box;}
 .inv-sug-prov{font-size:10px;color:#94a3b8;min-width:100px;}
 .inv-sug-total{font-size:12px;font-weight:700;min-width:80px;text-align:right;}
 .inv-sug-accept{background:var(--success);color:white;border:none;border-radius:6px;padding:5px 11px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;}
@@ -1203,7 +1205,7 @@ body.dark-mode .cal-day.weekend,.dark-mode .wcs-day.weekend{background:#0f172a;}
 .cuad-modal{background:var(--white);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:680px;overflow:hidden;margin:auto;}
 .cuad-modal-head{background:var(--primary);color:white;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
 .cuad-modal-body{padding:18px 20px;max-height:75vh;overflow-y:auto;}
-.cuad-prod-row{display:grid;grid-template-columns:1fr 80px 80px 90px 90px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;}
+.cuad-prod-row{display:grid;grid-template-columns:1fr minmax(4.5rem,80px) minmax(4.5rem,80px) minmax(5rem,90px) minmax(5rem,90px);gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .cuad-prod-row:last-child{border-bottom:none;}
 .cuad-inp{border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-family:inherit;font-size:12px;text-align:right;color:var(--primary);background:transparent;width:100%;}
 .cuad-inp:focus{outline:none;border-color:var(--success);}
@@ -1575,7 +1577,7 @@ body.dark-mode .sac-res-mov{border-color:#334155;}
 /* ventas */
 .sac-ventas-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(148,163,184,.2);overflow:hidden;}
 .sac-ventas-head{background:linear-gradient(135deg,#0f172a,#1e293b);color:white;padding:10px 16px;font-size:12px;font-weight:700;}
-.sac-v-row{display:grid;grid-template-columns:1fr 90px 16px 90px;gap:6px;align-items:center;padding:7px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
+.sac-v-row{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(7.25rem,1fr) 14px minmax(7.25rem,1fr);gap:6px;align-items:center;padding:7px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
 .sac-v-row:last-child{border-bottom:none;}
 .sac-v-row:hover{background:rgba(148,163,184,.08);}
 .sac-v-day{font-weight:700;}
@@ -1892,7 +1894,7 @@ body.dark-mode .ia-prev-item input,.dark-mode .ia-prev-item select,.dark-mode .i
 .prop-table th{background:#f8fafc;font-weight:700;color:#94a3b8;font-size:9px;text-transform:uppercase;padding:8px 12px;border-bottom:1px solid var(--border);}
 .prop-table td{padding:9px 12px;border-bottom:1px solid #f1f5f9;}
 .prop-table tr:last-child td{border-bottom:none;}
-.prop-inp{border:1px solid var(--border);border-radius:5px;padding:5px 8px;width:110px;font-family:inherit;font-size:12px;text-align:right;background:transparent;color:var(--primary);}
+.prop-inp{border:1px solid var(--border);border-radius:5px;padding:5px 8px;min-width:9rem;width:100%;max-width:160px;font-family:inherit;font-size:12px;text-align:right;background:transparent;color:var(--primary);box-sizing:border-box;}
 .prop-inp:focus{outline:none;border-color:var(--accent);}
 .prop-estado{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;}
 .prop-pagada{background:rgba(16,185,129,.1);color:var(--success);}
@@ -2335,7 +2337,7 @@ body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
 .vs-table tr.vs-total td{font-weight:800;background:#f8f9fa;border-top:2px solid var(--border);}
 .vs-day-name{font-weight:700;font-size:13px;}
 .vs-day-sub{font-size:10px;color:#9aacb8;margin-top:1px;}
-.vs-inp{border:1px solid var(--border);border-radius:4px;padding:5px 8px;width:118px;text-align:right;font-family:inherit;font-size:12px;background:transparent;color:var(--primary);transition:.15s;}
+.vs-inp{border:1px solid var(--border);border-radius:4px;padding:5px 8px;min-width:10rem;width:100%;max-width:180px;text-align:right;font-family:inherit;font-size:12px;background:transparent;color:var(--primary);transition:.15s;box-sizing:border-box;}
 .vs-inp:focus{outline:none;border-color:var(--accent);background:var(--white);}
 .vs-cerrar-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;color:#94a3b8;transition:.15s;white-space:nowrap;}
 .vs-cerrar-btn.cerrado{background:var(--success);color:white;border-color:var(--success);}
@@ -2510,7 +2512,7 @@ body.dark-mode textarea:focus{
   .vs-header{grid-template-columns:1fr;}
   .vs-table{overflow-x:auto;}
   .vs-table table{min-width:400px;}
-  .vs-inp{width:80px;}
+  .vs-inp{min-width:6.5rem;max-width:100%;}
 }
 
 /* ============================================================
@@ -2535,7 +2537,7 @@ body.dark-mode textarea:focus{
   .sac-toolbar { padding: 10px 12px; }
   .sac-toolbar-actions { width: 100%; justify-content: flex-end; }
   .sac-row-ing-cargas { grid-template-columns: minmax(220px,300px) 1fr; gap: 12px; }
-  .sac-v-row { grid-template-columns: 1fr 92px 14px 92px; }
+  .sac-v-row { grid-template-columns: minmax(0,1.3fr) minmax(6.75rem,1fr) 12px minmax(6.75rem,1fr); }
 }
 
 /* iPad 9th gen portrait: inventario en columna única */
@@ -2579,7 +2581,7 @@ body.dark-mode textarea:focus{
   .sac-toolbar-actions .fac-btn { width: 100%; padding: 8px 10px; font-size: 10px; }
   .sac-ventas-card, .sac-cargas-card, .sac-ingresos-card { border-radius: 13px; }
   .sac-ventas-head, .sac-cargas-head { padding: 9px 12px; font-size: 11px; }
-  .sac-v-row { grid-template-columns: 1fr 78px 10px 78px; gap: 5px; padding: 7px 10px; }
+  .sac-v-row { grid-template-columns: minmax(0,1.2fr) minmax(6.25rem,1fr) 10px minmax(6.25rem,1fr); gap: 5px; padding: 7px 10px; }
   .sac-v-inp { padding: 5px 6px; font-size: 11px; }
   .sac-footer { gap: 8px; padding: 9px 10px; }
   .sac-foot-val { font-size: 13px; }
@@ -2611,7 +2613,7 @@ body.dark-mode textarea:focus{
   .sac-kpi:nth-child(n+5) { display: none; } /* prioriza KPIs críticos en pantallas pequeñas */
   .sac-toolbar-actions { grid-template-columns: 1fr; }
   .sac-row-ing-cargas { grid-template-columns: 1fr; gap: 10px; }
-  .sac-v-row { grid-template-columns: 1fr 72px 8px 72px; }
+  .sac-v-row { grid-template-columns: minmax(0,1.1fr) minmax(5.75rem,1fr) 8px minmax(5.75rem,1fr); }
   .sac-carga-row { grid-template-columns: 24px 1fr auto; }
   .sac-carga-row > :nth-child(4),
   .sac-carga-row > :nth-child(5) { grid-column: 2 / -1; justify-self: end; }
@@ -2714,7 +2716,7 @@ body.dark-mode textarea:focus{
 .fac-semana-item { display: grid; grid-template-columns: 26px 1fr auto auto; gap: 8px; align-items: center; padding: 8px 14px; border-bottom: 1px solid #f1f5f9; font-size: 11px; }
 .fac-semana-item.fsi-sel-hoy { background: rgba(99,102,241,.07); }
 .fac-sem-hoy-bar { padding: 10px 14px; background: rgba(99,102,241,.06); border-bottom: 1px solid var(--border); }
-.fac-sem-hoy-bar input[type="text"] { max-width: 140px; border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: inherit; }
+.fac-sem-hoy-bar input[type="text"] { min-width: 8rem; max-width: min(100%, 18rem); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: inherit; box-sizing: border-box; }
 .fac-semana-item:last-child { border-bottom: none; }
 .fac-semana-item.fsi-pagado { opacity: .55; }
 .fac-semana-item .fsi-nombre { font-weight: 600; }
@@ -3390,7 +3392,7 @@ body.dark-mode .conflict-overlay{
                 <input type="radio" name="sac-merc-mode" value="pct" id="sac-merc-pct" onchange="sacMercModeChange()"> % de venta
               </label>
               <input class="sac-v-inp" id="sac-merc-val" type="text" inputmode="numeric" placeholder="0"
-                onchange="sacMercValChange(this.value)" onblur="sacVBlur(this)" style="width:100px;">
+                onchange="sacMercValChange(this.value)" onblur="sacVBlur(this)" style="min-width:7rem;width:100%;max-width:11rem;box-sizing:border-box;">
               <span id="sac-merc-result" style="font-size:11px;font-weight:700;color:var(--accent2);"></span>
             </div>
           </div>
@@ -4136,9 +4138,9 @@ body.dark-mode .conflict-overlay{
           <span style="font-size:11px;color:#9aacb8;">Hasta:</span>
           <input type="date" class="fac-date-inp" id="fac-date-hasta" onchange="facRenderDetail()">
           <span style="font-size:11px;color:#9aacb8;">Monto:</span>
-          <input type="text" inputmode="numeric" class="fac-date-inp" id="fac-monto-min" placeholder="Mín $" style="width:80px;" oninput="facRenderDetail()">
+          <input type="text" inputmode="numeric" class="fac-date-inp" id="fac-monto-min" placeholder="Mín $" style="min-width:6.5rem;max-width:11rem;width:100%;box-sizing:border-box;" oninput="facRenderDetail()">
           <span style="font-size:11px;color:#9aacb8;">—</span>
-          <input type="text" inputmode="numeric" class="fac-date-inp" id="fac-monto-max" placeholder="Máx $" style="width:80px;" oninput="facRenderDetail()">
+          <input type="text" inputmode="numeric" class="fac-date-inp" id="fac-monto-max" placeholder="Máx $" style="min-width:6.5rem;max-width:11rem;width:100%;box-sizing:border-box;" oninput="facRenderDetail()">
           <select class="fac-date-inp" id="fac-filter-estado" onchange="facRenderDetail()">
             <option value="">Todos los estados</option>
             <option value="activa">Activas</option>
@@ -4336,7 +4338,7 @@ body.dark-mode .conflict-overlay{
       <div class="ai-modal-head" style="background:linear-gradient(135deg,#0d9488,#059669);">
         <div>
           <h3 style="margin:0;">🔗 Importar desde facturas</h3>
-          <p style="margin:4px 0 0;font-size:12px;opacity:.95;">Elige qué facturas usar. Se importan líneas de detalle y precios por proveedor (facturas importadas con IA desde marzo 2026 guardan líneas).</p>
+          <p style="margin:4px 0 0;font-size:12px;opacity:.95;">Elige qué facturas usar. Se importan líneas de detalle y precios por proveedor (facturas importadas con IA desde marzo 2026 guardan líneas). Los nombres se emparejan con tu inventario (incluso si la factura no escribe igual); solo en casos dudosos se pregunta.</p>
         </div>
       </div>
       <div class="ai-modal-body" style="overflow:auto;flex:1;">
@@ -6870,17 +6872,16 @@ function parseNumCL(raw, allowNegative) {
   } else if (hasComma) {
     n = parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
   } else {
-    // only dot or plain digits
-    const parts = s.split('.');
+    // only dot or plain digits (miles con punto: 1.345.543)
+    const parts = s.split('.').filter(function (x) { return x !== ''; });
     if (parts.length === 1) {
-      n = parseFloat(s) || 0;
+      n = parseFloat(parts[0]) || 0;
     } else if (parts.length === 2) {
       const left = parts[0], right = parts[1];
-      // Chilean common case: "580.000" (thousands, not decimals)
+      // Chilean common case: "580.000" (miles, no decimales)
       if (/^\d+$/.test(left) && /^\d{3}$/.test(right)) n = parseFloat(left + right) || 0;
-      else n = parseFloat(s) || 0;
+      else n = parseFloat(left + '.' + right) || 0;
     } else {
-      // multiple dots => treat as thousands separators
       n = parseFloat(parts.join('')) || 0;
     }
   }
@@ -15396,7 +15397,7 @@ function conteoRender() {
     lastCat = p.cat || 'Sin categoría';
     const stockColor = (p.stock||0) <= 0 ? 'var(--danger)' : (p.stock||0) <= (p.minimo||0) && (p.minimo||0) > 0 ? 'var(--warning)' : 'var(--primary)';
     return `${catHeader}
-    <div style="display:grid;grid-template-columns:1fr 120px 50px;gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;min-height:52px;" id="conteo-row-${p.id}">
+    <div style="display:grid;grid-template-columns:1fr minmax(7.5rem,32%) minmax(2.75rem,48px);gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;min-height:52px;" id="conteo-row-${p.id}">
       <div>
         <div style="font-size:14px;font-weight:700;color:var(--primary);line-height:1.3;">${esc(p.nombre)}</div>
         <div style="font-size:10px;color:#94a3b8;">${esc(p.unidad||'u')} · mín: ${p.minimo||0}</div>
@@ -15874,6 +15875,92 @@ function invBuildFacturaCostCtx_(fac, items) {
   return { factor: factor, totalCosto: totalCosto, sumBase: sumBase };
 }
 
+/** Tokens al comparar factura vs inventario (evita ruido de unidades genéricas). */
+function _invFacturaMatchTokens(keyStr) {
+  var STOP = { de:1, la:1, el:1, los:1, las:1, y:1, o:1, con:1, sin:1, por:1, un:1, una:1, cj:1, cja:1, und:1, unid:1, pza:1, unds:1 };
+  return String(keyStr || '').split(/\s+/).filter(function(w) {
+    if (!w || w.length < 2) return false;
+    if (/^\d+([.,]\d+)?$/.test(w)) return false;
+    if (STOP[w]) return false;
+    return true;
+  });
+}
+
+/** Similitud 0–1 entre descripción de factura y nombre de producto (misma lista maestra). */
+function invFacturaProductMatchScore(keyDesc, keyProd) {
+  if (!keyDesc || !keyProd) return 0;
+  if (keyDesc === keyProd) return 1;
+  var td = _invFacturaMatchTokens(keyDesc);
+  var tp = _invFacturaMatchTokens(keyProd);
+  if (!td.length || !tp.length) return 0;
+  var setD = {}, setP = {}, t, inter, u, i;
+  for (i = 0; i < td.length; i++) { setD[td[i]] = 1; }
+  for (i = 0; i < tp.length; i++) { setP[tp[i]] = 1; }
+  inter = 0;
+  for (t in setD) { if (setD.hasOwnProperty(t) && setP[t]) inter++; }
+  u = Object.keys(setD).length + Object.keys(setP).length - inter;
+  var jac = u ? inter / u : 0;
+  var shortK = keyDesc.length <= keyProd.length ? keyDesc : keyProd;
+  var longK = keyDesc.length > keyProd.length ? keyDesc : keyProd;
+  if (shortK.length >= 8 && longK.indexOf(shortK) >= 0 && shortK.length >= longK.length * 0.55)
+    jac = Math.max(jac, 0.88);
+  var maxL = Math.max(keyDesc.length, keyProd.length, 1);
+  var lev = _invLevenshtein(keyDesc.slice(0, 72), keyProd.slice(0, 72));
+  var levSim = 1 - Math.min(lev, maxL) / maxL;
+  return Math.max(jac * 0.52 + levSim * 0.48, jac, levSim);
+}
+
+/**
+ * Encuentra producto del inventario para una línea de factura.
+ * Criterio: clave normalizada (invFormat + dedupe), similitud token/Levenshtein, refuerzo si prov coincide.
+ * Si no hay match claro, pregunta con confirm (casos dudosos); si es muy distinto, crea producto nuevo sin preguntar.
+ */
+function invResolveFacturaLineProduct_(desc, provNombre) {
+  var inv = state.inventario || [];
+  var descCanon = invFormatProductNombre(desc);
+  var keyDesc = invNameDedupeKey(descCanon);
+  if (!keyDesc || !inv.length) return { prod: null, kind: 'none' };
+
+  var exact = inv.filter(function(p) { return invNameDedupeKey(p.nombre) === keyDesc; });
+  if (exact.length === 1) return { prod: exact[0], kind: 'exact' };
+  if (exact.length > 1) {
+    var pref = exact.filter(function(p) { return (p.prov || '') === provNombre; });
+    return { prod: (pref[0] || exact[0]), kind: 'exact_dup' };
+  }
+
+  var scored = inv.map(function(p) {
+    var keyP = invNameDedupeKey(p.nombre);
+    var s = invFacturaProductMatchScore(keyDesc, keyP);
+    if (provNombre && (p.prov || '') === provNombre) s = Math.min(1, s + 0.05);
+    return { p: p, s: s, keyP: keyP };
+  });
+  scored.sort(function(a, b) { return b.s - a.s; });
+  var best = scored[0];
+  var second = scored[1];
+  if (!best) return { prod: null, kind: 'none' };
+
+  var gap = second ? (best.s - second.s) : 1;
+  var ambiguous = second && second.s >= 0.56 && gap < 0.085;
+
+  if (best.s >= 0.84 && !ambiguous) return { prod: best.p, kind: 'fuzzy_high' };
+  if (best.s >= 0.72 && gap >= 0.11 && !ambiguous) return { prod: best.p, kind: 'fuzzy_gap' };
+
+  if (best.s < 0.52) return { prod: null, kind: 'none' };
+
+  var lineShort = String(desc || '').replace(/\r|\n/g, ' ').trim().slice(0, 78);
+  var msg1 = 'La factura dice:\n"' + lineShort + '"\n\n¿Es el mismo producto que este del inventario?\n"' + best.p.nombre + '"';
+  if (ambiguous && second) msg1 += '\n\n(Alternativa parecida: "' + second.p.nombre + '")';
+
+  if (!confirm(msg1 + '\n\nAceptar = sí, usar este producto · Cancelar = no / crear otro')) {
+    if (ambiguous && second && second.s >= 0.52) {
+      if (confirm('¿Entonces corresponde a "' + second.p.nombre + '"?\n\nAceptar = sí · Cancelar = crear producto nuevo'))
+        return { prod: second.p, kind: 'prompt_second' };
+    }
+    return { prod: null, kind: 'prompt_new' };
+  }
+  return { prod: best.p, kind: 'prompt_yes' };
+}
+
 function invFacImportOneLine_(it, provNombre, facCtx) {
   var desc = String(it.descripcion || '').trim();
   if (!desc) return { created: false, price: false };
@@ -15888,13 +15975,10 @@ function invFacImportOneLine_(it, provNombre, facCtx) {
   if (qty > 0 && lineFinal > 0) precio = Math.round(lineFinal / qty);
   else if (puBase > 0) precio = Math.round(puBase * factor);
   var prod = it.invProdId ? state.inventario.find(function(p) { return p.id === it.invProdId; }) : null;
-  var dlow = desc.toLowerCase();
-  if (!prod) prod = state.inventario.find(function(p) { return invNameDedupeKey(p.nombre) === invNameDedupeKey(desc); });
-  if (!prod) prod = state.inventario.find(function(p) { return (p.nombre || '').toLowerCase() === dlow; });
+  var res = null;
   if (!prod) {
-    prod = state.inventario.find(function(p) {
-      return dlow.includes((p.nombre || '').toLowerCase()) || (p.nombre || '').toLowerCase().includes(dlow.split(/\s+/)[0] || '');
-    });
+    res = invResolveFacturaLineProduct_(desc, provNombre);
+    prod = res.prod;
   }
   var created = false;
   if (!prod) {
@@ -16030,7 +16114,7 @@ function invFacImportApply() {
     notify('⚠ Las facturas marcadas no tienen líneas guardadas. Vuelve a importar esos PDF con IA (el sistema ahora guarda el detalle) o elige otras facturas.');
     return;
   }
-  if (!confirm('Se procesarán ' + totalLines + ' línea(s) desde ' + batches.length + ' factura(s): productos coincidentes recibirán precio por proveedor; si no existen, se crearán. ¿Continuar?')) return;
+  if (!confirm('Se procesarán ' + totalLines + ' línea(s) desde ' + batches.length + ' factura(s): se intentará enlazar cada línea a un producto ya existente (nombre parecido); si no hay match claro, se puede preguntar o crear uno nuevo. ¿Continuar?')) return;
 
   pushUndo();
   var newProds = 0, priceUps = 0, ajustadas = 0;

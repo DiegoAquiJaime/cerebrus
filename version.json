@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.1",
-  "notes": "Inventario Bodega N°3: plantilla en data/inventario-bodega-n3-plantilla.csv; inv-bodega-n3-data.js generado con scripts/parse-bodega-csv.mjs (orden proveedor, invOrden)."
+  "version": "2026.04.11.2",
+  "notes": "Mantenimiento UI: campos de montos (es-CL con miles) más anchos; grillas SAC/conteo/facturas/venta; parseNumCL más robusto con puntos duplicados; respaldo en data/backups/."
 }
