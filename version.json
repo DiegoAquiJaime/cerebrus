@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.5",
-  "notes": "Inventario: export PDF/Excel para dueña (stock, unidad, mínimo crítico, proveedor sugerido); conversión caja→unidad en conteo; invGetVisibleProducts comparte filtros con la tabla."
+  "version": "2026.04.11.6",
+  "notes": "Import IA inventario: opción cantidades en cajas × piezasPorEmbalaje; aclaración import desde facturas no suma stock."
 }
