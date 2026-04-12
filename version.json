@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.2",
-  "notes": "Mantenimiento UI: campos de montos (es-CL con miles) más anchos; grillas SAC/conteo/facturas/venta; parseNumCL más robusto con puntos duplicados; respaldo en data/backups/."
+  "version": "2026.04.11.3",
+  "notes": "SAC: contraste títulos Otros ingresos, panel Reserva más compacto, más espacio columna ingresos/cargas y botones con wrap."
 }

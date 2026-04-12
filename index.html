@@ -1540,27 +1540,28 @@ body.dark-mode .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color
 .sac-kpi-val{font-size:19px;font-weight:900;letter-spacing:-.5px;}
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
 .sac-kpi-inp:focus{border-color:var(--accent);}
-.sac-reserva-panel{background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.28);box-shadow:0 8px 22px rgba(15,23,42,.06);padding:14px 16px;margin-bottom:18px;}
-.sac-reserva-title{font-size:12px;font-weight:800;color:var(--primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-.sac-reserva-grid{display:grid;grid-template-columns:minmax(120px,160px) 1fr 1.4fr;gap:14px;align-items:start;}
+.sac-reserva-panel{background:var(--white);border-radius:12px;border:1px solid rgba(148,163,184,.28);box-shadow:0 6px 18px rgba(15,23,42,.05);padding:10px 12px;margin-bottom:12px;}
+.sac-reserva-title{font-size:11px;font-weight:800;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.sac-reserva-grid{display:grid;grid-template-columns:minmax(88px,118px) minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:start;}
 @media(max-width:1000px){.sac-reserva-grid{grid-template-columns:1fr;}}
-.sac-reserva-saldo-lbl{font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;}
-.sac-reserva-saldo-val{font-size:22px;font-weight:900;color:#a855f7;letter-spacing:-.02em;}
-.sac-reserva-sub{font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;}
-.sac-reserva-col input[type="text"]{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:6px;font-family:inherit;background:transparent;color:var(--primary);}
-.sac-reserva-salida-row{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;}
+.sac-reserva-saldo-lbl{font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;}
+.sac-reserva-saldo-val{font-size:17px;font-weight:900;color:#a855f7;letter-spacing:-.02em;line-height:1.15;}
+.sac-reserva-sub{font-size:9px;font-weight:700;color:#475569;margin-bottom:4px;text-transform:uppercase;}
+.sac-reserva-col input[type="text"]{width:100%;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;margin-bottom:4px;font-family:inherit;background:transparent;color:var(--primary);}
+.sac-reserva-salida-row{display:grid;grid-template-columns:1fr 1.2fr;gap:6px;}
 @media(max-width:520px){.sac-reserva-salida-row{grid-template-columns:1fr;}}
-.sac-reserva-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.sac-reserva-btns .fac-btn{font-size:10px;padding:7px 10px;}
-.sac-reserva-hist{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);}
-.sac-reserva-hist-title{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:8px;}
+.sac-reserva-btns{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.sac-reserva-btns .fac-btn{font-size:9px;padding:5px 8px;line-height:1.2;}
+.sac-reserva-col .fac-btn.primary{font-size:10px;padding:6px 10px;}
+.sac-reserva-hist{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);max-height:96px;overflow-y:auto;}
+.sac-reserva-hist-title{font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px;}
 .sac-res-mov{font-size:11px;padding:5px 0;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
 .sac-res-mov:last-child{border-bottom:none;}
 .sac-res-mov .muted{color:#94a3b8;font-size:10px;}
 body.dark-mode .sac-reserva-panel{background:#1c1c1e;border-color:rgba(255,255,255,.08);}
 body.dark-mode .sac-res-mov{border-color:#334155;}
 .sac-main{display:flex;flex-direction:column;gap:16px;align-items:stretch;}
-.sac-row-ing-cargas{display:grid;grid-template-columns:minmax(200px,320px) 1fr;gap:16px;align-items:start;}
+.sac-row-ing-cargas{display:grid;grid-template-columns:minmax(300px,1fr) minmax(340px,1.12fr);gap:12px;align-items:start;}
 @media(max-width:900px){.sac-row-ing-cargas{grid-template-columns:1fr;}}
 .sac-ingresos-list-wrap{max-height:132px;overflow-y:auto;}
 .sac-ingresos-card .sac-cargas-head{padding:7px 12px;}
@@ -1623,8 +1624,10 @@ body.dark-mode .sac-res-mov{border-color:#334155;}
   overscroll-behavior-y:contain;
   touch-action:pan-y;
 }
-.sac-ingresos-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(16,185,129,.24);overflow:hidden;}
-.sac-ingresos-head{background:linear-gradient(135deg, rgba(16,185,129,.12), rgba(16,185,129,.04));}
+.sac-ingresos-card{background:var(--white);border-radius:16px;box-shadow:0 10px 24px rgba(15,23,42,.06);border:1px solid rgba(16,185,129,.24);overflow:hidden;min-width:0;}
+.sac-ingresos-head{background:linear-gradient(135deg, rgba(16,185,129,.22), rgba(16,185,129,.08)) !important;color:#0f172a !important;}
+.sac-ingresos-head .sac-help{background:rgba(15,118,110,.15);color:#0f766e;border:1px solid rgba(15,118,110,.4);}
+.sac-ingresos-head .sac-head-btn{color:#fff;}
 .sac-carga-row.ingreso-recibido{opacity:.65;}
 .sac-carga-row.ingreso-recibido .sac-nombre{text-decoration:line-through;}
 .sac-cargas-head{background:var(--primary);color:white;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
@@ -1636,7 +1639,9 @@ body.dark-mode .sac-res-mov{border-color:#334155;}
 .sac-head-btn.accent:hover{filter:brightness(1.06);}
 .sac-head-btn.success{background:var(--success);border-color:rgba(255,255,255,.28);}
 .sac-head-btn.success:hover{filter:brightness(1.06);}
-.sac-carga-row{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
+.sac-carga-row{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(96px,1fr) minmax(132px,auto) auto;gap:8px;align-items:start;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12px;}
+.sac-carga-row > div:nth-child(4){min-width:0;display:flex;flex-direction:column;gap:4px;align-items:stretch;}
+.sac-ingresos-card .sac-estado-btn,.sac-cargas-card .sac-carga-row .sac-estado-btn{white-space:normal;text-align:center;line-height:1.25;padding:5px 8px;}
 .sac-carga-row:last-child{border-bottom:none;}
 .sac-carga-row:hover{background:rgba(148,163,184,.08);}
 .sac-cargas-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:#f8fafc;}
@@ -1753,6 +1758,14 @@ body.dark-mode .sac-cargas-sticky{
   background:rgba(15,23,42,.75)!important;
   border-bottom-color:rgba(148,163,184,.15)!important;
 }
+body.dark-mode .sac-cargas-head.sac-ingresos-head{
+  color:#ecfdf5!important;
+  background:linear-gradient(135deg,rgba(16,185,129,.32),rgba(6,78,59,.5))!important;
+}
+body.dark-mode .sac-ingresos-head .sac-help{background:rgba(236,253,245,.12);color:#a7f3d0;border-color:rgba(167,243,208,.35);}
+body.dark-mode .sac-reserva-panel{background:rgba(30,41,59,.55)!important;border-color:rgba(148,163,184,.14)!important;}
+body.dark-mode .sac-reserva-sub{color:#94a3b8;}
+body.dark-mode .sac-reserva-saldo-lbl{color:#94a3b8;}
 body.dark-mode .sac-v-total,
 body.dark-mode .sac-footer{
   background:rgba(15,23,42,.55)!important;
@@ -2536,7 +2549,7 @@ body.dark-mode textarea:focus{
   .sac-kpi-val, .sac-kpi-inp { font-size: 18px; }
   .sac-toolbar { padding: 10px 12px; }
   .sac-toolbar-actions { width: 100%; justify-content: flex-end; }
-  .sac-row-ing-cargas { grid-template-columns: minmax(220px,300px) 1fr; gap: 12px; }
+  .sac-row-ing-cargas { grid-template-columns: minmax(280px,1fr) minmax(300px,1.08fr); gap: 12px; }
   .sac-v-row { grid-template-columns: minmax(0,1.3fr) minmax(6.75rem,1fr) 12px minmax(6.75rem,1fr); }
 }
 
@@ -2624,7 +2637,7 @@ body.dark-mode textarea:focus{
   .content { max-width: 1220px; margin: 0 auto; }
   .sac-header { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .sac-main { gap: 14px; }
-  .sac-row-ing-cargas { grid-template-columns: minmax(240px, 340px) 1fr; gap: 14px; }
+  .sac-row-ing-cargas { grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.1fr); gap: 14px; }
   .sac-toolbar-actions .fac-btn { min-height: 36px; }
 }
 
@@ -3405,7 +3418,7 @@ body.dark-mode .conflict-overlay{
             <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></div>
             <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
           </div>
-          <p style="font-size:9px;color:#64748b;padding:5px 12px 0;margin:0;line-height:1.35;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
+          <p style="font-size:9px;color:#334155;padding:5px 12px 0;margin:0;line-height:1.4;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
           <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
           <div class="sac-footer" style="border-top:1px solid var(--border);">
             <div class="sac-foot-kpi">
