@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.4",
-  "notes": "SAC rediseño: columna única Ventas → Ingresos → Egresos; cabeceras contraste; Reserva compacta + movimientos en details."
+  "version": "2026.04.11.5",
+  "notes": "Inventario: export PDF/Excel para dueña (stock, unidad, mínimo crítico, proveedor sugerido); conversión caja→unidad en conteo; invGetVisibleProducts comparte filtros con la tabla."
 }

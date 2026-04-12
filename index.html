@@ -4594,6 +4594,8 @@ body.dark-mode .conflict-overlay{
           <button class="fac-btn" onclick="openInvImportFromFacsModal()">🔗 Desde facturas</button>
           <button class="fac-btn" onclick="invOpenRestoreFile()">♻ Restaurar inventario</button>
           <button class="fac-btn" onclick="cereBackupNowAll()">💾 Respaldos JSON</button>
+          <button class="fac-btn" onclick="invExportDueñaPdf()" title="Respeta búsqueda y filtros actuales">📄 PDF inventario</button>
+          <button class="fac-btn" onclick="invExportDueñaExcel()" title="Abre en Excel · respeta filtros">📊 Excel inventario</button>
         </div>
         <input type="file" id="inv-restore-file" accept=".json,application/json" style="display:none;" onchange="invHandleRestoreFile(this.files && this.files[0])">
         <input type="file" id="seb-comp-tsv-file" accept=".txt,.tsv,.csv,text/plain,text/tab-separated-values" style="display:none;" onchange="sebHandleCompTsvFile(this.files && this.files[0])">
@@ -4779,7 +4781,7 @@ body.dark-mode .conflict-overlay{
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
             <div>
               <div style="font-size:14px;font-weight:800;">📋 Modo conteo rápido</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Solo nombre y cantidad — optimizado para iPad y lápiz. Los cambios se guardan al instante.</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Solo nombre y cantidad — optimizado para iPad y lápiz. Los cambios se guardan al instante. Si un producto tiene <strong>piezas por caja</strong> configurado en Editar, podés contar en cajas o en unidades; el stock siempre queda en la unidad de cocina.</div>
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
               <select id="conteo-cat-filter" onchange="conteoRender()" style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;min-height:42px;">
@@ -13585,15 +13587,15 @@ function invRenderCatTabs() {
 }
 function invSetCat(cat) { _invCatFilter=cat; invRenderCatTabs(); invRenderTable(); }
 
-function invRenderTable() {
+/** Lista filtrada y ordenada como la tabla actual (respeta pestaña categoría, búsqueda y filtros). */
+function invGetVisibleProducts() {
   invInit();
   const q     = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
   const stockF = document.getElementById('inv-filter-stock')?.value || 'todos';
   const famF = document.getElementById('inv-filter-familia')?.value || '';
   const subF = document.getElementById('inv-filter-subfamilia')?.value || '';
   const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
-  const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
-  const filtered = state.inventario.filter(p => {
+  return state.inventario.filter(p => {
     if (_invCatFilter !== 'todas' && (p.cat || 'Sin categoría') !== _invCatFilter) return false;
     if (q) {
       const n = (p.nombre || '').toLowerCase();
@@ -13642,6 +13644,139 @@ function invRenderTable() {
     if ((a.cat || '') !== (b.cat || '')) return (a.cat || '').localeCompare(b.cat || '', 'es');
     return (a.nombre || '').localeCompare(b.nombre || '', 'es');
   });
+}
+
+function invEstadoDueña_(p) {
+  const st = p.stock || 0;
+  const em = invEfectivMin_(p);
+  if (st <= 0) return 'Agotado';
+  if (em > 0 && st <= em) return 'Crítico';
+  return 'OK';
+}
+
+function invExportDueñaPdf() {
+  invInit();
+  const rows = invGetVisibleProducts();
+  if (!rows.length) {
+    notify('⚠ No hay productos que exportar con los filtros actuales');
+    return;
+  }
+  const fecha = new Date().toLocaleString('es-CL');
+  const sub = `CEREBRUS · ${rows.length} producto(s) · ${fecha}`;
+  const rowsHtml = rows.map((p, i) => {
+    const provSug = (invBestProvider(p) || '').trim() || '—';
+    const u = (p.unidad || 'u');
+    const st = p.stock || 0;
+    const minRaw = p.minimo || 0;
+    const minEf = invEfectivMin_(p);
+    const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
+    const est = invEstadoDueña_(p);
+    const zebra = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+    const estColor = est === 'Agotado' ? '#dc2626' : est === 'Crítico' ? '#d97706' : '#059669';
+    return `<tr style="background:${zebra};">
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a;">${esc(p.nombre || '')}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:#334155;">${esc(String(st))}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;">${esc(u)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;color:#64748b;font-variant-numeric:tabular-nums;">${esc(minShow)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;">${esc(provSug)}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700;color:${estColor};">${esc(est)}</td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Inventario CEREBRUS</title>
+<style>
+@page { margin: 16mm; }
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#0f172a;margin:0;padding:24px;}
+.hdr{background:linear-gradient(135deg,#6366f1 0%,#7c3aed 100%);color:#fff;border-radius:14px;padding:22px 24px;margin-bottom:20px;box-shadow:0 12px 40px rgba(99,102,241,.25);}
+.hdr h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em;}
+.hdr p{margin:8px 0 0;font-size:12px;opacity:.92;line-height:1.4;}
+.note{font-size:10px;color:#64748b;margin:0 0 16px;line-height:1.45;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th{text-align:left;padding:10px 12px;background:#f1f5f9;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid #e2e8f0;}
+th:nth-child(2),th:nth-child(4){text-align:right;}
+.brand{font-size:10px;color:#94a3b8;margin-top:18px;}
+</style></head><body>
+<div class="hdr"><h1>Inventario · stock actual</h1><p>${esc(sub)}</p></div>
+<p class="note">Proveedor sugerido: mejor precio registrado en la ficha, o proveedor principal si no hay lista de precios. Stock crítico usa el mínimo de Cerebrus (y multiplicador de calendario si aplica).</p>
+<table><thead><tr>
+<th>Producto</th><th>Stock</th><th>Unidad</th><th>Mínimo / crítico</th><th>Proveedor sugerido</th><th>Estado</th>
+</tr></thead><tbody>${rowsHtml}</tbody></table>
+<p class="brand">CEREBRUS · Gastronomy Suite — inventario exportado desde la vista actual (filtros y orden aplicados).</p>
+<script>window.onload=function(){setTimeout(function(){window.print()},280)}<\/script>
+</body></html>`;
+  const win = window.open('', '_blank');
+  if (win) {
+    win.document.write(html);
+    win.document.close();
+  } else {
+    notify('⚠ Activa ventanas emergentes para generar el PDF');
+  }
+}
+
+function invExportDueñaExcel() {
+  invInit();
+  const rows = invGetVisibleProducts();
+  if (!rows.length) {
+    notify('⚠ No hay productos que exportar con los filtros actuales');
+    return;
+  }
+  const fecha = new Date();
+  const stamp = fecha.toISOString().slice(0, 10).replace(/-/g, '');
+  const rowsHtml = rows.map((p, i) => {
+    const provSug = (invBestProvider(p) || '').trim() || '—';
+    const u = (p.unidad || 'u');
+    const st = p.stock || 0;
+    const minRaw = p.minimo || 0;
+    const minEf = invEfectivMin_(p);
+    const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
+    const est = invEstadoDueña_(p);
+    const zebra = i % 2 === 0 ? '#f8fafc' : '#ffffff';
+    return `<tr style="background:${zebra};">
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(p.nombre || '')}</td>
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${esc(String(st))}</td>
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(u)}</td>
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:right;">${esc(minShow)}</td>
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(provSug)}</td>
+      <td style="padding:8px 10px;border:1px solid #e2e8f0;font-weight:700;">${esc(est)}</td>
+    </tr>`;
+  }).join('');
+  const meta = `Generado ${fecha.toLocaleString('es-CL')} · ${rows.length} filas · CEREBRUS`;
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
+<head><meta charset="UTF-8"><meta name="ExcelCreated" content="true"></head>
+<body>
+<div style="font-family:-apple-system,sans-serif;padding:16px;">
+<p style="font-size:11px;color:#64748b;margin:0 0 12px;">${esc(meta)}</p>
+<table style="border-collapse:collapse;font-size:12px;font-family:-apple-system,sans-serif;">
+<thead>
+<tr style="background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;">
+<th style="padding:10px 12px;text-align:left;">Producto</th>
+<th style="padding:10px 12px;text-align:right;">Stock actual</th>
+<th style="padding:10px 12px;">Unidad</th>
+<th style="padding:10px 12px;text-align:right;">Mínimo / crítico</th>
+<th style="padding:10px 12px;">Proveedor sugerido</th>
+<th style="padding:10px 12px;">Estado</th>
+</tr>
+</thead>
+<tbody>${rowsHtml}</tbody>
+</table>
+<p style="font-size:10px;color:#94a3b8;margin-top:14px;">Proveedor sugerido según mejor precio o vínculo principal. Estado Crítico = stock al o por debajo del mínimo efectivo.</p>
+</div>
+</body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const fname = `CEREBRUS_inventario_${stamp}.xls`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  notify(`✓ Descargado: ${fname}`);
+}
+
+function invRenderTable() {
+  invInit();
+  const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
+  const filtered = invGetVisibleProducts();
 
   const cntEl = document.getElementById('inv-filter-count');
   if (cntEl) {
@@ -14346,6 +14481,7 @@ function invSave() {
     unidad: document.getElementById('inv-f-unidad').value||'unidad',
     stock:  parseNumCL(document.getElementById('inv-f-stock').value||0,false)||0,
     minimo: parseNumCL(document.getElementById('inv-f-minimo')?.value||0,false)||0,
+    piezasPorEmbalaje: 0,
     qty:    0, prov, precios: prov?[{prov,precio:0}]:[]
   });
   invToggleForm(); invRender();
@@ -15365,6 +15501,34 @@ function archDiagnostic() {
 //  CONTEO RÁPIDO DE INVENTARIO
 // ============================================================
 
+/** Piezas por 1 caja/embalaje; stock del producto sigue expresado en `unidad` (unidades de cocina). */
+function invPiezasPorEmbalaje(p) {
+  if (!p) return 0;
+  const n = parseNumCL(p.piezasPorEmbalaje, false);
+  return n > 0 && isFinite(n) ? n : 0;
+}
+
+function conteoFmtCant_(n) {
+  if (n == null || !isFinite(n)) return '0';
+  const r = Math.round(n * 1000) / 1000;
+  return String(r).replace('.', ',');
+}
+
+function conteoGetModo(prodId) {
+  if (!window._conteoModo) window._conteoModo = {};
+  if (window._conteoModo[prodId] == null) {
+    const p = (state.inventario || []).find(x => x.id === prodId);
+    window._conteoModo[prodId] = invPiezasPorEmbalaje(p) > 0 ? 'emb' : 'unidad';
+  }
+  return window._conteoModo[prodId];
+}
+
+function conteoSetModo(prodId, modo) {
+  if (!window._conteoModo) window._conteoModo = {};
+  window._conteoModo[prodId] = modo === 'unidad' ? 'unidad' : 'emb';
+  conteoRender();
+}
+
 function conteoRender() {
   invInit();
   const lista = document.getElementById('conteo-lista');
@@ -15424,18 +15588,49 @@ function conteoRender() {
       : '';
     lastCat = p.cat || 'Sin categoría';
     const stockColor = (p.stock||0) <= 0 ? 'var(--danger)' : (p.stock||0) <= (p.minimo||0) && (p.minimo||0) > 0 ? 'var(--warning)' : 'var(--primary)';
+    const uxc = invPiezasPorEmbalaje(p);
+    const modo = conteoGetModo(p.id);
+    const embLab = ((p.embalajeLabel || 'caja') + '').trim() || 'caja';
+    const uDisp = (p.unidad || 'u');
+    let inpVal = '';
+    if (uxc > 0 && modo === 'emb') {
+      const q = (p.stock || 0) / uxc;
+      inpVal = conteoFmtCant_(q);
+    } else {
+      inpVal = conteoFmtCant_(p.stock || 0);
+    }
+    const modoSel = uxc > 0
+      ? `<div style="font-size:10px;color:#64748b;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span>Contar en:</span>
+          <select onchange="conteoSetModo('${p.id}', this.value)" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-family:inherit;max-width:11rem;">
+            <option value="emb" ${modo === 'emb' ? 'selected' : ''}>${esc(embLab)} (proveedor)</option>
+            <option value="unidad" ${modo === 'unidad' ? 'selected' : ''}>${esc(uDisp)} (cocina/bodega)</option>
+          </select>
+          <span style="color:#94a3b8;">1 ${esc(embLab)} = ${uxc} ${esc(uDisp)}</span>
+        </div>`
+      : '';
+    const equivLine = uxc > 0 && modo === 'emb'
+      ? `<div style="font-size:10px;color:#10b981;text-align:center;line-height:1.2;">= ${conteoFmtCant_(p.stock||0)} ${esc(uDisp)}</div>`
+      : (uxc > 0 && modo === 'unidad'
+        ? `<div style="font-size:10px;color:#94a3b8;text-align:center;line-height:1.2;">≈ ${conteoFmtCant_((p.stock||0)/uxc)} ${esc(embLab)}</div>`
+        : '');
+    const unitCol = uxc > 0 && modo === 'emb' ? embLab : uDisp;
     return `${catHeader}
-    <div style="display:grid;grid-template-columns:1fr minmax(7.5rem,32%) minmax(2.75rem,48px);gap:8px;align-items:center;padding:12px 16px;border-bottom:1px solid #f1f5f9;min-height:52px;" id="conteo-row-${p.id}">
+    <div style="display:grid;grid-template-columns:1fr minmax(7.5rem,32%) minmax(3rem,56px);gap:8px;align-items:start;padding:12px 16px;border-bottom:1px solid #f1f5f9;min-height:52px;" id="conteo-row-${p.id}">
       <div>
         <div style="font-size:14px;font-weight:700;color:var(--primary);line-height:1.3;">${esc(p.nombre)}</div>
-        <div style="font-size:10px;color:#94a3b8;">${esc(p.unidad||'u')} · mín: ${p.minimo||0}</div>
+        <div style="font-size:10px;color:#94a3b8;">${esc(uDisp)} · mín: ${p.minimo||0}</div>
+        ${modoSel}
       </div>
-      <input type="text" inputmode="decimal" value="${p.stock||0}"
+      <input type="text" inputmode="decimal" value="${inpVal}"
         id="conteo-inp-${p.id}"
         onchange="conteoSetStock('${p.id}', this.value)"
         onfocus="this.select()"
         style="width:100%;border:2px solid ${stockColor};border-radius:10px;padding:12px 8px;font-family:inherit;font-size:18px;font-weight:800;text-align:center;color:${stockColor};background:transparent;box-sizing:border-box;min-height:48px;">
-      <div style="font-size:11px;color:#94a3b8;text-align:center;">${esc(p.unidad||'u')}</div>
+      <div style="font-size:11px;color:#94a3b8;text-align:center;">
+        <div>${esc(unitCol)}</div>
+        ${equivLine}
+      </div>
     </div>`;
   }).join('');
 }
@@ -15444,7 +15639,14 @@ function conteoSetStock(prodId, val) {
   const p = (state.inventario||[]).find(x=>x.id===prodId);
   if (!p) return;
   pushUndo();
-  p.stock = parseNumCL(val,false) || 0;
+  const uxc = invPiezasPorEmbalaje(p);
+  const modo = conteoGetModo(prodId);
+  const raw = parseNumCL(val, false) || 0;
+  if (uxc > 0 && modo === 'emb') {
+    p.stock = raw * uxc;
+  } else {
+    p.stock = raw;
+  }
   markUnsaved();
   // Update border color instantly
   const inp = document.getElementById('conteo-inp-'+prodId);
@@ -15652,6 +15854,29 @@ function invEditProd(id) {
           </div>
         </div>
 
+        <div style="border:1.5px solid var(--border);border-radius:10px;padding:14px;background:#f8fafc;">
+          <div style="font-size:10px;font-weight:800;color:#64748b;margin-bottom:6px;">📦 CAJA / EMBALAJE → UNIDAD DE COCINA</div>
+          <p style="font-size:10px;color:#94a3b8;margin:0 0 12px;line-height:1.45;">
+            Si comprás en caja pero en cocina manejás botellas, unidades o porciones, indica cuántas unidades trae <strong>1</strong> caja. El <strong>stock</strong> sigue siendo siempre en la unidad de medida de arriba (ej. botella, unidad, porción).
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">UNIDADES POR 1 CAJA / PACK</label>
+              <input id="inv-ep-piezas" type="text" inputmode="decimal" placeholder="Vacío = sin conversión"
+                value="${(p.piezasPorEmbalaje > 0) ? esc(String(p.piezasPorEmbalaje)) : ''}"
+                style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:14px;color:var(--primary);background:var(--white);box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:5px;">NOMBRE EMBALAJE (ej. caja)</label>
+              <input id="inv-ep-emblbl" type="text" value="${esc((p.embalajeLabel || 'caja'))}"
+                style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:14px;color:var(--primary);background:var(--white);box-sizing:border-box;">
+            </div>
+          </div>
+          <button type="button" id="inv-ep-convert-stock" style="margin-top:12px;width:100%;background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font-family:inherit;font-size:11px;font-weight:700;color:#475569;cursor:pointer;">
+            Corregir conteo: el stock actual son cajas — multiplicar por N y pasar a unidades
+          </button>
+        </div>
+
         <!-- Category management -->
         <details style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
           <summary style="padding:10px 14px;font-size:11px;font-weight:700;color:#94a3b8;cursor:pointer;background:#f8fafc;user-select:none;">⚙ Gestionar categorías y unidades</summary>
@@ -15772,6 +15997,20 @@ function invEditProd(id) {
     subSel.innerHTML = subs.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
   };
 
+  document.getElementById('inv-ep-convert-stock').onclick = () => {
+    const rawPiezas = (document.getElementById('inv-ep-piezas').value || '').trim();
+    const uxc = parseNumCL(rawPiezas, false) || 0;
+    if (uxc <= 0) { notify('⚠ Indica primero cuántas unidades trae 1 caja/embalaje'); return; }
+    const stockInp = document.getElementById('inv-ep-stock');
+    const cur = parseNumCL(stockInp.value, false) || 0;
+    if (cur <= 0) { notify('⚠ No hay stock que convertir'); return; }
+    const embLab = (document.getElementById('inv-ep-emblbl').value || '').trim() || 'caja';
+    const uDisp = document.getElementById('inv-ep-unidad').value || 'unidad';
+    if (!confirm(`¿Interpretar el stock actual (${cur}) como ${embLab}(s) y reemplazarlo por ${cur * uxc} ${uDisp}?`)) return;
+    stockInp.value = cur * uxc;
+    notify(`✓ Stock actualizado a ${cur * uxc} ${uDisp}`);
+  };
+
   // Save
   document.getElementById('inv-edit-save').onclick = () => {
     const nombre = invFormatProductNombre((document.getElementById('inv-ep-nombre').value||'').trim());
@@ -15787,6 +16026,15 @@ function invEditProd(id) {
     p.unidad = document.getElementById('inv-ep-unidad').value;
     p.stock  = parseNumCL(document.getElementById('inv-ep-stock').value,false)||0;
     p.minimo = parseNumCL(document.getElementById('inv-ep-minimo').value,false)||0;
+    const rawPiezas = (document.getElementById('inv-ep-piezas').value || '').trim();
+    const nPiezas = rawPiezas === '' ? 0 : (parseNumCL(rawPiezas, false) || 0);
+    if (nPiezas > 0) {
+      p.piezasPorEmbalaje = nPiezas;
+      p.embalajeLabel = (document.getElementById('inv-ep-emblbl').value || '').trim() || 'caja';
+    } else {
+      delete p.piezasPorEmbalaje;
+      delete p.embalajeLabel;
+    }
     close();
     invRender();
     markUnsaved();
