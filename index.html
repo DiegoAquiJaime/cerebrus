@@ -4723,7 +4723,8 @@ body.dark-mode .conflict-overlay{
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="fac-btn" id="inv-btn-iniciar" onclick="invOpenSemanaModal()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
-              <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPorProveedor()" style="display:none;">📤 Por proveedor</button>
+              <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPedidoPdfPorProveedor()" style="display:none;">📄 PDF proveedores</button>
+              <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
               <button class="fac-btn" id="inv-btn-transfer" onclick="transferirPedidoAMercaderia()" style="display:none;background:rgba(16,185,129,.1);color:var(--success);border-color:var(--success);">→ Enviar total a Mercadería</button>
             </div>
           </div>
@@ -4737,6 +4738,20 @@ body.dark-mode .conflict-overlay{
 
         <!-- Alerta calendario semana -->
         <div class="inv-sem-alert-cal" id="inv-sem-cal-alert"></div>
+
+        <!-- Agregar al pedido desde inventario -->
+        <div id="inv-add-pedido-card" class="inv-pedido-card" style="display:none;">
+          <div style="font-size:12px;font-weight:800;margin-bottom:10px;">🛒 Agregar producto desde inventario</div>
+          <div style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.45;">
+            El pedido suma cantidades al plan semanal y <b>no modifica el stock</b> hasta que marques recibido / cierres semana.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <select id="inv-pedido-add-prod" class="inv-filter-select" style="min-width:220px;flex:1;"></select>
+            <select id="inv-pedido-add-prov" class="inv-filter-select" style="min-width:180px;flex:1;"></select>
+            <input id="inv-pedido-add-qty" class="inv-pedido-qty" type="text" inputmode="decimal" placeholder="Cantidad" style="width:110px;">
+            <button class="fac-btn primary" onclick="invAddPedidoDesdePanel()">+ Agregar</button>
+          </div>
+        </div>
 
         <!-- Pedidos de la semana -->
         <div id="inv-ordenes-wrap"></div>
@@ -4859,6 +4874,7 @@ body.dark-mode .conflict-overlay{
             <option value="">Todos los tipos</option>
             <option value="despacho">Despachos</option>
             <option value="devolucion">Devoluciones</option>
+            <option value="ingreso_pedido">Ingreso por pedido</option>
             <option value="preelaboracion">Preelaboración</option>
             <option value="merma">Mermas</option>
           </select>
@@ -6527,7 +6543,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.11.1';
+const APP_VERSION = '2026.04.13.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -12604,12 +12620,13 @@ function invDedupeOrdenItems(orden) {
   var by = {};
   orden.items.forEach(function(it) {
     var id = it.prodId;
-    if (!by[id]) by[id] = { prodId: id, qty: 0, precio: 0, prov: it.prov || '', recibido: !!it.recibido, qtyRecibida: Number(it.qtyRecibida) || 0 };
+    if (!by[id]) by[id] = { prodId: id, qty: 0, precio: 0, prov: it.prov || '', recibido: !!it.recibido, qtyRecibida: Number(it.qtyRecibida) || 0, stockAppliedQty: Number(it.stockAppliedQty) || 0 };
     by[id].qty += Number(it.qty) || 0;
     if (it.precio && (!by[id].precio || it.precio < by[id].precio)) by[id].precio = it.precio;
     if (it.prov && !by[id].prov) by[id].prov = it.prov;
     if (it.recibido) by[id].recibido = true;
     if (it.qtyRecibida) by[id].qtyRecibida = Math.max(by[id].qtyRecibida, Number(it.qtyRecibida) || 0);
+    by[id].stockAppliedQty += Number(it.stockAppliedQty) || 0;
   });
   orden.items = Object.keys(by).map(function(k) { return by[k]; });
 }
@@ -13880,6 +13897,8 @@ function invRenderTable() {
             style="background:#10b98122;border:1px solid #10b98144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#10b981;white-space:nowrap;">← Devol.</button>
           <button onclick="invQuickMov('${p.id}','merma')" title="Registrar merma"
             style="background:#ef444422;border:1px solid #ef444444;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#ef4444;white-space:nowrap;">⚠ Merma</button>
+          <button onclick="event.stopPropagation();invQuickAddPedidoFromInv('${p.id}')" title="Agregar al pedido semanal (no altera stock)"
+            style="background:#0ea5e922;border:1px solid #0ea5e944;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#0369a1;white-space:nowrap;">🛒 Pedido</button>
         </div>
       </td>
       <td style="display:flex;gap:4px;align-items:center;">
@@ -13975,7 +13994,7 @@ function invAgregarOrden() {
 function invAgregarOrdenInterna(sem, label) {
   invInit();
   sem.ordenes.push({ id:'ord_'+Date.now(), label, fecha:new Date().toLocaleDateString('es-CL'),
-    items: state.inventario.map(p => ({ prodId:p.id, qty:0, prov:invBestProvider(p)||'', precio:invBestPrice(p)||0, recibido:false, qtyRecibida:0 }))
+    items: state.inventario.map(p => ({ prodId:p.id, qty:0, prov:invBestProvider(p)||'', precio:invBestPrice(p)||0, recibido:false, qtyRecibida:0, stockAppliedQty:0 }))
   });
 }
 
@@ -13983,10 +14002,14 @@ function invRenderPedido() {
   invInit();
   const sem   = invGetSemana();
   const wrap  = document.getElementById('inv-ordenes-wrap'); if(!wrap) return;
+  const addCard = document.getElementById('inv-add-pedido-card');
+  const addProd = document.getElementById('inv-pedido-add-prod');
+  const addQty  = document.getElementById('inv-pedido-add-qty');
   const btnAdd    = document.getElementById('inv-btn-add-orden');
   const btnInit   = document.getElementById('inv-btn-iniciar');
   const btnCerrar = document.getElementById('inv-btn-cerrar');
   const btnExport = document.getElementById('inv-btn-export-prov');
+  const btnExportXls = document.getElementById('inv-btn-export-xls');
 
   if (!sem) {
     set('inv-sem-titulo','Ninguna semana iniciada');
@@ -13996,8 +14019,10 @@ function invRenderPedido() {
     if (btnAdd) btnAdd.style.display='none';
     if (btnCerrar) btnCerrar.style.display='none';
     if (btnExport) btnExport.style.display='none';
+    if (btnExportXls) btnExportXls.style.display='none';
     const btnTransfer = document.getElementById('inv-btn-transfer');
     if (btnTransfer) btnTransfer.style.display = 'none';
+    if (addCard) addCard.style.display = 'none';
     wrap.innerHTML=''; invRenderSugerencias(); return;
   }
 
@@ -14009,8 +14034,32 @@ function invRenderPedido() {
   if (btnCerrar) btnCerrar.style.display = sem.cerrada?'none':'';
   if (btnAdd)    btnAdd.style.display    = sem.cerrada?'none':'';
   if (btnExport) btnExport.style.display = '';
+  if (btnExportXls) btnExportXls.style.display = '';
   const btnTransfer = document.getElementById('inv-btn-transfer');
   if (btnTransfer) btnTransfer.style.display = '';
+  if (addCard) addCard.style.display = sem.cerrada ? 'none' : '';
+  if (addProd) {
+    const prev = addProd.value || '';
+    addProd.innerHTML = '<option value="">Seleccionar producto…</option>' + state.inventario
+      .slice()
+      .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}))
+      .map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}${p.unidad?' · '+esc(p.unidad):''}${(p.stock||0)?' · stock '+(p.stock||0):''}</option>`)
+      .join('');
+    if (prev && state.inventario.some(p=>p.id===prev)) addProd.value = prev;
+  }
+  if (addQty && !addQty.value) addQty.value = '1';
+  const addProv = document.getElementById('inv-pedido-add-prov');
+  if (addProv) {
+    const prevP = addProv.value || '';
+    const provsAdd = state.facturas ? Object.keys(state.facturas).sort() : [];
+    addProv.innerHTML = [
+      `<option value="">— proveedor —</option>`,
+      ...provsAdd.map(p => `<option value="${esc(p)}">${esc(p)}</option>`),
+      `<option value="__otro__">Otro</option>`,
+      `<option value="__nuevo__">+ Nuevo proveedor…</option>`
+    ].join('');
+    if (prevP) addProv.value = prevP;
+  }
 
   let totalCosto=0,totalItems=0,provSet=new Set(),recibidos=0,totalOrden=0;
   sem.ordenes.forEach(o=>o.items.forEach(it=>{
@@ -14026,15 +14075,41 @@ function invRenderPedido() {
       const prod = state.inventario.find(p=>p.id===it.prodId); if(!prod) return '';
       const stockAct = prod.stock||0; const minimo = prod.minimo||0;
       const sc = stockAct<=0?'inv-sem-rojo':stockAct<=minimo?'inv-sem-amarillo':'inv-sem-verde';
-      const provOpts = ['',...provs].map(p=>`<option value="${esc(p)}" ${it.prov===p?'selected':''}>${p||'— elige —'}</option>`).join('');
-      const recBtn = it.qty>0?`<button onclick="invToggleRecibido('${sem.id}','${orden.id}','${it.prodId}')"
-        style="font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid ${it.recibido?'var(--success)':'var(--border)'};background:${it.recibido?'rgba(16,185,129,.1)':'transparent'};color:${it.recibido?'var(--success)':'#94a3b8'};cursor:pointer;font-family:inherit;white-space:nowrap;">${it.recibido?'✓ Recibido':'Recibir'}</button>`:'';
+      const provOpts = ['',...provs,'__otro__','__nuevo__'].map(p=>{
+        if (p === '') return `<option value="" ${!it.prov?'selected':''}>— elige proveedor —</option>`;
+        if (p === '__otro__') return `<option value="__otro__" ${it.prov==='__otro__'?'selected':''}>Otro</option>`;
+        if (p === '__nuevo__') return `<option value="__nuevo__" ${it.prov==='__nuevo__'?'selected':''}>+ Nuevo proveedor…</option>`;
+        return `<option value="${esc(p)}" ${it.prov===p?'selected':''}>${esc(p)}</option>`;
+      }).join('');
+      const qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty||0);
+      const recUi = it.qty>0 ? `
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#64748b;cursor:pointer;user-select:none;">
+            <input type="checkbox" ${it.recibido?'checked':''} ${sem.cerrada?'disabled':''}
+              onchange="invToggleRecepcionStock('${sem.id}','${orden.id}','${it.prodId}',this.checked)">
+            <span style="color:${it.recibido?'var(--success)':'#94a3b8'};">${it.recibido?'Ingresado a bodega':'Confirmar ingreso'}</span>
+          </label>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:9px;color:#94a3b8;">Recibido</span>
+            <input class="inv-pedido-qty" type="text" inputmode="decimal" value="${qtyRec}"
+              ${sem.cerrada||it.recibido?'disabled':''}
+              onchange="invSetOrdenQtyRecibida('${sem.id}','${orden.id}','${it.prodId}',this.value)"
+              style="width:62px;">
+            <span style="font-size:9px;color:#94a3b8;">${esc(prod.unidad||'u')}</span>
+          </div>
+          ${!sem.cerrada ? `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+            <button type="button" onclick="invEditPedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
+              style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:transparent;color:#64748b;cursor:pointer;font-family:inherit;">✏ Editar</button>
+            <button type="button" onclick="invRemovePedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
+              style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:var(--danger);cursor:pointer;font-family:inherit;">✕ Quitar</button>
+          </div>` : ''}
+        </div>` : `<span style="font-size:10px;color:#94a3b8;">—</span>`;
       return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)}<div style="font-size:13px;font-weight:800;color:#334155;margin-top:4px;">${esc(prod.cat||'')} · Stock: ${stockAct} ${esc(prod.unidad||'u')}</div></td>
         <td><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty||0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;"> <span style="font-size:10px;color:#94a3b8;">${esc(prod.unidad||'u')}</span></td>
         <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;min-width:110px;">${provOpts}</select></td>
         <td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(prod.unidad||'u')}</span></td>
         <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
-        <td>${recBtn}</td></tr>`;
+        <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
     }).filter(Boolean).join('');
     return `<div class="inv-orden-card"><div class="inv-orden-head">
       <span class="inv-orden-num">${esc(orden.label)}</span>
@@ -14043,7 +14118,7 @@ function invRenderPedido() {
       ${!sem.cerrada?`<button onclick="invRemoveOrden('${sem.id}','${orden.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:12px;">✕</button>`:''}
     </div>
     <div class="inv-orden-body"><table class="inv-orden-table">
-      <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th></th></tr></thead>
+      <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Recepción</th></tr></thead>
       <tbody>${rows}</tbody></table></div></div>`;
   }).join('');
 
@@ -14053,11 +14128,273 @@ function invRenderPedido() {
 
 function invFindOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.id!==semId)return null;return sem.ordenes.find(o=>o.id===ordenId);}
 function invFindItem(orden,prodId){return orden?.items.find(it=>it.prodId===prodId);}
+function invGetOrdenDestino(sem){return sem?.ordenes?.length ? sem.ordenes[sem.ordenes.length-1] : null;}
 
-function invSetOrdenQty(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.qty=parseNumCL(val,false)||0;invUpdateSemKpis();}
-function invSetOrdenProv(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.prov=val;const prod=state.inventario.find(p=>p.id===prodId);const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===val);if(pe&&pe.precio)it.precio=pe.precio;invRenderPedido();}
+function invEnsureProveedorCatalog(nombreRaw) {
+  const nombre = facNormalizeProvNombre((nombreRaw||'').trim());
+  if (!nombre) return '';
+  if (!state.facturas) state.facturas = {};
+  if (!state.facturas[nombre]) state.facturas[nombre] = [];
+  return nombre;
+}
+
+function invPickProveedorInteractivo(pref) {
+  const provs = state.facturas ? Object.keys(state.facturas).sort() : [];
+  const lines = [
+    'Elige proveedor escribiendo el número:',
+    ...provs.map((p,i)=>`${i+1}) ${p}`),
+    `${provs.length+1}) Otro`,
+    `${provs.length+2}) + Nuevo proveedor…`
+  ].join('\n');
+  const def = pref && provs.includes(pref) ? String(provs.indexOf(pref)+1) : '';
+  const sel = prompt(lines + '\n\nNúmero:', def);
+  if (sel === null) return null;
+  const n = parseInt(String(sel).trim(), 10);
+  if (!n || n < 1 || n > provs.length+2) { notify('⚠ Selección inválida'); return null; }
+  if (n <= provs.length) return provs[n-1];
+  if (n === provs.length+1) {
+    const otro = prompt('Nombre para «Otro» (proveedor genérico):', 'Otro');
+    if (otro === null) return null;
+    const nn = invEnsureProveedorCatalog(otro || 'Otro');
+    markUnsaved();
+    return nn || 'Otro';
+  }
+  const nnombre = prompt('Nombre del nuevo proveedor:', '');
+  if (nnombre === null) return null;
+  const nn = invEnsureProveedorCatalog(nnombre);
+  if (!nn) { notify('⚠ Nombre inválido'); return null; }
+  markUnsaved();
+  notify(`✅ Proveedor «${nn}» listo para el pedido`);
+  return nn;
+}
+
+function invResolveProveedorSelectVal(rawVal, prod) {
+  let val = rawVal;
+  if (val === '__nuevo__') {
+    const nn = invPickProveedorInteractivo(invBestProvider(prod)||'');
+    if (!nn) return { cancel: true };
+    val = nn;
+  } else if (val === '__otro__') {
+    const otro = prompt('Describe el proveedor «Otro»:', 'Otro');
+    if (otro === null) return { cancel: true };
+    val = invEnsureProveedorCatalog(otro || 'Otro') || 'Otro';
+    markUnsaved();
+  }
+  if (!val) { notify('⚠ Debes elegir proveedor'); return { cancel: true }; }
+  return { val };
+}
+
+function invAgregarProductoAPedido(prodId, qty, opts={}) {
+  const sem = invGetSemana();
+  if (!sem || sem.cerrada) {
+    notify('⚠ Inicia una semana activa para agregar al pedido');
+    invSubTab('pedido');
+    return false;
+  }
+  const prod = state.inventario.find(p => p.id === prodId);
+  if (!prod) { notify('⚠ Producto no encontrado'); return false; }
+  const cantidad = Math.max(0, Number(qty) || 0);
+  if (!cantidad) { notify('⚠ Ingresa una cantidad válida'); return false; }
+  const orden = invGetOrdenDestino(sem);
+  if (!orden) { notify('⚠ No hay pedido abierto en la semana'); return false; }
+
+  let prov = opts.proveedor;
+  if (!prov) {
+    const picked = invPickProveedorInteractivo(invBestProvider(prod) || '');
+    if (!picked) return false;
+    prov = picked;
+  }
+
+  let it = invFindItem(orden, prodId);
+  pushUndo();
+  if (!it) {
+    it = { prodId, qty:0, prov:'', precio:invBestPrice(prod)||0, recibido:false, qtyRecibida:0, stockAppliedQty:0 };
+    orden.items.push(it);
+  }
+  it.qty = (it.qty || 0) + cantidad;
+  it.prov = prov;
+  const pe = _getPreciosUnified(prod).find(x => (x.prov||x.nombre) === prov);
+  if (pe && pe.precio) it.precio = pe.precio;
+  if (!it.precio) it.precio = invBestPrice(prod) || 0;
+  invRenderPedido();
+  notify(`✓ ${prod.nombre} +${cantidad} ${prod.unidad||'u'} al pedido (${orden.label}) · ${prov}`);
+  if (opts.openPedido) invSubTab('pedido');
+  markUnsaved();
+  return true;
+}
+
+function invQuickAddPedidoFromInv(prodId) {
+  const prod = state.inventario.find(p => p.id === prodId);
+  if (!prod) return;
+  const v = prompt(`Agregar "${prod.nombre}" al pedido semanal\nCantidad (${prod.unidad||'u'}):`, '1');
+  if (v === null) return;
+  const qty = parseNumCL((v||'0'), false) || 0;
+  invAgregarProductoAPedido(prodId, qty, { openPedido: false });
+}
+
+function invAddPedidoDesdePanel() {
+  const prodId = document.getElementById('inv-pedido-add-prod')?.value || '';
+  const qtyRaw = document.getElementById('inv-pedido-add-qty')?.value || '';
+  const provRaw = document.getElementById('inv-pedido-add-prov')?.value || '';
+  if (!prodId) { notify('⚠ Elige un producto'); return; }
+  if (!provRaw) { notify('⚠ Elige proveedor'); return; }
+  const prod = state.inventario.find(p=>p.id===prodId);
+  const r = invResolveProveedorSelectVal(provRaw, prod);
+  if (r && r.cancel) return;
+  const qty = parseNumCL(qtyRaw, false) || 0;
+  if (!invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: r.val })) return;
+  const qtyEl = document.getElementById('inv-pedido-add-qty');
+  if (qtyEl) qtyEl.value = '1';
+}
+
+function invPedidoAplicarDeltaStock(prod, deltaQty, meta) {
+  if (!prod || !deltaQty) return;
+  prod.stock = (prod.stock||0) + deltaQty;
+  const movs = movGetAll();
+  const fechaStr = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  movs.push({
+    id:'mov_'+Date.now(),
+    tipo:'ingreso_pedido',
+    producto: prod.nombre,
+    prodId: prod.id,
+    cantidad: Math.abs(deltaQty),
+    unidad: prod.unidad||'u',
+    origen: meta.proveedor || '',
+    destino:'Bodega',
+    responsable: currentUser,
+    nota: meta.nota || '',
+    fecha: fechaStr,
+    hora: movHoraAhora(),
+    ts: Date.now(),
+    _pedidoSemId: meta.semId||'',
+    _pedidoOrdenId: meta.ordenId||'',
+    _pedidoItemProdId: meta.prodId||''
+  });
+}
+
+function invToggleRecepcionStock(semId, ordenId, prodId, checked) {
+  const orden = invFindOrden(semId, ordenId);
+  const it = invFindItem(orden, prodId);
+  const sem = invGetSemana();
+  if (!it || !sem || sem.cerrada) return;
+  const prod = state.inventario.find(p=>p.id===prodId);
+  if (!prod) return;
+  if (!it.prov || it.prov==='__otro__' || it.prov==='__nuevo__') {
+    notify('⚠ Elige proveedor antes de confirmar recepción');
+    invRenderPedido();
+    return;
+  }
+  const pedidoQty = it.qty||0;
+  let recQty = parseNumCL(String(it.qtyRecibida!=null?it.qtyRecibida:pedidoQty), false);
+  if (!recQty && pedidoQty) recQty = pedidoQty;
+  if (checked) {
+    if (!pedidoQty) { notify('⚠ Cantidad pedida es 0'); invRenderPedido(); return; }
+    if (!recQty || recQty <= 0) { notify('⚠ Indica cantidad recibida'); invRenderPedido(); return; }
+    if (!confirm(`¿Confirmar ingreso a bodega?\n\n${prod.nombre}\n+ ${recQty} ${prod.unidad||'u'}\nProveedor: ${it.prov}`)) { invRenderPedido(); return; }
+    pushUndo();
+    const prev = Number(it.stockAppliedQty)||0;
+    const delta = recQty - prev;
+    if (delta !== 0) invPedidoAplicarDeltaStock(prod, delta, {
+      proveedor: it.prov,
+      semId: sem.id,
+      ordenId,
+      prodId,
+      nota: `Pedido semanal · ${sem.nombre||''} · ${orden?.label||''} · pedido ${pedidoQty} · recibido ${recQty}`
+    });
+    it.stockAppliedQty = recQty;
+    it.recibido = true;
+    it.qtyRecibida = recQty;
+    markUnsaved();
+    invRender();
+    invRenderPedido();
+    movRender();
+    notify(`✅ Ingresado a inventario: ${recQty} ${prod.unidad||'u'}`);
+    return;
+  }
+  if (!confirm(`¿Revertir ingreso a bodega de "${prod.nombre}"?\nSe descontará lo aplicado (${Number(it.stockAppliedQty)||0} ${prod.unidad||'u'}).`)) { invRenderPedido(); return; }
+  pushUndo();
+  const applied = Number(it.stockAppliedQty)||0;
+  if (applied) invPedidoAplicarDeltaStock(prod, -applied, {
+    proveedor: it.prov,
+    semId: sem.id,
+    ordenId,
+    prodId,
+    nota: `Reversa recepción pedido · ${sem.nombre||''} · ${orden?.label||''}`
+  });
+  it.stockAppliedQty = 0;
+  it.recibido = false;
+  markUnsaved();
+  invRender();
+  invRenderPedido();
+  movRender();
+}
+
+function invSetOrdenQtyRecibida(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  if (it.recibido) { notify('⚠ Quita la confirmación de recepción para editar cantidad recibida'); invRenderPedido(); return; }
+  pushUndo();
+  it.qtyRecibida = parseNumCL(val,false)||0;
+  invRenderPedido();
+}
+
+function invEditPedidoLinea(semId,ordenId,prodId){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  if (it.recibido) { notify('⚠ Quita la recepción confirmada antes de editar la línea'); return; }
+  const prod=state.inventario.find(p=>p.id===prodId);if(!prod)return;
+  const q=prompt(`Cantidad pedida (${prod.unidad||'u'}):`, String(it.qty||0));
+  if(q===null)return;
+  const pr=prompt(`Precio unitario (/${prod.unidad||'u'}):`, String(it.precio||0));
+  if(pr===null)return;
+  pushUndo();
+  it.qty=parseNumCL(q,false)||0;
+  it.precio=parseInt((pr||'0').replace(/[^\d]/g,''),10)||0;
+  invRenderPedido();invUpdateSemKpis();markUnsaved();
+}
+
+function invRemovePedidoLinea(semId,ordenId,prodId){
+  const orden=invFindOrden(semId,ordenId);if(!orden)return;
+  const it=invFindItem(orden,prodId);if(!it)return;
+  if (it.recibido) { notify('⚠ Quita la recepción confirmada antes de eliminar la línea'); return; }
+  if(!confirm('¿Quitar esta línea del pedido?'))return;
+  pushUndo();
+  orden.items = orden.items.filter(x=>x.prodId!==prodId);
+  invRenderPedido();invUpdateSemKpis();markUnsaved();
+}
+
+function invSetOrdenQty(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  const prevApplied = Number(it.stockAppliedQty)||0;
+  if (prevApplied) {
+    notify('⚠ Quita la recepción confirmada antes de cambiar la cantidad pedida');
+    invRenderPedido();
+    return;
+  }
+  pushUndo();
+  it.qty=parseNumCL(val,false)||0;
+  if (!it.recibido) it.qtyRecibida = it.qty;
+  invUpdateSemKpis();
+  invRenderPedido();
+}
+
+function invSetOrdenProv(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  if (Number(it.stockAppliedQty||0) > 0) {
+    notify('⚠ No puedes cambiar proveedor con recepción ya ingresada a bodega');
+    invRenderPedido();
+    return;
+  }
+  const prod=state.inventario.find(p=>p.id===prodId);
+  const r = invResolveProveedorSelectVal(val, prod);
+  if (r && r.cancel) { invRenderPedido(); return; }
+  pushUndo();
+  it.prov = r.val;
+  const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===it.prov);
+  if(pe&&pe.precio) it.precio=pe.precio;
+  invRenderPedido();
+  markUnsaved();
+}
+
 function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
-function invToggleRecibido(semId,ordenId,prodId){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.recibido=!it.recibido;if(it.recibido&&!it.qtyRecibida)it.qtyRecibida=it.qty;invRenderPedido();}
 function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
 function invUpdateSemKpis(){const sem=invGetSemana();if(!sem)return;let t=0,i=0;sem.ordenes.forEach(o=>o.items.forEach(it=>{if(it.qty>0){t+=it.qty*it.precio;i++;}}));set('inv-sk-total',fmt(t));set('inv-sk-items',i);}
 
@@ -14380,35 +14717,84 @@ function invRenderConsumo() {
   </div>`;
 }
 
-function invExportPorProveedor() {
-  const sem=invGetSemana()||state.semanasHistorial?.[0]; if(!sem){notify('⚠ No hay semana activa');return;}
+function invPedidoAgruparPorProveedor(sem) {
   invInit();
-  const byProv={};
-  sem.ordenes.forEach(o=>o.items.forEach(it=>{
-    if(!it.qty||it.qty<=0) return;
-    const prod=state.inventario.find(p=>p.id===it.prodId); if(!prod) return;
-    const pn=it.prov||'Sin proveedor';
-    if(!byProv[pn]) byProv[pn]=[];
-    const ex=byProv[pn].find(x=>x.prodId===it.prodId);
-    if(ex)ex.qty+=it.qty; else byProv[pn].push({prodId:it.prodId,nombre:prod.nombre,unidad:prod.unidad||'u',qty:it.qty,precio:it.precio});
+  const byProv = {};
+  sem.ordenes.forEach(o => o.items.forEach(it => {
+    if (!it.qty || it.qty <= 0) return;
+    const prod = state.inventario.find(p => p.id === it.prodId); if (!prod) return;
+    const pn = it.prov || 'Sin proveedor';
+    if (!byProv[pn]) byProv[pn] = [];
+    const ex = byProv[pn].find(x => x.prodId === it.prodId);
+    if (ex) ex.qty += it.qty;
+    else byProv[pn].push({ prodId: it.prodId, nombre: prod.nombre, unidad: prod.unidad || 'u', qty: it.qty, precio: it.precio });
   }));
-  if(!Object.keys(byProv).length){notify('⚠ No hay ítems con cantidad');return;}
-  const sections=Object.entries(byProv).map(([pn,items])=>{
-    const total=items.reduce((s,x)=>s+x.qty*x.precio,0);
-    const rows=items.map(x=>`<tr><td>${esc(x.nombre)}</td><td style="text-align:right;">${x.qty}</td><td>${esc(x.unidad)}</td><td style="text-align:right;">${x.precio?fmt(x.precio):'—'}</td><td style="text-align:right;font-weight:700;">${x.qty*x.precio?fmt(x.qty*x.precio):'—'}</td></tr>`).join('');
+  const entries = Object.entries(byProv).sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'es',{sensitivity:'base'}));
+  entries.forEach(([,items]) => items.sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es',{sensitivity:'base'})));
+  return entries;
+}
+
+function invExportPedidoPdfPorProveedor() {
+  const sem = invGetSemana() || state.semanasHistorial?.[0];
+  if (!sem) { notify('⚠ No hay semana activa'); return; }
+  const entries = invPedidoAgruparPorProveedor(sem);
+  if (!entries.length) { notify('⚠ No hay ítems con cantidad'); return; }
+  const sections = entries.map(([pn, items]) => {
+    const total = items.reduce((s, x) => s + x.qty * x.precio, 0);
+    const rows = items.map(x => `<tr><td>${esc(x.nombre)}</td><td style="text-align:right;">${x.qty}</td><td>${esc(x.unidad)}</td><td style="text-align:right;">${x.precio ? fmt(x.precio) : '—'}</td><td style="text-align:right;font-weight:700;">${x.qty * x.precio ? fmt(x.qty * x.precio) : '—'}</td></tr>`).join('');
     return `<div style="margin-bottom:28px;page-break-inside:avoid;"><h2 style="font-size:15px;font-weight:800;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">🏷 ${esc(pn)}</h2>
     <table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#f8fafc;"><th style="padding:6px 8px;font-size:9px;text-transform:uppercase;color:#94a3b8;">Producto</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">Qty</th><th style="padding:6px 8px;font-size:9px;text-transform:uppercase;color:#94a3b8;">Unidad</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">P. unit.</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">Subtotal</th></tr></thead>
-    <tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="padding:6px 8px;font-weight:800;text-align:right;">Total ${esc(pn)}:</td><td style="padding:6px 8px;font-weight:800;text-align:right;color:#10b981;">${total?fmt(total):'—'}</td></tr></tfoot></table></div>`;
+    <tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="padding:6px 8px;font-weight:800;text-align:right;">Total ${esc(pn)}:</td><td style="padding:6px 8px;font-weight:800;text-align:right;color:#10b981;">${total ? fmt(total) : '—'}</td></tr></tfoot></table></div>`;
   }).join('');
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido ${esc(sem.nombre)} — CEREBRUS</title><style>body{font-family:-apple-system,sans-serif;padding:24px;color:#1a2535;}h1{font-size:20px;font-weight:800;}h1 .brand{font-size:11px;font-weight:600;color:#94a3b8;display:block;margin-top:6px;letter-spacing:.02em;}.sub{font-size:11px;color:#94a3b8;margin-bottom:24px;}table td{border-bottom:1px solid #f1f5f9;padding:6px 8px;}@media print{body{padding:12px;}}</style></head>
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido ${esc(sem.nombre)} — CEREBRUS</title><style>body{font-family:-apple-system,sans-serif;padding:24px;color:#1a2535;}h1{font-size:20px;font-weight:800;}h1 .brand{font-size:11px;font-weight:600;color:#94a3b8;display:block;margin-top:6px;letter-spacing:.02em;}.sub{font-size:11px;color:#94a3b8;margin-bottom:24px;}table td{border-bottom:1px solid #f1f5f9;padding:6px 8px;}@media print{body{padding:12px;}}</style></head>
   <body><h1>📋 Pedido — ${esc(sem.nombre)}<span class="brand">CEREBRUS · Gastronomy Suite by Aquí Jaime</span></h1><div class="sub">Administrado por Diego Palacios Brockhaus · ${new Date().toLocaleDateString('es-CL')}</div>${sections}
   <script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`;
-  const win=window.open('','_blank');
-  if(win){win.document.write(html);win.document.close();}else notify('⚠ Activa las ventanas emergentes');
+  const win = window.open('', '_blank');
+  if (win) { win.document.write(html); win.document.close(); }
+  else notify('⚠ Activa las ventanas emergentes');
+}
+
+function invExportPedidoExcelPorProveedor() {
+  const sem = invGetSemana() || state.semanasHistorial?.[0];
+  if (!sem) { notify('⚠ No hay semana activa'); return; }
+  const entries = invPedidoAgruparPorProveedor(sem);
+  if (!entries.length) { notify('⚠ No hay ítems con cantidad'); return; }
+  const blocks = entries.map(([pn, items]) => {
+    const rows = items.map(x => `<tr>
+      <td>${esc(x.nombre)}</td>
+      <td style="text-align:right;">${x.qty}</td>
+      <td>${esc(x.unidad)}</td>
+      <td style="text-align:right;">${x.precio ? fmt(x.precio) : '—'}</td>
+      <td style="text-align:right;">${x.qty * x.precio ? fmt(x.qty * x.precio) : '—'}</td>
+    </tr>`).join('');
+    const total = items.reduce((s, x) => s + x.qty * x.precio, 0);
+    return `<h2>${esc(pn)}</h2>
+      <table border="1" cellspacing="0" cellpadding="4">
+        <thead><tr><th>Producto</th><th>Cantidad</th><th>Unidad</th><th>P. unit.</th><th>Subtotal</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><th colspan="4" style="text-align:right;">Total</th><th style="text-align:right;">${total ? fmt(total) : '—'}</th></tr></tfoot>
+      </table><br/>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>
+    <h1>Pedido — ${esc(sem.nombre)}</h1>
+    <p style="font-size:11px;color:#64748b;">${new Date().toLocaleString('es-CL')}</p>
+    ${blocks}
+  </body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const stamp = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  const fname = `CEREBRUS_pedido_proveedores_${stamp}.xls`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  notify(`✓ Descargado: ${fname}`);
 }
 
 function invTogglePedido(){ invSubTab('pedido'); }
-function invExportPedido(){ invExportPorProveedor(); }
+function invExportPedido(){ invExportPedidoPdfPorProveedor(); }
 function invUpdateQty(id,val){const p=state.inventario.find(x=>x.id===id);if(!p)return;pushUndo();p.qty=parseNumCL(val||0,false)||0;invCheckKpis();}
 
 function invToggleForm() {
@@ -14759,6 +15145,7 @@ function movRender() {
   const tiposBadge = {
     despacho:       '<span style="background:#6366f122;color:#6366f1;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">→ DESPACHO</span>',
     devolucion:     '<span style="background:#10b98122;color:#10b981;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">← DEVOLUCIÓN</span>',
+    ingreso_pedido: '<span style="background:#0ea5e922;color:#0369a1;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">📦 INGRESO PEDIDO</span>',
     preelaboracion: '<span style="background:#8b5cf622;color:#8b5cf6;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">⚗ PREELABORACIÓN</span>',
     merma:          '<span style="background:#ef444422;color:#ef4444;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;">⚠ MERMA</span>',
   };
@@ -14835,10 +15222,11 @@ function movEliminar(id) {
       }
       // accion === '3' o null → no hacer nada
 
-    } else if (mov.tipo === 'devolucion' && mov.destino === 'Bodega') {
+    } else if ((mov.tipo === 'devolucion' && mov.destino === 'Bodega') || mov.tipo === 'ingreso_pedido') {
       // Producto entró al inventario → ¿descontar?
       accion = prompt(
-        `El producto "${prod.nombre}" fue devuelto a bodega (${mov.cantidad} ${mov.unidad||'u'}).\n` +
+        `El producto "${prod.nombre}" ingresó a bodega (${mov.cantidad} ${mov.unidad||'u'}).\n` +
+        `Tipo: ${mov.tipo==='ingreso_pedido'?'Ingreso por pedido':'Devolución'}\n` +
         `Stock actual: ${prod.stock||0} ${prod.unidad||'u'}\n\n` +
         `¿Qué hacer con el stock?\n` +
         `1 = Descontar todo (${mov.cantidad} ${mov.unidad||'u'})\n` +

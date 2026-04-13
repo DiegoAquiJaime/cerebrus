@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.11.7",
-  "notes": "Facturas IA: aclara pedido vs stock; opción caja→unidad al pedido; texto modal import desde facturas guardadas."
+  "version": "2026.04.13.1",
+  "notes": "Inventario: pedido semanal con proveedor obligatorio, recepción a stock con confirmación, export PDF/Excel por proveedor; SAC/UI varios."
 }
