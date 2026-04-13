@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.13.2",
-  "notes": "Bodega/Inventario: alerta de stock crítico con acceso directo a la tabla filtrada; alineación de mínimo efectivo con calendario."
+  "version": "2026.04.13.3",
+  "notes": "Inventario: alerta de stock crítico visible solo para Bodega, Alberto y Diego; salto a tabla filtrada."
 }

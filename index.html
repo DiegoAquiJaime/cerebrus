@@ -4553,7 +4553,7 @@ body.dark-mode .conflict-overlay{
       <div id="inv-bodega-crit-banner" style="display:none;margin-bottom:14px;background:linear-gradient(135deg,#fff1f2,#fff7ed);border:1px solid #fecdd3;border-radius:12px;padding:12px 16px;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
           <div style="min-width:220px;flex:1;">
-            <div style="font-size:11px;font-weight:900;color:#9f1239;letter-spacing:.04em;text-transform:uppercase;">Bodega · alerta de stock</div>
+            <div style="font-size:11px;font-weight:900;color:#9f1239;letter-spacing:.04em;text-transform:uppercase;">Alerta de stock (operación)</div>
             <div id="inv-bodega-crit-text" style="margin-top:4px;font-size:13px;font-weight:800;color:#7f1d1d;line-height:1.35;"></div>
             <div style="margin-top:6px;font-size:10px;color:#9f1239;opacity:.85;">Tip: el aviso considera el mínimo efectivo (incluye ajuste por fechas especiales cuando aplica).</div>
           </div>
@@ -6561,7 +6561,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.13.2';
+const APP_VERSION = '2026.04.13.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13583,11 +13583,15 @@ function invVerSoloStockCritico(focusProdId) {
   notify('🔎 Mostrando solo stock crítico en la tabla');
 }
 
+function invPuedeVerAlertaStockCritico() {
+  return currentUser === 'Bodega' || currentUser === 'Alberto' || currentUser === 'Diego';
+}
+
 function invBodegaUpdateCritBanner(criticos) {
   const ban = document.getElementById('inv-bodega-crit-banner');
   const txt = document.getElementById('inv-bodega-crit-text');
   if (!ban || !txt) return;
-  if (currentUser !== 'Bodega' || !criticos.length) {
+  if (!invPuedeVerAlertaStockCritico() || !criticos.length) {
     ban.style.display = 'none';
     return;
   }
