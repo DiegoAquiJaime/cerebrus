@@ -21204,6 +21204,7 @@ function sacRenderCargas() {
           ? `<button type="button" class="sac-estado-btn pausa" onclick="sacTogglePausa('${c.id}')">⏸ PAUSA · Reactivar</button>`
           : `<button type="button" class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
              ${!c._esPago ? `<button type="button" onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>
+             <button type="button" onclick="sacAjustarSaldo('${c.id}')" style="font-size:9px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:var(--warning);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:700;">✏ Ajustar saldo</button>
              <button type="button" onclick="sacTogglePausa('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.35);color:#6366f1;cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:700;">⏸ Pausar</button>` : ''}`}
       </div>
       <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
@@ -21697,6 +21698,7 @@ function sacEditMonto(id) {
 // ── Pago parcial con registro automático ──
 // Al registrar un pago parcial de X sobre una carga de Y:
 // 1. La carga original queda en Y-X (pendiente)
+//    (opcionalmente se puede corregir el saldo pendiente real)
 // 2. Se crea automáticamente una carga nueva de X con estado "pagado"
 function sacPagarParcial(id) {
   const cargas = sacGetCargas();
@@ -21728,7 +21730,23 @@ function sacPagarParcial(id) {
   } else {
     // Actualizar la carga original
     c.pagadoParcial = (c.pagadoParcial||0) + abono;
-    const nuevoPendiente = c.monto - c.pagadoParcial;
+    let nuevoPendiente = c.monto - c.pagadoParcial;
+
+    // Permitir corregir el saldo pendiente real para reflejar cambios externos.
+    if (nuevoPendiente > 0) {
+      const vPend = prompt(
+        `Saldo pendiente actual para "${c.nombre}"\n` +
+        `Calculado automáticamente: ${fmt(nuevoPendiente)}\n\n` +
+        'Si cambió por factores externos, escribe el nuevo saldo.\n' +
+        'Deja vacío para mantener el calculado.',
+        String(nuevoPendiente)
+      );
+      if (vPend !== null && String(vPend).trim() !== '') {
+        const pendReal = Math.max(0, parseNumCL(vPend, false) || 0);
+        c.monto = (c.pagadoParcial || 0) + pendReal;
+        nuevoPendiente = pendReal;
+      }
+    }
 
     if (nuevoPendiente <= 0) {
       // Saldada completamente
@@ -21748,7 +21766,7 @@ function sacPagarParcial(id) {
         montoReal: abono,
         estado:   'pagado',
         resp:     c.resp || '',
-        nota:     `Abono ${fmt(abono)} de ${fmt(c.monto)} total · Pendiente: ${fmt(nuevoPendiente)}`,
+        nota:     `Abono ${fmt(abono)} · Total vigente: ${fmt(c.monto)} · Pendiente: ${fmt(nuevoPendiente)}`,
         _esPago:  true  // marca para no mostrar botón de pago parcial en este registro
       };
       sacTouchCarga(pago);
@@ -21760,6 +21778,34 @@ function sacPagarParcial(id) {
   sacRenderCargas();
   sacCalcBalance();
   markUnsaved();
+}
+
+function sacAjustarSaldo(id) {
+  const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
+  if (c._esPago) return;
+  if (c.estado === 'pausa') { notify('⚠ Quita PAUSA antes de ajustar saldo.'); return; }
+  if (c.estado === 'pagado') { notify('⚠ Esta carga ya está pagada.'); return; }
+
+  const pagado = c.pagadoParcial || 0;
+  const pendienteActual = Math.max(0, (c.monto || 0) - pagado);
+  const v = prompt(
+    `Ajustar saldo pendiente de "${c.nombre}"\n` +
+    `Saldo actual: ${fmt(pendienteActual)}  |  Pagado acumulado: ${fmt(pagado)}\n\n` +
+    'Ingresa el nuevo saldo pendiente real:',
+    String(pendienteActual)
+  );
+  if (v === null) return;
+  const nuevoPendiente = Math.max(0, parseNumCL((v||'0'), false) || 0);
+
+  pushUndo();
+  c.monto = pagado + nuevoPendiente;
+  c.estado = nuevoPendiente <= 0 ? 'pagado' : (pagado > 0 ? 'parcial' : 'nopagado');
+  if (c.estado === 'pagado') c.montoReal = c.monto;
+  sacTouchCarga(c);
+  sacRenderCargas();
+  sacCalcBalance();
+  markUnsaved();
+  notify(`✏ Saldo ajustado a ${fmt(nuevoPendiente)} · Total vigente: ${fmt(c.monto)}`);
 }
 
 function sacEditCarga(id) {
