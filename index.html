@@ -4564,17 +4564,6 @@ body.dark-mode .conflict-overlay{
         </div>
       </div>
 
-      <div id="inv-stock-alerta" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:11px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <span style="font-weight:700;color:#c2410c;">⚠ Productos con stock bajo mínimo</span>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button type="button" class="fac-btn primary" onclick="invVerSoloStockCritico()" style="font-size:10px;padding:5px 10px;">Ver en tabla →</button>
-            <button onclick="this.closest('#inv-stock-alerta').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;">✕</button>
-          </div>
-        </div>
-        <div id="inv-stock-alerta-lista" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      </div>
-
       <!-- Sub-tabs: Inventario / Pedido Semana / Historial consumo -->
       <div class="inv-subtabs" style="display:flex;gap:0;margin-bottom:20px;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;">
         <button class="inv-subtab active" id="ist-inventario" onclick="invSubTab('inventario')">📦 Inventario</button>
@@ -13676,19 +13665,7 @@ function invCheckKpis() {
   }
   // Mostrar alerta discreta de stock bajo
   const alertaEl  = document.getElementById('inv-stock-alerta');
-  const alertaLst = document.getElementById('inv-stock-alerta-lista');
-  if (alertaEl && alertaLst) {
-    if (criticosLista.length) {
-      alertaEl.style.display = 'block';
-      alertaLst.innerHTML = criticosLista.map(p =>
-        `<span onclick="event.preventDefault();invVerSoloStockCritico('${p.id}')" style="background:#fed7aa;color:#c2410c;border-radius:12px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver este producto en la tabla (stock crítico)">
-          ${esc(p.nombre)} — ${p.stock||0}/${p.minimo||0} ${p.unidad||'u'}
-        </span>`
-      ).join('');
-    } else {
-      alertaEl.style.display = 'none';
-    }
-  }
+  if (alertaEl) alertaEl.style.display = 'none';
 
   invBodegaUpdateCritBanner(criticosLista);
 }
@@ -14322,15 +14299,20 @@ function invQuickAddPedidoFromInv(prodId) {
   const provSug = invProveedorSugeridoPedido(prod) || '';
   const v = prompt(
     `Agregar "${prod.nombre}" al pedido semanal\n` +
-    `Cantidad (${prod.unidad||'u'}) · proveedor sugerido: ${provSug || '—'}:`,
+    `Cantidad (${prod.unidad||'u'}) · proveedor: ${provSug || 'sin detectar'}:`,
     '1'
   );
   if (v === null) return;
   const qty = parseNumCL((v||'0'), false) || 0;
   if (!qty) { notify('⚠ Ingresa una cantidad válida'); return; }
-  const prov = invPedirProveedorRapido(prod, provSug);
+  let prov = provSug;
+  if (!prov) prov = invPedirProveedorRapido(prod, '');
   if (!prov) return;
-  if (!confirm(`Agregar al pedido:\n\n• ${prod.nombre}\n• Cantidad: ${qty} ${prod.unidad||'u'}\n• Proveedor: ${prov}`)) return;
+  if (!confirm(`Agregar al pedido:\n\n• ${prod.nombre}\n• Cantidad: ${qty} ${prod.unidad||'u'}\n• Proveedor: ${prov}\n\nAceptar = usar este proveedor\nCancelar = elegir otro proveedor`)) {
+    const alt = invPedirProveedorRapido(prod, prov);
+    if (!alt) return;
+    prov = alt;
+  }
   invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: prov });
 }
 
