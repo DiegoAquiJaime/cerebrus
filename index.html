@@ -14204,25 +14204,51 @@ function invEnsureProveedorCatalog(nombreRaw) {
   return nombre;
 }
 
+function invNormTxt(s) {
+  return String(s || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function invFindProveedorByHint(hintRaw) {
-  const hint = facNormalizeProvNombre((hintRaw || '').trim());
+  const hint = invNormTxt(hintRaw);
   if (!hint || !state.facturas) return '';
   const provs = Object.keys(state.facturas || {});
-  const exact = provs.find(p => facNormalizeProvNombre(p) === hint);
+  if (!provs.length) return '';
+
+  const exact = provs.find(p => invNormTxt(p) === hint);
   if (exact) return exact;
-  const contains = provs.find(p => {
-    const pn = facNormalizeProvNombre(p);
+
+  const byContains = provs.find(p => {
+    const pn = invNormTxt(p);
     return pn.includes(hint) || hint.includes(pn);
   });
-  return contains || '';
+  if (byContains) return byContains;
+
+  const hintTokens = hint.split(' ').filter(t => t.length >= 4);
+  if (!hintTokens.length) return '';
+  let best = '';
+  let bestScore = 0;
+  for (const p of provs) {
+    const pn = invNormTxt(p);
+    const score = hintTokens.reduce((s, t) => s + (pn.includes(t) ? 1 : 0), 0);
+    if (score > bestScore) { best = p; bestScore = score; }
+  }
+  return bestScore > 0 ? best : '';
 }
 
 function invProveedorSugeridoPedido(prod) {
   if (!prod) return '';
-  const direct = invFindProveedorByHint(prod.prov || '');
-  if (direct) return direct;
+  const sub = invFindProveedorByHint(prod.subfamilia || '');
+  if (sub) return sub;
   const fam = invFindProveedorByHint(prod.familia || '');
   if (fam) return fam;
+  const direct = invFindProveedorByHint(prod.prov || '');
+  if (direct) return direct;
   const best = invFindProveedorByHint(invBestProvider(prod) || '');
   if (best) return best;
   return '';
