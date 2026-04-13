@@ -13975,7 +13975,7 @@ function invRenderTable() {
           <button onclick="invQuickMov('${p.id}','merma')" title="Registrar merma"
             style="background:#ef444422;border:1px solid #ef444444;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#ef4444;white-space:nowrap;">⚠ Merma</button>
           <button onclick="event.stopPropagation();invQuickAddPedidoFromInv('${p.id}')" title="Agregar al pedido semanal (no altera stock)"
-            style="background:#0ea5e922;border:1px solid #0ea5e944;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#0369a1;white-space:nowrap;">🛒 Pedido</button>
+            style="background:linear-gradient(135deg,#0ea5e9,#2563eb);border:1px solid #1d4ed8;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;color:white;white-space:nowrap;box-shadow:0 2px 8px rgba(37,99,235,.28);">🛒 Pedido semana</button>
         </div>
       </td>
       <td style="display:flex;gap:4px;align-items:center;">
@@ -14137,6 +14137,18 @@ function invRenderPedido() {
     ].join('');
     if (prevP) addProv.value = prevP;
   }
+  if (addProd && addProv) {
+    addProd.onchange = function() {
+      const p = state.inventario.find(x => x.id === addProd.value);
+      const sug = invProveedorSugeridoPedido(p);
+      if (sug) addProv.value = sug;
+    };
+    if (addProd.value && !addProv.value) {
+      const p = state.inventario.find(x => x.id === addProd.value);
+      const sug = invProveedorSugeridoPedido(p);
+      if (sug) addProv.value = sug;
+    }
+  }
 
   let totalCosto=0,totalItems=0,provSet=new Set(),recibidos=0,totalOrden=0;
   sem.ordenes.forEach(o=>o.items.forEach(it=>{
@@ -14215,50 +14227,57 @@ function invEnsureProveedorCatalog(nombreRaw) {
   return nombre;
 }
 
-function invPickProveedorInteractivo(pref) {
-  const provs = state.facturas ? Object.keys(state.facturas).sort() : [];
-  const lines = [
-    'Elige proveedor escribiendo el número:',
-    ...provs.map((p,i)=>`${i+1}) ${p}`),
-    `${provs.length+1}) Otro`,
-    `${provs.length+2}) + Nuevo proveedor…`
-  ].join('\n');
-  const def = pref && provs.includes(pref) ? String(provs.indexOf(pref)+1) : '';
-  const sel = prompt(lines + '\n\nNúmero:', def);
-  if (sel === null) return null;
-  const n = parseInt(String(sel).trim(), 10);
-  if (!n || n < 1 || n > provs.length+2) { notify('⚠ Selección inválida'); return null; }
-  if (n <= provs.length) return provs[n-1];
-  if (n === provs.length+1) {
-    const otro = prompt('Nombre para «Otro» (proveedor genérico):', 'Otro');
-    if (otro === null) return null;
-    const nn = invEnsureProveedorCatalog(otro || 'Otro');
-    markUnsaved();
-    return nn || 'Otro';
-  }
-  const nnombre = prompt('Nombre del nuevo proveedor:', '');
-  if (nnombre === null) return null;
-  const nn = invEnsureProveedorCatalog(nnombre);
-  if (!nn) { notify('⚠ Nombre inválido'); return null; }
-  markUnsaved();
-  notify(`✅ Proveedor «${nn}» listo para el pedido`);
-  return nn;
+function invFindProveedorByHint(hintRaw) {
+  const hint = facNormalizeProvNombre((hintRaw || '').trim());
+  if (!hint || !state.facturas) return '';
+  const provs = Object.keys(state.facturas || {});
+  const exact = provs.find(p => facNormalizeProvNombre(p) === hint);
+  if (exact) return exact;
+  const contains = provs.find(p => {
+    const pn = facNormalizeProvNombre(p);
+    return pn.includes(hint) || hint.includes(pn);
+  });
+  return contains || '';
+}
+
+function invProveedorSugeridoPedido(prod) {
+  if (!prod) return '';
+  const direct = invFindProveedorByHint(prod.prov || '');
+  if (direct) return direct;
+  const fam = invFindProveedorByHint(prod.familia || '');
+  if (fam) return fam;
+  const best = invFindProveedorByHint(invBestProvider(prod) || '');
+  if (best) return best;
+  return '';
 }
 
 function invResolveProveedorSelectVal(rawVal, prod) {
   let val = rawVal;
   if (val === '__nuevo__') {
-    const nn = invPickProveedorInteractivo(invBestProvider(prod)||'');
-    if (!nn) return { cancel: true };
-    val = nn;
+    const nn = prompt('Nombre del nuevo proveedor:', invProveedorSugeridoPedido(prod) || '');
+    if (nn === null) return { cancel: true };
+    val = invEnsureProveedorCatalog(nn);
+    if (!val) { notify('⚠ Nombre inválido'); return { cancel: true }; }
+    markUnsaved();
   } else if (val === '__otro__') {
-    const otro = prompt('Describe el proveedor «Otro»:', 'Otro');
+    const otro = prompt('Describe el proveedor «Otro»:', invProveedorSugeridoPedido(prod) || 'Otro');
     if (otro === null) return { cancel: true };
     val = invEnsureProveedorCatalog(otro || 'Otro') || 'Otro';
     markUnsaved();
   }
   if (!val) { notify('⚠ Debes elegir proveedor'); return { cancel: true }; }
   return { val };
+}
+
+function invPedirProveedorRapido(prod, preferido) {
+  const sugerido = preferido || invProveedorSugeridoPedido(prod) || '';
+  const lblProd = prod?.nombre || 'producto';
+  const inp = prompt(`Proveedor para "${lblProd}"`, sugerido);
+  if (inp === null) return null;
+  const finalProv = invEnsureProveedorCatalog((inp || sugerido || '').trim());
+  if (!finalProv) { notify('⚠ Debes indicar proveedor'); return null; }
+  markUnsaved();
+  return finalProv;
 }
 
 function invAgregarProductoAPedido(prodId, qty, opts={}) {
@@ -14275,12 +14294,9 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
   const orden = invGetOrdenDestino(sem);
   if (!orden) { notify('⚠ No hay pedido abierto en la semana'); return false; }
 
-  let prov = opts.proveedor;
-  if (!prov) {
-    const picked = invPickProveedorInteractivo(invBestProvider(prod) || '');
-    if (!picked) return false;
-    prov = picked;
-  }
+  let prov = opts.proveedor || invProveedorSugeridoPedido(prod);
+  if (!prov) prov = invPedirProveedorRapido(prod, '');
+  if (!prov) return false;
 
   let it = invFindItem(orden, prodId);
   pushUndo();
@@ -14303,10 +14319,19 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
 function invQuickAddPedidoFromInv(prodId) {
   const prod = state.inventario.find(p => p.id === prodId);
   if (!prod) return;
-  const v = prompt(`Agregar "${prod.nombre}" al pedido semanal\nCantidad (${prod.unidad||'u'}):`, '1');
+  const provSug = invProveedorSugeridoPedido(prod) || '';
+  const v = prompt(
+    `Agregar "${prod.nombre}" al pedido semanal\n` +
+    `Cantidad (${prod.unidad||'u'}) · proveedor sugerido: ${provSug || '—'}:`,
+    '1'
+  );
   if (v === null) return;
   const qty = parseNumCL((v||'0'), false) || 0;
-  invAgregarProductoAPedido(prodId, qty, { openPedido: false });
+  if (!qty) { notify('⚠ Ingresa una cantidad válida'); return; }
+  const prov = invPedirProveedorRapido(prod, provSug);
+  if (!prov) return;
+  if (!confirm(`Agregar al pedido:\n\n• ${prod.nombre}\n• Cantidad: ${qty} ${prod.unidad||'u'}\n• Proveedor: ${prov}`)) return;
+  invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: prov });
 }
 
 function invAddPedidoDesdePanel() {
@@ -14314,16 +14339,60 @@ function invAddPedidoDesdePanel() {
   const qtyRaw = document.getElementById('inv-pedido-add-qty')?.value || '';
   const provRaw = document.getElementById('inv-pedido-add-prov')?.value || '';
   if (!prodId) { notify('⚠ Elige un producto'); return; }
-  if (!provRaw) { notify('⚠ Elige proveedor'); return; }
   const prod = state.inventario.find(p=>p.id===prodId);
-  const r = invResolveProveedorSelectVal(provRaw, prod);
-  if (r && r.cancel) return;
+  let provFinal = provRaw;
+  if (!provFinal) provFinal = invProveedorSugeridoPedido(prod);
+  if (provFinal === '__nuevo__' || provFinal === '__otro__') {
+    const r = invResolveProveedorSelectVal(provFinal, prod);
+    if (r && r.cancel) return;
+    provFinal = r.val;
+  }
+  if (!provFinal) {
+    provFinal = invPedirProveedorRapido(prod, invProveedorSugeridoPedido(prod) || '');
+    if (!provFinal) return;
+  }
   const qty = parseNumCL(qtyRaw, false) || 0;
-  if (!invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: r.val })) return;
+  if (!invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: provFinal })) return;
   const qtyEl = document.getElementById('inv-pedido-add-qty');
   if (qtyEl) qtyEl.value = '1';
 }
 
+function invSetOrdenQty(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  const prevApplied = Number(it.stockAppliedQty)||0;
+  if (prevApplied) {
+    notify('⚠ Quita la recepción confirmada antes de cambiar la cantidad pedida');
+    invRenderPedido();
+    return;
+  }
+  pushUndo();
+  it.qty=parseNumCL(val,false)||0;
+  if (!it.recibido) it.qtyRecibida = it.qty;
+  invUpdateSemKpis();
+  invRenderPedido();
+}
+
+function invSetOrdenProv(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  if (Number(it.stockAppliedQty||0) > 0) {
+    notify('⚠ No puedes cambiar proveedor con recepción ya ingresada a bodega');
+    invRenderPedido();
+    return;
+  }
+  const prod=state.inventario.find(p=>p.id===prodId);
+  const r = invResolveProveedorSelectVal(val, prod);
+  if (r && r.cancel) { invRenderPedido(); return; }
+  pushUndo();
+  it.prov = r.val;
+  const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===it.prov);
+  if(pe&&pe.precio) it.precio=pe.precio;
+  invRenderPedido();
+  markUnsaved();
+}
+
+function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
+function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
+function invUpdateSemKpis(){const sem=invGetSemana();if(!sem)return;let t=0,i=0;sem.ordenes.forEach(o=>o.items.forEach(it=>{if(it.qty>0){t+=it.qty*it.precio;i++;}}));set('inv-sk-total',fmt(t));set('inv-sk-items',i);}
 function invPedidoAplicarDeltaStock(prod, deltaQty, meta) {
   if (!prod || !deltaQty) return;
   prod.stock = (prod.stock||0) + deltaQty;
@@ -14437,43 +14506,6 @@ function invRemovePedidoLinea(semId,ordenId,prodId){
   orden.items = orden.items.filter(x=>x.prodId!==prodId);
   invRenderPedido();invUpdateSemKpis();markUnsaved();
 }
-
-function invSetOrdenQty(semId,ordenId,prodId,val){
-  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
-  const prevApplied = Number(it.stockAppliedQty)||0;
-  if (prevApplied) {
-    notify('⚠ Quita la recepción confirmada antes de cambiar la cantidad pedida');
-    invRenderPedido();
-    return;
-  }
-  pushUndo();
-  it.qty=parseNumCL(val,false)||0;
-  if (!it.recibido) it.qtyRecibida = it.qty;
-  invUpdateSemKpis();
-  invRenderPedido();
-}
-
-function invSetOrdenProv(semId,ordenId,prodId,val){
-  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
-  if (Number(it.stockAppliedQty||0) > 0) {
-    notify('⚠ No puedes cambiar proveedor con recepción ya ingresada a bodega');
-    invRenderPedido();
-    return;
-  }
-  const prod=state.inventario.find(p=>p.id===prodId);
-  const r = invResolveProveedorSelectVal(val, prod);
-  if (r && r.cancel) { invRenderPedido(); return; }
-  pushUndo();
-  it.prov = r.val;
-  const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===it.prov);
-  if(pe&&pe.precio) it.precio=pe.precio;
-  invRenderPedido();
-  markUnsaved();
-}
-
-function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
-function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
-function invUpdateSemKpis(){const sem=invGetSemana();if(!sem)return;let t=0,i=0;sem.ordenes.forEach(o=>o.items.forEach(it=>{if(it.qty>0){t+=it.qty*it.precio;i++;}}));set('inv-sk-total',fmt(t));set('inv-sk-items',i);}
 
 function invCerrarSemana() {
   const sem = invGetSemana();
