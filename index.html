@@ -14884,9 +14884,26 @@ function invExportPedidoPdfPorProveedor() {
     <table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr style="background:#f8fafc;"><th style="padding:6px 8px;font-size:9px;text-transform:uppercase;color:#94a3b8;">Producto</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">Qty</th><th style="padding:6px 8px;font-size:9px;text-transform:uppercase;color:#94a3b8;">Unidad</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">P. unit.</th><th style="padding:6px 8px;text-align:right;font-size:9px;text-transform:uppercase;color:#94a3b8;">Subtotal</th></tr></thead>
     <tbody>${rows}</tbody><tfoot><tr><td colspan="4" style="padding:6px 8px;font-weight:800;text-align:right;">Total ${esc(pn)}:</td><td style="padding:6px 8px;font-weight:800;text-align:right;color:#10b981;">${total ? fmt(total) : '—'}</td></tr></tfoot></table></div>`;
   }).join('');
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido ${esc(sem.nombre)} — CEREBRUS</title><style>body{font-family:-apple-system,sans-serif;padding:24px;color:#1a2535;}h1{font-size:20px;font-weight:800;}h1 .brand{font-size:11px;font-weight:600;color:#94a3b8;display:block;margin-top:6px;letter-spacing:.02em;}.sub{font-size:11px;color:#94a3b8;margin-bottom:24px;}table td{border-bottom:1px solid #f1f5f9;padding:6px 8px;}@media print{body{padding:12px;}}</style></head>
-  <body><h1>📋 Pedido — ${esc(sem.nombre)}<span class="brand">CEREBRUS · Gastronomy Suite by Aquí Jaime</span></h1><div class="sub">Administrado por Diego Palacios Brockhaus · ${new Date().toLocaleDateString('es-CL')}</div>${sections}
-  <script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script></body></html>`;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Pedido ${esc(sem.nombre)} — CEREBRUS</title><style>
+  body{font-family:-apple-system,sans-serif;padding:24px;color:#1a2535;}
+  h1{font-size:20px;font-weight:800;}
+  h1 .brand{font-size:11px;font-weight:600;color:#94a3b8;display:block;margin-top:6px;letter-spacing:.02em;}
+  .sub{font-size:11px;color:#94a3b8;margin-bottom:24px;}
+  table td{border-bottom:1px solid #f1f5f9;padding:6px 8px;}
+  .pv-actions{position:sticky;top:0;z-index:20;display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:10px 0 14px;background:linear-gradient(180deg,#fff 75%,rgba(255,255,255,0));}
+  .pv-btn{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#334155;}
+  .pv-btn.primary{background:#0ea5e9;color:#fff;border-color:#0284c7;}
+  @media print{body{padding:12px;}.pv-actions{display:none;}}
+  </style></head>
+  <body>
+  <div class="pv-actions">
+    <button class="pv-btn" onclick="window.close()">Cerrar</button>
+    <button class="pv-btn primary" onclick="window.print()">Imprimir / Guardar PDF</button>
+  </div>
+  <h1>📋 Pedido — ${esc(sem.nombre)}<span class="brand">CEREBRUS · Gastronomy Suite by Aquí Jaime</span></h1>
+  <div class="sub">Administrado por Diego Palacios Brockhaus · ${new Date().toLocaleDateString('es-CL')}</div>
+  ${sections}
+  </body></html>`;
   const win = window.open('', '_blank');
   if (win) { win.document.write(html); win.document.close(); }
   else notify('⚠ Activa las ventanas emergentes');
