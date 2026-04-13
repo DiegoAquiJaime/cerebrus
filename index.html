@@ -14241,6 +14241,20 @@ function invFindProveedorByHint(hintRaw) {
   return bestScore > 0 ? best : '';
 }
 
+function invProveedorDesdeMetaProducto(raw) {
+  const src = String(raw || '').trim();
+  if (!src) return '';
+  // Ejemplos: "FRIGOSORNO. +569... / MANUEL", "MANUEL / Sin subfamilia"
+  const chunk = src.split('/')[0].trim();
+  const cleaned = chunk
+    .replace(/\bSIN SUBFAMILIA\b/gi, '')
+    .replace(/\+?\d[\d\s.-]{6,}/g, '')
+    .replace(/[.,;]+$/g, '')
+    .trim();
+  if (!cleaned || cleaned.length < 3) return '';
+  return invEnsureProveedorCatalog(cleaned);
+}
+
 function invProveedorSugeridoPedido(prod) {
   if (!prod) return '';
   const sub = invFindProveedorByHint(prod.subfamilia || '');
@@ -14251,6 +14265,13 @@ function invProveedorSugeridoPedido(prod) {
   if (direct) return direct;
   const best = invFindProveedorByHint(invBestProvider(prod) || '');
   if (best) return best;
+  // Fallback: si no hay match en catálogo, usa metadata del producto como proveedor base.
+  const subRaw = invProveedorDesdeMetaProducto(prod.subfamilia || '');
+  if (subRaw) return subRaw;
+  const famRaw = invProveedorDesdeMetaProducto(prod.familia || '');
+  if (famRaw) return famRaw;
+  const provRaw = invProveedorDesdeMetaProducto(prod.prov || '');
+  if (provRaw) return provRaw;
   return '';
 }
 
