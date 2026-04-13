@@ -4549,6 +4549,32 @@ body.dark-mode .conflict-overlay{
   <div id="inventario" class="tab-content">
     <div class="content">
 
+      <!-- Alertas globales del módulo Inventario/Bodega (visibles en todas las pestañas del módulo) -->
+      <div id="inv-bodega-crit-banner" style="display:none;margin-bottom:14px;background:linear-gradient(135deg,#fff1f2,#fff7ed);border:1px solid #fecdd3;border-radius:12px;padding:12px 16px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="min-width:220px;flex:1;">
+            <div style="font-size:11px;font-weight:900;color:#9f1239;letter-spacing:.04em;text-transform:uppercase;">Bodega · alerta de stock</div>
+            <div id="inv-bodega-crit-text" style="margin-top:4px;font-size:13px;font-weight:800;color:#7f1d1d;line-height:1.35;"></div>
+            <div style="margin-top:6px;font-size:10px;color:#9f1239;opacity:.85;">Tip: el aviso considera el mínimo efectivo (incluye ajuste por fechas especiales cuando aplica).</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button type="button" class="fac-btn primary" onclick="invVerSoloStockCritico()" style="font-size:11px;padding:8px 12px;">Ver productos del aviso →</button>
+            <button type="button" class="fac-btn" onclick="document.getElementById('inv-bodega-crit-banner').style.display='none'" style="font-size:11px;">Ocultar</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="inv-stock-alerta" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:11px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:700;color:#c2410c;">⚠ Productos con stock bajo mínimo</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button type="button" class="fac-btn primary" onclick="invVerSoloStockCritico()" style="font-size:10px;padding:5px 10px;">Ver en tabla →</button>
+            <button onclick="this.closest('#inv-stock-alerta').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;">✕</button>
+          </div>
+        </div>
+        <div id="inv-stock-alerta-lista" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
       <!-- Sub-tabs: Inventario / Pedido Semana / Historial consumo -->
       <div class="inv-subtabs" style="display:flex;gap:0;margin-bottom:20px;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;">
         <button class="inv-subtab active" id="ist-inventario" onclick="invSubTab('inventario')">📦 Inventario</button>
@@ -4559,14 +4585,6 @@ body.dark-mode .conflict-overlay{
       </div>
 
       <!-- ── PANEL INVENTARIO ── -->
-      <!-- Alerta stock bajo — discreta, solo en Inventario -->
-      <div id="inv-stock-alerta" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:11px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-          <span style="font-weight:700;color:#c2410c;">⚠ Productos con stock bajo mínimo</span>
-          <button onclick="this.closest('#inv-stock-alerta').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;">✕</button>
-        </div>
-        <div id="inv-stock-alerta-lista" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      </div>
       <div id="inv-panel-inventario">
         <div class="inv-kpi-grid">
           <div class="inv-kpi" style="border-left:4px solid var(--accent);">
@@ -6543,7 +6561,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.13.1';
+const APP_VERSION = '2026.04.13.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13219,11 +13237,15 @@ function cereBackupWeeklyReminder() {
 
 let _invCatFilter = 'todas';
 
-function invCalMultNow_() {
+function invCalStockMultNow() {
   const today = new Date();
   return (typeof calMultiplierForWeek === 'function')
-    ? calMultiplierForWeek(today).mult
-    : 1.0;
+    ? calMultiplierForWeek(today)
+    : { mult: 1.0, reason: '' };
+}
+
+function invCalMultNow_() {
+  return invCalStockMultNow().mult || 1.0;
 }
 function invEfectivMin_(p) {
   return Math.ceil((p.minimo || 0) * invCalMultNow_());
@@ -13518,6 +13540,64 @@ function invFixCervezasSubfamilias() {
   }
 }
 
+function invListProductosStockCriticos() {
+  invInit();
+  return (state.inventario || []).filter(p => {
+    const em = invEfectivMin_(p);
+    return (p.stock || 0) <= em && em > 0;
+  });
+}
+
+function invScrollToProdRow(prodId) {
+  if (!prodId) return;
+  const row = document.getElementById('inv-row-' + prodId);
+  if (!row) return;
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const prev = row.style.outline;
+  const prevBg = row.style.background;
+  row.style.outline = '2px solid rgba(239,68,68,.55)';
+  row.style.background = 'rgba(254,226,226,.35)';
+  setTimeout(() => {
+    row.style.outline = prev;
+    row.style.background = prevBg;
+  }, 1600);
+}
+
+function invVerSoloStockCritico(focusProdId) {
+  invInit();
+  invSubTab('inventario');
+  _invCatFilter = 'todas';
+  const q = document.getElementById('inv-search');
+  if (q) q.value = '';
+  const st = document.getElementById('inv-filter-stock');
+  if (st) st.value = 'critico';
+  const fam = document.getElementById('inv-filter-familia');
+  const sub = document.getElementById('inv-filter-subfamilia');
+  if (fam) fam.value = '';
+  if (sub) sub.value = '';
+  const sort = document.getElementById('inv-filter-sort');
+  if (sort) sort.value = 'stock_asc';
+  invRender();
+  const idToScroll = focusProdId ? String(focusProdId) : '';
+  setTimeout(() => invScrollToProdRow(idToScroll), 0);
+  notify('🔎 Mostrando solo stock crítico en la tabla');
+}
+
+function invBodegaUpdateCritBanner(criticos) {
+  const ban = document.getElementById('inv-bodega-crit-banner');
+  const txt = document.getElementById('inv-bodega-crit-text');
+  if (!ban || !txt) return;
+  if (currentUser !== 'Bodega' || !criticos.length) {
+    ban.style.display = 'none';
+    return;
+  }
+  const n = criticos.length;
+  const top = criticos.slice(0, 3).map(p => `${p.nombre} (${p.stock || 0}/${p.minimo || 0} ${p.unidad || 'u'})`);
+  const more = n > 3 ? ` · +${n - 3} más` : '';
+  txt.innerHTML = `${n} producto${n !== 1 ? 's' : ''} en estado crítico: ${esc(top.join(' · '))}${esc(more)}`;
+  ban.style.display = '';
+}
+
 function invRender() {
   invInit();
   invFixCervezasSubfamilias();
@@ -13572,15 +13652,10 @@ function invCheckKpis() {
   const cats    = invGetCategories().length;
   const vinc    = state.inventario.filter(p=>p.prov).length;
 
-  // Factor in calendar: si hay fecha especial próxima, el mínimo efectivo sube
-  const today = new Date();
-  const { mult: calMult, reason: calReason } = (typeof calMultiplierForWeek==='function')
-    ? calMultiplierForWeek(today) : { mult:1.0, reason:'' };
+  const { mult: calMult, reason: calReason } = invCalStockMultNow();
 
-  const critico = state.inventario.filter(p => {
-    const efectivMin = Math.ceil((p.minimo||0) * calMult);
-    return (p.stock||0) <= efectivMin && efectivMin > 0;
-  }).length;
+  const criticosLista = invListProductosStockCriticos();
+  const critico = criticosLista.length;
 
   set('inv-kpi-total',   total);
   set('inv-kpi-cats',    cats+' categoría'+(cats!==1?'s':''));
@@ -13599,14 +13674,10 @@ function invCheckKpis() {
   const alertaEl  = document.getElementById('inv-stock-alerta');
   const alertaLst = document.getElementById('inv-stock-alerta-lista');
   if (alertaEl && alertaLst) {
-    const criticos = state.inventario.filter(p => {
-      const efectivMin = Math.ceil((p.minimo||0) * calMult);
-      return (p.stock||0) <= efectivMin && efectivMin > 0;
-    });
-    if (criticos.length) {
+    if (criticosLista.length) {
       alertaEl.style.display = 'block';
-      alertaLst.innerHTML = criticos.map(p =>
-        `<span onclick="invEditProd('${p.id}')" style="background:#fed7aa;color:#c2410c;border-radius:12px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;" title="Click para editar">
+      alertaLst.innerHTML = criticosLista.map(p =>
+        `<span onclick="event.preventDefault();invVerSoloStockCritico('${p.id}')" style="background:#fed7aa;color:#c2410c;border-radius:12px;padding:3px 8px;font-size:10px;font-weight:700;cursor:pointer;" title="Ver este producto en la tabla (stock crítico)">
           ${esc(p.nombre)} — ${p.stock||0}/${p.minimo||0} ${p.unidad||'u'}
         </span>`
       ).join('');
@@ -13614,6 +13685,8 @@ function invCheckKpis() {
       alertaEl.style.display = 'none';
     }
   }
+
+  invBodegaUpdateCritBanner(criticosLista);
 }
 
 function invRenderCatTabs() {

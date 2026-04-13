@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.13.1",
-  "notes": "Inventario: pedido semanal con proveedor obligatorio, recepción a stock con confirmación, export PDF/Excel por proveedor; SAC/UI varios."
+  "version": "2026.04.13.2",
+  "notes": "Bodega/Inventario: alerta de stock crítico con acceso directo a la tabla filtrada; alineación de mínimo efectivo con calendario."
 }
