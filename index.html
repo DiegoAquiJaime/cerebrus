@@ -6994,6 +6994,7 @@ function showTab(tabId) {
     tabId = 'resumen';
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
+  _activeTabId = tabId;
   closeNav();
   ['resumen','calendario','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
@@ -7021,6 +7022,7 @@ function showTab(tabId) {
     const _w = sacCurrentWeek ? sacActiveWeek() : 1;
     if (typeof sacCalcBalance === 'function') sacCalcBalance(_w);
   }
+  updateConcurrencyBadge();
 }
 
 function goto(sectionId) {
@@ -12084,6 +12086,8 @@ let currentUser     = '';
 let cloudVersion    = '0';
 let _cloudBaseVersion = '0';
 let _cloudBaseState = null;
+let _activeTabId = 'sac';
+let _sameModulePeers = [];
 let _heartbeatTimer = null;
 /** Sin interacción (clic/teclado/rueda) durante este tiempo → heartbeat marca idle:true */
 const PRESENCE_IDLE_MS = 3 * 60 * 1000;
@@ -23072,6 +23076,7 @@ async function sendHeartbeat() {
       body: JSON.stringify({
         action: 'heartbeat',
         user: currentUser,
+        activeTab: _activeTabId || '',
         idle: presenceIsLocalIdle(),
         tabFocused: presenceTabFocused(),
         activityAgeSec: Math.floor((Date.now() - _lastUserActivityAt) / 1000)
@@ -23098,6 +23103,10 @@ function renderOnlineUsers(sessions) {
   const raw = sessions || [];
   const list = raw.map(s => (typeof s === 'string' ? { user: s } : s)).filter(s => s && s.user);
   const others = list.filter(s => s.user !== currentUser);
+  _sameModulePeers = others.filter(s => {
+    const peerTab = String(s.activeTab || s.tab || '');
+    return peerTab && peerTab === String(_activeTabId || '') && !_sessionPeerIdle(s) && _sessionPeerTabFocused(s);
+  }).map(s => s.user);
   _hasOtherOnlineUsers = others.length > 0;
   updateConcurrencyBadge();
   if (!others.length) { strip.innerHTML = ''; return; }
@@ -23131,7 +23140,16 @@ function updateConcurrencyBadge() {
   if (!el) return;
   if (!IS_CLOUD) { el.style.display = 'none'; return; }
   const conflictVisible = !!document.getElementById('conflict-banner')?.classList.contains('show');
-  el.style.display = (_hasOtherOnlineUsers || conflictVisible) ? 'inline-flex' : 'none';
+  const sameModule = (_sameModulePeers || []).length > 0;
+  el.style.display = (_hasOtherOnlineUsers || conflictVisible || sameModule) ? 'inline-flex' : 'none';
+  if (sameModule) {
+    const peers = _sameModulePeers.slice(0, 2).join(', ') + (_sameModulePeers.length > 2 ? ' +' + (_sameModulePeers.length - 2) : '');
+    el.textContent = '⚠ Mismo módulo: ' + peers;
+    el.title = 'Otro usuario está activo en este mismo módulo. Recomendación: modo solo lectura. Si guardas, se pedirá confirmación.';
+  } else {
+    el.textContent = '⚠ Concurrencia';
+    el.title = 'No editen la misma pestaña/área al mismo tiempo: al guardar puede haber conflicto o pisado y tocar recargar desde nube.';
+  }
 }
 
 // ── ACTIVITY LOG PANEL ──
@@ -23213,6 +23231,22 @@ function autoBackupJsonFirstSaveOfDay() {
 function saveState(description, silent) {
   if (!silent) autoBackupJsonFirstSaveOfDay();
   if (IS_CLOUD && currentUser) {
+    const sameModuleUsers = (_sameModulePeers || []).filter(Boolean);
+    if (sameModuleUsers.length) {
+      const msg =
+        '⚠ Recomendación: solo lectura\n\n' +
+        'Hay otro usuario activo en este mismo módulo: ' + sameModuleUsers.join(', ') + '.\n' +
+        'Guardar ahora puede generar conflictos o pisados.\n\n' +
+        'Aceptar = guardar de todas formas\n' +
+        'Cancelar = no guardar';
+      // En guardado silencioso (auto), no forzamos diálogo: cancelamos para evitar sobrescribir.
+      if (silent) { setSyncStatus('⚠ Guardado omitido (mismo módulo activo)', 'err'); return; }
+      if (!confirm(msg)) {
+        notify('🛑 Guardado cancelado por recomendación de solo lectura');
+        return;
+      }
+    }
+
     const sacNow = _hasSacData(state);
     const sacBase = _hasSacData(_cloudBaseState);
     if (!sacNow && sacBase) {
