@@ -22959,7 +22959,59 @@ function decompressVsData(s) {
   s.vsData = expanded;
 }
 
-async function reloadFromCloud() { dismissConflict(); _suppressAlerts = true; await loadFromCloud(); }
+async function reloadFromCloud() {
+  dismissConflict();
+  _suppressAlerts = true;
+
+  // Si no hay cambios locales o no tenemos base para comparar, usa recarga normal.
+  if (!_unsaved || !_cloudBaseState) {
+    await loadFromCloud();
+    return;
+  }
+
+  setSyncStatus('⏳ Actualizando (merge seguro)…', '');
+  try {
+    const res = await fetch(API_URL + '?action=getState&_=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    if (!(json.ok && json.data)) { await loadFromCloud(); return; }
+
+    let parsed = json.data;
+    if (typeof json.data === 'string') {
+      try { parsed = JSON.parse(json.data); } catch (e) { parsed = json.data; }
+    }
+    const remote = parsed.state || makeDefaultState();
+    decompressVsData(remote);
+
+    const base = _cloudBaseState || {};
+    const local = state || {};
+    const localChanged  = _topLevelChangedKeys(base, local);
+    const remoteChanged = _topLevelChangedKeys(base, remote);
+    const conflicts = _intersectSets(localChanged, remoteChanged);
+
+    // Rebase local sobre remoto: conserva módulos locales editados.
+    const merged = JSON.parse(JSON.stringify(remote));
+    localChanged.forEach(k => { merged[k] = local[k]; });
+
+    state = merged;
+    cloudVersion = json.meta?.version || cloudVersion;
+    _cloudBaseVersion = cloudVersion;
+    try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
+
+    _postLoadSetup();
+    // Si conservamos módulos locales, seguimos "unsaved" para que puedas guardar luego.
+    if (localChanged.size > 0) markUnsaved(); else markSaved();
+
+    setSyncStatus('✓ Nube (combinado)', 'ok');
+    if (conflicts.length) {
+      notify('⚠ Actualizado con preservación local en módulos en conflicto: ' + conflicts.slice(0, 8).join(', ') + '. Guarda cuando termines.');
+    } else {
+      notify('🔀 Actualizado desde nube sin perder tus cambios locales.');
+    }
+  } catch (e) {
+    await loadFromCloud();
+  }
+}
 
 // ── CONFLICT DETECTION ──
 async function checkVersion() {
