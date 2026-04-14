@@ -4870,9 +4870,12 @@ body.dark-mode .conflict-overlay{
         </div>
 
         <!-- Botón reporte merma -->
-        <div style="margin-bottom:16px;">
+        <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="movMostrarReporteMerma()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;color:#64748b;">
             📊 Ver reporte de merma mensual
+          </button>
+          <button onclick="movExportPdfPreview()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;color:#0f766e;font-weight:700;">
+            📄 Exportar movimientos (preview PDF)
           </button>
         </div>
         <!-- Filtros -->
@@ -15257,14 +15260,24 @@ function movHoraAhora() {
   return new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
 }
 
+function movGetFilteredRows() {
+  const tipo   = document.getElementById('mov-f-tipo')?.value  || '';
+  const dest   = document.getElementById('mov-f-dest')?.value  || '';
+  const fecha  = document.getElementById('mov-f-fecha')?.value || '';
+  let filtered = [...movGetAll()].reverse();
+  if (tipo) filtered = filtered.filter(m => m.tipo === tipo);
+  if (dest) filtered = filtered.filter(m => m.destino === dest || m.origen === dest);
+  if (fecha) {
+    const fd = new Date(fecha).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    filtered = filtered.filter(m => m.fecha === fd);
+  }
+  return filtered;
+}
+
 // ── Render tabla historial + KPIs ──
 function movRender() {
   const tbody  = document.getElementById('mov-tbody');
   if (!tbody) return;
-
-  const tipo   = document.getElementById('mov-f-tipo')?.value  || '';
-  const dest   = document.getElementById('mov-f-dest')?.value  || '';
-  const fecha  = document.getElementById('mov-f-fecha')?.value || '';
 
   const movs   = movGetAll();
   const hoy    = movFechaHoy();
@@ -15287,14 +15300,7 @@ function movRender() {
   set('mov-kpi-merma',     mermaKg > 0 ? mermaKg.toFixed(2)+' kg' : '0');
   set('mov-kpi-prelab',    prelabKg > 0 ? prelabKg.toFixed(2)+' kg' : '0');
 
-  // Filtrar
-  let filtered = [...movs].reverse();
-  if (tipo)  filtered = filtered.filter(m=>m.tipo===tipo);
-  if (dest)  filtered = filtered.filter(m=>m.destino===dest||m.origen===dest);
-  if (fecha) {
-    const fd = new Date(fecha).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
-    filtered = filtered.filter(m=>m.fecha===fd);
-  }
+  const filtered = movGetFilteredRows();
 
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Sin movimientos con estos filtros.</td></tr>';
@@ -15330,6 +15336,68 @@ function movRender() {
           onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
       </td>
     </tr>`).join('');
+}
+
+function movExportPdfPreview() {
+  const rows = movGetFilteredRows();
+  if (!rows.length) { notify('⚠ No hay movimientos para exportar con los filtros actuales'); return; }
+  const totalMovs = rows.length;
+  const totalMerma = rows.filter(r => r.tipo === 'merma').reduce((s,r) => s + (r.cantidad || 0), 0);
+  const totalIngresoPedido = rows.filter(r => r.tipo === 'ingreso_pedido').reduce((s,r) => s + (r.cantidad || 0), 0);
+  const filtros = [
+    document.getElementById('mov-f-tipo')?.value ? 'Tipo: ' + document.getElementById('mov-f-tipo').value : '',
+    document.getElementById('mov-f-dest')?.value ? 'Destino: ' + document.getElementById('mov-f-dest').value : '',
+    document.getElementById('mov-f-fecha')?.value ? 'Fecha: ' + document.getElementById('mov-f-fecha').value : ''
+  ].filter(Boolean).join(' · ') || 'Sin filtros';
+
+  const tipoLabel = {despacho:'Despacho', devolucion:'Devolución', ingreso_pedido:'Ingreso pedido', preelaboracion:'Preelaboración', merma:'Merma'};
+  const trs = rows.map(m => `
+    <tr>
+      <td>${esc((m.fecha||'') + ' ' + (m.hora||''))}</td>
+      <td>${esc(tipoLabel[m.tipo] || m.tipo || '—')}</td>
+      <td>${esc(m.producto || '')}</td>
+      <td style="text-align:right;">${esc(String(m.cantidad || 0))} ${esc(m.unidad || '')}</td>
+      <td>${esc(m.destino || m.origen || '—')}</td>
+      <td>${esc(m.responsable || '—')}</td>
+      <td>${esc(m.nota || '')}</td>
+    </tr>
+  `).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Movimientos Inventario — CEREBRUS</title><style>
+    body{font-family:-apple-system,sans-serif;padding:24px;color:#1a2535;}
+    h1{font-size:20px;font-weight:800;margin:0 0 6px;}
+    .sub{font-size:11px;color:#64748b;margin-bottom:14px;}
+    .kpis{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+    .kpi{border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:11px;background:#f8fafc;}
+    .pv-actions{position:sticky;top:0;z-index:20;display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:10px 0 14px;background:linear-gradient(180deg,#fff 75%,rgba(255,255,255,0));}
+    .pv-btn{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#334155;}
+    .pv-btn.primary{background:#0ea5e9;color:#fff;border-color:#0284c7;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{background:#f8fafc;color:#94a3b8;font-size:9px;text-transform:uppercase;letter-spacing:.4px;padding:7px 8px;text-align:left;border-bottom:1px solid #e2e8f0;}
+    td{padding:6px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+    @media print{body{padding:12px;}.pv-actions{display:none;}}
+  </style></head><body>
+    <div class="pv-actions">
+      <button class="pv-btn" onclick="window.close()">Cerrar</button>
+      <button class="pv-btn primary" onclick="window.print()">Imprimir / Guardar PDF</button>
+    </div>
+    <h1>🔄 Movimientos de Inventario</h1>
+    <div class="sub">CEREBRUS · ${new Date().toLocaleString('es-CL')} · ${esc(filtros)}</div>
+    <div class="kpis">
+      <div class="kpi"><b>Total movimientos:</b> ${totalMovs}</div>
+      <div class="kpi"><b>Mermas:</b> ${totalMerma.toFixed(2)}</div>
+      <div class="kpi"><b>Ingresos por pedido:</b> ${totalIngresoPedido.toFixed(2)}</div>
+    </div>
+    <table>
+      <thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Destino/Origen</th><th>Responsable</th><th>Nota</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { notify('⚠ Activa ventanas emergentes para abrir la vista previa'); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 function invValorTotal() {
