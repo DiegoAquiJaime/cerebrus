@@ -1,0 +1,329 @@
+[
+  {
+    "tipoDoc": "factura",
+    "nro": "30194052",
+    "rut": "81.094.100-6",
+    "proveedor": "COLUN",
+    "emision": "14-04-2026",
+    "monto": 273651,
+    "montoNeto": 229959,
+    "montoIVA": 43692,
+    "totalDoc": 273651,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"UHT COLUN ENTERA","cantidad":60,"unidad":"un","precioUnit":1091,"subtotal":65460,"invProdId":""},
+      {"descripcion":"UHT CREMA COLUN","cantidad":24,"unidad":"un","precioUnit":4060,"subtotal":97440,"invProdId":""},
+      {"descripcion":"MANJAR COLUN BOL 1K","cantidad":6,"unidad":"un","precioUnit":3703,"subtotal":22218,"invProdId":""},
+      {"descripcion":"MANTEQUILLA COLUN 250","cantidad":40,"unidad":"un","precioUnit":8852,"subtotal":354080,"invProdId":"","nota":"Base 7.831, desc 5%, final neto 7.439; neto línea 74.394 informado por usuario"}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "1972852",
+    "rut": "96.518.090-7",
+    "proveedor": "FRIGOSORNO",
+    "emision": "14-04-2026",
+    "monto": 587481,
+    "montoNeto": 473775,
+    "montoIVA": 90017,
+    "totalDoc": 587481,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"CARNE MOLIDA ESPECIAL","cantidad":4,"unidad":"kg","precioUnit":9151,"subtotal":36604,"invProdId":""},
+      {"descripcion":"FILETE CORRAL DEL CHACO IMP PAR CAT. V","cantidad":17.66,"unidad":"kg","precioUnit":18195,"subtotal":321324,"invProdId":""},
+      {"descripcion":"LOMO LISO CORRAL DEL CHACO IMP PAR CAT. V","cantidad":10.6,"unidad":"kg","precioUnit":12245,"subtotal":129797,"invProdId":""},
+      {"descripcion":"PALANCA","cantidad":8,"unidad":"kg","precioUnit":9508,"subtotal":76064,"invProdId":"","nota":"Neto unitario 7.990 / neto línea 63.920; aplicar retención carne 5% en factura"}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "17134",
+    "rut": "78.246.700-K",
+    "proveedor": "DISTRIBUIDORA VIRGINIA",
+    "emision": "13-04-2026",
+    "monto": 60690,
+    "montoNeto": 51000,
+    "montoIVA": 9690,
+    "totalDoc": 60690,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"ALCOHOL 1 LT","cantidad":1,"unidad":"un","precioUnit":5355,"subtotal":5355,"invProdId":""},
+      {"descripcion":"BRIO 5 LTS","cantidad":1,"unidad":"un","precioUnit":20349,"subtotal":20349,"invProdId":""},
+      {"descripcion":"LAVALOZAS 5 LTS","cantidad":3,"unidad":"un","precioUnit":11662,"subtotal":34986,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "24320",
+    "rut": "76.747.279-K",
+    "proveedor": "DISTRIBUIDORA AGROMAR RV SPA",
+    "emision": "14-04-2026",
+    "monto": 559824,
+    "montoNeto": 470440,
+    "montoIVA": 89384,
+    "totalDoc": 559824,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"CONGRIO","cantidad":58.5,"unidad":"kg","precioUnit":8092,"subtotal":473382,"invProdId":""},
+      {"descripcion":"MAQUILA","cantidad":58.8,"unidad":"kg","precioUnit":357,"subtotal":20992,"invProdId":""},
+      {"descripcion":"CHOLGA","cantidad":10,"unidad":"kg","precioUnit":2975,"subtotal":29750,"invProdId":""},
+      {"descripcion":"ALMEJA","cantidad":10,"unidad":"kg","precioUnit":3570,"subtotal":35700,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "4281",
+    "rut": "78.273.414-8",
+    "proveedor": "HIELO PATAGONIA ICE",
+    "emision": "13-04-2026",
+    "monto": 36102,
+    "montoNeto": 30338,
+    "montoIVA": 5764,
+    "totalDoc": 36102,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"HIELO CUBO","cantidad":6,"unidad":"c","precioUnit":512,"subtotal":3072,"invProdId":""},
+      {"descripcion":"BIDON AGUA 20 LTS","cantidad":2,"unidad":"un","precioUnit":2700,"subtotal":5400,"invProdId":"","nota":"Unitario neto 2.268,9 redondeado"}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "5655",
+    "rut": "77.522.689-7",
+    "proveedor": "EUROPA CK PORTAL MARKET SPA",
+    "emision": "13-04-2026",
+    "monto": 231177,
+    "montoNeto": 194266,
+    "montoIVA": 36911,
+    "totalDoc": 231177,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"FILM PVC 30X1400","cantidad":1,"unidad":"un","precioUnit":22885,"subtotal":22885,"invProdId":""},
+      {"descripcion":"BOMBILLA PAPEL NEGRA 6MM X 20CM (500)","cantidad":1,"unidad":"un","precioUnit":8435,"subtotal":8435,"invProdId":""},
+      {"descripcion":"GORRO CLIP BLANCO","cantidad":1,"unidad":"un","precioUnit":3256,"subtotal":3256,"invProdId":""},
+      {"descripcion":"JABON AROMA DOVE 5 LTS","cantidad":1,"unidad":"un","precioUnit":5492,"subtotal":5492,"invProdId":""},
+      {"descripcion":"TOALLA PAPEL BLANCA 250 MTS","cantidad":5,"unidad":"un","precioUnit":10057,"subtotal":50285,"invProdId":""},
+      {"descripcion":"SERVILLETA MESA DOBLADA NEGRA JOKER 40X40","cantidad":2,"unidad":"un","precioUnit":67869,"subtotal":135738,"invProdId":""},
+      {"descripcion":"GUANTE NITRILO NEGRO TALLA S (100)","cantidad":1,"unidad":"un","precioUnit":5087,"subtotal":5087,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "39951",
+    "rut": "11.826.149-6",
+    "proveedor": "DISTRIBUIDORA TORRES CHILE",
+    "emision": "14-04-2026",
+    "monto": 148589,
+    "montoNeto": 124865,
+    "montoIVA": 23724,
+    "totalDoc": 148589,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"DESINFECTANTE GHAMMAKUAT 5LT","cantidad":1,"unidad":"bd","precioUnit":13031,"subtotal":13031,"invProdId":""},
+      {"descripcion":"BOLSA ASEO 50X70 X10","cantidad":2,"unidad":"dp","precioUnit":559,"subtotal":1118,"invProdId":""},
+      {"descripcion":"BOLSA ASEO 90X120 X10","cantidad":10,"unidad":"pq","precioUnit":4998,"subtotal":49980,"invProdId":""},
+      {"descripcion":"BOLSA PREPICADA 20X30","cantidad":4.5,"unidad":"kg","precioUnit":7128,"subtotal":32076,"invProdId":""},
+      {"descripcion":"CLORO LIQUIDO OPTIMUS 5LT","cantidad":1,"unidad":"bd","precioUnit":3796,"subtotal":3796,"invProdId":""},
+      {"descripcion":"PAÑO MULTIUSO AMARILLO","cantidad":6,"unidad":"un","precioUnit":393,"subtotal":2358,"invProdId":""},
+      {"descripcion":"PAPEL HIG. JUMBO 4X500MT ELITE 52093","cantidad":1,"unidad":"dp","precioUnit":17255,"subtotal":17255,"invProdId":""},
+      {"descripcion":"TOALLA ELITE EVOLUTION 3X135MT 40138","cantidad":1,"unidad":"dp","precioUnit":27251,"subtotal":27251,"invProdId":""},
+      {"descripcion":"TRAPERO DOBLE CON OJAL","cantidad":1,"unidad":"un","precioUnit":1726,"subtotal":1726,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "32124",
+    "rut": "76.725.350-8",
+    "proveedor": "AGROLMUE S.A.",
+    "emision": "14-04-2026",
+    "monto": 140182,
+    "montoNeto": 117800,
+    "montoIVA": 22382,
+    "totalDoc": 140182,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"PULPA DE MANGO","cantidad":10,"unidad":"un","precioUnit":5355,"subtotal":53550,"invProdId":""},
+      {"descripcion":"PULPA DE FRUTILLA","cantidad":10,"unidad":"un","precioUnit":4153,"subtotal":41530,"invProdId":""},
+      {"descripcion":"PULPA DE PIÑA","cantidad":10,"unidad":"un","precioUnit":4510,"subtotal":45100,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "914",
+    "rut": "78.185.344-5",
+    "proveedor": "LA CHACRA SPA",
+    "emision": "13-04-2026",
+    "monto": 65010,
+    "montoNeto": 54630,
+    "montoIVA": 10380,
+    "totalDoc": 65010,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"AJI VERDE","cantidad":1,"unidad":"kg","precioUnit":4748,"subtotal":4748,"invProdId":""},
+      {"descripcion":"ALBAHACA","cantidad":10,"unidad":"un","precioUnit":1059,"subtotal":10590,"invProdId":""},
+      {"descripcion":"ESPINACA","cantidad":10,"unidad":"un","precioUnit":1071,"subtotal":10710,"invProdId":""},
+      {"descripcion":"TOMATE CHERRY AMARILLO","cantidad":1,"unidad":"kg","precioUnit":5938,"subtotal":5938,"invProdId":""},
+      {"descripcion":"AJOS","cantidad":20,"unidad":"un","precioUnit":298,"subtotal":5960,"invProdId":""},
+      {"descripcion":"TOMATE CHERRY","cantidad":1,"unidad":"kg","precioUnit":4165,"subtotal":4165,"invProdId":""},
+      {"descripcion":"CILANTRO","cantidad":8,"unidad":"un","precioUnit":1071,"subtotal":8568,"invProdId":""},
+      {"descripcion":"APIO","cantidad":1,"unidad":"un","precioUnit":1892,"subtotal":1892,"invProdId":""},
+      {"descripcion":"ZAPALLO","cantidad":9,"unidad":"kg","precioUnit":1297,"subtotal":11673,"invProdId":""},
+      {"descripcion":"CEBOLLIN","cantidad":1,"unidad":"un","precioUnit":774,"subtotal":774,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "915",
+    "rut": "78.185.344-5",
+    "proveedor": "LA CHACRA SPA",
+    "emision": "13-04-2026",
+    "monto": 217235,
+    "montoNeto": 182550,
+    "montoIVA": 34685,
+    "totalDoc": 217235,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"PAPA LAVADA SACO","cantidad":2,"unidad":"un","precioUnit":17731,"subtotal":35462,"invProdId":""},
+      {"descripcion":"CEBOLLA MORADA MALLA","cantidad":1,"unidad":"un","precioUnit":16541,"subtotal":16541,"invProdId":""},
+      {"descripcion":"LECHUGA ROBLE","cantidad":15,"unidad":"un","precioUnit":940,"subtotal":14100,"invProdId":""},
+      {"descripcion":"PEREJIL","cantidad":8,"unidad":"un","precioUnit":714,"subtotal":5712,"invProdId":""},
+      {"descripcion":"PALTA HASS","cantidad":12,"unidad":"kg","precioUnit":5891,"subtotal":70692,"invProdId":""},
+      {"descripcion":"FRUTILLA 500 GR","cantidad":1,"unidad":"kg","precioUnit":1666,"subtotal":1666,"invProdId":""},
+      {"descripcion":"PAPA CAMOTE","cantidad":1,"unidad":"kg","precioUnit":2916,"subtotal":2916,"invProdId":""},
+      {"descripcion":"PUERRO","cantidad":3,"unidad":"un","precioUnit":1178,"subtotal":3534,"invProdId":""},
+      {"descripcion":"ZAPALLO ITALIANO","cantidad":20,"unidad":"un","precioUnit":417,"subtotal":8340,"invProdId":""},
+      {"descripcion":"TOMATE CAJA 17KG","cantidad":2,"unidad":"un","precioUnit":29143,"subtotal":58286,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "916",
+    "rut": "78.185.344-5",
+    "proveedor": "LA CHACRA SPA",
+    "emision": "13-04-2026",
+    "monto": 50563,
+    "montoNeto": 42490,
+    "montoIVA": 8073,
+    "totalDoc": 50563,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"LECHUGA ESCAROLA","cantidad":2,"unidad":"un","precioUnit":1297,"subtotal":2594,"invProdId":""},
+      {"descripcion":"LIMON SUTIL","cantidad":8,"unidad":"kg","precioUnit":3201,"subtotal":25608,"invProdId":""},
+      {"descripcion":"PEPINO ENSALADA","cantidad":3,"unidad":"un","precioUnit":559,"subtotal":1677,"invProdId":""},
+      {"descripcion":"NARANJA","cantidad":1,"unidad":"kg","precioUnit":1488,"subtotal":1488,"invProdId":""},
+      {"descripcion":"JENGIBRE 100GR","cantidad":2,"unidad":"un","precioUnit":833,"subtotal":1666,"invProdId":""},
+      {"descripcion":"PIMENTON ROJO","cantidad":4,"unidad":"un","precioUnit":1012,"subtotal":4048,"invProdId":""},
+      {"descripcion":"PIMENTON VERDE","cantidad":4,"unidad":"un","precioUnit":833,"subtotal":3332,"invProdId":""},
+      {"descripcion":"BERROS 250GR","cantidad":2,"unidad":"un","precioUnit":2725,"subtotal":5450,"invProdId":""},
+      {"descripcion":"PIMENTON AMARILLO","cantidad":5,"unidad":"un","precioUnit":940,"subtotal":4700,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "917",
+    "rut": "78.185.344-5",
+    "proveedor": "LA CHACRA SPA",
+    "emision": "13-04-2026",
+    "monto": 20349,
+    "montoNeto": 17100,
+    "montoIVA": 3249,
+    "totalDoc": 20349,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"ZANAHORIA","cantidad":8,"unidad":"kg","precioUnit":1012,"subtotal":8096,"invProdId":""},
+      {"descripcion":"ALMENDRAS LAMINADAS 500GR","cantidad":1,"unidad":"un","precioUnit":11305,"subtotal":11305,"invProdId":""},
+      {"descripcion":"UVA 500GR","cantidad":1,"unidad":"un","precioUnit":952,"subtotal":952,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "924",
+    "rut": "78.185.344-5",
+    "proveedor": "LA CHACRA SPA",
+    "emision": "13-04-2026",
+    "monto": 7438,
+    "montoNeto": 6250,
+    "montoIVA": 1188,
+    "totalDoc": 7438,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"MENTA 100GR","cantidad":5,"unidad":"un","precioUnit":1488,"subtotal":7440,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "22292",
+    "rut": "9.063.782-7",
+    "proveedor": "ROTISERIA DON IBAR",
+    "emision": "14-04-2026",
+    "monto": 328053,
+    "montoNeto": 275675,
+    "montoIVA": 52378,
+    "totalDoc": 328053,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"QUESO CABRA","cantidad":3.03,"unidad":"kg","precioUnit":14000,"subtotal":42420,"invProdId":""},
+      {"descripcion":"QUESO LAMINADO","cantidad":1,"unidad":"kg","precioUnit":8200,"subtotal":8200,"invProdId":""},
+      {"descripcion":"QUESO PARMESANO","cantidad":17.34,"unidad":"kg","precioUnit":16000,"subtotal":277440,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "5544438",
+    "rut": "77.965.620-9",
+    "proveedor": "ICB FOOD SERVICE SPA",
+    "emision": "14-04-2026",
+    "monto": 416796,
+    "montoNeto": 350249,
+    "montoIVA": 66547,
+    "totalDoc": 416796,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"ACEITE VEGETAL LOS SILOS 900ML","cantidad":24,"unidad":"un","precioUnit":22610,"subtotal":542640,"invProdId":"","nota":"C12 x 2 cajas = 24 unidades (confirmado por usuario)"},
+      {"descripcion":"ARROZ G1 MIRAFLORES 1KG","cantidad":15,"unidad":"un","precioUnit":2261,"subtotal":33915,"invProdId":""},
+      {"descripcion":"AZUCAR FLOR CAMSA 1KG","cantidad":3,"unidad":"un","precioUnit":2023,"subtotal":6069,"invProdId":""},
+      {"descripcion":"CONCENTRADO TOMATE POMAROLA 1KG","cantidad":1,"unidad":"un","precioUnit":3570,"subtotal":3570,"invProdId":""},
+      {"descripcion":"VINAGRE MANZANA HERNANDEZ 5L","cantidad":1,"unidad":"un","precioUnit":7735,"subtotal":7735,"invProdId":""},
+      {"descripcion":"POROTOS TORTOLA LOS GRANOS 1KG","cantidad":2,"unidad":"un","precioUnit":3451,"subtotal":6902,"invProdId":""},
+      {"descripcion":"PANKO BLANCO MAYAMOTO 1KG","cantidad":5,"unidad":"un","precioUnit":3332,"subtotal":16660,"invProdId":""},
+      {"descripcion":"LECHE EVAPORADA IDEAL 390G","cantidad":4,"unidad":"un","precioUnit":1909,"subtotal":7636,"invProdId":"","nota":"Cantidad confirmada por usuario"},
+      {"descripcion":"AZUCAR G2 CAMSA 1KG","cantidad":3,"unidad":"un","precioUnit":14280,"subtotal":42840,"invProdId":"","nota":"Cantidad confirmada por usuario"},
+      {"descripcion":"MAYONESA SUPREME ARTESANA 1,90KG","cantidad":1,"unidad":"un","precioUnit":59300,"subtotal":59300,"invProdId":""},
+      {"descripcion":"SAL FINA LOBOS 1KG","cantidad":1,"unidad":"un","precioUnit":7735,"subtotal":7735,"invProdId":""},
+      {"descripcion":"ARROZ RISOTTO ITALIANO TUCAPEL 1KG","cantidad":5,"unidad":"un","precioUnit":4284,"subtotal":21420,"invProdId":""},
+      {"descripcion":"PAPA PREMIUM CRUNCH 10MM 2,27KG","cantidad":5,"unidad":"un","precioUnit":30345,"subtotal":151725,"invProdId":"","nota":"Cantidad confirmada por usuario"},
+      {"descripcion":"CHOCLO GRANO IQF 1KG","cantidad":2,"unidad":"un","precioUnit":3035,"subtotal":6070,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "24299",
+    "rut": "76.747.279-K",
+    "proveedor": "DISTRIBUIDORA AGROMAR RV SPA",
+    "emision": "13-04-2026",
+    "monto": 386750,
+    "montoNeto": 325000,
+    "montoIVA": 61750,
+    "totalDoc": 386750,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"REINETA","cantidad":50,"unidad":"kg","precioUnit":7735,"subtotal":386750,"invProdId":""}
+    ]
+  },
+  {
+    "tipoDoc": "factura",
+    "nro": "38296350",
+    "rut": "83614800-2",
+    "proveedor": "ARIZTIA",
+    "emision": "14-04-2026",
+    "monto": 136830,
+    "montoNeto": 114983,
+    "montoIVA": 21847,
+    "totalDoc": 136830,
+    "comentario": "OK",
+    "items": [
+      {"descripcion":"TRUTRO ENTERO DE POLLO GRANEL","cantidad":22.735,"unidad":"kg","precioUnit":2975,"subtotal":67637,"invProdId":"","nota":"Cantidad aproximada por OCR; validar contra original"},
+      {"descripcion":"PECHUGA DE POLLO LINEL","cantidad":21.535,"unidad":"kg","precioUnit":3213,"subtotal":69143,"invProdId":"","nota":"Confirmado por usuario: precio neto 2.700, valor neto 58.145"}
+    ]
+  }
+]

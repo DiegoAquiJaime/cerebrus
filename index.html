@@ -4894,6 +4894,8 @@ body.dark-mode .conflict-overlay{
             <option value="Salón">Salón</option>
             <option value="Preelaboración">Preelaboración</option>
             <option value="Bodega">Bodega</option>
+            <option value="Casa Sebas">Casa Sebas</option>
+            <option value="Casa Priscila">Casa Priscila</option>
             <option value="Otro">Otro</option>
           </select>
           <input type="date" id="mov-f-fecha" onchange="movRender()"
@@ -4920,6 +4922,10 @@ body.dark-mode .conflict-overlay{
             </thead>
             <tbody id="mov-tbody"></tbody>
           </table>
+        </div>
+        <div id="mov-audit-wrap" style="margin-top:12px;background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;">
+          <div style="font-size:11px;font-weight:800;color:#334155;margin-bottom:8px;">🧾 Auditoría de movimientos (ediciones/anulaciones)</div>
+          <div id="mov-audit-list" style="display:flex;flex-direction:column;gap:6px;max-height:190px;overflow:auto;"></div>
         </div>
       </div>
 
@@ -12929,7 +12935,9 @@ function _postLoadSetup() {
   if (!state.informesDiarios)            state.informesDiarios            = [];
   if (!state.revisarPapel)               state.revisarPapel               = [];
   if (!state.provDocumentos)             state.provDocumentos             = {};
-  if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
+  if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','Bandeja'];
+  if (!Array.isArray(state.movimientosAudit)) state.movimientosAudit = [];
+  if (!state.unidadesInventario.some(u => String(u).toLowerCase() === 'bandeja')) state.unidadesInventario.push('Bandeja');
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
   if (!state.sacCajaChica)              state.sacCajaChica              = 0;
   if (typeof state.sacCajaChicaNota !== 'string') state.sacCajaChicaNota = '';
@@ -14972,7 +14980,8 @@ function invToggleForm() {
     // Populate unit dropdown
     const unitSel = document.getElementById('inv-f-unidad');
     if (unitSel) {
-      if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','bandeja'];
+      if (!state.unidadesInventario) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','Bandeja'];
+      if (!state.unidadesInventario.some(u => String(u).toLowerCase() === 'bandeja')) state.unidadesInventario.push('Bandeja');
       unitSel.innerHTML = state.unidadesInventario.map(u => `<option value="${u}">${u}</option>`).join('');
     }
     invRefreshFamiliaSubfamiliaSelects('inv-f', 'Sin familia', 'Sin subfamilia');
@@ -14992,7 +15001,7 @@ function invAddUnitGlobal() {
   const nombre = prompt('Nombre de la nueva unidad de medida:\n(Ej: bandeja, trozo, pote, atado, etc.)','');
   if (!nombre || !nombre.trim()) return;
   if (!state.unidadesInventario) state.unidadesInventario = [];
-  if (state.unidadesInventario.includes(nombre.trim())) { notify('⚠ Esa unidad ya existe'); return; }
+  if (state.unidadesInventario.some(u => String(u).toLowerCase() === nombre.trim().toLowerCase())) { notify('⚠ Esa unidad ya existe'); return; }
   pushUndo();
   state.unidadesInventario.push(nombre.trim());
   const sel = document.getElementById('inv-f-unidad');
@@ -15077,11 +15086,11 @@ function invQuickMov(prodId, tipo, opts) {
     preelaboracion: { titulo:`⚗ Preelaboración "${prod.nombre}"`, color:'#8b5cf6', destDefault:'Preelaboración', verb:'procesado' },
   }[tipo] || { titulo:'Movimiento', color:'#64748b', destDefault:'Cocina', verb:'movido' };
 
-  const destOpts = ['Cocina','Salón','Preelaboración','Bodega','Barra','Otro'].map(d =>
+  const destOpts = ['Cocina','Salón','Preelaboración','Bodega','Barra','Casa Sebas','Casa Priscila','Otro'].map(d =>
     `<option value="${d}" ${d===cfg.destDefault?'selected':''}>${d}</option>`
   ).join('');
 
-  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','docena','porción','filete','otro']
+  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','bandeja','docena','porción','filete','otro']
     .map(u=>`<option value="${u}" ${u===(prod.unidad||'unidad')?'selected':''}>${u}</option>`).join('');
 
   // Extra devolucion estado
@@ -15245,11 +15254,30 @@ const MOV_TIPOS = {
   merma:          { label:'Merma',            color:'#ef4444', icon:'⚠' },
 };
 
-const MOV_DESTINOS = ['Cocina','Salón','Preelaboración','Bodega','Otro'];
+const MOV_DESTINOS = ['Cocina','Salón','Preelaboración','Bodega','Casa Sebas','Casa Priscila','Otro'];
 
 function movGetAll() {
   if (!state.movimientos) state.movimientos = [];
   return state.movimientos;
+}
+
+function movGetActiveRows() {
+  return movGetAll().filter(m => !m._deleted);
+}
+
+function movAuditPush(tipo, mov, payload) {
+  if (!state.movimientosAudit) state.movimientosAudit = [];
+  state.movimientosAudit.push({
+    id: 'mva_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    tipo,
+    movId: mov?.id || '',
+    producto: mov?.producto || '',
+    usuario: (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '',
+    fecha: movFechaHoy(),
+    hora: movHoraAhora(),
+    ts: Date.now(),
+    ...payload
+  });
 }
 
 function movFechaHoy() {
@@ -15264,7 +15292,7 @@ function movGetFilteredRows() {
   const tipo   = document.getElementById('mov-f-tipo')?.value  || '';
   const dest   = document.getElementById('mov-f-dest')?.value  || '';
   const fecha  = document.getElementById('mov-f-fecha')?.value || '';
-  let filtered = [...movGetAll()].reverse();
+  let filtered = [...movGetActiveRows()].reverse();
   if (tipo) filtered = filtered.filter(m => m.tipo === tipo);
   if (dest) filtered = filtered.filter(m => m.destino === dest || m.origen === dest);
   if (fecha) {
@@ -15279,7 +15307,7 @@ function movRender() {
   const tbody  = document.getElementById('mov-tbody');
   if (!tbody) return;
 
-  const movs   = movGetAll();
+  const movs   = movGetActiveRows();
   const hoy    = movFechaHoy();
 
   // KPIs
@@ -15316,7 +15344,8 @@ function movRender() {
   };
 
   tbody.innerHTML = filtered.map(m => `
-    <tr style="border-bottom:1px solid var(--border);transition:.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+    <tr style="border-bottom:1px solid var(--border);transition:.15s;cursor:pointer;" onclick="movEditar('${m.id}')" title="Click para editar movimiento"
+      onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
       <td style="padding:10px 12px;color:#64748b;font-size:11px;">${m.fecha||''} ${m.hora||''}</td>
       <td style="padding:10px 12px;">${tiposBadge[m.tipo]||m.tipo}</td>
       <td style="padding:10px 12px;font-weight:600;">${esc(m.producto||'')}</td>
@@ -15331,11 +15360,105 @@ function movRender() {
       <td style="padding:10px 12px;color:#64748b;">${esc(m.destino||m.origen||'')}</td>
       <td style="padding:10px 12px;color:#64748b;">${esc(m.responsable||'')}</td>
       <td style="padding:10px 12px;color:#94a3b8;font-style:italic;max-width:160px;">${esc(m.nota||'')}</td>
-      <td style="padding:10px 12px;">
-        <button onclick="movEliminar('${m.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;"
+      <td style="padding:10px 12px;white-space:nowrap;">
+        <button onclick="event.stopPropagation();movEditar('${m.id}')" title="Editar movimiento" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:13px;margin-right:6px;">✎</button>
+        <button onclick="event.stopPropagation();movEliminar('${m.id}')" title="Eliminar con motivo" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;"
           onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
       </td>
     </tr>`).join('');
+  movRenderAudit();
+}
+
+function movRenderAudit() {
+  const list = document.getElementById('mov-audit-list');
+  if (!list) return;
+  const logs = Array.isArray(state.movimientosAudit) ? state.movimientosAudit : [];
+  if (!logs.length) {
+    list.innerHTML = '<div style="font-size:11px;color:#94a3b8;">Sin cambios auditados aún.</div>';
+    return;
+  }
+  const latest = [...logs].sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0, 60);
+  list.innerHTML = latest.map(l => {
+    const isDel = l.tipo === 'eliminar';
+    const badge = isDel
+      ? '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:999px;padding:1px 8px;font-size:9px;font-weight:800;">ANULADO</span>'
+      : '<span style="display:inline-block;background:#e0f2fe;color:#075985;border:1px solid #bae6fd;border-radius:999px;padding:1px 8px;font-size:9px;font-weight:800;">EDITADO</span>';
+    const when = `${l.fecha||''} ${l.hora||''}`.trim();
+    const by = esc(l.usuario || '—');
+    const prod = esc(l.producto || '—');
+    const motivo = esc(l.motivo || 'sin motivo');
+    return `<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;background:#f8fafc;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px;">${badge}<span style="font-size:10px;color:#64748b;">${esc(when)} · ${by}</span></div>
+      <div style="font-size:12px;color:#0f172a;font-weight:700;">${prod}</div>
+      <div style="font-size:11px;color:#475569;">Motivo: ${motivo}</div>
+    </div>`;
+  }).join('');
+}
+
+function movEditar(id) {
+  const mov = movGetAll().find(m => m.id === id && !m._deleted);
+  if (!mov) return;
+  const idx = movGetAll().findIndex(m => m.id === id);
+  if (idx < 0) return;
+
+  const prod = (state.inventario || []).find(p => p.id === mov.prodId);
+  const currentUnidad = mov.unidad || prod?.unidad || 'u';
+  const cantidadRaw = prompt(`Editar cantidad de "${mov.producto}" (${currentUnidad}):`, String(mov.cantidad ?? ''));
+  if (cantidadRaw === null) return;
+  const cantidad = parseNumCL(cantidadRaw, false) || 0;
+  if (!cantidad) { notify('⚠ Cantidad inválida'); return; }
+
+  const destinoDefault = mov.destino || mov.origen || '';
+  const destino = prompt(`Editar destino/origen de "${mov.producto}":`, destinoDefault);
+  if (destino === null) return;
+  const destinoVal = String(destino || '').trim() || destinoDefault;
+
+  const resp = prompt('Editar responsable:', mov.responsable || (typeof currentUser!=='undefined' ? currentUser : ''));
+  if (resp === null) return;
+  const nota = prompt('Editar nota:', mov.nota || '');
+  if (nota === null) return;
+  const motivo = prompt('Motivo de la edición (obligatorio, queda auditado):', '');
+  if (motivo === null) return;
+  if (!String(motivo).trim()) { notify('⚠ Debes indicar motivo de edición'); return; }
+
+  pushUndo();
+  const before = JSON.parse(JSON.stringify(mov));
+  mov.cantidad = cantidad;
+  mov.responsable = String(resp || '').trim();
+  mov.nota = String(nota || '').trim();
+  if (mov.destino) mov.destino = destinoVal;
+  else mov.origen = destinoVal;
+  mov._lastEditTs = Date.now();
+  mov._lastEditBy = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '';
+  mov._lastEditReason = String(motivo).trim();
+  if (!Array.isArray(mov._edits)) mov._edits = [];
+  mov._edits.push({
+    ts: Date.now(),
+    by: mov._lastEditBy,
+    reason: mov._lastEditReason,
+    before: {
+      cantidad: before.cantidad,
+      responsable: before.responsable,
+      nota: before.nota,
+      destino: before.destino || '',
+      origen: before.origen || ''
+    },
+    after: {
+      cantidad: mov.cantidad,
+      responsable: mov.responsable,
+      nota: mov.nota,
+      destino: mov.destino || '',
+      origen: mov.origen || ''
+    }
+  });
+  movAuditPush('editar', mov, {
+    motivo: mov._lastEditReason,
+    before: { cantidad: before.cantidad, destino: before.destino || before.origen || '' },
+    after: { cantidad: mov.cantidad, destino: mov.destino || mov.origen || '' }
+  });
+  movRender();
+  markUnsaved();
+  notify('✅ Movimiento editado');
 }
 
 function movExportPdfPreview() {
@@ -15415,9 +15538,12 @@ function movLimpiarFiltros() {
 }
 
 function movEliminar(id) {
-  const mov = movGetAll().find(m=>m.id===id);
+  const mov = movGetAll().find(m=>m.id===id && !m._deleted);
   if (!mov) return;
-  if (!confirm(`¿Eliminar este movimiento de ${mov.producto}?`)) return;
+  if (!confirm(`¿Eliminar este movimiento de ${mov.producto}?\n\nDebes indicar motivo y quedará auditado.`)) return;
+  const motivoDelete = prompt('Motivo de eliminación (obligatorio):', '');
+  if (motivoDelete === null) return;
+  if (!String(motivoDelete).trim()) { notify('⚠ Debes indicar un motivo para eliminar'); return; }
   pushUndo();
 
   // Ask about stock recovery with 3 options
@@ -15520,10 +15646,25 @@ function movEliminar(id) {
     }
   }
 
-  state.movimientos = movGetAll().filter(m=>m.id!==id);
+  mov._deleted = true;
+  mov._deletedAt = Date.now();
+  mov._deletedBy = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '';
+  mov._deleteReason = String(motivoDelete).trim();
+  movAuditPush('eliminar', mov, {
+    motivo: mov._deleteReason,
+    snapshot: {
+      tipo: mov.tipo,
+      cantidad: mov.cantidad,
+      unidad: mov.unidad,
+      destino: mov.destino || '',
+      origen: mov.origen || '',
+      responsable: mov.responsable || ''
+    }
+  });
   movRender();
   invRender();
   markUnsaved();
+  notify('🗑 Movimiento eliminado con motivo (auditado)');
 }
 
 // ── Modal genérico de movimiento ──
@@ -15539,7 +15680,7 @@ function movAbrirModal(tipo) {
   }[tipo] || { titulo:'Movimiento', color:'#64748b', destLabel:'Destino' };
 
   // Extra fields for preelaboracion
-  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','docena','porción','filete','otro']
+  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','bandeja','docena','porción','filete','otro']
     .map(u=>`<option value="${u}">${u}</option>`).join('');
   const extraUnidad = (tipo === 'devolucion' || tipo === 'preelaboracion') ? `
     <div>
@@ -16305,7 +16446,7 @@ function conteoGuardarTodo() {
 function movRenderDashSemanal() {
   const chart = document.getElementById('mov-chart-semanal');
   if (!chart) return;
-  const movs  = movGetAll();
+  const movs  = movGetActiveRows();
   const ahora = new Date();
   const dias  = [];
   for (let i = 6; i >= 0; i--) {
@@ -16350,7 +16491,7 @@ function movMostrarReporteMerma() {
   const cont = document.getElementById('mov-merma-content');
   if (!wrap || !cont) return;
 
-  const movs  = movGetAll().filter(m=>m.tipo==='merma');
+  const movs  = movGetActiveRows().filter(m=>m.tipo==='merma');
   if (!movs.length) {
     cont.innerHTML = '<div style="color:#94a3b8;font-size:12px;">Sin mermas registradas aún.</div>';
     wrap.style.display = 'block';
