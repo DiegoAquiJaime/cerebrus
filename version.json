@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.13.3",
-  "notes": "Inventario: alerta de stock crítico visible solo para Bodega, Alberto y Diego; salto a tabla filtrada."
+  "version": "2026.04.17.1",
+  "notes": "Inventario: filtros de rango de fechas (Desde/Hasta) en Movimientos y en exportación PDF."
 }

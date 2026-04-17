@@ -4898,7 +4898,11 @@ body.dark-mode .conflict-overlay{
             <option value="Casa Priscila">Casa Priscila</option>
             <option value="Otro">Otro</option>
           </select>
-          <input type="date" id="mov-f-fecha" onchange="movRender()"
+          <span style="font-size:10px;font-weight:700;color:#94a3b8;align-self:center;">Desde</span>
+          <input type="date" id="mov-f-desde" title="Inicio del rango (incluido)" onchange="movRender()"
+            style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
+          <span style="font-size:10px;font-weight:700;color:#94a3b8;align-self:center;">Hasta</span>
+          <input type="date" id="mov-f-hasta" title="Fin del rango (incluido)" onchange="movRender()"
             style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
           <button onclick="movLimpiarFiltros()"
             style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;cursor:pointer;color:#94a3b8;">✕ Limpiar</button>
@@ -15288,17 +15292,57 @@ function movHoraAhora() {
   return new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
 }
 
+/** Convierte fecha de movimiento (es-CL DD-MM-AAAA o DD/MM/AAAA) a clave YYYY-MM-DD para comparar con inputs type=date. */
+function movDiaKeyDesdeCl(fechaStr) {
+  if (!fechaStr || typeof fechaStr !== 'string') return null;
+  const t = fechaStr.trim();
+  const sep = t.indexOf('-') >= 0 ? '-' : (t.indexOf('/') >= 0 ? '/' : null);
+  if (!sep) return null;
+  const parts = t.split(sep).map(function (x) { return x.trim(); });
+  if (parts.length !== 3) return null;
+  const dd = parseInt(parts[0], 10);
+  const mm = parseInt(parts[1], 10);
+  const yy = parseInt(parts[2], 10);
+  if (!dd || !mm || !yy || mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const d = new Date(yy, mm - 1, dd);
+  if (d.getFullYear() !== yy || d.getMonth() !== mm - 1 || d.getDate() !== dd) return null;
+  return yy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
+}
+
+function movFiltrarPorRangoFechas(filtered, desdeIso, hastaIso) {
+  if (!desdeIso && !hastaIso) return filtered;
+  var d0 = desdeIso || '1970-01-01';
+  var d1 = hastaIso || '2999-12-31';
+  if (d0 > d1) { var x = d0; d0 = d1; d1 = x; }
+  return filtered.filter(function (m) {
+    var k = movDiaKeyDesdeCl(m.fecha);
+    if (!k) return true;
+    return k >= d0 && k <= d1;
+  });
+}
+
+function movRangoFechasActivo() {
+  var desde = document.getElementById('mov-f-desde')?.value || '';
+  var hasta = document.getElementById('mov-f-hasta')?.value || '';
+  return { desde: desde, hasta: hasta };
+}
+
+function movRangoFechasEtiqueta() {
+  var r = movRangoFechasActivo();
+  if (!r.desde && !r.hasta) return '';
+  if (r.desde && r.hasta) return 'Fechas: ' + r.desde + ' → ' + r.hasta;
+  if (r.desde) return 'Desde: ' + r.desde;
+  return 'Hasta: ' + r.hasta;
+}
+
 function movGetFilteredRows() {
   const tipo   = document.getElementById('mov-f-tipo')?.value  || '';
   const dest   = document.getElementById('mov-f-dest')?.value  || '';
-  const fecha  = document.getElementById('mov-f-fecha')?.value || '';
+  const rango  = movRangoFechasActivo();
   let filtered = [...movGetActiveRows()].reverse();
   if (tipo) filtered = filtered.filter(m => m.tipo === tipo);
   if (dest) filtered = filtered.filter(m => m.destino === dest || m.origen === dest);
-  if (fecha) {
-    const fd = new Date(fecha).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
-    filtered = filtered.filter(m => m.fecha === fd);
-  }
+  filtered = movFiltrarPorRangoFechas(filtered, rango.desde, rango.hasta);
   return filtered;
 }
 
@@ -15470,7 +15514,7 @@ function movExportPdfPreview() {
   const filtros = [
     document.getElementById('mov-f-tipo')?.value ? 'Tipo: ' + document.getElementById('mov-f-tipo').value : '',
     document.getElementById('mov-f-dest')?.value ? 'Destino: ' + document.getElementById('mov-f-dest').value : '',
-    document.getElementById('mov-f-fecha')?.value ? 'Fecha: ' + document.getElementById('mov-f-fecha').value : ''
+    movRangoFechasEtiqueta()
   ].filter(Boolean).join(' · ') || 'Sin filtros';
 
   const tipoLabel = {despacho:'Despacho', devolucion:'Devolución', ingreso_pedido:'Ingreso pedido', preelaboracion:'Preelaboración', merma:'Merma'};
@@ -15531,7 +15575,7 @@ function invValorTotal() {
 }
 
 function movLimpiarFiltros() {
-  ['mov-f-tipo','mov-f-dest','mov-f-fecha'].forEach(id=>{
+  ['mov-f-tipo','mov-f-dest','mov-f-desde','mov-f-hasta'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   movRender();
