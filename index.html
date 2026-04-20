@@ -8132,6 +8132,8 @@ function makeDefaultCreditos() {
 
 let _credFilter = 'todos';
 let _credModal  = null;
+let _credSaving = false;
+let _credHistOpen = null;
 
 function credSaldo(c)   { return Math.max(0, (c.valorPagar||0) - (c.totalPagado||0)); }
 function credCuotaVal(c){ return (c.totalCuotas||0) > 0 ? Math.round((c.valorPagar||0) / c.totalCuotas) : CRED_CUOTA_STD; }
@@ -8147,6 +8149,21 @@ function credLastPagoTxt(c){
   const f = p.fecha || '';
   const u = p.user || '—';
   return `${f} · ${u}`;
+}
+
+function credPagoRegistroTxt(p) {
+  if (!p) return '';
+  const reg = p.fechaRegistro || '';
+  const hora = p.horaRegistro || '';
+  const usr = p.userRegistro || '';
+  const out = [reg, hora].filter(Boolean).join(' ');
+  return out ? `${out}${usr ? ' · ' + usr : ''}` : '';
+}
+
+function credRecalcAfterPagos(c) {
+  const saldo = credSaldo(c);
+  c.cuotasRest = saldo <= 0 ? 0 : Math.max(0, Math.round(saldo / credCuotaVal(c)));
+  return saldo;
 }
 
 function calcCredKpis() {
@@ -8207,7 +8224,35 @@ function renderCreditos() {
       : (c.cuotasRest||0) <= 3
         ? `<span class="cred-badge danger">⚠ ${c.cuotasRest||0} cuota${(c.cuotasRest||0)!==1?'s':''}</span>`
         : `<span class="cred-badge active">${c.cuotasRest||0} cuotas</span>`;
+    const lastPago = credLastPago(c);
+    const regTxt = credPagoRegistroTxt(lastPago);
     const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')">💸 Pagar</button>`;
+    const undoBtn = lastPago
+      ? `<button class="btn-pagar" style="background:#f59e0b;margin-left:6px;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶ Deshacer</button>`
+      : '';
+    const histBtn = (Array.isArray(c.pagosHist) && c.pagosHist.length)
+      ? `<button class="btn-pagar" style="background:#475569;margin-left:6px;" onclick="credToggleHist('${c.id}')">${_credHistOpen===c.id?'▴ Ocultar':'▾ Historial'}</button>`
+      : '';
+    const histRow = (_credHistOpen===c.id && Array.isArray(c.pagosHist) && c.pagosHist.length)
+      ? `<tr>
+          <td colspan="12" style="background:#f8fafc;padding:10px 12px;border-top:1px dashed #e2e8f0;">
+            <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Historial de pagos de ${esc(c.id)}</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              ${c.pagosHist.map((p, i) => {
+                const regLine = credPagoRegistroTxt(p);
+                const key = String(p.ts||'') + '_' + i;
+                return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;">
+                  <div style="font-size:11px;color:#334155;">
+                    <b>${fmt(p.monto||0)}</b> · pago: ${esc(p.fecha||'—')} · por: ${esc(p.user||'—')}
+                    ${regLine ? `<div style="font-size:9px;color:#94a3b8;">registro: ${esc(regLine)}</div>` : ''}
+                  </div>
+                  <button class="btn-pagar" style="background:#ef4444;padding:4px 10px;" onclick="credUndoPagoByKey('${c.id}','${key}')">Deshacer este pago</button>
+                </div>`;
+              }).join('')}
+            </div>
+          </td>
+        </tr>`
+      : '';
     return `<tr class="${paid?'cred-paid':''}">
       <td><span class="cred-nro ${nroClass}">${c.id}</span></td>
       <td style="font-size:11px;font-weight:600;">${acrLabel}</td>
@@ -8223,11 +8268,19 @@ function renderCreditos() {
         </div>
       </td>
       <td style="font-size:10px;color:#9aacb8;">${c.fechaEmision}</td>
-      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;">${esc(credLastPagoTxt(c))}</td>
+      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;" title="${esc(regTxt||'Sin stamp de registro')}">
+        <div>${esc(credLastPagoTxt(c))}</div>
+        ${regTxt ? `<div style="font-size:9px;color:#c0c8d0;">reg: ${esc(regTxt)}</div>` : ''}
+      </td>
       <td>${badge}</td>
-      <td>${pagarBtn}</td>
-    </tr>`;
+      <td>${pagarBtn}${undoBtn}${histBtn}</td>
+    </tr>${histRow}`;
   }).join('');
+}
+
+function credToggleHist(credId) {
+  _credHistOpen = (_credHistOpen === credId) ? null : credId;
+  renderCreditos();
 }
 
 function openCredModal(credId) {
@@ -8267,9 +8320,13 @@ function closeCredModal(e) {
 function closeCredModalBtn() {
   document.getElementById('credModal').classList.remove('open');
   _credModal = null;
+  _credSaving = false;
+  const okBtn = document.querySelector('#credModal .cred-modal-ok');
+  if (okBtn) okBtn.disabled = false;
 }
 
 function confirmCredPago() {
+  if (_credSaving) return;
   if (!_credModal) return;
   const c = (state.creditos||[]).find(x=>x.id===_credModal);
   if (!c) return;
@@ -8288,17 +8345,87 @@ function confirmCredPago() {
     if (!u || !u.trim()) { notify('⚠ Debes indicar quién realizó el pago'); return; }
     payUser = u.trim();
   }
+  const okBtn = document.querySelector('#credModal .cred-modal-ok');
+  if (!confirm(
+    `¿Confirmar pago de cuota?\n\n` +
+    `Crédito: ${c.id}\n` +
+    `Monto: ${fmt(monto)}\n` +
+    `Fecha efectiva de pago: ${payDate}\n` +
+    `Pagado por: ${payUser}`
+  )) return;
+  _credSaving = true;
+  if (okBtn) okBtn.disabled = true;
+  const regNow = new Date();
+  const regDate = regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const regTime = regNow.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  const regUser = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : payUser;
   pushUndo();
   c.totalPagado  = Math.min(c.valorPagar, c.totalPagado + monto);
-  const nuevoSaldo = credSaldo(c);
-  c.cuotasRest   = nuevoSaldo <= 0 ? 0 : Math.max(0, Math.round(nuevoSaldo / credCuotaVal(c)));
+  const nuevoSaldo = credRecalcAfterPagos(c);
   if (!Array.isArray(c.pagosHist)) c.pagosHist = [];
-  c.pagosHist.unshift({ monto, fecha: payDate, user: payUser, ts: Date.now() });
+  c.pagosHist.unshift({
+    monto,
+    fecha: payDate,      // fecha efectiva del pago (elegida en calendario)
+    user: payUser,       // quien pagó
+    ts: Date.now(),
+    fechaRegistro: regDate,
+    horaRegistro: regTime,
+    userRegistro: regUser
+  });
   if (c.pagosHist.length > 80) c.pagosHist.length = 80;
   closeCredModalBtn();
   renderCreditos();
   if (nuevoSaldo <= 0) notify('🎉 ¡' + c.id + ' completamente pagado! · ' + payDate + ' · ' + payUser);
   else notify('✓ Pago registrado en ' + c.id + ' — saldo: ' + fmt(nuevoSaldo) + ' · ' + payDate + ' · ' + payUser);
+}
+
+function credUndoLastPago(credId) {
+  const c = (state.creditos||[]).find(x=>x.id===credId);
+  if (!c) return;
+  if (!Array.isArray(c.pagosHist) || !c.pagosHist.length) { notify('⚠ No hay pagos para deshacer'); return; }
+  const p = c.pagosHist[0];
+  const regTxt = credPagoRegistroTxt(p);
+  const msg = [
+    `¿Deshacer último pago de ${c.id}?`,
+    '',
+    `Monto: ${fmt(p.monto||0)}`,
+    `Fecha efectiva: ${p.fecha||'—'}`,
+    `Pagado por: ${p.user||'—'}`,
+    regTxt ? `Registrado: ${regTxt}` : ''
+  ].filter(Boolean).join('\n');
+  if (!confirm(msg)) return;
+  pushUndo();
+  const monto = Math.max(0, p.monto||0);
+  c.totalPagado = Math.max(0, (c.totalPagado||0) - monto);
+  c.pagosHist.shift();
+  const nuevoSaldo = credRecalcAfterPagos(c);
+  renderCreditos();
+  notify(`↶ Pago deshecho en ${c.id} · saldo: ${fmt(nuevoSaldo)}`);
+}
+
+function credUndoPagoByKey(credId, key) {
+  const c = (state.creditos||[]).find(x=>x.id===credId);
+  if (!c || !Array.isArray(c.pagosHist) || !c.pagosHist.length) return;
+  const idx = c.pagosHist.findIndex((p, i) => (String(p.ts||'') + '_' + i) === key);
+  if (idx < 0) { notify('⚠ No se encontró ese pago en historial'); return; }
+  const p = c.pagosHist[idx];
+  const regTxt = credPagoRegistroTxt(p);
+  const msg = [
+    `¿Deshacer este pago de ${c.id}?`,
+    '',
+    `Monto: ${fmt(p.monto||0)}`,
+    `Fecha efectiva: ${p.fecha||'—'}`,
+    `Pagado por: ${p.user||'—'}`,
+    regTxt ? `Registrado: ${regTxt}` : ''
+  ].filter(Boolean).join('\n');
+  if (!confirm(msg)) return;
+  pushUndo();
+  const monto = Math.max(0, p.monto || 0);
+  c.totalPagado = Math.max(0, (c.totalPagado || 0) - monto);
+  c.pagosHist.splice(idx, 1);
+  const nuevoSaldo = credRecalcAfterPagos(c);
+  renderCreditos();
+  notify(`↶ Pago puntual deshecho en ${c.id} · saldo: ${fmt(nuevoSaldo)}`);
 }
 
 function toggleNuevoCred() {
