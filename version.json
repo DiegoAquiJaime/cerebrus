@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.3",
-  "notes": "Inventario: reemplazo total Bodega N°3 desde CSV PLANTILLA(1), aplicando stock del archivo (vacios=0)."
+  "version": "2026.04.20.4",
+  "notes": "Inventario: nueva base oficial desde CSV PLANTILLAS PEDIDOS BODEGA IMPRIMIR (incluye stock cargado)."
 }

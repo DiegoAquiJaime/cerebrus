@@ -12399,7 +12399,7 @@ function _localInit() {
 }
 
 /** Lista maestra Bodega N°3 oficial (CSV Diego). Al regenerar datos, cambia el valor para forzar reemplazo. */
-const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v4';
+const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v5';
 
 function applyBodegaN3PlantillaIfNeeded() {
   try {
@@ -12420,9 +12420,9 @@ function applyBodegaN3PlantillaIfNeeded() {
       }
     });
     state.invBodegaN3Applied = INV_LISTA_BODEGA3_VER;
-    state.inventorySnapshotId = 'bodega_n3_oficial_2026_04_20_v4';
+    state.inventorySnapshotId = 'bodega_n3_oficial_2026_04_20_v5';
     state.inventorySnapshotDate = '2026-04-20';
-    state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV PLANTILLA)(1), reemplazo total con stock desde CSV';
+    state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV PLANTILLAS PEDIDOS BODEGA IMPRIMIR DIEGO ESTE), reemplazo total con stock';
     markUnsaved();
     if (typeof notify === 'function') {
       notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos aplicados desde plantilla oficial (incluye stock del CSV). Guarda en la nube (☁) para replicar en otros equipos.');
