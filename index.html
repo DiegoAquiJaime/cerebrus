@@ -15147,6 +15147,11 @@ function invQuickMov(prodId, tipo, opts) {
           <input id="qm-nota" type="text" placeholder="Observación…"
             style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
         </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">FECHA EFECTIVA DEL MOVIMIENTO</label>
+          <input id="qm-fecha" type="date" value="${new Date().toISOString().slice(0,10)}"
+            style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;box-sizing:border-box;background:transparent;color:var(--primary);">
+        </div>
         <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end;padding-top:4px;">
           <button id="qm-cancel" style="background:none;border:1px solid var(--border);border-radius:7px;padding:8px 16px;font-family:inherit;font-size:12px;cursor:pointer;color:#64748b;">Cancelar</button>
           <button id="qm-save" style="background:${cfg.color};color:white;border:none;border-radius:7px;padding:8px 18px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;">💾 Registrar</button>
@@ -15174,8 +15179,13 @@ function invQuickMov(prodId, tipo, opts) {
     const destino  = document.getElementById('qm-dest')?.value || cfg.destDefault;
     const resp     = (document.getElementById('qm-resp').value || '').trim() || (typeof currentUser!=='undefined'?currentUser:'');
     const nota     = (document.getElementById('qm-nota').value || '').trim();
-    const fechaStr = new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const hora     = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const regNow   = new Date();
+    const fechaSel = document.getElementById('qm-fecha')?.value || '';
+    const fechaStr = fechaSel
+      ? new Date(fechaSel + 'T12:00:00').toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})
+      : regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const hora     = regNow.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+    const tsReg    = regNow.getTime();
 
     pushUndo();
     if (!state.movimientos) state.movimientos = [];
@@ -15185,28 +15195,28 @@ function invQuickMov(prodId, tipo, opts) {
         if (!confirm(`⚠ Stock insuficiente (${prod.stock||0} ${prod.unidad||'u'}).\n¿Despachar ${cantidad} de todas formas?`)) return;
       }
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
-      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad, destino, responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad, destino, responsable:resp, nota, fecha:fechaStr, hora, ts:tsReg, tsRegistro:tsReg, fechaRegistro:regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}), horaRegistro:hora });
       notify(`→ ${cantidad} ${unidad} de ${prod.nombre} despachados a ${destino}`);
 
     } else if (tipo === 'devolucion') {
       const estadoDev = document.getElementById('qm-estado')?.value || 'bueno';
       if (estadoDev === 'bueno') {
         prod.stock = (prod.stock||0) + cantidad;
-        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora, ts:tsReg, tsRegistro:tsReg, fechaRegistro:regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}), horaRegistro:hora });
         notify(`← ${cantidad} ${unidad} de ${prod.nombre} devueltos a inventario`);
       } else {
-        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora, ts:Date.now() });
+        state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:destino, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora, ts:tsReg, tsRegistro:tsReg, fechaRegistro:regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}), horaRegistro:hora });
         notify(`⚠ ${cantidad} ${unidad} de ${prod.nombre} registrados como merma`);
       }
 
     } else if (tipo === 'merma') {
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
-      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:'Bodega', destino:'Merma', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now() });
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad, origen:'Bodega', destino:'Merma', responsable:resp, nota, fecha:fechaStr, hora, ts:tsReg, tsRegistro:tsReg, fechaRegistro:regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}), horaRegistro:hora });
       notify(`⚠ ${cantidad} ${unidad} de ${prod.nombre} registrados como merma`);
 
     } else if (tipo === 'preelaboracion') {
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
-      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora, ts:Date.now(), _cerrado:false });
+      state.movimientos.push({ id:'mov_'+Date.now(), tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora, ts:tsReg, tsRegistro:tsReg, fechaRegistro:regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}), horaRegistro:hora, _cerrado:false });
       notify(`⚗ ${cantidad} ${unidad} de ${prod.nombre} enviados a preelaboración`);
     }
 
@@ -15839,6 +15849,10 @@ function movAbrirModal(tipo) {
     const unidadOverride = document.getElementById('mov-unidad-override')?.value || '';
     const unidadFinal = unidadOverride || prod.unidad || 'u';
     const fechaInp = document.getElementById('mov-fecha-inp').value;
+    const regNow = new Date();
+    const tsReg = regNow.getTime();
+    const fechaRegistro = regNow.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const horaRegistro = regNow.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
     const fechaStr = fechaInp
       ? new Date(fechaInp+'T12:00:00').toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'})
       : movFechaHoy();
@@ -15851,17 +15865,17 @@ function movAbrirModal(tipo) {
         if (!confirm(`⚠ Stock insuficiente.\nStock actual: ${prod.stock||0} ${prod.unidad||'u'}\nQuieres despachar: ${cantidad}\n¿Continuar de todas formas?`)) return;
       }
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
-      movs.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino, responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+      movs.push({ id:'mov_'+Date.now(), tipo:'despacho', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino, responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg, tsRegistro:tsReg, fechaRegistro, horaRegistro });
 
     } else if (tipo === 'devolucion') {
       const estadoDev = document.getElementById('mov-estado-dev')?.value || 'bueno';
       const origen    = destino;
       if (estadoDev === 'bueno') {
         prod.stock = (prod.stock||0) + cantidad;
-        movs.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        movs.push({ id:'mov_'+Date.now(), tipo:'devolucion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Bodega', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg, tsRegistro:tsReg, fechaRegistro, horaRegistro });
         notify(`✅ ${cantidad} ${unidadFinal} de ${prod.nombre} devueltos a inventario`);
       } else {
-        movs.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now() });
+        movs.push({ id:'mov_'+Date.now(), tipo:'merma', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, origen, destino:'Merma', responsable:resp, nota:`Devolución dañada — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg, tsRegistro:tsReg, fechaRegistro, horaRegistro });
         notify(`⚠ ${cantidad} ${unidadFinal} de ${prod.nombre} registrados como merma`);
       }
 
@@ -15875,17 +15889,17 @@ function movAbrirModal(tipo) {
       prod.stock = Math.max(0, (prod.stock||0) - cantidad);
       // Registrar entrada a preelaboración
       const idPrelab = 'mov_'+Date.now();
-      movs.push({ id:idPrelab, tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now(), _cerrado:true });
+      movs.push({ id:idPrelab, tipo:'preelaboracion', producto:prod.nombre, prodId, cantidad, unidad:unidadFinal, destino:'Preelaboración', responsable:resp, nota, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg, tsRegistro:tsReg, fechaRegistro, horaRegistro, _cerrado:true });
       // Registrar regreso a bodega
       if (regresa > 0) {
         prod.stock = (prod.stock||0) + regresa;
         const valorTotal = valorUnit > 0 ? (regresa * valorUnit) : 0;
         const notaVal = valorUnit > 0 ? ` · valorización manual ${fmt(valorUnit)} c/u` : '';
-        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:unidadFinal, origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${unidadFinal}${notaVal}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+1, _cerrado:true, valorUnit: valorUnit > 0 ? valorUnit : 0, valorTotal: valorTotal > 0 ? valorTotal : 0, valorModo: valorUnit > 0 ? 'manual_unit' : '' });
+        movs.push({ id:'mov_'+Date.now()+1, tipo:'devolucion', producto:prod.nombre+' (procesado)', prodId, cantidad:regresa, unidad:unidadFinal, origen:'Preelaboración', destino:'Bodega', responsable:resp, nota:`Procesado de ${cantidad} ${unidadFinal}${notaVal}`, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg+1, tsRegistro:tsReg, fechaRegistro, horaRegistro, _cerrado:true, valorUnit: valorUnit > 0 ? valorUnit : 0, valorTotal: valorTotal > 0 ? valorTotal : 0, valorModo: valorUnit > 0 ? 'manual_unit' : '' });
       }
       // Registrar merma
       if (merma > 0) {
-        movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:unidadFinal, origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:Date.now()+2 });
+        movs.push({ id:'mov_'+Date.now()+2, tipo:'merma', producto:prod.nombre, prodId, cantidad:merma, unidad:unidadFinal, origen:'Preelaboración', destino:'Merma', responsable:resp, nota:`Merma de preelaboración — ${nota}`, fecha:fechaStr, hora:movHoraAhora(), ts:tsReg+2, tsRegistro:tsReg, fechaRegistro, horaRegistro });
       }
       const msgValor = (regresa > 0 && valorUnit > 0) ? ` · valorizado ${fmt(regresa * valorUnit)}` : '';
       notify(`⚗ Preelaboración registrada: ${cantidad} entran, ${regresa} regresan, ${merma} merma${msgValor}`);
