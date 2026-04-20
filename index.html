@@ -12404,14 +12404,41 @@ const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v2';
 function applyBodegaN3PlantillaIfNeeded() {
   try {
     if (state.invBodegaN3Applied === INV_LISTA_BODEGA3_VER) return;
+    var hasInv = Array.isArray(state.inventario) && state.inventario.length > 0;
+    var hasStockCargado = hasInv && (state.inventario || []).some(function(p) {
+      return Number(p && p.stock) > 0;
+    });
+    // Protección: si ya existe inventario con stock cargado, no volver a reemplazar
+    // automáticamente por plantilla; solo marca versión para evitar reaplicación.
+    if (hasStockCargado) {
+      state.invBodegaN3Applied = INV_LISTA_BODEGA3_VER;
+      return;
+    }
     var rows = typeof window !== 'undefined' && Array.isArray(window.INV_BODEGA_N3_ITEMS) ? window.INV_BODEGA_N3_ITEMS : [];
     if (!rows.length) {
       console.warn('applyBodegaN3PlantillaIfNeeded: inv-bodega-n3-data.js no cargó o está vacío');
       return;
     }
     invInit();
+    // Preserva stock ya digitado por bodega al migrar plantilla oficial.
+    var prevByName = {};
+    (state.inventario || []).forEach(function(p) {
+      var k = invNameDedupeKey(p && p.nombre);
+      if (!k || prevByName[k]) return;
+      prevByName[k] = {
+        stock: Number(p.stock) || 0,
+        qty: Number(p.qty) || 0
+      };
+    });
     state.inventario = rows.map(function(p) {
-      return JSON.parse(JSON.stringify(p));
+      var np = JSON.parse(JSON.stringify(p));
+      var k = invNameDedupeKey(np && np.nombre);
+      var prev = k ? prevByName[k] : null;
+      if (prev) {
+        np.stock = prev.stock;
+        np.qty = prev.qty;
+      }
+      return np;
     });
     state.preciosProveedor = {};
     (state.inventario || []).forEach(function(p) {
@@ -12427,7 +12454,7 @@ function applyBodegaN3PlantillaIfNeeded() {
     state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV Diego) con stock crítico por producto';
     markUnsaved();
     if (typeof notify === 'function') {
-      notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos (orden plantilla). Guarda en la nube (☁) para replicar en otros equipos.');
+      notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos (orden plantilla), conservando stock existente por nombre. Guarda en la nube (☁) para replicar en otros equipos.');
     }
   } catch (e) {
     console.error('applyBodegaN3PlantillaIfNeeded', e);
@@ -22987,7 +23014,9 @@ async function loadFromCloud() {
       if (typeof json.data === 'string') {
         try { parsed = JSON.parse(json.data); } catch(e) { parsed = json.data; }
       }
-      state = parsed.state || makeDefaultState();
+      const incomingState = parsed.state || makeDefaultState();
+      const localBefore = state || {};
+      state = incomingState;
       _nid  = parsed.nid  || 200;
       // Safety net: si nube viene sin inventario, intenta rescatar inventario local previo.
       try {
@@ -23007,6 +23036,33 @@ async function loadFromCloud() {
       } catch(e){}
       // Decompress short keys from cloud
       decompressVsData(state);
+      // Guardado de seguridad anti-pisado de inventario (caso concurrencia):
+      // Si Bodega tiene inventario local con stock y la nube viene mucho más vacía,
+      // conserva el inventario local para evitar borrados accidentales.
+      try {
+        const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
+        const localInv = Array.isArray(localBefore.inventario) ? localBefore.inventario : [];
+        const remoteInv = Array.isArray(state.inventario) ? state.inventario : [];
+        if (isBodegaUser && localInv.length && remoteInv.length) {
+          const localNZ = localInv.reduce((n, p) => n + (Number(p && p.stock) > 0 ? 1 : 0), 0);
+          const remoteNZ = remoteInv.reduce((n, p) => n + (Number(p && p.stock) > 0 ? 1 : 0), 0);
+          const localSum = localInv.reduce((s, p) => s + (Number(p && p.stock) || 0), 0);
+          const remoteSum = remoteInv.reduce((s, p) => s + (Number(p && p.stock) || 0), 0);
+          const suspiciousDrop = (remoteNZ + 20) < localNZ || (remoteSum + 100) < localSum;
+          if (suspiciousDrop) {
+            state.inventario = localInv;
+            if (localBefore.preciosProveedor) state.preciosProveedor = localBefore.preciosProveedor;
+            if (localBefore.catInventario) state.catInventario = localBefore.catInventario;
+            if (localBefore.unidadesInventario) state.unidadesInventario = localBefore.unidadesInventario;
+            if (localBefore.invFamilias) state.invFamilias = localBefore.invFamilias;
+            if (localBefore.inventorySnapshotId) state.inventorySnapshotId = localBefore.inventorySnapshotId;
+            if (localBefore.inventorySnapshotDate) state.inventorySnapshotDate = localBefore.inventorySnapshotDate;
+            if (localBefore.inventorySnapshotSource) state.inventorySnapshotSource = localBefore.inventorySnapshotSource;
+            if (localBefore.invBodegaN3Applied) state.invBodegaN3Applied = localBefore.invBodegaN3Applied;
+            notify('🛡️ Seguridad inventario: se conservó el stock local de Bodega (nube venía con posible vaciado).');
+          }
+        }
+      } catch (e) {}
       cloudVersion = json.meta?.version || '0';
       _cloudBaseVersion = cloudVersion;
       try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
