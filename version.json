@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.17.1",
-  "notes": "Inventario: filtros de rango de fechas (Desde/Hasta) en Movimientos y en exportación PDF."
+  "version": "2026.04.20.1",
+  "notes": "Inventario: reemplazo completo por lista oficial Bodega N°3 (CSV Diego), con stock crítico y proveedor por bloque."
 }

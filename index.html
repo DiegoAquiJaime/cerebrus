@@ -12392,8 +12392,8 @@ function _localInit() {
   _postLoadSetup();
 }
 
-/** Lista maestra Bodega N°3 (plantilla CSV). Al regenerar datos, cambia el valor (p. ej. lista_bodega3_maestra_2026_v2). */
-const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_2026';
+/** Lista maestra Bodega N°3 oficial (CSV Diego). Al regenerar datos, cambia el valor para forzar reemplazo. */
+const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20';
 
 function applyBodegaN3PlantillaIfNeeded() {
   try {
@@ -12416,9 +12416,9 @@ function applyBodegaN3PlantillaIfNeeded() {
       }
     });
     state.invBodegaN3Applied = INV_LISTA_BODEGA3_VER;
-    state.inventorySnapshotId = 'bodega_n3_plantilla_2026';
-    state.inventorySnapshotDate = '2026-04-10';
-    state.inventorySnapshotSource = 'Inventario Bodega N°3 — plantilla CSV/PDF (orden por proveedor)';
+    state.inventorySnapshotId = 'bodega_n3_oficial_2026_04_20';
+    state.inventorySnapshotDate = '2026-04-20';
+    state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV Diego) con stock crítico por producto';
     markUnsaved();
     if (typeof notify === 'function') {
       notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos (orden plantilla). Guarda en la nube (☁) para replicar en otros equipos.');
