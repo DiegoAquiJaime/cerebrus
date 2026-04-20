@@ -12399,47 +12399,18 @@ function _localInit() {
 }
 
 /** Lista maestra Bodega N°3 oficial (CSV Diego). Al regenerar datos, cambia el valor para forzar reemplazo. */
-const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v3';
+const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v4';
 
 function applyBodegaN3PlantillaIfNeeded() {
   try {
     if (state.invBodegaN3Applied === INV_LISTA_BODEGA3_VER) return;
-    var hasInv = Array.isArray(state.inventario) && state.inventario.length > 0;
-    var hasStockCargado = hasInv && (state.inventario || []).some(function(p) {
-      return Number(p && p.stock) > 0;
-    });
-    // Protección: si ya existe inventario con stock cargado, no volver a reemplazar
-    // automáticamente por plantilla; solo marca versión para evitar reaplicación.
-    if (hasStockCargado) {
-      state.invBodegaN3Applied = INV_LISTA_BODEGA3_VER;
-      return;
-    }
     var rows = typeof window !== 'undefined' && Array.isArray(window.INV_BODEGA_N3_ITEMS) ? window.INV_BODEGA_N3_ITEMS : [];
     if (!rows.length) {
       console.warn('applyBodegaN3PlantillaIfNeeded: inv-bodega-n3-data.js no cargó o está vacío');
       return;
     }
     invInit();
-    // Preserva stock ya digitado por bodega al migrar plantilla oficial.
-    var prevByName = {};
-    (state.inventario || []).forEach(function(p) {
-      var k = invNameDedupeKey(p && p.nombre);
-      if (!k || prevByName[k]) return;
-      prevByName[k] = {
-        stock: Number(p.stock) || 0,
-        qty: Number(p.qty) || 0
-      };
-    });
-    state.inventario = rows.map(function(p) {
-      var np = JSON.parse(JSON.stringify(p));
-      var k = invNameDedupeKey(np && np.nombre);
-      var prev = k ? prevByName[k] : null;
-      if (prev) {
-        np.stock = prev.stock;
-        np.qty = prev.qty;
-      }
-      return np;
-    });
+    state.inventario = rows.map(function(p) { return JSON.parse(JSON.stringify(p)); });
     state.preciosProveedor = {};
     (state.inventario || []).forEach(function(p) {
       if (Array.isArray(p.precios) && p.precios.length) {
@@ -12449,12 +12420,12 @@ function applyBodegaN3PlantillaIfNeeded() {
       }
     });
     state.invBodegaN3Applied = INV_LISTA_BODEGA3_VER;
-    state.inventorySnapshotId = 'bodega_n3_oficial_2026_04_20_v3';
+    state.inventorySnapshotId = 'bodega_n3_oficial_2026_04_20_v4';
     state.inventorySnapshotDate = '2026-04-20';
-    state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV Diego v3) según archivo actualizado';
+    state.inventorySnapshotSource = 'Inventario Bodega N°3 oficial (CSV PLANTILLA)(1), reemplazo total con stock desde CSV';
     markUnsaved();
     if (typeof notify === 'function') {
-      notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos (orden plantilla), conservando stock existente por nombre. Guarda en la nube (☁) para replicar en otros equipos.');
+      notify('📦 Inventario Bodega N°3: ' + rows.length + ' productos aplicados desde plantilla oficial (incluye stock del CSV). Guarda en la nube (☁) para replicar en otros equipos.');
     }
   } catch (e) {
     console.error('applyBodegaN3PlantillaIfNeeded', e);

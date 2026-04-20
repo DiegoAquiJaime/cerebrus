@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.2",
-  "notes": "Inventario: actualización de lista oficial Bodega N°3 desde CSV nuevo (DIEGO ESTE)(1)."
+  "version": "2026.04.20.3",
+  "notes": "Inventario: reemplazo total Bodega N°3 desde CSV PLANTILLA(1), aplicando stock del archivo (vacios=0)."
 }
