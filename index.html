@@ -4752,6 +4752,12 @@ body.dark-mode .conflict-overlay{
           <div style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.45;">
             El pedido suma cantidades al plan semanal y <b>no modifica el stock</b> hasta que marques recibido / cierres semana.
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;color:#64748b;font-weight:700;">Familia</span>
+            <select id="inv-pedido-fil-familia" class="inv-filter-select" onchange="invRenderPedido()" style="min-width:220px;">
+              <option value="">Todas las familias</option>
+            </select>
+          </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <select id="inv-pedido-add-prod" class="inv-filter-select" style="min-width:220px;flex:1;"></select>
             <select id="inv-pedido-add-prov" class="inv-filter-select" style="min-width:180px;flex:1;"></select>
@@ -12393,7 +12399,7 @@ function _localInit() {
 }
 
 /** Lista maestra Bodega N°3 oficial (CSV Diego). Al regenerar datos, cambia el valor para forzar reemplazo. */
-const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20';
+const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v2';
 
 function applyBodegaN3PlantillaIfNeeded() {
   try {
@@ -13357,17 +13363,9 @@ async function cereBackupNowAll() {
 }
 
 function cereBackupWeeklyReminder() {
-  try {
-    const last = parseInt(localStorage.getItem('cerebrus_last_weekly_backup') || '0', 10) || 0;
-    const reminderMs = 14 * 24 * 60 * 60 * 1000;
-    if (!last || (Date.now() - last) > reminderMs) {
-      setTimeout(() => {
-        if (confirm('Han pasado más de 14 días sin respaldo JSON.\n¿Crear respaldos de Inventario, Facturas y Estado completo ahora?')) {
-          cereBackupNowAll();
-        }
-      }, 1200);
-    }
-  } catch(e){}
+  // Aviso desactivado por preferencia de UX:
+  // se mantiene el auto-respaldo diario sin interrumpir con popup quincenal.
+  return;
 }
 
 let _invCatFilter = 'todas';
@@ -14204,6 +14202,7 @@ function invRenderPedido() {
   const wrap  = document.getElementById('inv-ordenes-wrap'); if(!wrap) return;
   const addCard = document.getElementById('inv-add-pedido-card');
   const addProd = document.getElementById('inv-pedido-add-prod');
+  const addFam  = document.getElementById('inv-pedido-fil-familia');
   const addQty  = document.getElementById('inv-pedido-add-qty');
   const btnAdd    = document.getElementById('inv-btn-add-orden');
   const btnInit   = document.getElementById('inv-btn-iniciar');
@@ -14238,10 +14237,41 @@ function invRenderPedido() {
   const btnTransfer = document.getElementById('inv-btn-transfer');
   if (btnTransfer) btnTransfer.style.display = '';
   if (addCard) addCard.style.display = sem.cerrada ? 'none' : '';
+  if (addFam) {
+    const prevFam = addFam.value || '';
+    const familias = [...new Set((state.inventario||[]).map(p => (p.familia || '').trim()).filter(Boolean))]
+      .filter(f => f !== 'Sin familia')
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+    addFam.innerHTML = '<option value="">Todas las familias</option>' + familias.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    if (prevFam && familias.includes(prevFam)) addFam.value = prevFam;
+  }
+
+  function invPedidoProveedorCatalog() {
+    const bad = new Set(['', 'SIN FAMILIA', 'SIN SUBFAMILIA', 'REVISAR MANUAL', 'SIN CLASIFICAR']);
+    const all = [];
+    (state.inventario||[]).forEach(p => {
+      const fam = String(p.familia || '').trim();
+      const prv = String(p.prov || '').trim();
+      if (fam && !bad.has(invNormTxt(fam))) all.push(fam);
+      if (prv && !bad.has(invNormTxt(prv))) all.push(prv);
+    });
+    if (sem && Array.isArray(sem.ordenes)) {
+      sem.ordenes.forEach(o => (o.items||[]).forEach(it => {
+        const pv = String(it.prov || '').trim();
+        if (pv && !bad.has(invNormTxt(pv))) all.push(pv);
+      }));
+    }
+    const byNorm = {};
+    all.forEach(n => { const k = invNormTxt(n); if (k && !byNorm[k]) byNorm[k] = n; });
+    return Object.values(byNorm).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  }
+
+  const famFilter = (addFam?.value || '').trim();
   if (addProd) {
     const prev = addProd.value || '';
     addProd.innerHTML = '<option value="">Seleccionar producto…</option>' + state.inventario
       .slice()
+      .filter(p => !famFilter || (p.familia || '') === famFilter)
       .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}))
       .map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}${p.unidad?' · '+esc(p.unidad):''}${(p.stock||0)?' · stock '+(p.stock||0):''}</option>`)
       .join('');
@@ -14251,7 +14281,7 @@ function invRenderPedido() {
   const addProv = document.getElementById('inv-pedido-add-prov');
   if (addProv) {
     const prevP = addProv.value || '';
-    const provsAdd = state.facturas ? Object.keys(state.facturas).sort() : [];
+    const provsAdd = invPedidoProveedorCatalog();
     addProv.innerHTML = [
       `<option value="">— proveedor —</option>`,
       ...provsAdd.map(p => `<option value="${esc(p)}">${esc(p)}</option>`),
@@ -14280,7 +14310,7 @@ function invRenderPedido() {
   set('inv-sk-total',fmt(totalCosto)); set('inv-sk-items',totalItems);
   set('inv-sk-provs',provSet.size); set('inv-sk-recib',totalOrden?Math.round(recibidos/totalOrden*100)+'%':'—');
 
-  const provs = state.facturas?Object.keys(state.facturas).sort():[];
+  const provs = invPedidoProveedorCatalog();
   wrap.innerHTML = sem.ordenes.map((orden,oi) => {
     const ordenTotal = orden.items.reduce((s,it)=>s+it.qty*it.precio,0);
     const rows = orden.items.map((it,ii) => {
