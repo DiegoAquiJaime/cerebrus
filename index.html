@@ -13445,30 +13445,50 @@ function invFacturasKeysParaProveedor_(prov) {
   var n = invNormTxt(prov);
   return Object.keys(state.facturas).filter(function(k) { return invNormTxt(k) === n; });
 }
-/** Último precio unitario (línea de detalle) desde facturas importadas para ese proveedor y producto. */
+/**
+ * Último precio unitario desde facturas importadas (detalle) para ese proveedor y producto.
+ * Usa la misma lógica que el módulo de facturas: nombre canonizado + clave dedupe + invFacturaProductMatchScore
+ * (abreviaturas, typos leves, subcadenas), no solo texto idéntico.
+ */
 function invPrecioUltimoDesdeFacturas(prod, prov) {
   if (!prod || !prov) return 0;
   var keys = invFacturasKeysParaProveedor_(prov);
   if (!keys.length) return 0;
+  var keyP = invNameDedupeKey(invFormatProductNombre(prod.nombre || ''));
+  if (!keyP) return 0;
+  /** Mínimo alineado con invResolveFacturaLineProduct_ (fuzzy “fuerte” / gap). */
+  var MIN_FUZZ = 0.72;
   var hits = [];
   keys.forEach(function(k) {
     (state.facturas[k] || []).forEach(function(fac) {
       var t = invParseFechaFacturaCL_(fac && fac.emision);
       var ts = t ? t.getTime() : 0;
       (fac.items || []).forEach(function(line) {
-        var pu = 0;
-        if (line.invProdId && line.invProdId === prod.id) pu = invNum_(line.precioUnit);
-        else {
-          var kd = invNameDedupeKey(line.descripcion || '');
-          var kp = invNameDedupeKey(prod.nombre || '');
-          if (kd && kp && kd === kp) pu = invNum_(line.precioUnit);
+        var pu = invNum_(line.precioUnit);
+        if (pu <= 0) return;
+        var sc = 0;
+        if (line.invProdId && line.invProdId === prod.id) {
+          sc = 1;
+        } else {
+          var desc = String(line.descripcion || '').trim();
+          if (!desc) return;
+          var keyD = invNameDedupeKey(invFormatProductNombre(desc));
+          if (!keyD) return;
+          if (keyD === keyP) sc = 1;
+          else {
+            sc = invFacturaProductMatchScore(keyD, keyP);
+            if (sc < MIN_FUZZ) return;
+          }
         }
-        if (pu > 0) hits.push({ ts: ts, precio: pu });
+        hits.push({ ts: ts, precio: pu, sc: sc });
       });
     });
   });
   if (!hits.length) return 0;
-  hits.sort(function(a, b) { return b.ts - a.ts; });
+  hits.sort(function(a, b) {
+    if (b.ts !== a.ts) return b.ts - a.ts;
+    return (b.sc || 0) - (a.sc || 0);
+  });
   return hits[0].precio || 0;
 }
 function invGetCategories() {

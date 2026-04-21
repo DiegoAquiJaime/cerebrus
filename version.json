@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.5",
-  "notes": "Pedido semanal: unidad por línea; precio sugerido desde detalle de facturas importadas; guía de respaldo manual."
+  "version": "2026.04.20.6",
+  "notes": "Pedido: precio desde facturas con mismo fuzzy match que import (abreviaturas / variaciones de nombre)."
 }
