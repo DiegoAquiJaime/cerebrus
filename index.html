@@ -11876,15 +11876,19 @@ function aiShowPreview(rows) {
       invWrap.innerHTML = `
         <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-top:12px;">
           ${ivaWarning}
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
-              <input type="checkbox" id="ai-chk-inv" checked style="width:15px;height:15px;accent-color:var(--success);"
-                onchange="document.querySelectorAll('.ai-chk-prod').forEach(c=>c.checked=this.checked)">
-              📦 Agregar al pedido de Inventario
+              <input type="checkbox" id="ai-chk-precios" checked style="width:15px;height:15px;accent-color:var(--success);">
+              💲 Registrar precios por producto y proveedor (desde líneas de factura; no modifica stock de bodega)
             </label>
-            <span style="font-size:10px;color:#94a3b8;">${allItems.length} productos — desmarca los que no quieras</span>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
+              <input type="checkbox" id="ai-chk-inv" style="width:15px;height:15px;accent-color:var(--accent2);"
+                onchange="document.querySelectorAll('.ai-chk-prod').forEach(c=>c.checked=this.checked)">
+              📦 Agregar cantidades al pedido semanal (opcional; tampoco cambia stock hasta recepción)
+            </label>
+            <span style="font-size:10px;color:#94a3b8;">${allItems.length} líneas — desmarca las que no quieras en la lista de abajo</span>
           </div>
-          <p style="font-size:10px;color:#64748b;margin:0 0 8px;line-height:1.45;">Esto envía las cantidades al <strong>pedido de compra semanal</strong> (no cambia el stock físico de bodega). Para stock, usá conteo rápido o importar ficha con IA.</p>
+          <p style="font-size:10px;color:#64748b;margin:0 0 8px;line-height:1.45;">Los precios se guardan en la base de referencia del inventario para contrastar con pedidos; el stock físico lo cargás vos (conteo, movimientos o ficha). Si el producto o la unidad no calzan con el inventario, se abre un diálogo por línea antes de guardar (no se crean productos nuevos desde aquí).</p>
           <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">
             <input type="checkbox" id="ai-fac-pedido-en-cajas" style="margin-top:2px;flex-shrink:0;">
             <span style="font-size:10px;color:#334155;line-height:1.4;">La factura lista cantidades en <strong>cajas/embalaje</strong>: multiplicar por “piezas por caja” del producto (si está en Editar) al cargar el pedido.</span>
@@ -11990,8 +11994,9 @@ function aiConfirmImport() {
   }
 
   const chkInvPre = document.getElementById('ai-chk-inv');
+  const chkPreciosPre = document.getElementById('ai-chk-precios');
   const invItemsPre = window._aiInvItems || [];
-  if (chkInvPre && chkInvPre.checked && invItemsPre.length) {
+  if ((chkInvPre && chkInvPre.checked && invItemsPre.length) || (chkPreciosPre && chkPreciosPre.checked && invItemsPre.length)) {
     const needIlaConfirm = invItemsPre.some(function(it) {
       const d = it._aiDoc;
       return d && d.confianza === 'ilegible' && aiInvDescEsAlcohol_((it.descripcion || '').toUpperCase());
@@ -12018,6 +12023,8 @@ function aiConfirmImport() {
   if (revisarPapelNuevo) notify('📋 ' + revisarPapelNuevo + ' tarea(s) «revisar papel» — panel ámbar en Facturas Proveedores');
 
   // ── Import facturas normally ──
+  const chkPreciosDoc = document.getElementById('ai-chk-precios');
+  let preciosOcrRegistrados = 0;
   facturas.forEach(r => {
     const provName = resolveProvName(r);
     if (!state.facturas[provName]) state.facturas[provName] = [];
@@ -12029,7 +12036,7 @@ function aiConfirmImport() {
         state._pendingRutConflicts.push(...conflicts);
       }
     }
-    state.facturas[provName].push({
+    const facObj = {
       id: 'fac_ai_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
       nro: r.nro, rut: r.rut||'', tipoDoc: 'factura',
       emision: r.emision||'', monto: r.monto,
@@ -12056,7 +12063,11 @@ function aiConfirmImport() {
           categoria: it.categoria || ''
         };
       }) : []
-    });
+    };
+    state.facturas[provName].push(facObj);
+    if (chkPreciosDoc && chkPreciosDoc.checked && facObj.items && facObj.items.length) {
+      preciosOcrRegistrados += invRegistrarPreciosDesdeFacturaDoc_(provName, facObj);
+    }
     if (rutNorm && rutNorm.length > 4) {
       ensureProvRuts();
       if (!state.provRuts[provName]) state.provRuts[provName] = normRut(r.rut||'');
@@ -12200,7 +12211,9 @@ function aiConfirmImport() {
   const lines = Object.entries(summary).map(([p,n])=>`${n} en ${p}`).join(', ');
   const ncMsg = (ncs.length+nds.length+guias.length+otros.length) > 0
     ? ` · ${ncs.length+nds.length+guias.length+otros.length} doc(s) pendiente(s) de acción` : '';
-  notify(`✦ ${facturas.length} facturas importadas${lines?' — '+lines:''}${ncMsg}`);
+  const prMsg = (typeof preciosOcrRegistrados === 'number' && preciosOcrRegistrados > 0)
+    ? ` · ${preciosOcrRegistrados} precio(s) de referencia guardado(s) en inventario` : '';
+  notify(`✦ ${facturas.length} facturas importadas${lines?' — '+lines:''}${ncMsg}${prMsg}`);
 }
 
 // ============================================================
@@ -13445,18 +13458,29 @@ function invFacturasKeysParaProveedor_(prov) {
   var n = invNormTxt(prov);
   return Object.keys(state.facturas).filter(function(k) { return invNormTxt(k) === n; });
 }
-/**
- * Último precio unitario desde facturas importadas (detalle) para ese proveedor y producto.
- * Usa la misma lógica que el módulo de facturas: nombre canonizado + clave dedupe + invFacturaProductMatchScore
- * (abreviaturas, typos leves, subcadenas), no solo texto idéntico.
- */
-function invPrecioUltimoDesdeFacturas(prod, prov) {
-  if (!prod || !prov) return 0;
+
+/** ¿Unidad de línea de factura comparable con la del producto? (sin bloquear si la factura no trae unidad). */
+function invInvYFacturaUnidadCompatibles(uInv, uFac) {
+  var fs = String(uFac || '').trim();
+  if (!fs) return { ok: true, msg: '' };
+  var a = _invNormUnit(uInv);
+  var b = _invNormUnit(uFac);
+  if (a === b) return { ok: true, msg: '' };
+  var ai = invNormTxt(String(uInv || ''));
+  var bi = invNormTxt(String(uFac || ''));
+  if (ai && bi && ai === bi) return { ok: true, msg: '' };
+  return {
+    ok: false,
+    msg: 'Unidad inventario: "' + (uInv || '—') + '" · unidad en factura: "' + (uFac || '—') + '"'
+  };
+}
+
+function invColectarPreciosFacturaHits_(prod, prov) {
+  if (!prod || !prov) return [];
   var keys = invFacturasKeysParaProveedor_(prov);
-  if (!keys.length) return 0;
+  if (!keys.length) return [];
   var keyP = invNameDedupeKey(invFormatProductNombre(prod.nombre || ''));
-  if (!keyP) return 0;
-  /** Mínimo alineado con invResolveFacturaLineProduct_ (fuzzy “fuerte” / gap). */
+  if (!keyP) return [];
   var MIN_FUZZ = 0.72;
   var hits = [];
   keys.forEach(function(k) {
@@ -13480,16 +13504,100 @@ function invPrecioUltimoDesdeFacturas(prod, prov) {
             if (sc < MIN_FUZZ) return;
           }
         }
-        hits.push({ ts: ts, precio: pu, sc: sc });
+        hits.push({ ts: ts, precio: pu, sc: sc, fac: fac, line: line });
       });
     });
   });
-  if (!hits.length) return 0;
+  return hits;
+}
+
+/**
+ * Detalle del último precio desde factura (para mostrar en pedido). Puede mostrar confirm() si la unidad no calza.
+ */
+function invPrecioUltimoDesdeFacturasMeta(prod, prov) {
+  var hits = invColectarPreciosFacturaHits_(prod, prov);
+  if (!hits.length) return null;
   hits.sort(function(a, b) {
     if (b.ts !== a.ts) return b.ts - a.ts;
     return (b.sc || 0) - (a.sc || 0);
   });
-  return hits[0].precio || 0;
+  var uOk = hits.filter(function(h) {
+    return invInvYFacturaUnidadCompatibles(prod.unidad, h.line && h.line.unidad).ok;
+  });
+  var chosen = (uOk.length ? uOk : hits)[0];
+  var uc = invInvYFacturaUnidadCompatibles(prod.unidad, chosen.line && chosen.line.unidad);
+  if (!uc.ok) {
+    var msg = 'Precio desde factura N° ' + String((chosen.fac && chosen.fac.nro) || '—') +
+      ' · ' + String((chosen.fac && chosen.fac.emision) || '') + '\n' + uc.msg +
+      '\n\n¿Usar este precio unitario como referencia de todas formas?';
+    if (!confirm(msg)) return null;
+  }
+  var fac = chosen.fac || {};
+  var line = chosen.line || {};
+  return {
+    precio: chosen.precio,
+    sc: chosen.sc,
+    facNro: fac.nro || '',
+    facEmi: fac.emision || '',
+    lineUnidad: String(line.unidad || '').trim(),
+    unitWarn: !invInvYFacturaUnidadCompatibles(prod.unidad, line.unidad).ok
+  };
+}
+
+function invPrecioUltimoDesdeFacturas(prod, prov) {
+  var m = invPrecioUltimoDesdeFacturasMeta(prod, prov);
+  return m && m.precio ? m.precio : 0;
+}
+
+/**
+ * Tras importar una factura con detalle: registra precios en preciosProveedor sin crear productos ni tocar stock.
+ * Pregunta línea a línea si el producto o la unidad no están claros (opts en invResolveFacturaLineProduct_ preciosOnly).
+ */
+function invRegistrarPreciosDesdeFacturaDoc_(provNombre, fac) {
+  invInit();
+  var items = fac.items || [];
+  if (!items.length) return 0;
+  var facCtx = invBuildFacturaCostCtx_(fac, items);
+  var n = 0;
+  items.forEach(function(it) {
+    var desc = String(it.descripcion || '').trim();
+    if (!desc) return;
+    var prod = it.invProdId ? state.inventario.find(function(p) { return p.id === it.invProdId; }) : null;
+    if (!prod) {
+      var res = invResolveFacturaLineProduct_(desc, provNombre, { preciosOnly: true });
+      prod = res.prod;
+    }
+    if (!prod) return;
+    var qty = Math.max(0, invNum_(it.cantidad));
+    var puBase = Math.max(0, invNum_(it.precioUnit));
+    var stBase = Math.max(0, invNum_(it.subtotal));
+    var baseLine = stBase > 0 ? stBase : (qty > 0 && puBase > 0 ? qty * puBase : puBase);
+    var factor = facCtx.factor || 1;
+    var lineFinal = baseLine > 0 ? (baseLine * factor) : 0;
+    var precio = 0;
+    if (qty > 0 && lineFinal > 0) precio = Math.round(lineFinal / qty);
+    else if (puBase > 0) precio = Math.round(puBase * factor);
+    if (precio <= 0) return;
+    var uFac = String(it.unidad || '').trim();
+    var uc = invInvYFacturaUnidadCompatibles(prod.unidad, uFac);
+    if (!uc.ok) {
+      var lineU = desc.replace(/\r|\n/g, ' ').trim().slice(0, 72);
+      var umsg = 'Precio de referencia — unidad dudosa\nFactura: "' + lineU + '"\nInventario: "' + (prod.nombre || '') + '" (' + (prod.unidad || '—') + ')\nFactura unidad: "' + (uFac || '—') + '"\n\n' + uc.msg +
+        '\n\n¿Guardar el precio de todas formas como referencia (marcando unidad no verificada)?\n\nAceptar = sí · Cancelar = omitir esta línea';
+      if (!confirm(umsg)) return;
+    }
+    invUpsertPrecioProveedor(prod.id, provNombre, precio, {
+      source: 'fac_ocr',
+      facNro: fac.nro,
+      facEmision: fac.emision,
+      unidadLinea: uFac,
+      unidadInv: prod.unidad || '',
+      unidadOk: uc.ok,
+      updatedAt: Date.now()
+    });
+    n++;
+  });
+  return n;
 }
 function invGetCategories() {
   invInit();
@@ -14383,6 +14491,12 @@ function invRenderPedido() {
       const uOpts = invUnidadPedidoSelectOptions(uDisp, prod).map(function(u) {
         return `<option value="${esc(u)}" ${String(u) === String(uDisp) ? 'selected' : ''}>${esc(u)}</option>`;
       }).join('');
+      const pm = it.precioMeta;
+      const pmHtml = (pm && pm.source === 'factura')
+        ? `<div style="font-size:8px;color:#64748b;margin-top:4px;max-width:150px;line-height:1.25;text-align:right;" title="Precio referencia desde detalle de factura importada">📄 Fact. ${esc(String(pm.facNro||'—'))} · ${esc(String(pm.facEmi||''))}${pm.lineUnidad ? ' · u fact.: '+esc(pm.lineUnidad) : ''}${pm.unitWarn ? ' · ⚠ unidad' : ''}</div>`
+        : (pm && pm.source === 'lista')
+        ? `<div style="font-size:8px;color:#94a3b8;margin-top:4px;">📒 Lista de precios</div>`
+        : '';
       const recUi = it.qty>0 ? `
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
           <label style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#64748b;cursor:pointer;user-select:none;">
@@ -14411,7 +14525,7 @@ function invRenderPedido() {
           <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada||it.recibido?'disabled':''}>${uOpts}</select>
         </div></td>
         <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;min-width:110px;">${provOpts}</select></td>
-        <td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></td>
+        <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
         <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
         <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
     }).filter(Boolean).join('');
@@ -14612,11 +14726,24 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
   it.prov = prov;
   if (opts.unidadPedido) it.unidadPedido = opts.unidadPedido;
   else if (!it.unidadPedido) it.unidadPedido = prod.unidad || 'u';
+  delete it.precioMeta;
   const pe = _getPreciosUnified(prod).find(x => (x.prov||x.nombre) === prov);
-  if (pe && pe.precio) it.precio = pe.precio;
-  else {
-    var pf = invPrecioUltimoDesdeFacturas(prod, prov);
-    if (pf) it.precio = pf;
+  if (pe && pe.precio) {
+    it.precio = pe.precio;
+    it.precioMeta = { source: 'lista', prov: prov };
+  } else {
+    var metaP = invPrecioUltimoDesdeFacturasMeta(prod, prov);
+    if (metaP && metaP.precio) {
+      it.precio = metaP.precio;
+      it.precioMeta = {
+        source: 'factura',
+        facNro: metaP.facNro,
+        facEmi: metaP.facEmi,
+        lineUnidad: metaP.lineUnidad,
+        unitWarn: metaP.unitWarn,
+        sc: metaP.sc
+      };
+    }
   }
   if (!it.precio) it.precio = invBestPrice(prod) || 0;
   invRenderPedido();
@@ -14778,11 +14905,24 @@ function invSetOrdenProv(semId,ordenId,prodId,val){
   if (r && r.cancel) { invRenderPedido(); return; }
   pushUndo();
   it.prov = r.val;
+  delete it.precioMeta;
   const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===it.prov);
-  if (pe && pe.precio) it.precio = pe.precio;
-  else {
-    var pfac = invPrecioUltimoDesdeFacturas(prod, it.prov);
-    if (pfac) it.precio = pfac;
+  if (pe && pe.precio) {
+    it.precio = pe.precio;
+    it.precioMeta = { source: 'lista', prov: it.prov };
+  } else {
+    var metaPv = invPrecioUltimoDesdeFacturasMeta(prod, it.prov);
+    if (metaPv && metaPv.precio) {
+      it.precio = metaPv.precio;
+      it.precioMeta = {
+        source: 'factura',
+        facNro: metaPv.facNro,
+        facEmi: metaPv.facEmi,
+        lineUnidad: metaPv.lineUnidad,
+        unitWarn: metaPv.unitWarn,
+        sc: metaPv.sc
+      };
+    }
   }
   invRenderPedido();
   markUnsaved();
@@ -14804,7 +14944,14 @@ function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {
   invRenderPedido();
 }
 
-function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
+function invSetOrdenPrecio(semId,ordenId,prodId,val){
+  const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
+  pushUndo();
+  it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  delete it.precioMeta;
+  invUpdateSemKpis();
+  invRenderPedido();
+}
 function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
 function invUpdateSemKpis(){const sem=invGetSemana();if(!sem)return;let t=0,i=0;sem.ordenes.forEach(o=>o.items.forEach(it=>{if(it.qty>0){t+=it.qty*it.precio;i++;}}));set('inv-sk-total',fmt(t));set('inv-sk-items',i);}
 function invPedidoAplicarDeltaStock(prod, deltaQty, meta) {
@@ -14909,6 +15056,7 @@ function invEditPedidoLinea(semId,ordenId,prodId){
   pushUndo();
   it.qty=parseNumCL(q,false)||0;
   it.precio=parseInt((pr||'0').replace(/[^\d]/g,''),10)||0;
+  delete it.precioMeta;
   invRenderPedido();invUpdateSemKpis();markUnsaved();
 }
 
@@ -17391,9 +17539,11 @@ function invFacturaProductMatchScore(keyDesc, keyProd) {
 /**
  * Encuentra producto del inventario para una línea de factura.
  * Criterio: clave normalizada (invFormat + dedupe), similitud token/Levenshtein, refuerzo si prov coincide.
- * Si no hay match claro, pregunta con confirm (casos dudosos); si es muy distinto, crea producto nuevo sin preguntar.
+ * Si no hay match claro, pregunta con confirm (casos dudosos).
+ * opts.preciosOnly: no crea productos; textos hablan de guardar u omitir precio; pregunta también coincidencias débiles (0.38–0.52).
  */
-function invResolveFacturaLineProduct_(desc, provNombre) {
+function invResolveFacturaLineProduct_(desc, provNombre, opts) {
+  var po = opts && opts.preciosOnly;
   var inv = state.inventario || [];
   var descCanon = invFormatProductNombre(desc);
   var keyDesc = invNameDedupeKey(descCanon);
@@ -17423,15 +17573,28 @@ function invResolveFacturaLineProduct_(desc, provNombre) {
   if (best.s >= 0.84 && !ambiguous) return { prod: best.p, kind: 'fuzzy_high' };
   if (best.s >= 0.72 && gap >= 0.11 && !ambiguous) return { prod: best.p, kind: 'fuzzy_gap' };
 
-  if (best.s < 0.52) return { prod: null, kind: 'none' };
+  if (best.s < 0.52) {
+    if (!po) return { prod: null, kind: 'none' };
+    if (best.s < 0.38) return { prod: null, kind: 'none' };
+    var lineShortW = String(desc || '').replace(/\r|\n/g, ' ').trim().slice(0, 78);
+    var msgW = 'Coincidencia débil (solo precio de referencia):\nFactura: "' + lineShortW + '"\n\n¿Guardar el precio contra "' + best.p.nombre + '"?\n\n(Aceptar = sí · Cancelar = omitir esta línea)';
+    if (confirm(msgW)) return { prod: best.p, kind: 'prompt_weak' };
+    return { prod: null, kind: 'none' };
+  }
 
   var lineShort = String(desc || '').replace(/\r|\n/g, ' ').trim().slice(0, 78);
   var msg1 = 'La factura dice:\n"' + lineShort + '"\n\n¿Es el mismo producto que este del inventario?\n"' + best.p.nombre + '"';
   if (ambiguous && second) msg1 += '\n\n(Alternativa parecida: "' + second.p.nombre + '")';
+  var tail1 = po
+    ? '\n\nAceptar = sí, guardar precio contra este producto · Cancelar = no / otra opción'
+    : '\n\nAceptar = sí, usar este producto · Cancelar = no / crear otro';
 
-  if (!confirm(msg1 + '\n\nAceptar = sí, usar este producto · Cancelar = no / crear otro')) {
+  if (!confirm(msg1 + tail1)) {
     if (ambiguous && second && second.s >= 0.52) {
-      if (confirm('¿Entonces corresponde a "' + second.p.nombre + '"?\n\nAceptar = sí · Cancelar = crear producto nuevo'))
+      var tail2 = po
+        ? '\n\nAceptar = sí, guardar precio · Cancelar = omitir esta línea'
+        : '\n\nAceptar = sí · Cancelar = crear producto nuevo';
+      if (confirm('¿Entonces corresponde a "' + second.p.nombre + '"?' + tail2))
         return { prod: second.p, kind: 'prompt_second' };
     }
     return { prod: null, kind: 'prompt_new' };

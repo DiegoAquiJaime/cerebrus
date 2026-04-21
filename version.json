@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.7",
-  "notes": "Inventario: modal Pedido semana con cantidad, unidad y proveedor (sugerido por familia)."
+  "version": "2026.04.20.9",
+  "notes": "Facturas OCR: registro de precios pregunta producto/unidad línea a línea (sin crear ítems ni stock)."
 }
