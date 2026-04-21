@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.4",
-  "notes": "Inventario: nueva base oficial desde CSV PLANTILLAS PEDIDOS BODEGA IMPRIMIR (incluye stock cargado)."
+  "version": "2026.04.20.5",
+  "notes": "Pedido semanal: unidad por línea; precio sugerido desde detalle de facturas importadas; guía de respaldo manual."
 }

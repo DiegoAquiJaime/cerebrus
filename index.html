@@ -12134,7 +12134,7 @@ function aiConfirmImport() {
           // Add to existing item in order
           const existing = orden.items.find(x=>x.prodId===prod.id);
           if (existing) { existing.qty += qty; if (precio) existing.precio = precio; }
-          else orden.items.push({ prodId:prod.id, qty, precio, prov:'' });
+          else orden.items.push({ prodId:prod.id, qty, precio, prov:'', unidadPedido:(prod.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 });
           // Guardar precio en fuente unificada
           if (precio) {
             const provNombreExist = it._provNombre || 'Importado';
@@ -12166,7 +12166,7 @@ function aiConfirmImport() {
           if (!state.inventario) state.inventario = [];
           state.inventario.push(newProd);
           if (precio) invUpsertPrecioProveedor(newProd.id, provNombre, precio);
-          orden.items.push({ prodId:newProd.id, qty, precio, prov: provNombre });
+          orden.items.push({ prodId:newProd.id, qty, precio, prov: provNombre, unidadPedido:(newProd.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 });
           added++;
         }
       });
@@ -13416,6 +13416,61 @@ function invBestProvider(prod) {
   const lista = _getPreciosUnified(prod).filter(p=>p.precio>0).sort((a,b)=>a.precio-b.precio);
   return lista.length ? (lista[0].nombre||lista[0].prov||'') : (prod?.prov||'');
 }
+/** Unidad mostrada en el pedido (puede diferir de la unidad base del producto en inventario). */
+function invUnidadPedidoLine(it, prod) {
+  const u = it && String(it.unidadPedido || '').trim();
+  if (u) return u;
+  return (prod && prod.unidad) ? String(prod.unidad) : 'u';
+}
+function invUnidadPedidoSelectOptions(selected, prod) {
+  const set = new Set();
+  (state.unidadesInventario || []).forEach(function(u) {
+    if (u && String(u).trim()) set.add(String(u).trim());
+  });
+  if (prod && prod.unidad) set.add(String(prod.unidad).trim());
+  if (selected) set.add(String(selected).trim());
+  return [...set].filter(Boolean).sort(function(a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
+}
+function invParseFechaFacturaCL_(s) {
+  if (!s || typeof s !== 'string') return null;
+  const m = String(s).trim().match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})/);
+  if (!m) return null;
+  var d = parseInt(m[1], 10), mo = parseInt(m[2], 10), y = parseInt(m[3], 10);
+  if (y < 100) y += 2000;
+  var dt = new Date(y, mo - 1, d);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+function invFacturasKeysParaProveedor_(prov) {
+  if (!prov || prov === '__otro__' || prov === '__nuevo__' || !state.facturas) return [];
+  var n = invNormTxt(prov);
+  return Object.keys(state.facturas).filter(function(k) { return invNormTxt(k) === n; });
+}
+/** Último precio unitario (línea de detalle) desde facturas importadas para ese proveedor y producto. */
+function invPrecioUltimoDesdeFacturas(prod, prov) {
+  if (!prod || !prov) return 0;
+  var keys = invFacturasKeysParaProveedor_(prov);
+  if (!keys.length) return 0;
+  var hits = [];
+  keys.forEach(function(k) {
+    (state.facturas[k] || []).forEach(function(fac) {
+      var t = invParseFechaFacturaCL_(fac && fac.emision);
+      var ts = t ? t.getTime() : 0;
+      (fac.items || []).forEach(function(line) {
+        var pu = 0;
+        if (line.invProdId && line.invProdId === prod.id) pu = invNum_(line.precioUnit);
+        else {
+          var kd = invNameDedupeKey(line.descripcion || '');
+          var kp = invNameDedupeKey(prod.nombre || '');
+          if (kd && kp && kd === kp) pu = invNum_(line.precioUnit);
+        }
+        if (pu > 0) hits.push({ ts: ts, precio: pu });
+      });
+    });
+  });
+  if (!hits.length) return 0;
+  hits.sort(function(a, b) { return b.ts - a.ts; });
+  return hits[0].precio || 0;
+}
 function invGetCategories() {
   invInit();
   const prods = state.inventario || [];
@@ -14190,7 +14245,7 @@ function invAgregarOrden() {
 function invAgregarOrdenInterna(sem, label) {
   invInit();
   sem.ordenes.push({ id:'ord_'+Date.now(), label, fecha:new Date().toLocaleDateString('es-CL'),
-    items: state.inventario.map(p => ({ prodId:p.id, qty:0, prov:invBestProvider(p)||'', precio:invBestPrice(p)||0, recibido:false, qtyRecibida:0, stockAppliedQty:0 }))
+    items: state.inventario.map(p => ({ prodId:p.id, qty:0, prov:invBestProvider(p)||'', precio:invBestPrice(p)||0, unidadPedido:(p.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 }))
   });
 }
 
@@ -14322,6 +14377,10 @@ function invRenderPedido() {
         return `<option value="${esc(p)}" ${it.prov===p?'selected':''}>${esc(p)}</option>`;
       }).join('');
       const qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty||0);
+      const uDisp = invUnidadPedidoLine(it, prod);
+      const uOpts = invUnidadPedidoSelectOptions(uDisp, prod).map(function(u) {
+        return `<option value="${esc(u)}" ${String(u) === String(uDisp) ? 'selected' : ''}>${esc(u)}</option>`;
+      }).join('');
       const recUi = it.qty>0 ? `
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
           <label style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#64748b;cursor:pointer;user-select:none;">
@@ -14345,9 +14404,12 @@ function invRenderPedido() {
           </div>` : ''}
         </div>` : `<span style="font-size:10px;color:#94a3b8;">—</span>`;
       return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)}<div style="font-size:13px;font-weight:800;color:#334155;margin-top:4px;">${esc(prod.cat||'')} · Stock: ${stockAct} ${esc(prod.unidad||'u')}</div></td>
-        <td><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty||0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;"> <span style="font-size:10px;color:#94a3b8;">${esc(prod.unidad||'u')}</span></td>
+        <td><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+          <input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty||0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;" ${sem.cerrada?'disabled':''}>
+          <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada||it.recibido?'disabled':''}>${uOpts}</select>
+        </div></td>
         <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;min-width:110px;">${provOpts}</select></td>
-        <td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(prod.unidad||'u')}</span></td>
+        <td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></td>
         <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
         <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
     }).filter(Boolean).join('');
@@ -14499,16 +14561,21 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
   let it = invFindItem(orden, prodId);
   pushUndo();
   if (!it) {
-    it = { prodId, qty:0, prov:'', precio:invBestPrice(prod)||0, recibido:false, qtyRecibida:0, stockAppliedQty:0 };
+    it = { prodId, qty:0, prov:'', precio:invBestPrice(prod)||0, unidadPedido:(prod.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 };
     orden.items.push(it);
   }
   it.qty = (it.qty || 0) + cantidad;
   it.prov = prov;
+  if (!it.unidadPedido) it.unidadPedido = prod.unidad || 'u';
   const pe = _getPreciosUnified(prod).find(x => (x.prov||x.nombre) === prov);
   if (pe && pe.precio) it.precio = pe.precio;
+  else {
+    var pf = invPrecioUltimoDesdeFacturas(prod, prov);
+    if (pf) it.precio = pf;
+  }
   if (!it.precio) it.precio = invBestPrice(prod) || 0;
   invRenderPedido();
-  notify(`✓ ${prod.nombre} +${cantidad} ${prod.unidad||'u'} al pedido (${orden.label}) · ${prov}`);
+  notify(`✓ ${prod.nombre} +${cantidad} ${invUnidadPedidoLine(it, prod)} al pedido (${orden.label}) · ${prov}`);
   if (opts.openPedido) invSubTab('pedido');
   markUnsaved();
   return true;
@@ -14588,9 +14655,29 @@ function invSetOrdenProv(semId,ordenId,prodId,val){
   pushUndo();
   it.prov = r.val;
   const pe=_getPreciosUnified(prod).find(x=>(x.prov||x.nombre)===it.prov);
-  if(pe&&pe.precio) it.precio=pe.precio;
+  if (pe && pe.precio) it.precio = pe.precio;
+  else {
+    var pfac = invPrecioUltimoDesdeFacturas(prod, it.prov);
+    if (pfac) it.precio = pfac;
+  }
   invRenderPedido();
   markUnsaved();
+}
+
+function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {
+  const it = invFindItem(invFindOrden(semId, ordenId), prodId);
+  if (!it) return;
+  if (Number(it.stockAppliedQty || 0) > 0 || it.recibido) {
+    notify('⚠ No puedes cambiar la unidad del pedido con recepción ya confirmada');
+    invRenderPedido();
+    return;
+  }
+  const prod = state.inventario.find(function(p) { return p.id === prodId; });
+  pushUndo();
+  var v = String(val || '').trim();
+  it.unidadPedido = v || (prod && prod.unidad) || 'u';
+  markUnsaved();
+  invRenderPedido();
 }
 
 function invSetOrdenPrecio(semId,ordenId,prodId,val){const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;pushUndo();it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;invUpdateSemKpis();}
@@ -14690,9 +14777,10 @@ function invEditPedidoLinea(semId,ordenId,prodId){
   const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
   if (it.recibido) { notify('⚠ Quita la recepción confirmada antes de editar la línea'); return; }
   const prod=state.inventario.find(p=>p.id===prodId);if(!prod)return;
-  const q=prompt(`Cantidad pedida (${prod.unidad||'u'}):`, String(it.qty||0));
+  const uLine = invUnidadPedidoLine(it, prod);
+  const q=prompt(`Cantidad pedida (${uLine}):`, String(it.qty||0));
   if(q===null)return;
-  const pr=prompt(`Precio unitario (/${prod.unidad||'u'}):`, String(it.precio||0));
+  const pr=prompt(`Precio unitario (/${uLine}):`, String(it.precio||0));
   if(pr===null)return;
   pushUndo();
   it.qty=parseNumCL(q,false)||0;
@@ -15037,9 +15125,10 @@ function invPedidoAgruparPorProveedor(sem) {
     const prod = state.inventario.find(p => p.id === it.prodId); if (!prod) return;
     const pn = it.prov || 'Sin proveedor';
     if (!byProv[pn]) byProv[pn] = [];
-    const ex = byProv[pn].find(x => x.prodId === it.prodId);
+    const uLine = invUnidadPedidoLine(it, prod);
+    const ex = byProv[pn].find(x => x.prodId === it.prodId && x.unidad === uLine);
     if (ex) ex.qty += it.qty;
-    else byProv[pn].push({ prodId: it.prodId, nombre: prod.nombre, unidad: prod.unidad || 'u', qty: it.qty, precio: it.precio });
+    else byProv[pn].push({ prodId: it.prodId, nombre: prod.nombre, unidad: uLine, qty: it.qty, precio: it.precio });
   }));
   const entries = Object.entries(byProv).sort((a,b)=>String(a[0]).localeCompare(String(b[0]),'es',{sensitivity:'base'}));
   entries.forEach(([,items]) => items.sort((a,b)=>String(a.nombre||'').localeCompare(String(b.nombre||''),'es',{sensitivity:'base'})));
