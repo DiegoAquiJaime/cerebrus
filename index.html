@@ -14319,25 +14319,7 @@ function invRenderPedido() {
     if (prevFam && familias.includes(prevFam)) addFam.value = prevFam;
   }
 
-  function invPedidoProveedorCatalog() {
-    const bad = new Set(['', 'SIN FAMILIA', 'SIN SUBFAMILIA', 'REVISAR MANUAL', 'SIN CLASIFICAR']);
-    const all = [];
-    (state.inventario||[]).forEach(p => {
-      const fam = String(p.familia || '').trim();
-      const prv = String(p.prov || '').trim();
-      if (fam && !bad.has(invNormTxt(fam))) all.push(fam);
-      if (prv && !bad.has(invNormTxt(prv))) all.push(prv);
-    });
-    if (sem && Array.isArray(sem.ordenes)) {
-      sem.ordenes.forEach(o => (o.items||[]).forEach(it => {
-        const pv = String(it.prov || '').trim();
-        if (pv && !bad.has(invNormTxt(pv))) all.push(pv);
-      }));
-    }
-    const byNorm = {};
-    all.forEach(n => { const k = invNormTxt(n); if (k && !byNorm[k]) byNorm[k] = n; });
-    return Object.values(byNorm).sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
-  }
+  function invPedidoProveedorCatalog() { return invPedidoProveedorCatalogFromState(sem); }
 
   const famFilter = (addFam?.value || '').trim();
   if (addProd) {
@@ -14531,6 +14513,44 @@ function invProveedorSugeridoPedido(prod) {
   return '';
 }
 
+/** Lista depurada de proveedores/familias para selects del pedido (misma lógica que la tarjeta "Agregar producto"). */
+function invPedidoProveedorCatalogFromState(sem) {
+  const bad = new Set(['', 'SIN FAMILIA', 'SIN SUBFAMILIA', 'REVISAR MANUAL', 'SIN CLASIFICAR']);
+  const all = [];
+  (state.inventario || []).forEach(function(p) {
+    const fam = String(p.familia || '').trim();
+    const prv = String(p.prov || '').trim();
+    if (fam && !bad.has(invNormTxt(fam))) all.push(fam);
+    if (prv && !bad.has(invNormTxt(prv))) all.push(prv);
+  });
+  if (sem && Array.isArray(sem.ordenes)) {
+    sem.ordenes.forEach(function(o) {
+      (o.items || []).forEach(function(it) {
+        const pv = String(it.prov || '').trim();
+        if (pv && !bad.has(invNormTxt(pv))) all.push(pv);
+      });
+    });
+  }
+  const byNorm = {};
+  all.forEach(function(n) {
+    const k = invNormTxt(n);
+    if (k && !byNorm[k]) byNorm[k] = n;
+  });
+  return Object.values(byNorm).sort(function(a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
+}
+
+function invProveedorSelectMatchCatalog_(sugerido, provs) {
+  if (!sugerido || !provs || !provs.length) return '';
+  const n = invNormTxt(sugerido);
+  const exact = provs.find(function(p) { return invNormTxt(p) === n; });
+  if (exact) return exact;
+  const sub = provs.find(function(p) {
+    const pn = invNormTxt(p);
+    return pn.includes(n) || n.includes(pn);
+  });
+  return sub || '';
+}
+
 function invResolveProveedorSelectVal(rawVal, prod) {
   let val = rawVal;
   if (val === '__nuevo__') {
@@ -14581,12 +14601,17 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
   let it = invFindItem(orden, prodId);
   pushUndo();
   if (!it) {
-    it = { prodId, qty:0, prov:'', precio:invBestPrice(prod)||0, unidadPedido:(prod.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 };
+    it = {
+      prodId, qty: 0, prov: '', precio: invBestPrice(prod) || 0,
+      unidadPedido: (opts.unidadPedido || prod.unidad || 'u'),
+      recibido: false, qtyRecibida: 0, stockAppliedQty: 0
+    };
     orden.items.push(it);
   }
   it.qty = (it.qty || 0) + cantidad;
   it.prov = prov;
-  if (!it.unidadPedido) it.unidadPedido = prod.unidad || 'u';
+  if (opts.unidadPedido) it.unidadPedido = opts.unidadPedido;
+  else if (!it.unidadPedido) it.unidadPedido = prod.unidad || 'u';
   const pe = _getPreciosUnified(prod).find(x => (x.prov||x.nombre) === prov);
   if (pe && pe.precio) it.precio = pe.precio;
   else {
@@ -14602,26 +14627,105 @@ function invAgregarProductoAPedido(prodId, qty, opts={}) {
 }
 
 function invQuickAddPedidoFromInv(prodId) {
-  const prod = state.inventario.find(p => p.id === prodId);
+  const prod = state.inventario.find(function(p) { return p.id === prodId; });
   if (!prod) return;
-  const provSug = invProveedorSugeridoPedido(prod) || '';
-  const v = prompt(
-    `Agregar "${prod.nombre}" al pedido semanal\n` +
-    `Cantidad (${prod.unidad||'u'}) · proveedor: ${provSug || 'sin detectar'}:`,
-    '1'
-  );
-  if (v === null) return;
-  const qty = parseNumCL((v||'0'), false) || 0;
-  if (!qty) { notify('⚠ Ingresa una cantidad válida'); return; }
-  let prov = provSug;
-  if (!prov) prov = invPedirProveedorRapido(prod, '');
-  if (!prov) return;
-  if (!confirm(`Agregar al pedido:\n\n• ${prod.nombre}\n• Cantidad: ${qty} ${prod.unidad||'u'}\n• Proveedor: ${prov}\n\nAceptar = usar este proveedor\nCancelar = elegir otro proveedor`)) {
-    const alt = invPedirProveedorRapido(prod, prov);
-    if (!alt) return;
-    prov = alt;
+  const sem = invGetSemana();
+  if (!sem || sem.cerrada) {
+    notify('⚠ Inicia una semana activa (Inventario → Pedido semanal → Iniciar semana)');
+    invSubTab('pedido');
+    return;
   }
-  invAgregarProductoAPedido(prodId, qty, { openPedido: false, proveedor: prov });
+  const orden = invGetOrdenDestino(sem);
+  if (!orden) {
+    notify('⚠ No hay un pedido abierto en la semana');
+    invSubTab('pedido');
+    return;
+  }
+  try { document.getElementById('inv-qped-overlay')?.remove(); } catch (e) {}
+
+  let provCatalog = invPedidoProveedorCatalogFromState(sem);
+  const provSug = invProveedorSugeridoPedido(prod) || '';
+  if (provSug && !provCatalog.some(function(p) { return invNormTxt(p) === invNormTxt(provSug); })) {
+    provCatalog = [provSug].concat(provCatalog);
+  }
+  const provPick = invProveedorSelectMatchCatalog_(provSug, provCatalog) || provSug;
+  const uDefault = String(prod.unidad || 'u').trim() || 'u';
+  const uOpts = invUnidadPedidoSelectOptions(uDefault, prod).map(function(u) {
+    return `<option value="${esc(u)}" ${String(u) === String(uDefault) ? 'selected' : ''}>${esc(u)}</option>`;
+  }).join('');
+  const provOpts = [
+    `<option value="">— elige proveedor —</option>`,
+    ...provCatalog.map(function(p) {
+      return `<option value="${esc(p)}" ${provPick && invNormTxt(p) === invNormTxt(provPick) ? 'selected' : ''}>${esc(p)}</option>`;
+    }),
+    `<option value="__otro__">Otro</option>`,
+    `<option value="__nuevo__">+ Nuevo proveedor…</option>`
+  ].join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'inv-qped-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:2600;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--white);border-radius:14px;max-width:420px;width:100%;box-shadow:0 22px 50px rgba(0,0,0,.2);border:1px solid var(--border);font-family:inherit;">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;">Pedido semanal</div>
+        <div style="font-size:15px;font-weight:800;color:var(--primary);margin-top:4px;">${esc(prod.nombre)}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:6px;">Stock actual: <strong>${esc(String(prod.stock || 0))}</strong> ${esc(prod.unidad || 'u')}</div>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#64748b;">
+          Cantidad
+          <input id="inv-qped-qty" type="text" inputmode="decimal" value="1" class="inv-pedido-qty" style="width:100%;max-width:140px;">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#64748b;">
+          Unidad (pedido)
+          <select id="inv-qped-unidad" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;background:transparent;max-width:100%;">${uOpts}</select>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#64748b;">
+          Proveedor
+          <span style="font-size:10px;font-weight:600;color:#94a3b8;">Sugerido: ${esc(provSug || '—')}</span>
+          <select id="inv-qped-prov" style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;background:transparent;max-width:100%;">${provOpts}</select>
+        </label>
+      </div>
+      <div style="padding:12px 18px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border);flex-wrap:wrap;">
+        <button type="button" id="inv-qped-cancel" style="border:1px solid var(--border);background:transparent;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;color:#64748b;">Cancelar</button>
+        <button type="button" id="inv-qped-ok" style="border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:white;border-radius:10px;padding:9px 18px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 2px 10px rgba(37,99,235,.35);">Agregar al pedido</button>
+      </div>
+    </div>`;
+
+  function close() {
+    try { overlay.remove(); } catch (e) {}
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(ev) {
+    if (ev.key === 'Escape') close();
+  }
+  document.addEventListener('keydown', onKey);
+  overlay.addEventListener('click', function(ev) { if (ev.target === overlay) close(); });
+
+  overlay.querySelector('#inv-qped-cancel').addEventListener('click', close);
+  overlay.querySelector('#inv-qped-ok').addEventListener('click', function() {
+    const qty = parseNumCL(document.getElementById('inv-qped-qty')?.value || '0', false) || 0;
+    if (!qty) { notify('⚠ Ingresa una cantidad válida'); return; }
+    const unidad = (document.getElementById('inv-qped-unidad')?.value || '').trim() || uDefault;
+    const provRaw = document.getElementById('inv-qped-prov')?.value || '';
+    const r = invResolveProveedorSelectVal(provRaw, prod);
+    if (r && r.cancel) return;
+    const provFinal = r.val;
+    if (!provFinal) { notify('⚠ Elige proveedor'); return; }
+    close();
+    invAgregarProductoAPedido(prodId, qty, {
+      openPedido: false,
+      proveedor: provFinal,
+      unidadPedido: unidad
+    });
+  });
+
+  document.body.appendChild(overlay);
+  setTimeout(function() {
+    const q = document.getElementById('inv-qped-qty');
+    if (q) { q.focus(); q.select(); }
+  }, 30);
 }
 
 function invAddPedidoDesdePanel() {

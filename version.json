@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.6",
-  "notes": "Pedido: precio desde facturas con mismo fuzzy match que import (abreviaturas / variaciones de nombre)."
+  "version": "2026.04.20.7",
+  "notes": "Inventario: modal Pedido semana con cantidad, unidad y proveedor (sugerido por familia)."
 }
