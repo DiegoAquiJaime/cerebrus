@@ -6579,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.4';
+const APP_VERSION = '2026.04.22.5';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -15986,7 +15986,11 @@ function movRender() {
              ${m.valorModo==='manual_unit' ? '<div style="margin-top:2px;"><span style="display:inline-block;background:#0ea5e91a;color:#0369a1;border:1px solid #0ea5e94d;border-radius:999px;padding:1px 7px;font-size:9px;font-weight:700;">Valorización manual</span></div>' : ''}`
           : '<span style="color:#94a3b8;">—</span>'}
       </td>
-      <td style="padding:10px 12px;color:#64748b;">${esc(m.destino||m.origen||'')}</td>
+      <td style="padding:10px 12px;color:#64748b;">${
+        m.origen && m.destino
+          ? `${esc(m.origen)} → ${esc(m.destino)}`
+          : esc(m.destino||m.origen||'')
+      }</td>
       <td style="padding:10px 12px;color:#64748b;">${esc(m.responsable||'')}</td>
       <td style="padding:10px 12px;color:#94a3b8;font-style:italic;max-width:160px;">${esc(m.nota||'')}</td>
       <td style="padding:10px 12px;white-space:nowrap;">
@@ -16133,7 +16137,11 @@ function movExportPdfPreview() {
       <td>${esc(tipoLabel[m.tipo] || m.tipo || '—')}</td>
       <td>${esc(m.producto || '')}</td>
       <td style="text-align:right;">${esc(String(m.cantidad || 0))} ${esc(m.unidad || '')}</td>
-      <td>${esc(m.destino || m.origen || '—')}</td>
+      <td>${
+        m.origen && m.destino
+          ? `${esc(m.origen)} → ${esc(m.destino)}`
+          : esc(m.destino || m.origen || '—')
+      }</td>
       <td>${esc(m.responsable || '—')}</td>
       <td>${esc(m.nota || '')}</td>
     </tr>
