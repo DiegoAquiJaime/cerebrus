@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.22.2",
-  "notes": "Movimientos: botón visible para gestionar categorías; ajustes de inventario y unidades se mantienen."
+  "version": "2026.04.22.3",
+  "notes": "Movimientos: botón principal de gestionar categorías agregado en la franja de acciones."
 }

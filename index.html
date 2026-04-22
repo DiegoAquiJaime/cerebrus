@@ -4868,6 +4868,7 @@ body.dark-mode .conflict-overlay{
           <button onclick="movAbrirModal('despacho')" style="background:#6366f1;color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">→ Despachar a destino</button>
           <button onclick="movAbrirModal('devolucion')" style="background:var(--success);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">← Recibir devolución</button>
           <button onclick="movAbrirModal('preelaboracion')" style="background:var(--accent2);color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">⚗ Cerrar preelaboración</button>
+          <button onclick="catInvGestionRapida()" style="background:#0f172a;color:white;border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🏷 Gestionar categorías</button>
         </div>
 
 
@@ -6578,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.2';
+const APP_VERSION = '2026.04.22.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
