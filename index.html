@@ -6579,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.3';
+const APP_VERSION = '2026.04.22.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -15684,9 +15684,12 @@ function invQuickMov(prodId, tipo, opts) {
         </div>
         <div>
           <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD</label>
-          <select id="qm-unidad" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:inherit;font-size:13px;background:var(--white);color:var(--primary);">
-            ${unidadOpts}
-          </select>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="qm-unidad" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:inherit;font-size:13px;background:var(--white);color:var(--primary);">
+              ${unidadOpts}
+            </select>
+            <button id="qm-unit-manage" type="button" style="border:1px solid var(--border);background:#f8fafc;color:#475569;border-radius:7px;padding:9px 10px;font-size:10px;font-weight:700;cursor:pointer;">⚙ Unidades</button>
+          </div>
         </div>
         ${tipo !== 'merma' ? `<div>
           <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">${tipo==='devolucion'?'ORIGEN':'DESTINO'}</label>
@@ -15723,6 +15726,20 @@ function invQuickMov(prodId, tipo, opts) {
   document.getElementById('qm-close').onclick  = close;
   document.getElementById('qm-cancel').onclick = close;
   overlay.onclick = e => { if (e.target === overlay) close(); };
+  const qmUnitManage = document.getElementById('qm-unit-manage');
+  if (qmUnitManage) {
+    qmUnitManage.onclick = function() {
+      var changed = movGestionarUnidades();
+      if (!changed) return;
+      var sel = document.getElementById('qm-unidad');
+      if (!sel) return;
+      var prev = sel.value || '';
+      sel.innerHTML = movGetUnidadesLista().map(function(u) {
+        return `<option value="${esc(u)}">${esc(u)}</option>`;
+      }).join('');
+      if (prev && movGetUnidadesLista().includes(prev)) sel.value = prev;
+    };
+  }
 
   // Auto focus qty
   setTimeout(() => { const q = document.getElementById('qm-qty'); if(q) q.focus(); }, 100);
@@ -16021,6 +16038,14 @@ function movEditar(id) {
   if (cantidadRaw === null) return;
   const cantidad = parseNumCL(cantidadRaw, false) || 0;
   if (!cantidad) { notify('⚠ Cantidad inválida'); return; }
+  const fechaActualKey = movDiaKeyDesdeCl(mov.fecha || '') || new Date().toISOString().slice(0,10);
+  const fechaRaw = prompt('Editar fecha efectiva del movimiento (YYYY-MM-DD):', fechaActualKey);
+  if (fechaRaw === null) return;
+  const fechaKey = String(fechaRaw || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaKey)) { notify('⚠ Formato de fecha inválido (usa YYYY-MM-DD)'); return; }
+  const fechaObj = new Date(fechaKey + 'T12:00:00');
+  if (!isFinite(fechaObj.getTime())) { notify('⚠ Fecha inválida'); return; }
+  const fechaCl = fechaObj.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
   const unidadRaw = prompt(`Editar unidad (${unidades.join(', ')}):`, String(currentUnidad || ''));
   if (unidadRaw === null) return;
   const unidadVal = String(unidadRaw || '').trim();
@@ -16046,6 +16071,7 @@ function movEditar(id) {
   pushUndo();
   const before = JSON.parse(JSON.stringify(mov));
   mov.cantidad = cantidad;
+  mov.fecha = fechaCl;
   mov.unidad = unidadVal;
   mov.responsable = String(resp || '').trim();
   mov.nota = String(nota || '').trim();
@@ -16061,6 +16087,7 @@ function movEditar(id) {
     reason: mov._lastEditReason,
     before: {
       cantidad: before.cantidad,
+      fecha: before.fecha || '',
       unidad: before.unidad,
       responsable: before.responsable,
       nota: before.nota,
@@ -16069,6 +16096,7 @@ function movEditar(id) {
     },
     after: {
       cantidad: mov.cantidad,
+      fecha: mov.fecha || '',
       unidad: mov.unidad,
       responsable: mov.responsable,
       nota: mov.nota,
@@ -16078,8 +16106,8 @@ function movEditar(id) {
   });
   movAuditPush('editar', mov, {
     motivo: mov._lastEditReason,
-    before: { cantidad: before.cantidad, unidad: before.unidad || currentUnidad, destino: before.destino || before.origen || '' },
-    after: { cantidad: mov.cantidad, unidad: mov.unidad, destino: mov.destino || mov.origen || '' }
+    before: { cantidad: before.cantidad, fecha: before.fecha || '', unidad: before.unidad || currentUnidad, destino: before.destino || before.origen || '' },
+    after: { cantidad: mov.cantidad, fecha: mov.fecha || '', unidad: mov.unidad, destino: mov.destino || mov.origen || '' }
   });
   movRender();
   markUnsaved();
