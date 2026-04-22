@@ -1174,12 +1174,18 @@ body.dark-mode .cal-day.weekend,.dark-mode .wcs-day.weekend{background:#0f172a;}
 .inv-orden-title{font-size:13px;font-weight:700;flex:1;}
 .inv-orden-total{font-size:13px;font-weight:800;color:var(--success);}
 .inv-orden-prov{font-size:10px;color:#94a3b8;}
-.inv-orden-body{overflow-x:auto;}
-.inv-orden-table{width:100%;border-collapse:collapse;font-size:12px;}
-.inv-orden-table th{background:#f8fafc;font-weight:700;color:#94a3b8;font-size:9px;text-transform:uppercase;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);}
-.inv-orden-table td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.inv-orden-body{overflow-x:hidden;}
+.inv-orden-table{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed;}
+.inv-orden-table th{background:#f8fafc;font-weight:700;color:#94a3b8;font-size:9px;text-transform:uppercase;padding:6px 6px;text-align:left;border-bottom:1px solid var(--border);}
+.inv-orden-table td{padding:6px 6px;border-bottom:1px solid #f1f5f9;vertical-align:middle;word-break:break-word;}
 .inv-orden-table tr:last-child td{border-bottom:none;}
 .inv-orden-table tr:hover td{background:rgba(249,115,22,.02);}
+.inv-orden-table th:nth-child(1),.inv-orden-table td:nth-child(1){width:33%;}
+.inv-orden-table th:nth-child(2),.inv-orden-table td:nth-child(2){width:14%;}
+.inv-orden-table th:nth-child(3),.inv-orden-table td:nth-child(3){width:17%;}
+.inv-orden-table th:nth-child(4),.inv-orden-table td:nth-child(4){width:14%;}
+.inv-orden-table th:nth-child(5),.inv-orden-table td:nth-child(5){width:10%;}
+.inv-orden-table th:nth-child(6),.inv-orden-table td:nth-child(6){width:12%;}
 /* stock semáforo */
 .inv-semaforo{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;flex-shrink:0;}
 .inv-sem-verde{background:#10b981;}
@@ -5712,8 +5718,8 @@ function makeDefaultState() {
     ],
     // Módulo Movimientos de Inventario
     movimientos: [],
-    catInventario: ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos',
-                    'Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'],
+    catInventario: ['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras','Lácteos',
+                    'Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'],
   };
 }
 
@@ -6569,7 +6575,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.13.3';
+const APP_VERSION = '2026.04.22.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -11530,8 +11536,8 @@ function aiPromptTexto() {
   const known = Object.keys(state.facturas).sort().join(', ');
   const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
   // Inyectar categorías exactas del estado para que la IA no invente categorías
-  const cats = (state.catInventario||['Carnes','Pescados y Mariscos','Frutas y Verduras',
-    'Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría']).join(' | ');
+  const cats = (state.catInventario||['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras',
+    'Lácteos','Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría']).join(' | ');
   // Inyectar nombres exactos del inventario para fuzzy matching
   const prodNombres = (state.inventario||[]).map(p=>p.nombre).filter(Boolean).join(', ');
   return `Eres un asistente experto en contabilidad chilena.
@@ -12157,12 +12163,12 @@ function aiConfirmImport() {
           const nombre = it.descripcion || '';
           const nombreU = nombre.toUpperCase();
           let cat = 'Sin categoría';
-          if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) cat = 'Carnes';
+          if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) cat = 'Carnes y Aves';
           else if (/SALMON|PESCADO|MERLUZA|ATUN|REINETA|CONGRIO|MARISCOS|CAMARON|CHORITO|OSTIÓN|PULPO|JIBIA/.test(nombreU)) cat = 'Pescados y Mariscos';
           else if (/TOMATE|LECHUGA|CEBOLLA|AJO|ZANAHORIA|PIMENTÓN|PEPINO|APIO|CILANTRO|PEREJIL|VERDURA|VEGETAL|PAPA|FRUTA|NARANJA|LIMON|PALTA|MANZANA/.test(nombreU)) cat = 'Frutas y Verduras';
           else if (/LECHE|QUESO|MANTEQUILLA|CREMA|YOGUR|LACTEO/.test(nombreU)) cat = 'Lácteos';
           else if (/HARINA|ARROZ|PASTA|FIDEOS|ACEITE|VINAGRE|SAL|AZUCAR|CONDIMENTO|ESPECIA/.test(nombreU)) cat = 'Abarrotes';
-          else if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) cat = 'Bebidas';
+          else if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) cat = 'Aguas y Bebidas';
           else if (/PAN|HALLULLA|MARRAQUETA|BAGUETTE/.test(nombreU)) cat = 'Panadería';
           else if (/HUEVO/.test(nombreU)) cat = 'Huevos';
 
@@ -13053,13 +13059,44 @@ async function applyAbarrotesBienExtraIfNeeded() {
   notify('📦 Inventario complementado con AbarrotesBien: +' + added + ' nuevos, ' + updated + ' actualizados');
 }
 
+function invNormalizeCategoryName(catRaw) {
+  var c = String(catRaw || '').trim();
+  if (!c) return 'Sin categoría';
+  var n = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (n === 'bebidas') return 'Aguas y Bebidas';
+  if (n === 'carnes') return 'Carnes y Aves';
+  return c;
+}
+
+function invMigrateCategoryNames_() {
+  var changed = 0;
+  var defaults = ['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
+  if (!Array.isArray(state.catInventario)) state.catInventario = defaults.slice();
+  state.catInventario = state.catInventario.map(function(c) {
+    var nn = invNormalizeCategoryName(c);
+    if (nn !== c) changed++;
+    return nn;
+  });
+  defaults.forEach(function(c) { if (!state.catInventario.includes(c)) state.catInventario.push(c); });
+  state.catInventario = state.catInventario.filter(function(c, i, arr) { return arr.indexOf(c) === i; });
+  (state.inventario || []).forEach(function(p) {
+    var before = p.cat || 'Sin categoría';
+    var after = invNormalizeCategoryName(before);
+    if (after !== before) {
+      p.cat = after;
+      changed++;
+    }
+  });
+  return changed;
+}
+
 function _postLoadSetup() {
   if (!state.creditos)    state.creditos    = makeDefaultCreditos();
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
   if (!state.inventario)       state.inventario       = [];
   if (!state.movimientos)      state.movimientos      = [];
   if (!state.preciosProveedor) state.preciosProveedor = {}; // {prodId: [{prov,precio}]}
-  if (!state.catInventario)    state.catInventario    = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
+  if (!state.catInventario)    state.catInventario    = ['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
   if (!state.provRuts)         state.provRuts         = {};
   if (!state.rutMap)           state.rutMap           = {};
   if (!state.calMultOverrides)          state.calMultOverrides          = {};
@@ -13094,6 +13131,7 @@ function _postLoadSetup() {
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
+  invMigrateCategoryNames_();
   applyBodegaN3PlantillaIfNeeded();
   applyInventorySnapshot20260331IfNeeded();
   applyPdfMasterAdditionsIfNeeded();
@@ -14519,12 +14557,12 @@ function invRenderPedido() {
               style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:var(--danger);cursor:pointer;font-family:inherit;">✕ Quitar</button>
           </div>` : ''}
         </div>` : `<span style="font-size:10px;color:#94a3b8;">—</span>`;
-      return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)}<div style="font-size:13px;font-weight:800;color:#334155;margin-top:4px;">${esc(prod.cat||'')} · Stock: ${stockAct} ${esc(prod.unidad||'u')}</div></td>
+      return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)}<div style="font-size:11px;font-weight:700;color:#334155;margin-top:4px;">${esc(prod.cat||'')} · Stock: ${stockAct} ${esc(prod.unidad||'u')}</div></td>
         <td><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
           <input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty||0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;" ${sem.cerrada?'disabled':''}>
           <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada||it.recibido?'disabled':''}>${uOpts}</select>
         </div></td>
-        <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:11px;color:var(--primary);background:transparent;min-width:110px;">${provOpts}</select></td>
+        <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:10px;color:var(--primary);background:transparent;min-width:0;max-width:100%;">${provOpts}</select></td>
         <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
         <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
         <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
@@ -15572,7 +15610,7 @@ function invSave() {
   const prov = document.getElementById('inv-f-prov').value;
   state.inventario.push({
     id:'inv_'+Date.now(), nombre,
-    cat:   (document.getElementById('inv-f-cat').value||'').trim()||'Sin categoría',
+    cat:   invNormalizeCategoryName((document.getElementById('inv-f-cat').value||'').trim()||'Sin categoría'),
     familia: famVal,
     subfamilia: subVal,
     unidad: document.getElementById('inv-f-unidad').value||'unidad',
@@ -15973,10 +16011,20 @@ function movEditar(id) {
 
   const prod = (state.inventario || []).find(p => p.id === mov.prodId);
   const currentUnidad = mov.unidad || prod?.unidad || 'u';
+  if (!Array.isArray(state.unidadesInventario)) state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','Bandeja'];
+  const unidades = state.unidadesInventario.map(u => String(u).trim()).filter(Boolean);
   const cantidadRaw = prompt(`Editar cantidad de "${mov.producto}" (${currentUnidad}):`, String(mov.cantidad ?? ''));
   if (cantidadRaw === null) return;
   const cantidad = parseNumCL(cantidadRaw, false) || 0;
   if (!cantidad) { notify('⚠ Cantidad inválida'); return; }
+  const unidadRaw = prompt(`Editar unidad (${unidades.join(', ')}):`, String(currentUnidad || ''));
+  if (unidadRaw === null) return;
+  const unidadVal = String(unidadRaw || '').trim();
+  if (!unidadVal) { notify('⚠ Debes indicar unidad'); return; }
+  if (!unidades.includes(unidadVal)) {
+    if (!confirm(`"${unidadVal}" no está en la lista de unidades.\n\n¿Agregarla y usarla?`)) return;
+    state.unidadesInventario.push(unidadVal);
+  }
 
   const destinoDefault = mov.destino || mov.origen || '';
   const destino = prompt(`Editar destino/origen de "${mov.producto}":`, destinoDefault);
@@ -15994,6 +16042,7 @@ function movEditar(id) {
   pushUndo();
   const before = JSON.parse(JSON.stringify(mov));
   mov.cantidad = cantidad;
+  mov.unidad = unidadVal;
   mov.responsable = String(resp || '').trim();
   mov.nota = String(nota || '').trim();
   if (mov.destino) mov.destino = destinoVal;
@@ -16008,6 +16057,7 @@ function movEditar(id) {
     reason: mov._lastEditReason,
     before: {
       cantidad: before.cantidad,
+      unidad: before.unidad,
       responsable: before.responsable,
       nota: before.nota,
       destino: before.destino || '',
@@ -16015,6 +16065,7 @@ function movEditar(id) {
     },
     after: {
       cantidad: mov.cantidad,
+      unidad: mov.unidad,
       responsable: mov.responsable,
       nota: mov.nota,
       destino: mov.destino || '',
@@ -16023,8 +16074,8 @@ function movEditar(id) {
   });
   movAuditPush('editar', mov, {
     motivo: mov._lastEditReason,
-    before: { cantidad: before.cantidad, destino: before.destino || before.origen || '' },
-    after: { cantidad: mov.cantidad, destino: mov.destino || mov.origen || '' }
+    before: { cantidad: before.cantidad, unidad: before.unidad || currentUnidad, destino: before.destino || before.origen || '' },
+    after: { cantidad: mov.cantidad, unidad: mov.unidad, destino: mov.destino || mov.origen || '' }
   });
   movRender();
   markUnsaved();
@@ -16238,6 +16289,70 @@ function movEliminar(id) {
 }
 
 // ── Modal genérico de movimiento ──
+function movGetUnidadesLista() {
+  if (!Array.isArray(state.unidadesInventario) || !state.unidadesInventario.length)
+    state.unidadesInventario = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','Bandeja'];
+  return state.unidadesInventario.map(function(u) { return String(u || '').trim(); }).filter(Boolean);
+}
+
+function movGestionarUnidades() {
+  var unidades = movGetUnidadesLista();
+  var accion = prompt('Gestión de unidades (movimientos)\nEscribe: agregar | editar | eliminar', 'agregar');
+  if (accion === null) return false;
+  accion = String(accion || '').trim().toLowerCase();
+  if (accion === 'agregar') {
+    var nueva = prompt('Nueva unidad de medida:', '');
+    if (!nueva || !nueva.trim()) return false;
+    nueva = nueva.trim();
+    if (unidades.includes(nueva)) { notify('⚠ Esa unidad ya existe'); return false; }
+    pushUndo();
+    state.unidadesInventario.push(nueva);
+    markUnsaved();
+    notify('✓ Unidad agregada: ' + nueva);
+    return true;
+  }
+  if (accion === 'editar') {
+    var actual = prompt('Unidad a renombrar:\n' + unidades.join(', '), '');
+    if (!actual || !actual.trim()) return false;
+    actual = actual.trim();
+    if (!unidades.includes(actual)) { notify('⚠ Esa unidad no existe'); return false; }
+    var nuevo = prompt('Nuevo nombre para "' + actual + '":', actual);
+    if (!nuevo || !nuevo.trim()) return false;
+    nuevo = nuevo.trim();
+    if (nuevo === actual) return false;
+    if (unidades.includes(nuevo)) { notify('⚠ Ya existe una unidad con ese nombre'); return false; }
+    if (!confirm('Renombrar "' + actual + '" por "' + nuevo + '" también en inventario, movimientos y pedido semanal?')) return false;
+    pushUndo();
+    state.unidadesInventario = state.unidadesInventario.map(function(u) { return String(u) === actual ? nuevo : u; });
+    (state.inventario || []).forEach(function(p) { if ((p.unidad || '') === actual) p.unidad = nuevo; });
+    (state.movimientos || []).forEach(function(m) { if ((m.unidad || '') === actual) m.unidad = nuevo; });
+    if (state.semanaActiva && Array.isArray(state.semanaActiva.ordenes)) {
+      state.semanaActiva.ordenes.forEach(function(o) {
+        (o.items || []).forEach(function(it) { if ((it.unidadPedido || '') === actual) it.unidadPedido = nuevo; });
+      });
+    }
+    markUnsaved();
+    notify('✓ Unidad renombrada: ' + actual + ' → ' + nuevo);
+    return true;
+  }
+  if (accion === 'eliminar') {
+    var borrar = prompt('Unidad a eliminar:\n' + unidades.join(', '), '');
+    if (!borrar || !borrar.trim()) return false;
+    borrar = borrar.trim();
+    if (!unidades.includes(borrar)) { notify('⚠ Esa unidad no existe'); return false; }
+    var usadosInv = (state.inventario || []).filter(function(p) { return (p.unidad || '') === borrar; }).length;
+    var usadosMov = (state.movimientos || []).filter(function(m) { return (m.unidad || '') === borrar; }).length;
+    if ((usadosInv + usadosMov) > 0 && !confirm('"' + borrar + '" está en uso (inventario: ' + usadosInv + ', movimientos: ' + usadosMov + ').\n¿Eliminar solo de la lista disponible?')) return false;
+    pushUndo();
+    state.unidadesInventario = state.unidadesInventario.filter(function(u) { return String(u) !== borrar; });
+    markUnsaved();
+    notify('✓ Unidad eliminada de la lista: ' + borrar);
+    return true;
+  }
+  notify('⚠ Acción no válida');
+  return false;
+}
+
 function movAbrirModal(tipo) {
   const prods = (state.inventario||[]).sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
   const prodOpts = prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} (${p.stock||0} ${p.unidad||'u'})</option>`).join('');
@@ -16250,16 +16365,19 @@ function movAbrirModal(tipo) {
   }[tipo] || { titulo:'Movimiento', color:'#64748b', destLabel:'Destino' };
 
   // Extra fields for preelaboracion
-  const unidadOpts = ['kg','g','L','ml','unidad','caja','bolsa','bandeja','docena','porción','filete','otro']
-    .map(u=>`<option value="${u}">${u}</option>`).join('');
-  const extraUnidad = (tipo === 'devolucion' || tipo === 'preelaboracion') ? `
+  const unidadOpts = movGetUnidadesLista()
+    .map(u=>`<option value="${esc(u)}">${esc(u)}</option>`).join('');
+  const extraUnidad = `
     <div>
       <label style="font-size:10px;font-weight:700;color:#94a3b8;display:block;margin-bottom:4px;">UNIDAD DE MEDIDA (puede diferir del formato bruto)</label>
-      <select id="mov-unidad-override" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
+      <div style="display:flex;gap:6px;align-items:center;">
+      <select id="mov-unidad-override" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:inherit;font-size:12px;background:var(--white);color:var(--primary);">
         <option value="">— Usar la misma del producto —</option>
         ${unidadOpts}
       </select>
-    </div>` : '';
+      <button id="mov-unidad-manage" type="button" style="border:1px solid var(--border);background:#f8fafc;color:#475569;border-radius:7px;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer;">⚙ Unidades</button>
+      </div>
+    </div>`;
 
   const extraPrelab = tipo === 'preelaboracion' ? `
     <div>
@@ -16350,6 +16468,19 @@ function movAbrirModal(tipo) {
   document.getElementById('mov-modal-close').onclick  = close;
   document.getElementById('mov-modal-cancel').onclick = close;
   overlay.onclick = e => { if (e.target===overlay) close(); };
+  const btnUnitManage = document.getElementById('mov-unidad-manage');
+  if (btnUnitManage) {
+    btnUnitManage.onclick = function() {
+      var changed = movGestionarUnidades();
+      if (!changed) return;
+      var selU = document.getElementById('mov-unidad-override');
+      if (!selU) return;
+      var prev = selU.value || '';
+      selU.innerHTML = '<option value="">— Usar la misma del producto —</option>' +
+        movGetUnidadesLista().map(function(u) { return `<option value="${esc(u)}">${esc(u)}</option>`; }).join('');
+      if (prev && movGetUnidadesLista().includes(prev)) selU.value = prev;
+    };
+  }
 
   document.getElementById('mov-modal-save').onclick = () => {
     const prodId   = document.getElementById('mov-prod-sel').value;
@@ -16435,7 +16566,8 @@ function movAbrirModal(tipo) {
 
 function catInvGetAll() {
   if (!state.catInventario || !state.catInventario.length)
-    state.catInventario = ['Carnes','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
+    state.catInventario = ['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras','Lácteos','Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría'];
+  state.catInventario = state.catInventario.map(invNormalizeCategoryName);
   return state.catInventario;
 }
 
@@ -16456,13 +16588,14 @@ function catInvAgregar() {
   const nombre = prompt('Nombre de la nueva categoría:','');
   if (!nombre || !nombre.trim()) return;
   const cats = catInvGetAll();
-  if (cats.includes(nombre.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+  const nombreNorm = invNormalizeCategoryName(nombre.trim());
+  if (cats.includes(nombreNorm)) { notify('⚠ Esa categoría ya existe'); return; }
   pushUndo();
-  cats.push(nombre.trim());
+  cats.push(nombreNorm);
   catInvRender();
   invRenderCatTabs();
   markUnsaved();
-  notify(`✓ Categoría "${nombre.trim()}" agregada`);
+  notify(`✓ Categoría "${nombreNorm}" agregada`);
 }
 
 function catInvEditar(idx) {
@@ -16471,12 +16604,13 @@ function catInvEditar(idx) {
   if (actual === 'Sin categoría') { notify('⚠ Esta categoría no se puede editar'); return; }
   const nuevo = prompt('Editar categoría:', actual);
   if (!nuevo || !nuevo.trim() || nuevo.trim() === actual) return;
-  if (cats.includes(nuevo.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+  const nuevoNorm = invNormalizeCategoryName(nuevo.trim());
+  if (cats.includes(nuevoNorm)) { notify('⚠ Esa categoría ya existe'); return; }
   pushUndo();
-  (state.inventario||[]).forEach(p => { if (p.cat === actual) p.cat = nuevo.trim(); });
-  cats[idx] = nuevo.trim();
+  (state.inventario||[]).forEach(p => { if (invNormalizeCategoryName(p.cat) === actual) p.cat = nuevoNorm; });
+  cats[idx] = nuevoNorm;
   catInvRender(); invRenderCatTabs(); invRenderTable(); markUnsaved();
-  notify(`✓ Categoría renombrada a "${nuevo.trim()}"`);
+  notify(`✓ Categoría renombrada a "${nuevoNorm}"`);
 }
 
 function catInvEliminar(idx) {
@@ -17259,10 +17393,21 @@ function invEditProd(id) {
     el.innerHTML = catInvGetAll().map((c,i) => {
       const col = provColor(c);
       return `<span style="display:inline-flex;align-items:center;gap:4px;background:${col}15;border:1px solid ${col}33;border-radius:14px;padding:4px 10px;font-size:11px;font-weight:600;color:${col};">
-        ${esc(c)}
+        <button data-cat-edit="${i}" style="background:none;border:none;cursor:pointer;color:${col};font-size:11px;padding:0;line-height:1;font-weight:700;">${esc(c)}</button>
         ${c!=='Sin categoría'?`<button data-cat-del="${i}" style="background:none;border:none;cursor:pointer;color:${col};font-size:11px;padding:0;line-height:1;">✕</button>`:''}
       </span>`;
     }).join('');
+    el.querySelectorAll('[data-cat-edit]').forEach(btn => {
+      btn.onclick = () => {
+        const idx = parseInt(btn.dataset.catEdit, 10);
+        catInvEditar(idx);
+        renderCatTags();
+        const sel = document.getElementById('inv-ep-cat');
+        const val = invNormalizeCategoryName(sel.value);
+        sel.innerHTML = catInvGetAll().map(c=>`<option value="${c}" ${c===val?'selected':''}>${c}</option>`).join('');
+        if (!catInvGetAll().includes(val)) sel.value = 'Sin categoría';
+      };
+    });
     el.querySelectorAll('[data-cat-del]').forEach(btn => {
       btn.onclick = () => {
         const idx = parseInt(btn.dataset.catDel);
@@ -17309,18 +17454,19 @@ function invEditProd(id) {
     const nombre = prompt('Nombre de la nueva categoría:','');
     if (!nombre || !nombre.trim()) return;
     const cats = catInvGetAll();
-    if (cats.includes(nombre.trim())) { notify('⚠ Esa categoría ya existe'); return; }
+    const nombreNorm = invNormalizeCategoryName(nombre.trim());
+    if (cats.includes(nombreNorm)) { notify('⚠ Esa categoría ya existe'); return; }
     pushUndo();
-    cats.push(nombre.trim());
+    cats.push(nombreNorm);
     // Add to dropdown and select it
     const sel = document.getElementById('inv-ep-cat');
     const opt = document.createElement('option');
-    opt.value = nombre.trim(); opt.textContent = nombre.trim(); opt.selected = true;
+    opt.value = nombreNorm; opt.textContent = nombreNorm; opt.selected = true;
     sel.appendChild(opt);
     renderCatTags();
     invRenderCatTabs();
     markUnsaved();
-    notify(`✓ Categoría "${nombre.trim()}" creada`);
+    notify(`✓ Categoría "${nombreNorm}" creada`);
   };
 
   // Add new unit inline
@@ -17367,7 +17513,7 @@ function invEditProd(id) {
     if (!nombre) { notify('⚠ El nombre no puede estar vacío'); return; }
     pushUndo();
     p.nombre = nombre;
-    p.cat    = document.getElementById('inv-ep-cat').value;
+    p.cat    = invNormalizeCategoryName(document.getElementById('inv-ep-cat').value);
     p.familia = document.getElementById('inv-ep-familia').value || 'Sin familia';
     p.subfamilia = document.getElementById('inv-ep-subfamilia').value || 'Sin subfamilia';
     invEnsureFamiliesState();
@@ -17436,12 +17582,12 @@ function invParseFacEmision_(em) {
 
 function invInferCatFromDesc_(desc) {
   var nombreU = String(desc || '').toUpperCase();
-  if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) return 'Carnes';
+  if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) return 'Carnes y Aves';
   if (/SALMON|PESCADO|MERLUZA|ATUN|REINETA|CONGRIO|MARISCOS|CAMARON|CHORITO|OSTIÓN|PULPO|JIBIA/.test(nombreU)) return 'Pescados y Mariscos';
   if (/TOMATE|LECHUGA|CEBOLLA|AJO|ZANAHORIA|PIMENTÓN|PEPINO|APIO|CILANTRO|PEREJIL|VERDURA|VEGETAL|PAPA|FRUTA|NARANJA|LIMON|PALTA|MANZANA/.test(nombreU)) return 'Frutas y Verduras';
   if (/LECHE|QUESO|MANTEQUILLA|CREMA|YOGUR|LACTEO/.test(nombreU)) return 'Lácteos';
   if (/HARINA|ARROZ|PASTA|FIDEOS|ACEITE|VINAGRE|SAL|AZUCAR|CONDIMENTO|ESPECIA/.test(nombreU)) return 'Abarrotes';
-  if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) return 'Bebidas';
+  if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) return 'Aguas y Bebidas';
   if (/PAN|HALLULLA|MARRAQUETA|BAGUETTE/.test(nombreU)) return 'Panadería';
   if (/HUEVO/.test(nombreU)) return 'Huevos';
   return 'Importado';

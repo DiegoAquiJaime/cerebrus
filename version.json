@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.20.9",
-  "notes": "Facturas OCR: registro de precios pregunta producto/unidad línea a línea (sin crear ítems ni stock)."
+  "version": "2026.04.22.1",
+  "notes": "Inventario: categorías migradas (Aguas y Bebidas / Carnes y Aves), gestión ampliada de unidades en movimientos y pedido semanal más compacto."
 }
