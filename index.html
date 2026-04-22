@@ -4883,6 +4883,9 @@ body.dark-mode .conflict-overlay{
 
         <!-- Botón reporte merma -->
         <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="catInvGestionRapida()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;color:#6366f1;font-weight:700;">
+            🏷 Gestionar categorías
+          </button>
           <button onclick="movMostrarReporteMerma()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-family:inherit;color:#64748b;">
             📊 Ver reporte de merma mensual
           </button>
@@ -6575,7 +6578,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.1';
+const APP_VERSION = '2026.04.22.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -16627,6 +16630,33 @@ function catInvEliminar(idx) {
   cats.splice(idx, 1);
   catInvRender(); invRenderCatTabs(); invRenderTable(); markUnsaved();
   notify(`✓ Categoría "${cat}" eliminada`);
+}
+
+function catInvGestionRapida() {
+  const cats = catInvGetAll();
+  const accion = prompt('Gestionar categorías\nEscribe: agregar | editar | eliminar', 'agregar');
+  if (accion === null) return;
+  const a = String(accion || '').trim().toLowerCase();
+  if (a === 'agregar') { catInvAgregar(); return; }
+  if (a === 'editar') {
+    const actual = prompt('Categoría a editar:\n' + cats.join(', '), '');
+    if (!actual || !actual.trim()) return;
+    const norm = invNormalizeCategoryName(actual.trim());
+    const idx = cats.findIndex(c => c === norm);
+    if (idx < 0) { notify('⚠ Categoría no encontrada'); return; }
+    catInvEditar(idx);
+    return;
+  }
+  if (a === 'eliminar') {
+    const target = prompt('Categoría a eliminar:\n' + cats.join(', '), '');
+    if (!target || !target.trim()) return;
+    const norm = invNormalizeCategoryName(target.trim());
+    const idx = cats.findIndex(c => c === norm);
+    if (idx < 0) { notify('⚠ Categoría no encontrada'); return; }
+    catInvEliminar(idx);
+    return;
+  }
+  notify('⚠ Acción no válida');
 }
 
 // ============================================================
