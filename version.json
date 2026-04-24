@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.22.5",
-  "notes": "Movimientos: mostrar origen→destino para ver proveedor en ingresos de pedido."
+  "version": "2026.04.22.6",
+  "notes": "Semana Actual: pagos de egresos ahora permiten descuento automático opcional de Cuenta Bancaria empresa."
 }

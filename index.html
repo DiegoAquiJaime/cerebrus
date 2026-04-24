@@ -6579,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.5';
+const APP_VERSION = '2026.04.22.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -22526,6 +22526,61 @@ function sacSetBanco(val) {
   markUnsaved();
 }
 
+function sacDescontarBancoPorEgreso_(monto, motivo) {
+  const m = Math.max(0, Math.round(Number(monto) || 0));
+  if (!m) return;
+  if (!state.cajaEmpresa) state.cajaEmpresa = {};
+  state.cajaEmpresa.banco = Math.round((Number(state.cajaEmpresa.banco) || 0) - m);
+  state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + ' · auto egreso';
+  sacCalcBalance();
+  if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
+  notify('🏦 Cuenta bancaria empresa descontada: ' + fmt(m) + (motivo ? ' · ' + motivo : ''));
+}
+
+function sacAskAutoBancoDescuento_(ctx) {
+  return new Promise(function(resolve) {
+    const monto = Math.max(0, Math.round(Number(ctx && ctx.monto) || 0));
+    const titulo = String((ctx && ctx.titulo) || 'Pago de egreso');
+    const detalle = String((ctx && ctx.detalle) || '');
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2600;display:flex;align-items:center;justify-content:center;padding:16px;';
+    overlay.innerHTML = `
+      <div style="background:var(--white);border-radius:12px;width:460px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden;">
+        <div style="background:#0f172a;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:800;color:white;">🏦 Descuento automático en banco</div>
+          <button id="sac-auto-bank-close" style="background:none;border:none;color:rgba(255,255,255,.8);font-size:20px;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-size:12px;font-weight:700;color:#334155;">${esc(titulo)}</div>
+          <div style="font-size:11px;color:#64748b;line-height:1.4;">
+            ${detalle ? esc(detalle) + '<br>' : ''}Monto del pago: <b>${esc(fmt(monto))}</b>
+          </div>
+          <label style="font-size:11px;font-weight:700;color:#64748b;">¿Descontar automáticamente este pago de "Cuenta Bancaria empresa"?</label>
+          <select id="sac-auto-bank-sel" style="border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:var(--white);">
+            <option value="no" selected>No, lo ajustaré manualmente</option>
+            <option value="si">Sí, descontar automáticamente</option>
+          </select>
+          <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:2px;">
+            <button id="sac-auto-bank-cancel" class="fac-btn" style="font-size:11px;">Cancelar</button>
+            <button id="sac-auto-bank-ok" class="fac-btn primary" style="font-size:11px;">Continuar</button>
+          </div>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const close = function(result) {
+      try { document.body.removeChild(overlay); } catch(e){}
+      resolve(result);
+    };
+    document.getElementById('sac-auto-bank-close').onclick = function() { close({ cancel: true }); };
+    document.getElementById('sac-auto-bank-cancel').onclick = function() { close({ cancel: true }); };
+    document.getElementById('sac-auto-bank-ok').onclick = function() {
+      const sel = document.getElementById('sac-auto-bank-sel');
+      close({ cancel: false, descontar: !!(sel && sel.value === 'si') });
+    };
+    overlay.onclick = function(e) { if (e.target === overlay) close({ cancel: true }); };
+  });
+}
+
 function sacSetEfectivo(val) {
   state.sacEfectivo = Math.max(0, parseNumCL(val, false));
   const inp = document.getElementById('sac-efectivo');
@@ -23222,7 +23277,7 @@ function sacTogglePausa(id) {
   notify(c.estado === 'pausa' ? '⏸ Carga en pausa (no afecta balance)' : '↩ Pausa quitada');
 }
 
-function sacCycleEstado(id) {
+async function sacCycleEstado(id) {
   const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
   if (c.estado === 'pausa') {
     notify('⚠ Está en PAUSA. Usa «⏸ PAUSA · Reactivar» para volver a no pagado / parcial / pagado.');
@@ -23233,12 +23288,29 @@ function sacCycleEstado(id) {
   const next  = order[(idx+1)%order.length];
   const labels = { nopagado:'No pagado', pagado:'Pagado', parcial:'Parcial (debe un resto)' };
   if (!confirm(`¿Cambiar "${c.nombre}" a ${labels[next]}?\n\n💡 Si quieres registrar un abono, usa el botón "◑ Pago parcial" de abajo.`)) return;
+  let bankOpt = { cancel: false, descontar: false };
+  let montoPagoBanco = 0;
+  if (next === 'pagado') {
+    montoPagoBanco = Math.max(0, sacCargaPendienteAcum(c));
+    if (montoPagoBanco > 0) {
+      bankOpt = await sacAskAutoBancoDescuento_({
+        titulo: 'Marcar egreso como pagado',
+        detalle: c.nombre,
+        monto: montoPagoBanco
+      });
+      if (bankOpt.cancel) return;
+    }
+  }
   pushUndo();
   c.estado = next;
   if (c.estado==='pagado' && c.montoReal==null) c.montoReal = c.monto;
+  if (next === 'pagado' && bankOpt.descontar && montoPagoBanco > 0) {
+    sacDescontarBancoPorEgreso_(montoPagoBanco, c.nombre);
+  }
   sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
+  markUnsaved();
   notify(c.estado==='pagado'?`✓ ${c.nombre} — Pagado`:c.estado==='parcial'?`◑ ${c.nombre} — Parcial`:`○ ${c.nombre} — No pagado`);
 }
 
@@ -23261,7 +23333,7 @@ function sacEditMonto(id) {
 // 1. La carga original queda en Y-X (pendiente)
 //    (opcionalmente se puede corregir el saldo pendiente real)
 // 2. Se crea automáticamente una carga nueva de X con estado "pagado"
-function sacPagarParcial(id) {
+async function sacPagarParcial(id) {
   const cargas = sacGetCargas();
   const c = cargas.find(x=>x.id===id); if(!c) return;
   if (c.estado === 'pausa') { notify('⚠ Quita PAUSA antes de registrar pagos parciales.'); return; }
@@ -23276,6 +23348,12 @@ function sacPagarParcial(id) {
   if (v === null) return;
   const abono = parseNumCL((v||'0'), false)||0;
   if (!abono) { notify('⚠ Ingresa un monto válido'); return; }
+  const bankOpt = await sacAskAutoBancoDescuento_({
+    titulo: 'Pago parcial de egreso',
+    detalle: c.nombre,
+    monto: abono
+  });
+  if (bankOpt.cancel) return;
 
   pushUndo();
 
@@ -23334,6 +23412,9 @@ function sacPagarParcial(id) {
       cargas.push(pago);
       notify(`◑ Abono de ${fmt(abono)} registrado · Pendiente: ${fmt(nuevoPendiente)}`);
     }
+  }
+  if (bankOpt.descontar && abono > 0) {
+    sacDescontarBancoPorEgreso_(abono, c.nombre);
   }
 
   sacRenderCargas();
