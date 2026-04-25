@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.25.1",
-  "notes": "Créditos: corrección M13 (5 cuotas), historial visible y nuevo informe/exporte de pagos con fecha efectiva."
+  "version": "2026.04.25.2",
+  "notes": "Créditos: guard extra para aplicar corrección M13 solo con módulo Créditos activo."
 }

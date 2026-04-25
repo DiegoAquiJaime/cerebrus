@@ -6614,7 +6614,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.25.1';
+const APP_VERSION = '2026.04.25.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -8229,6 +8229,7 @@ function credParseClDateToKey(d) {
 }
 
 function credApplyM13CorrectionIfNeeded() {
+  if (typeof _activeTabId !== 'undefined' && _activeTabId !== 'creditos') return;
   if (!state || !Array.isArray(state.creditos)) return;
   if (!state._credFixM13_20260425) state._credFixM13_20260425 = { applied: false };
   if (state._credFixM13_20260425.applied) return;
