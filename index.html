@@ -6579,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.6';
+const APP_VERSION = '2026.04.22.7';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -11857,81 +11857,18 @@ function aiShowPreview(rows) {
   });
   const invWrap  = document.getElementById('ai-inv-import-wrap');
   if (invWrap) {
-    if (allItems.length) {
-      invWrap.style.display = '';
-      // Check if any document had net prices
-      const docConIVAAplicado = rows.filter(r=>r.items?.some(it=>it.eraNetoIVA)).length;
-      const docSinIVAInfo     = rows.filter(r=>r.tieneIVA===null && r.items?.length).length;
-      const docNeto           = rows.filter(r=>r.tieneIVA===false && r.items?.length).length;
-      const docsIlegiblesConItems = rows.filter(function(r) {
-        return r.confianza === 'ilegible' && (r.items || []).some(function(x) { return x.descripcion; });
-      });
-
-      let ivaWarning = '';
-      if (docsIlegiblesConItems.length)
-        ivaWarning += `<div style="font-size:10px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;padding:6px 8px;border-radius:5px;margin-bottom:8px;">🚫 ${docsIlegiblesConItems.length} documento${docsIlegiblesConItems.length!==1?'s':''} ilegible${docsIlegiblesConItems.length!==1?'s':''} con detalle: no se pueden confiar los totales (IVA/ILA) leídos. Revisa el papel. Los avisos ILA? piden confirmación manual.</div>`;
-      if (docConIVAAplicado > 0)
-        ivaWarning = `<div style="font-size:10px;color:#059669;background:rgba(16,185,129,.08);padding:5px 8px;border-radius:5px;margin-bottom:6px;">✅ Precios con IVA incluido — verificado matemáticamente</div>`;
-      else if (docNeto > 0)
-        ivaWarning = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <span style="font-size:10px;color:var(--danger);font-weight:700;">⚠ Precios NETOS detectados — sin IVA incluido</span>
-          <button onclick="aiAplicarIVA(1.19)" style="background:#3b82f6;color:white;border:none;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ IVA 19% a todos</button>
-        </div>`;
-      else if (docSinIVAInfo > 0)
-        ivaWarning = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-          <span style="font-size:10px;color:var(--warning);font-weight:700;">⚠ No se pudo verificar si los precios incluyen IVA</span>
-          <button onclick="aiAplicarIVA(1.19)" style="background:#f59e0b;color:white;border:none;border-radius:5px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;">+ IVA 19% a todos</button>
-        </div>`;
-
-      invWrap.innerHTML = `
-        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:12px 14px;margin-top:12px;">
-          ${ivaWarning}
-          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
-              <input type="checkbox" id="ai-chk-precios" checked style="width:15px;height:15px;accent-color:var(--success);">
-              💲 Registrar precios por producto y proveedor (desde líneas de factura; no modifica stock de bodega)
-            </label>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:700;">
-              <input type="checkbox" id="ai-chk-inv" style="width:15px;height:15px;accent-color:var(--accent2);"
-                onchange="document.querySelectorAll('.ai-chk-prod').forEach(c=>c.checked=this.checked)">
-              📦 Agregar cantidades al pedido semanal (opcional; tampoco cambia stock hasta recepción)
-            </label>
-            <span style="font-size:10px;color:#94a3b8;">${allItems.length} líneas — desmarca las que no quieras en la lista de abajo</span>
-          </div>
-          <p style="font-size:10px;color:#64748b;margin:0 0 8px;line-height:1.45;">Los precios se guardan en la base de referencia del inventario para contrastar con pedidos; el stock físico lo cargás vos (conteo, movimientos o ficha). Si el producto o la unidad no calzan con el inventario, se abre un diálogo por línea antes de guardar (no se crean productos nuevos desde aquí).</p>
-          <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">
-            <input type="checkbox" id="ai-fac-pedido-en-cajas" style="margin-top:2px;flex-shrink:0;">
-            <span style="font-size:10px;color:#334155;line-height:1.4;">La factura lista cantidades en <strong>cajas/embalaje</strong>: multiplicar por “piezas por caja” del producto (si está en Editar) al cargar el pedido.</span>
-          </label>
-          <div style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;" id="ai-inv-items-list">
-            ${allItems.map((it,i) => {
-              const matched  = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
-              const rowId    = 'ai-inv-item-' + i;
-              const chkId    = 'ai-inv-chk-' + i;
-              const impuestoBadge = aiInvILABadgeHTML_(it);
-              return `<div style="display:grid;grid-template-columns:20px 1fr 55px 45px 85px 60px;gap:4px;font-size:11px;align-items:center;padding:4px 6px;background:white;border-radius:5px;border:1px solid #f1f5f9;" id="${rowId}">
-                <input type="checkbox" class="ai-chk-prod" id="${chkId}" data-idx="${i}" checked
-                  style="width:14px;height:14px;accent-color:var(--success);cursor:pointer;"
-                  onchange="document.getElementById('${rowId}').style.opacity=this.checked?'1':'0.4';">
-                <div>
-                  <span style="font-weight:600;">${esc(it.descripcion)}</span>${impuestoBadge}
-                  ${matched?`<span style="font-size:9px;color:var(--success);margin-left:4px;">→ ${esc(matched.nombre)}</span>`:'<span style="font-size:9px;color:#94a3b8;margin-left:4px;">sin match</span>'}
-                </div>
-                <input type="text" value="${esc(cerebrusFormatQtyForInput(it.cantidad))}" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-qty-${i}">
-                <span style="color:#94a3b8;font-size:10px;text-align:center;">${esc(it.unidad||'un')}</span>
-                <input type="text" value="${it.precioUnit||''}" placeholder="$ unit" style="border:1px solid var(--border);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:11px;text-align:right;" id="ai-inv-price-${i}">
-                ${(docNeto > 0 || docSinIVAInfo > 0) ? `<button onclick="aiAplicarIVAItem(${i})" title="Aplicar IVA 19% a este precio"
-                  style="font-size:9px;background:#f1f5f9;border:1px solid var(--border);border-radius:4px;padding:2px 5px;cursor:pointer;font-family:inherit;color:#64748b;white-space:nowrap;">+IVA</button>` : ''}
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-    } else {
-      invWrap.style.display = 'none';
-    }
+    invWrap.style.display = '';
+    invWrap.innerHTML = `
+      <div style="background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.25);border-radius:8px;padding:10px 12px;margin-top:12px;">
+        <div style="font-size:11px;font-weight:800;color:#334155;margin-bottom:4px;">🧾 Importación IA en modo solo factura</div>
+        <div style="font-size:10px;color:#64748b;line-height:1.45;">
+          Esta importación guardará únicamente cabecera del documento (proveedor, RUT, N°, fechas, montos y comentario).
+          No se crearán productos, no se actualizarán precios y no se cargará nada al pedido/inventario.
+        </div>
+      </div>`;
   }
-  // Store allItems globally for import
-  window._aiInvItems = allItems;
+  // Desactivado: IA no usa detalle de productos para importación automática.
+  window._aiInvItems = [];
 }
 
 // ── IVA helpers ──
@@ -12003,19 +11940,6 @@ function aiConfirmImport() {
     if (override === null) { notify(`⚠ Escribe el nombre del nuevo proveedor para "${orig}"`); return; }
   }
 
-  const chkInvPre = document.getElementById('ai-chk-inv');
-  const chkPreciosPre = document.getElementById('ai-chk-precios');
-  const invItemsPre = window._aiInvItems || [];
-  if ((chkInvPre && chkInvPre.checked && invItemsPre.length) || (chkPreciosPre && chkPreciosPre.checked && invItemsPre.length)) {
-    const needIlaConfirm = invItemsPre.some(function(it) {
-      const d = it._aiDoc;
-      return d && d.confianza === 'ilegible' && aiInvDescEsAlcohol_((it.descripcion || '').toUpperCase());
-    });
-    if (needIlaConfirm && !confirm('Hay al menos un documento ilegible con productos que suelen llevar ILA. ¿Confirmas que revisaste en el documento físico si aplica impuesto adicional (ILA) además de IVA?')) {
-      return;
-    }
-  }
-
   pushUndo();
   const summary = {};
 
@@ -12032,9 +11956,7 @@ function aiConfirmImport() {
   });
   if (revisarPapelNuevo) notify('📋 ' + revisarPapelNuevo + ' tarea(s) «revisar papel» — panel ámbar en Facturas Proveedores');
 
-  // ── Import facturas normally ──
-  const chkPreciosDoc = document.getElementById('ai-chk-precios');
-  let preciosOcrRegistrados = 0;
+  // ── Import facturas normally (solo cabecera, sin líneas de productos) ──
   facturas.forEach(r => {
     const provName = resolveProvName(r);
     if (!state.facturas[provName]) state.facturas[provName] = [];
@@ -12060,24 +11982,9 @@ function aiConfirmImport() {
       montoOtrosImpuestos: r.montoOtrosImpuestos || 0,
       totalDoc: r.totalDoc || 0,
       comentario: r.comentario || (r.observacion ? '⚠ ' + r.observacion : ''),
-      items: Array.isArray(r.items) ? r.items.map(function(it) {
-        return {
-          descripcion: it.descripcion || '',
-          cantidad: it.cantidad,
-          unidad: it.unidad || '',
-          precioUnit: it.precioUnit || 0,
-          subtotal: it.subtotal || 0,
-          precioOriginal: it.precioOriginal || 0,
-          eraNetoIVA: !!it.eraNetoIVA,
-          invProdId: it.invProdId || '',
-          categoria: it.categoria || ''
-        };
-      }) : []
+      items: []
     };
     state.facturas[provName].push(facObj);
-    if (chkPreciosDoc && chkPreciosDoc.checked && facObj.items && facObj.items.length) {
-      preciosOcrRegistrados += invRegistrarPreciosDesdeFacturaDoc_(provName, facObj);
-    }
     if (rutNorm && rutNorm.length > 4) {
       ensureProvRuts();
       if (!state.provRuts[provName]) state.provRuts[provName] = normRut(r.rut||'');
@@ -12104,102 +12011,7 @@ function aiConfirmImport() {
   facCheckAllDuplicates();
   facRender();
 
-  // ── También importar a Inventario si está marcado ──
-  const chkInv   = document.getElementById('ai-chk-inv');
-  const invItems = window._aiInvItems || [];
-  // Attach provider name to each item
-  if (invItems.length && _aiParsedRows.length) {
-    const mainProv = resolveProvName(_aiParsedRows.find(r=>r.tipoDoc==='factura')||_aiParsedRows[0]);
-    invItems.forEach(it => { if (!it._provNombre) it._provNombre = mainProv; });
-  }
-  if (chkInv?.checked && invItems.length) {    invInit();
-    const pedidoEnCajas = !!(document.getElementById('ai-fac-pedido-en-cajas') && document.getElementById('ai-fac-pedido-en-cajas').checked);
-    // Get or create active week
-    if (!state.semanaActiva) {
-      const hoy = new Date();
-      const nombre = `Semana ${hoy.toLocaleDateString('es-CL')}`;
-      const stockInicial = {};
-      (state.inventario||[]).forEach(p => { stockInicial[p.id] = p.stock||0; });
-      state.semanaActiva = {
-        id: 'sem_'+Date.now(), nombre, fechaInicio: hoy.toLocaleDateString('es-CL'),
-        stockInicial, ordenes: [], cerrada: false
-      };
-      invAgregarOrdenInterna(state.semanaActiva, '1° Pedido');
-    }
-    const orden = state.semanaActiva.ordenes[0];
-    if (orden) {
-      let added = 0;
-      invItems.forEach((it, i) => {
-        // Check individual product checkbox
-        const chkProd = document.querySelector(`.ai-chk-prod[data-idx="${i}"]`);
-        if (chkProd && !chkProd.checked) return; // skip unchecked products
-        const qtyRaw = cerebrusParseQuantity(document.getElementById('ai-inv-qty-'+i)?.value ?? it.cantidad) || 0;
-        const precio = parseInt((document.getElementById('ai-inv-price-'+i)?.value||it.precioUnit||'0').toString().replace(/[^\d]/g,''),10)||0;
-        if (!qtyRaw) return;
-        // Try to match by invProdId first, then by name
-        let prod = it.invProdId ? (state.inventario||[]).find(p=>p.id===it.invProdId) : null;
-        if (!prod) {
-          const dk = invNameDedupeKey(it.descripcion || '');
-          prod = (state.inventario||[]).find(p => invNameDedupeKey(p.nombre) === dk);
-        }
-        if (!prod) {
-          const desc = (it.descripcion||'').toLowerCase();
-          prod = (state.inventario||[]).find(p => desc.includes(p.nombre.toLowerCase()) || p.nombre.toLowerCase().includes(desc.split(' ')[0]));
-        }
-        let qty = qtyRaw;
-        if (prod && pedidoEnCajas) {
-          const uxc = invPiezasPorEmbalaje(prod);
-          if (uxc > 0) qty = qtyRaw * uxc;
-        }
-        if (prod) {
-          // Add to existing item in order
-          const existing = orden.items.find(x=>x.prodId===prod.id);
-          if (existing) { existing.qty += qty; if (precio) existing.precio = precio; }
-          else orden.items.push({ prodId:prod.id, qty, precio, prov:'', unidadPedido:(prod.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 });
-          // Guardar precio en fuente unificada
-          if (precio) {
-            const provNombreExist = it._provNombre || 'Importado';
-            invUpsertPrecioProveedor(prod.id, provNombreExist, precio);
-          }
-          added++;
-        } else {
-          // Create new product — detect category from name
-          const nombre = it.descripcion || '';
-          const nombreU = nombre.toUpperCase();
-          let cat = 'Sin categoría';
-          if (/CARNE|VACUNO|LOMO|FILETE|COSTILL|CERDO|POLLO|CORDERO|PAVO|CORRAL|CHACO|MOLIDA|POSTA|ENTRAÑA|ASADO|PLATEADA/.test(nombreU)) cat = 'Carnes y Aves';
-          else if (/SALMON|PESCADO|MERLUZA|ATUN|REINETA|CONGRIO|MARISCOS|CAMARON|CHORITO|OSTIÓN|PULPO|JIBIA/.test(nombreU)) cat = 'Pescados y Mariscos';
-          else if (/TOMATE|LECHUGA|CEBOLLA|AJO|ZANAHORIA|PIMENTÓN|PEPINO|APIO|CILANTRO|PEREJIL|VERDURA|VEGETAL|PAPA|FRUTA|NARANJA|LIMON|PALTA|MANZANA/.test(nombreU)) cat = 'Frutas y Verduras';
-          else if (/LECHE|QUESO|MANTEQUILLA|CREMA|YOGUR|LACTEO/.test(nombreU)) cat = 'Lácteos';
-          else if (/HARINA|ARROZ|PASTA|FIDEOS|ACEITE|VINAGRE|SAL|AZUCAR|CONDIMENTO|ESPECIA/.test(nombreU)) cat = 'Abarrotes';
-          else if (/VINO|CERVEZA|PISCO|LICOR|BEBIDA|JUGO|AGUA|GASEOSA/.test(nombreU)) cat = 'Aguas y Bebidas';
-          else if (/PAN|HALLULLA|MARRAQUETA|BAGUETTE/.test(nombreU)) cat = 'Panadería';
-          else if (/HUEVO/.test(nombreU)) cat = 'Huevos';
-
-          const provNombre = it._provNombre || 'Proveedor';
-          const newProd = {
-            id: 'inv_ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
-            nombre: invFormatProductNombre(it.descripcion || '') || String(it.descripcion || '').trim() || 'SIN NOMBRE',
-            cat,
-            unidad: it.unidad||'un',
-            stock: 0, stockMin: 0
-          };
-          if (!state.inventario) state.inventario = [];
-          state.inventario.push(newProd);
-          if (precio) invUpsertPrecioProveedor(newProd.id, provNombre, precio);
-          orden.items.push({ prodId:newProd.id, qty, precio, prov: provNombre, unidadPedido:(newProd.unidad||'u'), recibido:false, qtyRecibida:0, stockAppliedQty:0 });
-          added++;
-        }
-      });
-      if (added) {
-        notify(`✦ Facturas importadas + ${added} productos al pedido de Inventario`);
-        // Refresh inventory if visible
-        if (document.getElementById('inventario')?.classList.contains('active')) invRender();
-        window._aiInvItems = [];
-        return;
-      }
-    }
-  }
+  // IA no realiza importaciones a inventario/pedido ni carga automática de productos/precios.
 
   // Show RUT conflicts
   const pending = state._pendingRutConflicts || [];
@@ -12221,9 +12033,7 @@ function aiConfirmImport() {
   const lines = Object.entries(summary).map(([p,n])=>`${n} en ${p}`).join(', ');
   const ncMsg = (ncs.length+nds.length+guias.length+otros.length) > 0
     ? ` · ${ncs.length+nds.length+guias.length+otros.length} doc(s) pendiente(s) de acción` : '';
-  const prMsg = (typeof preciosOcrRegistrados === 'number' && preciosOcrRegistrados > 0)
-    ? ` · ${preciosOcrRegistrados} precio(s) de referencia guardado(s) en inventario` : '';
-  notify(`✦ ${facturas.length} facturas importadas${lines?' — '+lines:''}${ncMsg}${prMsg}`);
+  notify(`✦ ${facturas.length} facturas importadas${lines?' — '+lines:''}${ncMsg}`);
 }
 
 // ============================================================

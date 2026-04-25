@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.22.6",
-  "notes": "Semana Actual: pagos de egresos ahora permiten descuento automático opcional de Cuenta Bancaria empresa."
+  "version": "2026.04.22.7",
+  "notes": "Facturas IA: importación solo cabecera (sin productos, sin precios, sin pedido/inventario)."
 }
