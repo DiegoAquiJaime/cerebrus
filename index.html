@@ -3908,6 +3908,7 @@ body.dark-mode .conflict-overlay{
         <button class="cred-filter-btn"        id="crf-pancho"  onclick="credFilter('pancho')">🟣 Schele/Pancho</button>
         <button class="cred-filter-btn"        id="crf-activos" onclick="credFilter('activos')">Activos</button>
         <button class="cred-filter-btn"        id="crf-pagados" onclick="credFilter('pagados')">Pagados</button>
+        <button class="cred-filter-btn" onclick="credOpenPagosReport()">📄 Informe pagos</button>
         <button class="btn-nueva-cred" onclick="toggleNuevoCred()" style="margin-left:auto;margin-bottom:0;">+ Nuevo Crédito</button>
       </div>
 
@@ -3983,6 +3984,40 @@ body.dark-mode .conflict-overlay{
         <div class="cred-modal-footer">
           <button class="cred-modal-cancel" onclick="closeCredModalBtn()">Cancelar</button>
           <button class="cred-modal-ok" onclick="confirmCredPago()">✓ Confirmar pago</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reporte historial de pagos de créditos -->
+  <div class="cred-modal-overlay" id="credPagosReportModal" onclick="credClosePagosReport(event)">
+    <div class="cred-modal" style="width:980px;max-width:96vw;">
+      <div class="cred-modal-head">
+        <h3>📄 Informe historial de pagos</h3>
+        <button onclick="credClosePagosReportBtn()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
+      </div>
+      <div class="cred-modal-body" style="padding:14px 16px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:11px;color:#64748b;">Fecha efectiva = fecha real del pago (manual). Registro = cuándo se cargó en sistema.</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="cred-filter-btn" onclick="credExportPagosReportCsv()">⬇ CSV</button>
+            <button class="cred-filter-btn" onclick="credClosePagosReportBtn()">Cerrar</button>
+          </div>
+        </div>
+        <div id="cred-pagos-report-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;"></div>
+        <div style="max-height:56vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+          <table class="cred-table" style="min-width:900px;">
+            <thead><tr>
+              <th>Crédito</th>
+              <th>Acreedor</th>
+              <th>Monto</th>
+              <th>Fecha efectiva</th>
+              <th>Pagado por</th>
+              <th>Fecha registro</th>
+              <th>Usuario registro</th>
+            </tr></thead>
+            <tbody id="cred-pagos-report-tbody"></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -6579,7 +6614,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.8';
+const APP_VERSION = '2026.04.25.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -8150,6 +8185,7 @@ let _credFilter = 'todos';
 let _credModal  = null;
 let _credSaving = false;
 let _credHistOpen = null;
+let _credPagosReportRows = [];
 
 function credSaldo(c)   { return Math.max(0, (c.valorPagar||0) - (c.totalPagado||0)); }
 function credCuotaVal(c){ return (c.totalCuotas||0) > 0 ? Math.round((c.valorPagar||0) / c.totalCuotas) : CRED_CUOTA_STD; }
@@ -8180,6 +8216,52 @@ function credRecalcAfterPagos(c) {
   const saldo = credSaldo(c);
   c.cuotasRest = saldo <= 0 ? 0 : Math.max(0, Math.round(saldo / credCuotaVal(c)));
   return saldo;
+}
+
+function credParseClDateToKey(d) {
+  const s = String(d || '').trim();
+  const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (!m) return '';
+  const dd = String(parseInt(m[1],10)).padStart(2,'0');
+  const mm = String(parseInt(m[2],10)).padStart(2,'0');
+  const yy = String(parseInt(m[3],10));
+  return yy + '-' + mm + '-' + dd;
+}
+
+function credApplyM13CorrectionIfNeeded() {
+  if (!state || !Array.isArray(state.creditos)) return;
+  if (!state._credFixM13_20260425) state._credFixM13_20260425 = { applied: false };
+  if (state._credFixM13_20260425.applied) return;
+  const c = state.creditos.find(function(x) {
+    const id = String((x && x.id) || '').toUpperCase();
+    return id === 'M0013' || id === 'M13';
+  });
+  if (!c) {
+    state._credFixM13_20260425.applied = true;
+    return;
+  }
+  const cuota = credCuotaVal(c) || CRED_CUOTA_STD;
+  const targetCuotasRest = 5;
+  const targetSaldo = targetCuotasRest * cuota;
+  const targetPagado = Math.max(0, (c.valorPagar || 0) - targetSaldo);
+  c.totalPagado = targetPagado;
+  c.cuotasRest = targetCuotasRest;
+  if (!Array.isArray(c.pagosHist)) c.pagosHist = [];
+  const has1904 = c.pagosHist.some(function(p) { return String((p && p.fecha) || '') === '19-04-2026'; });
+  if (!has1904) {
+    c.pagosHist.unshift({
+      monto: cuota,
+      fecha: '19-04-2026',
+      user: 'Registro histórico',
+      ts: Date.now(),
+      fechaRegistro: new Date().toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'}),
+      horaRegistro: new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
+      userRegistro: (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'Sistema',
+      nota: 'Ajuste M13: última cuota pagada 19-04-2026'
+    });
+  }
+  state._credFixM13_20260425.applied = true;
+  markUnsaved();
 }
 
 function calcCredKpis() {
@@ -8220,6 +8302,7 @@ function credVisible(c) {
 
 function renderCreditos() {
   if (!state.creditos) state.creditos = makeDefaultCreditos();
+  credApplyM13CorrectionIfNeeded();
   calcCredKpis();
   const tbody = document.getElementById('cred-tbody');
   if (!tbody) return;
@@ -8442,6 +8525,107 @@ function credUndoPagoByKey(credId, key) {
   const nuevoSaldo = credRecalcAfterPagos(c);
   renderCreditos();
   notify(`↶ Pago puntual deshecho en ${c.id} · saldo: ${fmt(nuevoSaldo)}`);
+}
+
+function credCollectPagosRows() {
+  const rows = [];
+  (state.creditos || []).forEach(function(c) {
+    const acreedor = c.otorgado === 'alberto' ? 'Alberto' : (c.otorgado === 'pancho' ? 'Schele/Pancho' : (c.otorgado || '—'));
+    (Array.isArray(c.pagosHist) ? c.pagosHist : []).forEach(function(p, i) {
+      rows.push({
+        credId: c.id || '—',
+        acreedor: acreedor,
+        monto: Number(p.monto || 0),
+        fecha: p.fecha || '—',
+        fechaKey: credParseClDateToKey(p.fecha),
+        user: p.user || '—',
+        fechaRegistro: p.fechaRegistro || '—',
+        horaRegistro: p.horaRegistro || '',
+        userRegistro: p.userRegistro || '—',
+        ts: Number(p.ts || 0) || 0,
+        idx: i
+      });
+    });
+  });
+  rows.sort(function(a, b) {
+    if (a.fechaKey && b.fechaKey && a.fechaKey !== b.fechaKey) return b.fechaKey.localeCompare(a.fechaKey);
+    return (b.ts || 0) - (a.ts || 0);
+  });
+  return rows;
+}
+
+function credRenderPagosReport() {
+  const tbody = document.getElementById('cred-pagos-report-tbody');
+  const kpis = document.getElementById('cred-pagos-report-kpis');
+  if (!tbody || !kpis) return;
+  _credPagosReportRows = credCollectPagosRows();
+  if (!_credPagosReportRows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:18px 10px;">Sin pagos registrados.</td></tr>';
+    kpis.innerHTML = '';
+    return;
+  }
+  const total = _credPagosReportRows.reduce((s, r) => s + (r.monto || 0), 0);
+  const first = _credPagosReportRows[_credPagosReportRows.length - 1];
+  const last = _credPagosReportRows[0];
+  kpis.innerHTML = `
+    <div class="cred-kpi" style="padding:9px 12px;min-width:170px;"><div class="cred-kpi-label">Total pagos registrados</div><div class="cred-kpi-val" style="font-size:16px;">${_credPagosReportRows.length}</div></div>
+    <div class="cred-kpi" style="padding:9px 12px;min-width:190px;"><div class="cred-kpi-label">Monto acumulado</div><div class="cred-kpi-val" style="font-size:16px;color:var(--success);">${fmt(total)}</div></div>
+    <div class="cred-kpi" style="padding:9px 12px;min-width:220px;"><div class="cred-kpi-label">Rango fecha efectiva</div><div class="cred-kpi-sub" style="font-size:11px;color:#334155;">${esc(first.fecha)} → ${esc(last.fecha)}</div></div>
+  `;
+  tbody.innerHTML = _credPagosReportRows.map(function(r) {
+    return `<tr>
+      <td><span class="cred-nro">${esc(r.credId)}</span></td>
+      <td>${esc(r.acreedor)}</td>
+      <td style="color:var(--success);font-weight:700;">${fmt(r.monto)}</td>
+      <td>${esc(r.fecha)}</td>
+      <td>${esc(r.user)}</td>
+      <td>${esc((r.fechaRegistro || '—') + (r.horaRegistro ? ' ' + r.horaRegistro : ''))}</td>
+      <td>${esc(r.userRegistro || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function credOpenPagosReport() {
+  credRenderPagosReport();
+  const m = document.getElementById('credPagosReportModal');
+  if (m) m.classList.add('open');
+}
+
+function credClosePagosReport(e) {
+  if (e.target === document.getElementById('credPagosReportModal')) credClosePagosReportBtn();
+}
+
+function credClosePagosReportBtn() {
+  const m = document.getElementById('credPagosReportModal');
+  if (m) m.classList.remove('open');
+}
+
+function credExportPagosReportCsv() {
+  const rows = _credPagosReportRows && _credPagosReportRows.length ? _credPagosReportRows : credCollectPagosRows();
+  if (!rows.length) { notify('⚠ No hay pagos para exportar'); return; }
+  const escCsv = function(v) {
+    const s = String(v == null ? '' : v);
+    return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const header = ['Credito','Acreedor','Monto','Fecha efectiva','Pagado por','Fecha registro','Hora registro','Usuario registro'];
+  const lines = [header.join(';')];
+  rows.forEach(function(r) {
+    lines.push([
+      r.credId, r.acreedor, r.monto, r.fecha, r.user, r.fechaRegistro, r.horaRegistro, r.userRegistro
+    ].map(escCsv).join(';'));
+  });
+  const csv = '\ufeff' + lines.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cerebrus_creditos_historial_pagos_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() {
+    try { document.body.removeChild(a); } catch(e){}
+    URL.revokeObjectURL(url);
+  }, 0);
 }
 
 function toggleNuevoCred() {

@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.22.8",
-  "notes": "Semana Actual: descuento automático de banco ahora refleja inmediatamente en los campos de UI."
+  "version": "2026.04.25.1",
+  "notes": "Créditos: corrección M13 (5 cuotas), historial visible y nuevo informe/exporte de pagos con fecha efectiva."
 }
