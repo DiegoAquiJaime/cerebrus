@@ -6579,7 +6579,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.22.7';
+const APP_VERSION = '2026.04.22.8';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -22340,8 +22340,17 @@ function sacDescontarBancoPorEgreso_(monto, motivo) {
   const m = Math.max(0, Math.round(Number(monto) || 0));
   if (!m) return;
   if (!state.cajaEmpresa) state.cajaEmpresa = {};
-  state.cajaEmpresa.banco = Math.round((Number(state.cajaEmpresa.banco) || 0) - m);
+  const nuevoBanco = Math.round((Number(state.cajaEmpresa.banco) || 0) - m);
+  state.cajaEmpresa.banco = nuevoBanco;
   state.cajaEmpresa.bancoUpd = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + ' · auto egreso';
+  const sacInp = document.getElementById('sac-banco');
+  if (sacInp && document.activeElement !== sacInp) sacInp.value = nuevoBanco ? fmtCL(nuevoBanco, 0, 2) : '';
+  const dashInp = document.getElementById('dash-banco-empresa');
+  if (dashInp && document.activeElement !== dashInp) dashInp.value = nuevoBanco ? fmtCL(nuevoBanco, 0, 2) : '';
+  const sacUpd = document.getElementById('sac-banco-upd');
+  if (sacUpd) sacUpd.textContent = 'Act. ' + state.cajaEmpresa.bancoUpd;
+  const dashUpd = document.getElementById('dash-banco-upd');
+  if (dashUpd) dashUpd.textContent = 'Act. ' + state.cajaEmpresa.bancoUpd;
   sacCalcBalance();
   if (typeof updateTotalDisponible === 'function') updateTotalDisponible();
   notify('🏦 Cuenta bancaria empresa descontada: ' + fmt(m) + (motivo ? ' · ' + motivo : ''));
