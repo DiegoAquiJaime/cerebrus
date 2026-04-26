@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.26.1",
-  "notes": "Inventario: limpieza one-shot de todos los precios para recarga manual; IA queda en modo solo factura."
+  "version": "2026.04.26.2",
+  "notes": "Conteo rápido: botón Stock en 0 para reset masivo por filtro o inventario completo."
 }

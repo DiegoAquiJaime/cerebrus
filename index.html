@@ -4865,6 +4865,7 @@ body.dark-mode .conflict-overlay{
               <select id="conteo-cat-filter" onchange="conteoRender()" style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:inherit;font-size:13px;min-height:42px;">
                 <option value="todas">Todas las categorías</option>
               </select>
+              <button onclick="conteoResetStockCero()" class="fac-btn" style="min-height:42px;font-size:13px;padding:8px 16px;border-color:#ef4444;color:#ef4444;">🧹 Stock en 0</button>
               <button onclick="conteoGuardarTodo()" class="fac-btn primary" style="min-height:42px;font-size:13px;padding:8px 16px;">💾 Guardar conteo</button>
             </div>
           </div>
@@ -6614,7 +6615,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.26.1';
+const APP_VERSION = '2026.04.26.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -17252,6 +17253,25 @@ function conteoGuardarTodo() {
   // All changes are already saved on each input change
   invRender(); // refresh main inventory view
   notify('✅ Conteo guardado — stock actualizado para todos los productos');
+}
+
+function conteoResetStockCero() {
+  invInit();
+  const catFilter = document.getElementById('conteo-cat-filter');
+  const selCat = catFilter?.value || 'todas';
+  const targets = (state.inventario || []).filter(function(p) {
+    if (selCat !== 'todas' && (p.cat || 'Sin categoría') !== selCat) return false;
+    return true;
+  });
+  if (!targets.length) { notify('⚠ No hay productos para resetear en este filtro'); return; }
+  const scopeTxt = selCat === 'todas' ? 'todo el inventario' : ('la categoría "' + selCat + '"');
+  if (!confirm('¿Poner en 0 el stock de ' + scopeTxt + '?\n\nProductos afectados: ' + targets.length + '\nEsta acción se puede deshacer con Undo.')) return;
+  pushUndo();
+  targets.forEach(function(p) { p.stock = 0; });
+  markUnsaved();
+  conteoRender();
+  invRender();
+  notify('🧹 Stock en 0 aplicado (' + targets.length + ' producto' + (targets.length !== 1 ? 's' : '') + ').');
 }
 
 // ============================================================
