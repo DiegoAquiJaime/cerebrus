@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.26.2",
-  "notes": "Conteo rápido: botón Stock en 0 para reset masivo por filtro o inventario completo."
+  "version": "2026.04.26.3",
+  "notes": "Pedido semanal: filtros de lista (familia/subfamilia/proveedor/busqueda) aplicados en tabla con comparacion normalizada."
 }

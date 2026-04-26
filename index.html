@@ -4789,21 +4789,22 @@ body.dark-mode .conflict-overlay{
 
         <!-- Agregar al pedido desde inventario -->
         <div id="inv-add-pedido-card" class="inv-pedido-card" style="display:none;">
-          <div style="font-size:12px;font-weight:800;margin-bottom:10px;">🛒 Agregar producto desde inventario</div>
+          <div style="font-size:12px;font-weight:800;margin-bottom:10px;">🔎 Filtrar lista de pedido semanal</div>
           <div style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.45;">
-            El pedido suma cantidades al plan semanal y <b>no modifica el stock</b> hasta que marques recibido / cierres semana.
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
-            <span style="font-size:10px;color:#64748b;font-weight:700;">Familia</span>
-            <select id="inv-pedido-fil-familia" class="inv-filter-select" onchange="invRenderPedido()" style="min-width:220px;">
-              <option value="">Todas las familias</option>
-            </select>
+            Filtra la tabla de abajo por proveedor, familia o subfamilia (igual que Inventario). <b>No modifica el stock</b>.
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <select id="inv-pedido-add-prod" class="inv-filter-select" style="min-width:220px;flex:1;"></select>
-            <select id="inv-pedido-add-prov" class="inv-filter-select" style="min-width:180px;flex:1;"></select>
-            <input id="inv-pedido-add-qty" class="inv-pedido-qty" type="text" inputmode="decimal" placeholder="Cantidad" style="width:110px;">
-            <button class="fac-btn primary" onclick="invAddPedidoDesdePanel()">+ Agregar</button>
+            <input id="inv-pedido-fil-q" class="inv-search" placeholder="🔍 Buscar nombre/categoría/familia/subfamilia/proveedor…" oninput="invRenderPedido()" style="min-width:260px;flex:1;">
+            <select id="inv-pedido-fil-familia" class="inv-filter-select" onchange="invRenderPedido()" style="min-width:180px;">
+              <option value="">Todas las familias</option>
+            </select>
+            <select id="inv-pedido-fil-subfamilia" class="inv-filter-select" onchange="invRenderPedido()" style="min-width:200px;">
+              <option value="">Todas las subfamilias</option>
+            </select>
+            <select id="inv-pedido-fil-proveedor" class="inv-filter-select" onchange="invRenderPedido()" style="min-width:200px;">
+              <option value="">Todos los proveedores</option>
+            </select>
+            <button class="fac-btn" onclick="invPedidoLimpiarFiltros()" style="white-space:nowrap;">Limpiar</button>
           </div>
         </div>
 
@@ -6615,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.26.2';
+const APP_VERSION = '2026.04.26.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -14465,9 +14466,10 @@ function invRenderPedido() {
   const sem   = invGetSemana();
   const wrap  = document.getElementById('inv-ordenes-wrap'); if(!wrap) return;
   const addCard = document.getElementById('inv-add-pedido-card');
-  const addProd = document.getElementById('inv-pedido-add-prod');
-  const addFam  = document.getElementById('inv-pedido-fil-familia');
-  const addQty  = document.getElementById('inv-pedido-add-qty');
+  const filQ    = document.getElementById('inv-pedido-fil-q');
+  const filFam  = document.getElementById('inv-pedido-fil-familia');
+  const filSub  = document.getElementById('inv-pedido-fil-subfamilia');
+  const filProv = document.getElementById('inv-pedido-fil-proveedor');
   const btnAdd    = document.getElementById('inv-btn-add-orden');
   const btnInit   = document.getElementById('inv-btn-iniciar');
   const btnCerrar = document.getElementById('inv-btn-cerrar');
@@ -14501,52 +14503,33 @@ function invRenderPedido() {
   const btnTransfer = document.getElementById('inv-btn-transfer');
   if (btnTransfer) btnTransfer.style.display = '';
   if (addCard) addCard.style.display = sem.cerrada ? 'none' : '';
-  if (addFam) {
-    const prevFam = addFam.value || '';
+  if (filFam) {
+    const prevFam = filFam.value || '';
     const familias = [...new Set((state.inventario||[]).map(p => (p.familia || '').trim()).filter(Boolean))]
       .filter(f => f !== 'Sin familia')
       .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
-    addFam.innerHTML = '<option value="">Todas las familias</option>' + familias.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
-    if (prevFam && familias.includes(prevFam)) addFam.value = prevFam;
+    filFam.innerHTML = '<option value="">Todas las familias</option>' + familias.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    const keepFam = familias.find(function(f) { return invNormTxt(f) === invNormTxt(prevFam); });
+    if (keepFam) filFam.value = keepFam;
   }
-
+  if (filSub) {
+    const prevSub = filSub.value || '';
+    const subfamilias = [...new Set((state.inventario || []).map(p => (p.subfamilia || '').trim()).filter(Boolean))]
+      .filter(s => s !== 'Sin subfamilia')
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+    filSub.innerHTML = '<option value="">Todas las subfamilias</option>' + subfamilias.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join('');
+    const keepSub = subfamilias.find(function(s) { return invNormTxt(s) === invNormTxt(prevSub); });
+    if (keepSub) filSub.value = keepSub;
+  }
   function invPedidoProveedorCatalog() { return invPedidoProveedorCatalogFromState(sem); }
-
-  const famFilter = (addFam?.value || '').trim();
-  if (addProd) {
-    const prev = addProd.value || '';
-    addProd.innerHTML = '<option value="">Seleccionar producto…</option>' + state.inventario
-      .slice()
-      .filter(p => !famFilter || (p.familia || '') === famFilter)
-      .sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||'','es',{sensitivity:'base'}))
-      .map(p => `<option value="${esc(p.id)}">${esc(p.nombre)}${p.unidad?' · '+esc(p.unidad):''}${(p.stock||0)?' · stock '+(p.stock||0):''}</option>`)
-      .join('');
-    if (prev && state.inventario.some(p=>p.id===prev)) addProd.value = prev;
-  }
-  if (addQty && !addQty.value) addQty.value = '1';
-  const addProv = document.getElementById('inv-pedido-add-prov');
-  if (addProv) {
-    const prevP = addProv.value || '';
+  if (filProv) {
+    const prevProv = filProv.value || '';
     const provsAdd = invPedidoProveedorCatalog();
-    addProv.innerHTML = [
-      `<option value="">— proveedor —</option>`,
-      ...provsAdd.map(p => `<option value="${esc(p)}">${esc(p)}</option>`),
-      `<option value="__otro__">Otro</option>`,
-      `<option value="__nuevo__">+ Nuevo proveedor…</option>`
-    ].join('');
-    if (prevP) addProv.value = prevP;
-  }
-  if (addProd && addProv) {
-    addProd.onchange = function() {
-      const p = state.inventario.find(x => x.id === addProd.value);
-      const sug = invProveedorSugeridoPedido(p);
-      if (sug) addProv.value = sug;
-    };
-    if (addProd.value && !addProv.value) {
-      const p = state.inventario.find(x => x.id === addProd.value);
-      const sug = invProveedorSugeridoPedido(p);
-      if (sug) addProv.value = sug;
-    }
+    filProv.innerHTML = '<option value="">Todos los proveedores</option>' + provsAdd.map(function(p) {
+      return `<option value="${esc(p)}">${esc(p)}</option>`;
+    }).join('');
+    const keepProv = provsAdd.find(function(p) { return invNormTxt(p) === invNormTxt(prevProv); });
+    if (keepProv) filProv.value = keepProv;
   }
 
   let totalCosto=0,totalItems=0,provSet=new Set(),recibidos=0,totalOrden=0;
@@ -14557,10 +14540,24 @@ function invRenderPedido() {
   set('inv-sk-provs',provSet.size); set('inv-sk-recib',totalOrden?Math.round(recibidos/totalOrden*100)+'%':'—');
 
   const provs = invPedidoProveedorCatalog();
+  const qFilter = invNormTxt((filQ?.value || '').trim());
+  const famFilter = invNormTxt((filFam?.value || '').trim());
+  const subFilter = invNormTxt((filSub?.value || '').trim());
+  const provFilter = invNormTxt((filProv?.value || '').trim());
   wrap.innerHTML = sem.ordenes.map((orden,oi) => {
     const ordenTotal = orden.items.reduce((s,it)=>s+it.qty*it.precio,0);
     const rows = orden.items.map((it,ii) => {
       const prod = state.inventario.find(p=>p.id===it.prodId); if(!prod) return '';
+      const provTxt = String(it.prov || prod.prov || '').trim();
+      if (famFilter && invNormTxt(prod.familia || '') !== famFilter) return '';
+      if (subFilter && invNormTxt(prod.subfamilia || '') !== subFilter) return '';
+      if (provFilter && invNormTxt(provTxt) !== provFilter) return '';
+      if (qFilter) {
+        const hay = invNormTxt([
+          prod.nombre, prod.cat, prod.familia, prod.subfamilia, prod.unidad, provTxt
+        ].join(' '));
+        if (!hay.includes(qFilter)) return '';
+      }
       const stockAct = prod.stock||0; const minimo = prod.minimo||0;
       const sc = stockAct<=0?'inv-sem-rojo':stockAct<=minimo?'inv-sem-amarillo':'inv-sem-verde';
       const provOpts = ['',...provs,'__otro__','__nuevo__'].map(p=>{
@@ -14612,6 +14609,7 @@ function invRenderPedido() {
         <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
         <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
     }).filter(Boolean).join('');
+    const bodyRows = rows || `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">Sin productos para este filtro.</td></tr>`;
     return `<div class="inv-orden-card"><div class="inv-orden-head">
       <span class="inv-orden-num">${esc(orden.label)}</span>
       <div class="inv-orden-title">${esc(orden.fecha)}</div>
@@ -14620,11 +14618,23 @@ function invRenderPedido() {
     </div>
     <div class="inv-orden-body"><table class="inv-orden-table">
       <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Recepción</th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div>`;
+      <tbody>${bodyRows}</tbody></table></div></div>`;
   }).join('');
 
   invRenderSugerencias();
   calAlertForWeek(sem);
+}
+
+function invPedidoLimpiarFiltros() {
+  const q = document.getElementById('inv-pedido-fil-q');
+  const f = document.getElementById('inv-pedido-fil-familia');
+  const s = document.getElementById('inv-pedido-fil-subfamilia');
+  const p = document.getElementById('inv-pedido-fil-proveedor');
+  if (q) q.value = '';
+  if (f) f.value = '';
+  if (s) s.value = '';
+  if (p) p.value = '';
+  invRenderPedido();
 }
 
 function invFindOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.id!==semId)return null;return sem.ordenes.find(o=>o.id===ordenId);}
