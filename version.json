@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.25.2",
-  "notes": "Créditos: guard extra para aplicar corrección M13 solo con módulo Créditos activo."
+  "version": "2026.04.26.1",
+  "notes": "Inventario: limpieza one-shot de todos los precios para recarga manual; IA queda en modo solo factura."
 }

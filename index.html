@@ -6614,7 +6614,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.25.2';
+const APP_VERSION = '2026.04.26.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13089,6 +13089,47 @@ function invMigrateCategoryNames_() {
   return changed;
 }
 
+function invClearAllPreciosOneShot_() {
+  if (!state || state._invPreciosCleared_20260426) return 0;
+  let changed = 0;
+  if (state.preciosProveedor && Object.keys(state.preciosProveedor).length) {
+    state.preciosProveedor = {};
+    changed++;
+  }
+  (state.inventario || []).forEach(function(p) {
+    if (Array.isArray(p.precios) && p.precios.length) {
+      p.precios = [];
+      changed++;
+    }
+    if (Array.isArray(p.proveedores) && p.proveedores.length) {
+      let any = false;
+      p.proveedores = p.proveedores.map(function(pr) {
+        if (pr && typeof pr === 'object' && Number(pr.precio || 0) > 0) {
+          any = true;
+          const cp = Object.assign({}, pr);
+          cp.precio = 0;
+          return cp;
+        }
+        return pr;
+      });
+      if (any) changed++;
+    }
+  });
+  if (state.semanaActiva && Array.isArray(state.semanaActiva.ordenes)) {
+    state.semanaActiva.ordenes.forEach(function(o) {
+      (o.items || []).forEach(function(it) {
+        if (Number(it.precio || 0) !== 0 || it.precioMeta) {
+          it.precio = 0;
+          delete it.precioMeta;
+          changed++;
+        }
+      });
+    });
+  }
+  state._invPreciosCleared_20260426 = true;
+  return changed;
+}
+
 function _postLoadSetup() {
   if (!state.creditos)    state.creditos    = makeDefaultCreditos();
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
@@ -13131,6 +13172,7 @@ function _postLoadSetup() {
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
   invMigrateCategoryNames_();
+  const clearedPrecios = invClearAllPreciosOneShot_();
   applyBodegaN3PlantillaIfNeeded();
   applyInventorySnapshot20260331IfNeeded();
   applyPdfMasterAdditionsIfNeeded();
@@ -13154,6 +13196,9 @@ function _postLoadSetup() {
   _calMap = buildCalMap(_calYear);
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
+  if (clearedPrecios > 0) {
+    notify('🧹 Precios de Inventario limpiados (one-shot): ahora debes cargarlos manualmente.');
+  }
   try { cerebrusBitacoraInitSeenIfNeeded(); } catch (e) {}
   setTimeout(function() {
     try { cerebrusBitacoraCleanupReminderMaybe(); } catch (e) {}
