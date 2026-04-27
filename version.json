@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.26.4",
-  "notes": "Pedido semanal: muestra stock actual entre paréntesis junto al nombre del producto en la lista."
+  "version": "2026.04.27.1",
+  "notes": "Fix guardado concurrente: Bodega solo persiste partición de inventario y Semana Actual queda aislada para evitar pisados cruzados."
 }

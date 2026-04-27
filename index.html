@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.26.4';
+const APP_VERSION = '2026.04.27.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -23866,14 +23866,17 @@ async function _prepareConcurrentSafeState() {
 // ── NUBE: guardado por módulos (hojas Part_*) — debe coincidir con PARTITION_PART_IDS en Apps Script
 function splitStateForCloudParts(st) {
   const PART_DEF = [
-    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario'] },
-    { id: 'pFac', keys: ['facturas', 'movimientos'] },
-    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
+    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos'] },
+    { id: 'pFac', keys: ['facturas'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
   ];
+  const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
+  const allowedParts = isBodegaUser ? new Set(['pInv']) : null;
   const stripped = JSON.parse(JSON.stringify(st));
   const parts = {};
   PART_DEF.forEach(def => {
+    if (allowedParts && !allowedParts.has(def.id)) return;
     const obj = {};
     let hasAny = false;
     def.keys.forEach(k => {
@@ -24224,16 +24227,16 @@ async function checkVersion() {
     const res  = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
     const json = await res.json();
     if (json.ok && json.version !== cloudVersion && json.lastUser !== currentUser)
-      showConflict(json.lastUser, json.lastDate);
+      showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
   } catch(e) {}
 }
-function showConflict(user, date, keys) {
+function showConflict(user, date, keys, conflictKey) {
   _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: Array.isArray(keys)?keys:[] };
   set('conflict-msg', user + ' guardó cambios el ' + date + ' mientras estabas editando.');
   document.getElementById('conflict-banner').classList.add('show');
   updateConcurrencyBadge();
   try {
-    var voiceKey = String(user || 'Otro usuario') + '|' + String(date || '');
+    var voiceKey = String(user || 'Otro usuario') + '|' + String(conflictKey || date || '');
     if (voiceKey !== _lastConflictVoiceKey) {
       _lastConflictVoiceKey = voiceKey;
       if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(user, voiceKey);
@@ -24618,16 +24621,24 @@ function notify(msg, duration) {
   window.cerebrusTtsPeerSaved = function(userRaw, eventKey) {
     if (!window.speechSynthesis || isMuted()) return;
     var name = window.cerebrusTtsPeerDisplayName(userRaw);
+    // Evita spam: no repetir avisos de "X guardó" constantemente.
+    var now = Date.now();
+    var peerCdMs = 12 * 60 * 1000; // 12 minutos por usuario/sesión
+    var peerCdKey = 'cerebrus_tts_peer_cd_' + String(name || '').toUpperCase();
+    try {
+      var lastPeerAt = parseInt(sessionStorage.getItem(peerCdKey) || '0', 10) || 0;
+      if (lastPeerAt && (now - lastPeerAt) < peerCdMs) return;
+    } catch (e) {}
     var dedupe = String(eventKey || (String(userRaw || '') + '|' + name));
     var sessionKey = 'cerebrus_tts_peer_' + dedupe;
     try {
       if (sessionStorage.getItem(sessionKey) === '1') return;
       sessionStorage.setItem(sessionKey, '1');
     } catch (e) {}
-    var now = Date.now();
     if (dedupe === _ttsPeerKey && now - _ttsPeerAt < 30000) return;
     _ttsPeerKey = dedupe;
     _ttsPeerAt = now;
+    try { sessionStorage.setItem(peerCdKey, String(now)); } catch (e) {}
     speak(name + ' guardó datos ahora en Cerebrus.', false);
   };
   var _ttsBitacoraAt = 0;
