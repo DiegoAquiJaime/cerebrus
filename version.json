@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.5",
-  "notes": "Restaurar inventario ahora permite reponer también movimientos cuando el JSON los incluye."
+  "version": "2026.04.27.6",
+  "notes": "Restauración de inventario+movimientos ahora limpia filtros de Movimientos y refresca la vista automáticamente."
 }

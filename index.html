@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.5';
+const APP_VERSION = '2026.04.27.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13371,11 +13371,25 @@ function invHandleRestoreFile(file) {
       if (!confirm(msg)) return;
       pushUndo();
       state.inventario = inv;
-      if (hasMovs) state.movimientos = movs;
+      if (hasMovs) {
+        state.movimientos = movs;
+        // Evita falsa impresión de "sin movimientos" por filtros previos activos.
+        const fTipo = document.getElementById('mov-f-tipo');
+        const fDest = document.getElementById('mov-f-dest');
+        const fDesde = document.getElementById('mov-f-desde');
+        const fHasta = document.getElementById('mov-f-hasta');
+        if (fTipo) fTipo.value = '';
+        if (fDest) fDest.value = '';
+        if (fDesde) fDesde.value = '';
+        if (fHasta) fHasta.value = '';
+      }
       if (precios && typeof precios === 'object') state.preciosProveedor = precios;
       if (Array.isArray(cats) && cats.length) state.catInventario = cats;
       if (Array.isArray(units) && units.length) state.unidadesInventario = units;
       invRender();
+      if (hasMovs) {
+        try { movRender(); movRenderDashSemanal(); } catch(e) {}
+      }
       markUnsaved();
       notify(`✅ Restaurado: ${inv.length} productos${hasMovs ? ` y ${movs.length} movimientos` : ''}. Ahora pulsa Guardar.`);
     } catch (e) {
