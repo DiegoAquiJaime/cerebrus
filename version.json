@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.1",
-  "notes": "Fix guardado concurrente: Bodega solo persiste partición de inventario y Semana Actual queda aislada para evitar pisados cruzados."
+  "version": "2026.04.27.2",
+  "notes": "Hotfix concurrencia: Bodega no puede enviar claves de Semana Actual en main; aislamiento total por particiones al guardar nube."
 }

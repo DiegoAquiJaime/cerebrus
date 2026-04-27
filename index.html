@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.1';
+const APP_VERSION = '2026.04.27.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -23875,8 +23875,15 @@ function splitStateForCloudParts(st) {
   const allowedParts = isBodegaUser ? new Set(['pInv']) : null;
   const stripped = JSON.parse(JSON.stringify(st));
   const parts = {};
+  const allPartitionKeys = new Set();
+  PART_DEF.forEach(function(def) { (def.keys || []).forEach(function(k) { allPartitionKeys.add(k); }); });
   PART_DEF.forEach(def => {
-    if (allowedParts && !allowedParts.has(def.id)) return;
+    if (allowedParts && !allowedParts.has(def.id)) {
+      // Critical isolation: if this part is not allowed for current user, ensure
+      // its keys are removed from `main` so they cannot be overwritten indirectly.
+      def.keys.forEach(function(k) { if (stripped[k] !== undefined) delete stripped[k]; });
+      return;
+    }
     const obj = {};
     let hasAny = false;
     def.keys.forEach(k => {
@@ -23889,6 +23896,8 @@ function splitStateForCloudParts(st) {
     // If this client doesn't carry that module, don't overwrite remote part.
     if (hasAny) parts[def.id] = JSON.stringify(obj);
   });
+  // Safety net: never keep partition keys in `main`.
+  allPartitionKeys.forEach(function(k) { if (stripped[k] !== undefined) delete stripped[k]; });
   stripped._partitioned = true;
   stripped._partitionV = 1;
   stripped._partitionIds = PART_DEF.map(d => d.id);
