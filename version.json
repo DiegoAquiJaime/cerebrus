@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.3",
-  "notes": "Desacople de guardado: se envían solo particiones realmente modificadas y se mantiene aislamiento estricto entre Bodega y Semana Actual."
+  "version": "2026.04.27.4",
+  "notes": "Hotfix seguridad inventario: migraciones/plantillas no pueden sobreescribir inventario existente al cargar."
 }

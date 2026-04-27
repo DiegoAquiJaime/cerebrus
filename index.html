@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.3';
+const APP_VERSION = '2026.04.27.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -12424,6 +12424,7 @@ const INV_LISTA_BODEGA3_VER = 'lista_bodega3_maestra_oficial_2026_04_20_v5';
 function applyBodegaN3PlantillaIfNeeded() {
   try {
     if (state.invBodegaN3Applied === INV_LISTA_BODEGA3_VER) return;
+    if (Array.isArray(state.inventario) && state.inventario.length > 0) return;
     var rows = typeof window !== 'undefined' && Array.isArray(window.INV_BODEGA_N3_ITEMS) ? window.INV_BODEGA_N3_ITEMS : [];
     if (!rows.length) {
       console.warn('applyBodegaN3PlantillaIfNeeded: inv-bodega-n3-data.js no cargó o está vacío');
@@ -12461,6 +12462,7 @@ const INV_PDF_MASTER_APPLIED_VER = '2026-04-01_pdf_v1';
 function applyPdfMasterAdditionsIfNeeded() {
   if (state.invPdfMasterApplied === INV_PDF_MASTER_APPLIED_VER) return;
   if (state.invBodegaN3Applied === INV_LISTA_BODEGA3_VER) return;
+  if (!Array.isArray(state.inventario) || state.inventario.length === 0) return;
   if (!state.inventario) state.inventario = [];
   invEnsureFamiliesState();
   const byKey = {};
@@ -12508,6 +12510,7 @@ function applyPdfMasterAdditionsIfNeeded() {
 function applyInventorySnapshot20260331IfNeeded() {
   if (state.invBodegaN3Applied === INV_LISTA_BODEGA3_VER) return;
   if (state.inventorySnapshotId === INV_SNAPSHOT_ID_20260331 || state.inventorySnapshotId === INV_SNAPSHOT_ID_20260331_V2) return;
+  if (Array.isArray(state.inventario) && state.inventario.length > 0) return;
   state.inventario = (INV_SNAPSHOT_DATA_20260331 || []).map(function(p, idx) {
     const g = invGuessFamilySubfamily(p.nombre, p.cat, p.unidad);
     return {
