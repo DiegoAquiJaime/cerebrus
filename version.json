@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.2",
-  "notes": "Hotfix concurrencia: Bodega no puede enviar claves de Semana Actual en main; aislamiento total por particiones al guardar nube."
+  "version": "2026.04.27.3",
+  "notes": "Desacople de guardado: se envían solo particiones realmente modificadas y se mantiene aislamiento estricto entre Bodega y Semana Actual."
 }

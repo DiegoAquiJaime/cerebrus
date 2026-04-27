@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.2';
+const APP_VERSION = '2026.04.27.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -23864,7 +23864,8 @@ async function _prepareConcurrentSafeState() {
 }
 
 // ── NUBE: guardado por módulos (hojas Part_*) — debe coincidir con PARTITION_PART_IDS en Apps Script
-function splitStateForCloudParts(st) {
+function splitStateForCloudParts(st, opts) {
+  opts = opts || {};
   const PART_DEF = [
     { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos'] },
     { id: 'pFac', keys: ['facturas'] },
@@ -23873,11 +23874,17 @@ function splitStateForCloudParts(st) {
   ];
   const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
   const allowedParts = isBodegaUser ? new Set(['pInv']) : null;
+  const includeParts = opts.includePartIds instanceof Set ? opts.includePartIds : null;
   const stripped = JSON.parse(JSON.stringify(st));
   const parts = {};
   const allPartitionKeys = new Set();
   PART_DEF.forEach(function(def) { (def.keys || []).forEach(function(k) { allPartitionKeys.add(k); }); });
   PART_DEF.forEach(def => {
+    if (includeParts && !includeParts.has(def.id)) {
+      // Partición no incluida en este guardado: nunca debe ir en main.
+      def.keys.forEach(function(k) { if (stripped[k] !== undefined) delete stripped[k]; });
+      return;
+    }
     if (allowedParts && !allowedParts.has(def.id)) {
       // Critical isolation: if this part is not allowed for current user, ensure
       // its keys are removed from `main` so they cannot be overwritten indirectly.
@@ -23903,6 +23910,27 @@ function splitStateForCloudParts(st) {
   stripped._partitionIds = PART_DEF.map(d => d.id);
   parts.main = JSON.stringify({ state: stripped, nid: _nid });
   return parts;
+}
+
+function getChangedPartitionIdsForSave(st) {
+  try {
+    if (!_cloudBaseState || typeof _cloudBaseState !== 'object') return null;
+    const changedKeys = _topLevelChangedKeys(_cloudBaseState, st || {});
+    const out = new Set();
+    if (!changedKeys || !changedKeys.size) return out;
+    const PART_DEF = [
+      { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos'] },
+      { id: 'pFac', keys: ['facturas'] },
+      { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
+      { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
+    ];
+    PART_DEF.forEach(function(def) {
+      if ((def.keys || []).some(function(k) { return changedKeys.has(k); })) out.add(def.id);
+    });
+    return out;
+  } catch (e) {
+    return null;
+  }
 }
 
 // ── CLOUD SAVE ──
@@ -23935,7 +23963,8 @@ async function saveToCloud(description, silent) {
     const stateToSave = compressStateForSave(prep.stateToSave);
 
     try {
-      const parts = splitStateForCloudParts(stateToSave);
+      const changedPartIds = getChangedPartitionIdsForSave(prep.stateToSave);
+      const parts = splitStateForCloudParts(stateToSave, { includePartIds: changedPartIds });
       const resPart = await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
