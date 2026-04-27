@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.4';
+const APP_VERSION = '2026.04.27.5';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13346,16 +13346,18 @@ function invHandleRestoreFile(file) {
     try {
       const txt = String(reader.result || '');
       const data = JSON.parse(txt);
-      let inv = null, precios = null, cats = null, units = null;
+      let inv = null, movs = null, precios = null, cats = null, units = null;
       if (Array.isArray(data)) {
         inv = data;
       } else if (data && data.state && Array.isArray(data.state.inventario)) {
         inv = data.state.inventario;
+        movs = Array.isArray(data.state.movimientos) ? data.state.movimientos : null;
         precios = data.state.preciosProveedor || null;
         cats = data.state.catInventario || null;
         units = data.state.unidadesInventario || null;
       } else if (data && Array.isArray(data.inventario)) {
         inv = data.inventario;
+        movs = Array.isArray(data.movimientos) ? data.movimientos : null;
         precios = data.preciosProveedor || null;
         cats = data.catInventario || null;
         units = data.unidadesInventario || null;
@@ -13364,16 +13366,18 @@ function invHandleRestoreFile(file) {
         notify('⚠ El archivo no contiene inventario válido.');
         return;
       }
-      const msg = `¿Restaurar SOLO inventario desde "${file.name}"?\n\nSe reemplazarán ${state.inventario?.length||0} productos actuales por ${inv.length} del respaldo.\nNo toca Facturas, Créditos, Sebas ni otros módulos.`;
+      const hasMovs = Array.isArray(movs);
+      const msg = `¿Restaurar inventario${hasMovs ? ' y movimientos' : ''} desde "${file.name}"?\n\nSe reemplazarán ${state.inventario?.length||0} productos actuales por ${inv.length} del respaldo.${hasMovs ? `\nTambién se reemplazarán ${state.movimientos?.length||0} movimientos por ${movs.length}.` : ''}\nNo toca Facturas, Créditos, Sebas ni otros módulos.`;
       if (!confirm(msg)) return;
       pushUndo();
       state.inventario = inv;
+      if (hasMovs) state.movimientos = movs;
       if (precios && typeof precios === 'object') state.preciosProveedor = precios;
       if (Array.isArray(cats) && cats.length) state.catInventario = cats;
       if (Array.isArray(units) && units.length) state.unidadesInventario = units;
       invRender();
       markUnsaved();
-      notify(`✅ Inventario restaurado (${inv.length} productos). Ahora pulsa Guardar.`);
+      notify(`✅ Restaurado: ${inv.length} productos${hasMovs ? ` y ${movs.length} movimientos` : ''}. Ahora pulsa Guardar.`);
     } catch (e) {
       notify('⚠ Error leyendo respaldo: ' + (e.message || e));
     }

@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.4",
-  "notes": "Hotfix seguridad inventario: migraciones/plantillas no pueden sobreescribir inventario existente al cargar."
+  "version": "2026.04.27.5",
+  "notes": "Restaurar inventario ahora permite reponer también movimientos cuando el JSON los incluye."
 }
