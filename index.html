@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.27.6';
+const APP_VERSION = '2026.04.28.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -23984,8 +23984,8 @@ async function saveToCloud(description, silent) {
     const stateToSave = compressStateForSave(prep.stateToSave);
 
     try {
-      const changedPartIds = getChangedPartitionIdsForSave(prep.stateToSave);
-      const parts = splitStateForCloudParts(stateToSave, { includePartIds: changedPartIds });
+      // Modo seguro: enviar todas las particiones para evitar cualquier pérdida cruzada.
+      const parts = splitStateForCloudParts(stateToSave);
       const resPart = await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({

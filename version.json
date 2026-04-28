@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.27.6",
-  "notes": "Restauración de inventario+movimientos ahora limpia filtros de Movimientos y refresca la vista automáticamente."
+  "version": "2026.04.28.1",
+  "notes": "Blindaje guardado por particiones: backend conserva módulos omitidos y frontend vuelve a enviar todas las particiones en modo seguro."
 }
