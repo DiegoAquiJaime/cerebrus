@@ -6616,7 +6616,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.28.1';
+const APP_VERSION = '2026.04.29.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -23893,8 +23893,8 @@ function splitStateForCloudParts(st, opts) {
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
   ];
-  const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
-  const allowedParts = isBodegaUser ? new Set(['pInv']) : null;
+  // Seguridad: siempre enviar todas las particiones para evitar vaciados cruzados.
+  const allowedParts = null;
   const includeParts = opts.includePartIds instanceof Set ? opts.includePartIds : null;
   const stripped = JSON.parse(JSON.stringify(st));
   const parts = {};
@@ -23931,6 +23931,27 @@ function splitStateForCloudParts(st, opts) {
   stripped._partitionIds = PART_DEF.map(d => d.id);
   parts.main = JSON.stringify({ state: stripped, nid: _nid });
   return parts;
+}
+
+async function enforceBodegaIsolationOnSave_(stateToSave) {
+  const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
+  if (!isBodegaUser) return stateToSave;
+  try {
+    const remote = await _fetchCloudStateRaw();
+    const merged = JSON.parse(JSON.stringify(stateToSave || {}));
+    const keepRemoteKeys = [
+      'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
+      'sacEfectivo','sacCajaChica','sacCajaChicaNota','sacReservaSaldo','sacReservaMovs','sacMerc',
+      'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos',
+      'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos','cerebrusCalEventos','cerebrusBitacora'
+    ];
+    keepRemoteKeys.forEach(function(k) {
+      if (remote[k] !== undefined) merged[k] = remote[k];
+    });
+    return merged;
+  } catch (e) {
+    return stateToSave;
+  }
 }
 
 function getChangedPartitionIdsForSave(st) {
@@ -23981,7 +24002,8 @@ async function saveToCloud(description, silent) {
       }
     }
 
-    const stateToSave = compressStateForSave(prep.stateToSave);
+    const safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
+    const stateToSave = compressStateForSave(safeStateToSave);
 
     try {
       // Modo seguro: enviar todas las particiones para evitar cualquier pérdida cruzada.

@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.28.1",
-  "notes": "Blindaje guardado por particiones: backend conserva módulos omitidos y frontend vuelve a enviar todas las particiones en modo seguro."
+  "version": "2026.04.29.1",
+  "notes": "Fix crítico guardado Bodega: conserva Semana Actual y demás módulos al guardar, evitando sobrescritura cruzada."
 }
