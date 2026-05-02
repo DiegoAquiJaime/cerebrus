@@ -464,8 +464,9 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-filter-btn{border:1px solid var(--border);background:var(--white);border-radius:6px;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--primary);transition:.15s;}
 .cred-filter-btn.active{background:var(--accent);color:white;border-color:var(--accent);}
 .cred-filter-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
-.cred-table-wrap{background:var(--white);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px;}
+.cred-table-wrap{background:var(--white);border-radius:10px;box-shadow:var(--shadow);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin-bottom:20px;max-width:100%;}
 .cred-table{width:100%;border-collapse:collapse;font-size:12px;}
+#creditos .cred-table-wrap .cred-table{min-width:1180px;}
 .cred-table th{background:#fafbfc;font-weight:700;color:#9aacb8;font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
 .cred-table th:not(:first-child):not(:nth-child(2)){text-align:right;}
 .cred-table td{padding:9px 12px;border-bottom:1px solid #f4f6f8;vertical-align:middle;}
@@ -492,7 +493,8 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
 .btn-pagar{background:var(--success);color:white;border:none;border-radius:5px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .btn-pagar:hover{opacity:.88;}
-.cred-table th.cred-th-actions,.cred-table td.cred-actions-cell{width:1%;white-space:normal;vertical-align:top;}
+.cred-table th.cred-th-actions,.cred-table td.cred-actions-cell{min-width:158px;width:auto;white-space:normal;vertical-align:top;box-sizing:border-box;}
+.cred-table th.cred-th-actions{white-space:nowrap;}
 .cred-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;max-width:100%;box-sizing:border-box;}
 .cred-actions .btn-pagar{margin:0 !important;white-space:normal;line-height:1.2;text-align:center;}
 @media(max-width:900px){
@@ -528,8 +530,6 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-nuevo-grid input,.cred-nuevo-grid select{width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;}
 .cred-nuevo-grid input:focus,.cred-nuevo-grid select:focus{outline:none;border-color:var(--accent);}
 @media(max-width:700px){
-  .cred-table-wrap{overflow-x:auto;}
-  .cred-table{min-width:600px;}
   .cred-kpi-grid{grid-template-columns:1fr 1fr;}
   .cred-nuevo-grid{grid-template-columns:1fr;}
 }
