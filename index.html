@@ -2232,6 +2232,11 @@ body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
   .print-bar-fill{height:100%;border-radius:3px;}
   .print-bar-val{min-width:110px;text-align:right;font-weight:700;}
   .print-bar-pct{min-width:38px;text-align:right;color:#9aacb8;}
+  .cred-print-cover{margin-bottom:16px;}
+  .cred-print-cred{margin-bottom:16px;page-break-inside:avoid;border:1.5px solid #e2e8ec;border-radius:8px;padding:12px 14px;}
+  .cred-print-cred-title{font-size:12px;font-weight:800;color:#2c3e50;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e67e22;}
+  .cred-print-kv{font-size:10px;color:#34495e;line-height:1.45;margin-bottom:8px;}
+  .cred-print-sub{font-size:9px;font-weight:700;color:#7f8c8d;text-transform:uppercase;margin:10px 0 5px;letter-spacing:.04em;}
   input, select {border:none!important;background:transparent!important;font-weight:600;}
 }
 
@@ -3916,6 +3921,7 @@ body.dark-mode .conflict-overlay{
         <button class="cred-filter-btn"        id="crf-activos" onclick="credFilter('activos')">Activos</button>
         <button class="cred-filter-btn"        id="crf-pagados" onclick="credFilter('pagados')">Pagados</button>
         <button class="cred-filter-btn" onclick="credOpenPagosReport()">📄 Informe pagos</button>
+        <button class="cred-filter-btn" onclick="credInformePdfOpen()">📑 Informe PDF</button>
         <button class="btn-nueva-cred" onclick="toggleNuevoCred()" style="margin-left:auto;margin-bottom:0;">+ Nuevo Crédito</button>
       </div>
 
@@ -4025,6 +4031,66 @@ body.dark-mode .conflict-overlay{
             </tr></thead>
             <tbody id="cred-pagos-report-tbody"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informe PDF configurable — créditos informales -->
+  <div class="cred-modal-overlay" id="credInformePdfModal" onclick="credInformePdfCloseBg(event)">
+    <div class="cred-modal" style="width:920px;max-width:96vw;">
+      <div class="cred-modal-head">
+        <h3>📑 Informe PDF — Créditos informales</h3>
+        <button type="button" onclick="credInformePdfClose()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
+      </div>
+      <div class="cred-modal-body" style="padding:14px 16px;max-height:85vh;overflow:auto;">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px;">
+          <div style="flex:1;min-width:180px;">
+            <div class="cred-modal-input-label">Buscar (nº crédito o acreedor)</div>
+            <input type="text" id="cred-informe-search" class="cred-modal-input-user" style="margin-bottom:0;" placeholder="Ej: A0014, Alberto, Pancho…" oninput="credInformePdfRenderList()">
+          </div>
+          <div>
+            <div class="cred-modal-input-label">Estado</div>
+            <select id="cred-informe-estado" class="cred-modal-input-user" style="margin-bottom:0;" onchange="credInformePdfRenderList()">
+              <option value="todos">Todos</option>
+              <option value="activos">Solo activos (con saldo)</option>
+              <option value="pagados">Solo pagados</option>
+            </select>
+          </div>
+          <div>
+            <div class="cred-modal-input-label">Orden</div>
+            <select id="cred-informe-sort" class="cred-modal-input-user" style="margin-bottom:0;" onchange="credInformePdfRenderList()">
+              <option value="id">Nº crédito (A… / M…)</option>
+              <option value="saldo_desc">Saldo mayor primero</option>
+              <option value="saldo_asc">Saldo menor primero</option>
+              <option value="fecha">Fecha emisión</option>
+              <option value="acreedor">Acreedor (A→Z)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center;">
+          <button type="button" class="cred-filter-btn" onclick="credInformePdfSelectAll(true)">Marcar visibles</button>
+          <button type="button" class="cred-filter-btn" onclick="credInformePdfSelectAll(false)">Desmarcar visibles</button>
+          <span style="font-size:11px;color:#64748b;margin-left:auto;">Solo los marcados salen en el PDF. Incluye resumen por cuota y historial de pagos.</span>
+        </div>
+        <div style="max-height:42vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+          <table class="cred-table" style="min-width:100%;">
+            <thead><tr>
+              <th style="width:36px;text-align:center;"><input type="checkbox" id="cred-informe-master" title="Marcar / desmarcar todos los visibles" onclick="credInformePdfToggleMaster(this)"></th>
+              <th>Nro</th>
+              <th>Acreedor</th>
+              <th>Saldo</th>
+              <th>Pagado / Total</th>
+              <th>Cuotas</th>
+              <th>Emisión</th>
+              <th>Estado</th>
+            </tr></thead>
+            <tbody id="cred-informe-tbody"></tbody>
+          </table>
+        </div>
+        <div class="cred-modal-footer" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+          <button type="button" class="cred-modal-cancel" onclick="credInformePdfClose()">Cerrar</button>
+          <button type="button" class="cred-modal-ok" style="background:#334155;" onclick="credInformePdfGenerate()">🖨 Generar PDF (imprimir)</button>
         </div>
       </div>
     </div>
@@ -8341,6 +8407,7 @@ function renderCreditos() {
     const histBtn = (Array.isArray(c.pagosHist) && c.pagosHist.length)
       ? `<button class="btn-pagar" style="background:#475569;" onclick="credToggleHist('${c.id}')">${_credHistOpen===c.id?'▴ Ocultar':'▾ Historial'}</button>`
       : '';
+    const delBtn = `<button type="button" class="btn-pagar" style="background:#b91c1c;" onclick="credDeleteCred('${c.id}')" title="Eliminar crédito (3 confirmaciones)">🗑</button>`;
     const histRow = (_credHistOpen===c.id && Array.isArray(c.pagosHist) && c.pagosHist.length)
       ? `<tr>
           <td colspan="12" style="background:#f8fafc;padding:10px 12px;border-top:1px dashed #e2e8f0;">
@@ -8381,7 +8448,7 @@ function renderCreditos() {
         ${regTxt ? `<div style="font-size:9px;color:#c0c8d0;">reg: ${esc(regTxt)}</div>` : ''}
       </td>
       <td>${badge}</td>
-      <td class="cred-actions-cell"><div class="cred-actions">${pagarBtn}${undoBtn}${histBtn}</div></td>
+      <td class="cred-actions-cell"><div class="cred-actions">${pagarBtn}${undoBtn}${histBtn}${delBtn}</div></td>
     </tr>${histRow}`;
   }).join('');
 }
@@ -8635,6 +8702,211 @@ function credExportPagosReportCsv() {
     try { document.body.removeChild(a); } catch(e){}
     URL.revokeObjectURL(url);
   }, 0);
+}
+
+function credAcreedorLabel(c) {
+  const o = (c && c.otorgado) || '';
+  if (o === 'alberto') return 'Alberto';
+  if (o === 'pancho') return 'Schele/Pancho';
+  return String(o || '—');
+}
+
+function credInformeCompare(a, b, sort) {
+  if (sort === 'saldo_desc') return credSaldo(b) - credSaldo(a);
+  if (sort === 'saldo_asc') return credSaldo(a) - credSaldo(b);
+  if (sort === 'fecha') {
+    const ka = credParseClDateToKey(a.fechaEmision) || '';
+    const kb = credParseClDateToKey(b.fechaEmision) || '';
+    if (ka !== kb) return ka.localeCompare(kb);
+  }
+  if (sort === 'acreedor') {
+    const ca = credAcreedorLabel(a);
+    const cb = credAcreedorLabel(b);
+    if (ca !== cb) return ca.localeCompare(cb, 'es');
+  }
+  return String(a.id).localeCompare(String(b.id), 'en', { numeric: true });
+}
+
+function credInformePdfFilterList() {
+  const inp = document.getElementById('cred-informe-search');
+  const q = (inp && inp.value || '').trim().toLowerCase();
+  const estEl = document.getElementById('cred-informe-estado');
+  const est = estEl ? estEl.value : 'todos';
+  let arr = (state.creditos || []).slice();
+  if (est === 'activos') arr = arr.filter(function(c) { return !credPaid(c); });
+  else if (est === 'pagados') arr = arr.filter(function(c) { return credPaid(c); });
+  if (q) {
+    arr = arr.filter(function(c) {
+      const lab = credAcreedorLabel(c).toLowerCase();
+      const raw = String((c && c.otorgado) || '').toLowerCase();
+      const id = String((c && c.id) || '').toLowerCase();
+      return id.indexOf(q) >= 0 || lab.indexOf(q) >= 0 || raw.indexOf(q) >= 0;
+    });
+  }
+  const sortEl = document.getElementById('cred-informe-sort');
+  const sort = sortEl ? sortEl.value : 'id';
+  arr.sort(function(a, b) { return credInformeCompare(a, b, sort); });
+  return arr;
+}
+
+function credInformePdfRenderList() {
+  const tbody = document.getElementById('cred-informe-tbody');
+  const master = document.getElementById('cred-informe-master');
+  if (!tbody) return;
+  const arr = credInformePdfFilterList();
+  if (!arr.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px;">Sin créditos con estos filtros.</td></tr>';
+    if (master) master.checked = false;
+    return;
+  }
+  tbody.innerHTML = arr.map(function(c) {
+    const saldo = credSaldo(c);
+    const paid = credPaid(c);
+    const ac = credAcreedorLabel(c);
+    const cuo = (c.cuotasRest || 0) + ' / ' + (c.totalCuotas || 0);
+    const pct = Math.min(100, Math.round((c.totalPagado || 0) / (c.valorPagar || 1) * 100));
+    const st = paid ? '<span class="cred-badge paid">Pagado</span>' : '<span class="cred-badge active">' + pct + '%</span>';
+    return '<tr>' +
+      '<td style="text-align:center;"><input type="checkbox" data-cred="' + esc(c.id) + '" checked></td>' +
+      '<td><span class="cred-nro">' + esc(c.id) + '</span></td>' +
+      '<td style="text-align:left;">' + esc(ac) + '</td>' +
+      '<td style="text-align:right;">' + fmt(saldo) + '</td>' +
+      '<td style="text-align:right;font-size:11px;">' + fmt(c.totalPagado || 0) + ' / ' + fmt(c.valorPagar || 0) + '</td>' +
+      '<td style="text-align:center;">' + esc(cuo) + '</td>' +
+      '<td style="text-align:left;">' + esc(c.fechaEmision || '—') + '</td>' +
+      '<td>' + st + '</td>' +
+      '</tr>';
+  }).join('');
+  if (master) master.checked = true;
+}
+
+function credInformePdfSelectAll(on) {
+  document.querySelectorAll('#cred-informe-tbody input[type="checkbox"][data-cred]').forEach(function(cb) { cb.checked = !!on; });
+  const master = document.getElementById('cred-informe-master');
+  if (master) master.checked = !!on;
+}
+
+function credInformePdfToggleMaster(cb) {
+  document.querySelectorAll('#cred-informe-tbody input[type="checkbox"][data-cred]').forEach(function(el) { el.checked = cb.checked; });
+}
+
+function credInformePdfOpen() {
+  const m = document.getElementById('credInformePdfModal');
+  if (!m) return;
+  const s = document.getElementById('cred-informe-search');
+  if (s) s.value = '';
+  const e = document.getElementById('cred-informe-estado');
+  if (e) e.value = 'todos';
+  const so = document.getElementById('cred-informe-sort');
+  if (so) so.value = 'id';
+  credInformePdfRenderList();
+  m.classList.add('open');
+}
+
+function credInformePdfCloseBg(e) {
+  if (e.target === document.getElementById('credInformePdfModal')) credInformePdfClose();
+}
+
+function credInformePdfClose() {
+  const m = document.getElementById('credInformePdfModal');
+  if (m) m.classList.remove('open');
+}
+
+function credInformePdfHistRowsHtml(c) {
+  const arr = Array.isArray(c.pagosHist) ? c.pagosHist.slice().reverse() : [];
+  if (!arr.length) return '<div style="font-size:10px;color:#9aacb8;">Sin movimientos de pago en historial.</div>';
+  const rows = arr.map(function(p) {
+    const reg = [p.fechaRegistro, p.horaRegistro].filter(Boolean).join(' ');
+    return '<tr>' +
+      '<td>' + esc(p.fecha || '—') + '</td>' +
+      '<td style="text-align:right;">' + fmt(p.monto || 0) + '</td>' +
+      '<td>' + esc(p.user || '—') + '</td>' +
+      '<td>' + esc(reg || '—') + '</td>' +
+      '<td>' + esc(p.userRegistro || '—') + '</td>' +
+      '</tr>';
+  }).join('');
+  return '<table class="print-table"><thead><tr><th>Fecha pago</th><th>Monto</th><th>Pagado por</th><th>Fecha registro</th><th>Usuario registro</th></tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function credInformePdfOneCredHtml(c) {
+  const ac = credAcreedorLabel(c);
+  const saldo = credSaldo(c);
+  const paid = credPaid(c);
+  const cuotaV = credCuotaVal(c);
+  const pct = Math.min(100, Math.round((c.totalPagado || 0) / (c.valorPagar || 1) * 100));
+  return '<div class="cred-print-cred">' +
+    '<div class="cred-print-cred-title">' + esc(c.id) + ' — ' + esc(ac) + '</div>' +
+    '<div class="cred-print-kv">' +
+      '<div><strong>Valor otorgado:</strong> ' + fmt(c.valorOtorgado || 0) + '</div>' +
+      '<div><strong>Valor a pagar:</strong> ' + fmt(c.valorPagar || 0) + '</div>' +
+      '<div><strong>Total pagado:</strong> ' + fmt(c.totalPagado || 0) + '</div>' +
+      '<div><strong>Saldo pendiente:</strong> ' + fmt(saldo) + '</div>' +
+      '<div><strong>Cuotas restantes:</strong> ' + (c.cuotasRest || 0) + ' de ' + (c.totalCuotas || 0) + '</div>' +
+      '<div><strong>Cuota referencial (~):</strong> ' + fmt(cuotaV) + '</div>' +
+      '<div><strong>Fecha emisión:</strong> ' + esc(c.fechaEmision || '—') + '</div>' +
+      '<div><strong>Estado:</strong> ' + (paid ? 'Pagado completo' : 'Activo · avance ' + pct + '%') + '</div>' +
+    '</div>' +
+    '<div class="cred-print-sub">Historial de pagos (más reciente primero)</div>' +
+    credInformePdfHistRowsHtml(c) +
+    '</div>';
+}
+
+function credInformePdfGenerate() {
+  const cbs = document.querySelectorAll('#cred-informe-tbody input[type="checkbox"][data-cred]:checked');
+  if (!cbs.length) { notify('⚠ Marca al menos un crédito en la tabla'); return; }
+  const ids = [];
+  cbs.forEach(function(cb) { ids.push(cb.getAttribute('data-cred')); });
+  const byId = {};
+  (state.creditos || []).forEach(function(c) { byId[c.id] = c; });
+  const orderSel = document.getElementById('cred-informe-sort') ? document.getElementById('cred-informe-sort').value : 'id';
+  const list = ids.map(function(id) { return byId[id]; }).filter(Boolean).sort(function(a, b) { return credInformeCompare(a, b, orderSel); });
+  const ts = new Date().toLocaleString('es-CL', { dateStyle: 'long', timeStyle: 'short' });
+  const totalSaldo = list.reduce(function(s, c) { return s + credSaldo(c); }, 0);
+  const totalVP = list.reduce(function(s, c) { return s + (c.valorPagar || 0); }, 0);
+  const cover = '<div class="print-page cred-print-cover">' +
+    '<div class="print-header"><div class="print-title">Créditos informales — Informe detallado</div>' +
+    '<div class="print-sub">Aquí Jaime · ' + esc(ts) + ' · ' + list.length + ' crédito(s) seleccionado(s)</div></div>' +
+    '<div class="print-kpi-row">' +
+    '<div class="print-kpi" style="border-left:4px solid #c0392b"><div class="print-kpi-label">Suma saldos pendientes</div><div class="print-kpi-val" style="color:#c0392b">' + fmt(totalSaldo) + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #2980b9"><div class="print-kpi-label">Suma valor a pagar</div><div class="print-kpi-val">' + fmt(totalVP) + '</div></div>' +
+    '</div></div>';
+  const bodies = list.map(function(c) { return '<div class="print-page">' + credInformePdfOneCredHtml(c) + '</div>'; }).join('');
+  document.getElementById('pdf-print-area').innerHTML = cover + bodies;
+  document.getElementById('pdf-print-area').style.display = 'block';
+  credInformePdfClose();
+  setTimeout(function() {
+    window.print();
+    setTimeout(function() {
+      document.getElementById('pdf-print-area').style.display = 'none';
+      document.getElementById('pdf-print-area').innerHTML = '';
+    }, 800);
+  }, 200);
+  notify('🖨 Preparando PDF / impresión de créditos…');
+}
+
+function credDeleteCred(credId) {
+  const c = (state.creditos || []).find(function(x) { return x.id === credId; });
+  if (!c) return;
+  const saldo = credSaldo(c);
+  const nh = Array.isArray(c.pagosHist) ? c.pagosHist.length : 0;
+  const msg1 = 'Vas a ELIMINAR el crédito informal ' + credId + '.\n\n' +
+    'Se borrará el registro y ' + nh + ' movimiento(s) en historial de pagos.\n' +
+    'Saldo actual: ' + fmt(saldo) + '\n\n¿Seguro que quieres continuar?';
+  if (!confirm(msg1)) return;
+  const token = 'ELIMINAR ' + credId;
+  const typed = prompt('Escribe exactamente lo siguiente para confirmar (puedes copiar y pegar):\n\n' + token);
+  if (String(typed || '').trim() !== token) {
+    notify('⚠ Cancelado: el texto no coincide.');
+    return;
+  }
+  if (!confirm('Última confirmación: se perderá el crédito ' + credId + ' del estado guardado.\n\n¿Eliminar definitivamente?')) return;
+  pushUndo();
+  state.creditos = (state.creditos || []).filter(function(x) { return x.id !== credId; });
+  if (_credHistOpen === credId) _credHistOpen = null;
+  renderCreditos();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Eliminó crédito informal ' + credId, true);
+  notify('🗑 Crédito ' + credId + ' eliminado.');
 }
 
 function toggleNuevoCred() {
