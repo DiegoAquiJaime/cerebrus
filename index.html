@@ -13904,6 +13904,7 @@ function _postLoadSetup() {
   if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'range' && (!state.sacPeriodoTrabajo.start || !state.sacPeriodoTrabajo.end || state.sacPeriodoTrabajo.end < state.sacPeriodoTrabajo.start)) state.sacPeriodoTrabajo = null;
   if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'slot' && (state.sacPeriodoTrabajo.w < 1 || state.sacPeriodoTrabajo.w > 4)) state.sacPeriodoTrabajo = null;
   if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
+  if (typeof sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth === 'function') sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth();
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel              = [];
@@ -22698,6 +22699,20 @@ function sacYMDLocal(d) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
+/**
+ * Semana operativa lunes → domingo (hora local) que contiene `d`.
+ * Evita el error de las “semanas 1–4 dentro del mes” cuando el lunes cae en el mes anterior
+ * (ej. may 2026: el calendario mensual decía 1–10 may, pero la semana real es 27 abr – 3 may).
+ */
+function sacMondaySundayRangeContaining(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = x.getDay(); // 0 Dom … 6 Sáb
+  const deltaMon = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(x.getFullYear(), x.getMonth(), x.getDate() + deltaMon);
+  const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+  return { type: 'range', start: sacYMDLocal(mon), end: sacYMDLocal(sun) };
+}
+
 // Período en edición: slot del mes (1–4) o rango de fechas libre
 function sacNormalizedPeriod() {
   const R = state.sacPeriodoTrabajo;
@@ -22709,7 +22724,35 @@ function sacNormalizedPeriod() {
     return { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w: leg.w };
   }
   const n = new Date();
-  return { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w: _sacWeekCalendario() };
+  return sacMondaySundayRangeContaining(n);
+}
+
+/**
+ * Al cargar estado: si quedó guardado el bloque «semana del mes» que coincide con el pin del calendario
+ * pero el lunes de la semana real (lunes–domingo) cae en el mes anterior, los egresos/ventas estaban
+ * bajo otra clave. Pasa al rango lunes–domingo correcto (una sola corrección silenciosa al abrir).
+ */
+function sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth() {
+  try {
+    const p = state.sacPeriodoTrabajo;
+    if (!p || p.type !== 'slot') return;
+    const n = new Date();
+    if (p.y !== n.getFullYear() || p.m !== n.getMonth() + 1) return;
+    if (p.w !== _sacWeekCalendario()) return;
+    const iso = sacMondaySundayRangeContaining(n);
+    const ranges = getCalWeekRanges(p.y, p.m - 1);
+    const r = ranges[p.w - 1];
+    if (!r) return;
+    const slotS = sacYMDLocal(new Date(p.y, p.m - 1, r.start));
+    const slotE = sacYMDLocal(new Date(p.y, p.m - 1, r.end));
+    if (slotS === iso.start && slotE === iso.end) return;
+    const isoMon = sacParseISODate(iso.start);
+    if (!isoMon) return;
+    if (isoMon.getFullYear() === p.y && isoMon.getMonth() === p.m - 1) return;
+    state.sacPeriodoTrabajo = iso;
+    if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+    if (typeof markUnsaved === 'function') markUnsaved();
+  } catch (e) {}
 }
 
 function sacDataKey() {
@@ -23063,8 +23106,8 @@ function sacCerrarSemanaClick() {
   };
   // Solo se mantiene el cierre más reciente.
   state.sacCierresHistorial = [cierre];
-  state.sacPeriodoTrabajo = null;
-  state.sacSemanaTrabajo = null;
+  state.sacPeriodoTrabajo = sacMondaySundayRangeContaining(new Date());
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
   sacRenderHistorialCierres();
   _sacLastVentasKey = '';
   sacRender();
