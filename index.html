@@ -492,6 +492,13 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
 .btn-pagar{background:var(--success);color:white;border:none;border-radius:5px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .btn-pagar:hover{opacity:.88;}
+.cred-table th.cred-th-actions,.cred-table td.cred-actions-cell{width:1%;white-space:normal;vertical-align:top;}
+.cred-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;max-width:100%;box-sizing:border-box;}
+.cred-actions .btn-pagar{margin:0 !important;white-space:normal;line-height:1.2;text-align:center;}
+@media(max-width:900px){
+  .cred-actions{justify-content:flex-start;max-width:100%;}
+  .cred-table td.cred-actions-cell{text-align:left;}
+}
 .btn-nueva-cred{background:var(--accent);color:white;border:none;border-radius:6px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px;}
 .btn-nueva-cred:hover{opacity:.88;}
 
@@ -3951,7 +3958,7 @@ body.dark-mode .conflict-overlay{
             <th>Fecha</th>
             <th>Último pago</th>
             <th>Estado</th>
-            <th></th>
+            <th class="cred-th-actions">Acciones</th>
           </tr></thead>
           <tbody id="cred-tbody"></tbody>
         </table>
@@ -8329,10 +8336,10 @@ function renderCreditos() {
     const regTxt = credPagoRegistroTxt(lastPago);
     const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')">💸 Pagar</button>`;
     const undoBtn = lastPago
-      ? `<button class="btn-pagar" style="background:#f59e0b;margin-left:6px;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶ Deshacer</button>`
+      ? `<button class="btn-pagar" style="background:#f59e0b;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶ Deshacer</button>`
       : '';
     const histBtn = (Array.isArray(c.pagosHist) && c.pagosHist.length)
-      ? `<button class="btn-pagar" style="background:#475569;margin-left:6px;" onclick="credToggleHist('${c.id}')">${_credHistOpen===c.id?'▴ Ocultar':'▾ Historial'}</button>`
+      ? `<button class="btn-pagar" style="background:#475569;" onclick="credToggleHist('${c.id}')">${_credHistOpen===c.id?'▴ Ocultar':'▾ Historial'}</button>`
       : '';
     const histRow = (_credHistOpen===c.id && Array.isArray(c.pagosHist) && c.pagosHist.length)
       ? `<tr>
@@ -8374,7 +8381,7 @@ function renderCreditos() {
         ${regTxt ? `<div style="font-size:9px;color:#c0c8d0;">reg: ${esc(regTxt)}</div>` : ''}
       </td>
       <td>${badge}</td>
-      <td>${pagarBtn}${undoBtn}${histBtn}</td>
+      <td class="cred-actions-cell"><div class="cred-actions">${pagarBtn}${undoBtn}${histBtn}</div></td>
     </tr>${histRow}`;
   }).join('');
 }
