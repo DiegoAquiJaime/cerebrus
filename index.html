@@ -2237,6 +2237,8 @@ body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
   .cred-print-cred-title{font-size:12px;font-weight:800;color:#2c3e50;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid #e67e22;}
   .cred-print-kv{font-size:10px;color:#34495e;line-height:1.45;margin-bottom:8px;}
   .cred-print-sub{font-size:9px;font-weight:700;color:#7f8c8d;text-transform:uppercase;margin:10px 0 5px;letter-spacing:.04em;}
+  .print-table.fac-pdf-informe td:last-child{text-align:left!important;font-weight:400!important;color:#64748b!important;}
+  .print-table.fac-pdf-informe td:nth-child(5){text-align:right!important;font-weight:700!important;color:#2c3e50!important;}
   input, select {border:none!important;background:transparent!important;font-weight:600;}
 }
 
@@ -4231,6 +4233,7 @@ body.dark-mode .conflict-overlay{
         <button class="fac-btn" onclick="facMergeTwoProvidersPrompt()" title="Elige base y uno o dos proveedores a fusionar (clic en la lista)">🔀 Unificar proveedores</button>
         <button class="fac-btn" id="fac-dash-activas" onclick="facDashFilter('activas')">Con deuda</button>
         <button class="fac-btn" id="fac-dash-todas" onclick="facDashFilter('todas')">Todas</button>
+        <button class="fac-btn primary" type="button" onclick="facInformePdfOpen()" title="Filtrar proveedores, fechas y facturas; luego imprimir / PDF">📑 Informe PDF</button>
       </div>
       <div id="fac-rut-audit-box" style="display:none;margin:-6px 0 12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#f8fafc;font-size:11px;color:#475569;"></div>
 
@@ -4655,6 +4658,108 @@ body.dark-mode .conflict-overlay{
         <button type="button" class="fac-btn" onclick="facMergeModalReset()">↺ Reiniciar</button>
         <button type="button" class="fac-btn" onclick="facMergeModalClose()">Cancelar</button>
         <button type="button" class="fac-btn primary" id="fac-merge-btn-go" onclick="facMergeModalConfirm()" disabled>Unificar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Informe PDF facturas — filtros amplios -->
+  <div class="fac-modal-overlay" id="facInformePdfModal" onclick="facInformePdfCloseBg(event)">
+    <div class="fac-modal" style="width:940px;max-width:98vw;" onclick="event.stopPropagation()">
+      <div class="fac-modal-head">
+        <h3>📑 Informe PDF — Facturas proveedores</h3>
+        <button type="button" onclick="facInformePdfClose()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
+      </div>
+      <div class="fac-modal-body" style="max-height:88vh;overflow:auto;padding:14px 16px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Proveedor</label>
+            <select id="fac-pdf-prov" onchange="facInformePdfRenderList()">
+              <option value="">Todos los proveedores</option>
+            </select>
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Estado factura</label>
+            <select id="fac-pdf-estado" onchange="facInformePdfRenderList()">
+              <option value="">Todos</option>
+              <option value="activa">Activas</option>
+              <option value="parcial">Parciales</option>
+              <option value="inactiva">Pagadas (inactiva)</option>
+            </select>
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Orden en informe</label>
+            <select id="fac-pdf-sort" onchange="facInformePdfRenderList()">
+              <option value="emi_desc">Emisión · más reciente primero</option>
+              <option value="emi_asc">Emisión · más antigua primero</option>
+              <option value="monto_desc">Monto mayor primero</option>
+              <option value="monto_asc">Monto menor primero</option>
+              <option value="nro">N° factura (texto)</option>
+              <option value="prov">Proveedor A→Z</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;align-items:end;">
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Emisión desde</label>
+            <input type="date" id="fac-pdf-emi-desde" class="fac-date-inp" style="width:100%;" onchange="facInformePdfRenderList()">
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Emisión hasta</label>
+            <input type="date" id="fac-pdf-emi-hasta" class="fac-date-inp" style="width:100%;" onchange="facInformePdfRenderList()">
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Vencimiento desde</label>
+            <input type="date" id="fac-pdf-ven-desde" class="fac-date-inp" style="width:100%;" onchange="facInformePdfRenderList()">
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Vencimiento hasta</label>
+            <input type="date" id="fac-pdf-ven-hasta" class="fac-date-inp" style="width:100%;" onchange="facInformePdfRenderList()">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:10px;align-items:end;">
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Buscar (N° factura o comentario)</label>
+            <input type="text" id="fac-pdf-q" placeholder="Ej: 30195, abono…" oninput="facInformePdfRenderList()" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;">
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Monto mín.</label>
+            <input type="text" inputmode="numeric" id="fac-pdf-mmin" placeholder="$" oninput="facInformePdfRenderList()" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;">
+          </div>
+          <div class="fac-modal-row" style="margin:0;">
+            <label>Monto máx.</label>
+            <input type="text" inputmode="numeric" id="fac-pdf-mmax" placeholder="$" oninput="facInformePdfRenderList()" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;">
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:10px;cursor:pointer;">
+          <input type="checkbox" id="fac-pdf-solo-venc" onchange="facInformePdfRenderList()">
+          Solo facturas <strong>activas vencidas</strong> (vencimiento &lt; hoy)
+        </label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;align-items:center;">
+          <button type="button" class="fac-btn" onclick="facInformePdfSelectAll(true)">Marcar filtradas</button>
+          <button type="button" class="fac-btn" onclick="facInformePdfSelectAll(false)">Desmarcar</button>
+          <span style="font-size:10px;color:#64748b;">Solo las marcadas entran al PDF. Agrupado por proveedor con totales.</span>
+        </div>
+        <div style="max-height:38vh;overflow:auto;border:1px solid var(--border);border-radius:8px;">
+          <table class="fac-table" style="min-width:720px;">
+            <thead><tr>
+              <th style="width:38px;text-align:center;"><input type="checkbox" id="fac-pdf-master" title="Marcar / desmarcar visibles" onclick="facInformePdfToggleMaster(this)"></th>
+              <th>Proveedor</th>
+              <th>N°</th>
+              <th>RUT</th>
+              <th>Emisión</th>
+              <th>Vence</th>
+              <th style="text-align:right;">Monto</th>
+              <th>Estado</th>
+            </tr></thead>
+            <tbody id="fac-pdf-tbody"></tbody>
+          </table>
+        </div>
+        <p id="fac-pdf-summary" style="font-size:10px;color:#64748b;margin:8px 0 0;line-height:1.4;"></p>
+      </div>
+      <div class="fac-modal-footer">
+        <button type="button" class="fac-btn" onclick="facInformePdfResetFilters()">↺ Limpiar filtros</button>
+        <button type="button" class="fac-btn" onclick="facInformePdfClose()">Cerrar</button>
+        <button type="button" class="fac-btn primary" onclick="facInformePdfGenerate()" style="background:#334155;border-color:#334155;color:#fff;">🖨 Generar PDF (imprimir)</button>
       </div>
     </div>
   </div>
@@ -10283,6 +10388,280 @@ function facClearFilters() {
   document.getElementById('fac-monto-min').value     = '';
   document.getElementById('fac-monto-max').value     = '';
   facRenderDetail();
+}
+
+function facInformePdfParseDate(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+  if (s.includes('-') && s.split('-')[0].length === 4) return new Date(s);
+  const p = s.split(/[-/.]/);
+  if (p.length >= 3) {
+    const d = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1, y = parseInt(p[2], 10);
+    const yr = y < 100 ? 2000 + y : y;
+    if (!isNaN(d) && !isNaN(m) && yr > 1999) return new Date(yr, m, d);
+  }
+  return null;
+}
+
+function facInformePdfReadOpts() {
+  const provSel = (document.getElementById('fac-pdf-prov') && document.getElementById('fac-pdf-prov').value) || '';
+  const q = (document.getElementById('fac-pdf-q') && document.getElementById('fac-pdf-q').value || '').trim().toLowerCase();
+  const estFil = (document.getElementById('fac-pdf-estado') && document.getElementById('fac-pdf-estado').value) || '';
+  const emiDesde = (document.getElementById('fac-pdf-emi-desde') && document.getElementById('fac-pdf-emi-desde').value) || '';
+  const emiHasta = (document.getElementById('fac-pdf-emi-hasta') && document.getElementById('fac-pdf-emi-hasta').value) || '';
+  const venDesde = (document.getElementById('fac-pdf-ven-desde') && document.getElementById('fac-pdf-ven-desde').value) || '';
+  const venHasta = (document.getElementById('fac-pdf-ven-hasta') && document.getElementById('fac-pdf-ven-hasta').value) || '';
+  const mMinRaw = (document.getElementById('fac-pdf-mmin') && document.getElementById('fac-pdf-mmin').value || '').trim();
+  const mMaxRaw = (document.getElementById('fac-pdf-mmax') && document.getElementById('fac-pdf-mmax').value || '').trim();
+  const montoMin = mMinRaw ? parseNumCL(mMinRaw, false) : null;
+  const montoMax = mMaxRaw ? parseNumCL(mMaxRaw, false) : null;
+  const soloVenc = !!(document.getElementById('fac-pdf-solo-venc') && document.getElementById('fac-pdf-solo-venc').checked);
+  return {
+    provSel: provSel, q: q, estFil: estFil, emiDesde: emiDesde, emiHasta: emiHasta,
+    venDesde: venDesde, venHasta: venHasta, montoMin: montoMin, montoMax: montoMax, soloVenc: soloVenc
+  };
+}
+
+function facInformePdfRowMatches(prov, f, o) {
+  if (o.provSel && prov !== o.provSel) return false;
+  if (o.q && !String(f.nro || '').toLowerCase().includes(o.q) && !(String(f.comentario || '').toLowerCase().includes(o.q))) return false;
+  if (o.estFil && f.estado !== o.estFil) return false;
+  if (o.montoMin != null && f.monto < o.montoMin) return false;
+  if (o.montoMax != null && f.monto > o.montoMax) return false;
+  const fe = facInformePdfParseDate(f.emision);
+  if (o.emiDesde && fe && fe < new Date(o.emiDesde)) return false;
+  if (o.emiHasta && fe) {
+    const h = new Date(o.emiHasta);
+    h.setHours(23, 59, 59, 999);
+    if (fe > h) return false;
+  }
+  const fv = facInformePdfParseDate(f.vence);
+  if (o.venDesde && fv && fv < new Date(o.venDesde)) return false;
+  if (o.venHasta && fv) {
+    const h2 = new Date(o.venHasta);
+    h2.setHours(23, 59, 59, 999);
+    if (fv > h2) return false;
+  }
+  if (o.soloVenc) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (f.estado !== 'activa' || !fv || fv >= today) return false;
+  }
+  return true;
+}
+
+function facInformePdfGetFilteredRows() {
+  facInit();
+  const o = facInformePdfReadOpts();
+  const out = [];
+  const provs = Object.keys(state.facturas || {}).sort(function(a, b) { return a.localeCompare(b, 'es'); });
+  provs.forEach(function(prov) {
+    (state.facturas[prov] || []).forEach(function(f) {
+      if (facInformePdfRowMatches(prov, f, o)) out.push({ prov: prov, fac: f });
+    });
+  });
+  const sort = (document.getElementById('fac-pdf-sort') && document.getElementById('fac-pdf-sort').value) || 'emi_desc';
+  function emiTs(f) {
+    const d = facInformePdfParseDate(f.emision);
+    return d ? d.getTime() : 0;
+  }
+  out.sort(function(a, b) {
+    if (sort === 'emi_desc') return emiTs(b.fac) - emiTs(a.fac);
+    if (sort === 'emi_asc') return emiTs(a.fac) - emiTs(b.fac);
+    if (sort === 'monto_desc') return (b.fac.monto || 0) - (a.fac.monto || 0);
+    if (sort === 'monto_asc') return (a.fac.monto || 0) - (b.fac.monto || 0);
+    if (sort === 'nro') return String(a.fac.nro || '').localeCompare(String(b.fac.nro || ''), 'en', { numeric: true });
+    if (sort === 'prov') {
+      const c = a.prov.localeCompare(b.prov, 'es');
+      if (c !== 0) return c;
+      return emiTs(b.fac) - emiTs(a.fac);
+    }
+    return emiTs(b.fac) - emiTs(a.fac);
+  });
+  return out;
+}
+
+function facInformePdfEstadoLabel(st) {
+  if (st === 'activa') return 'Activa';
+  if (st === 'parcial') return 'Parcial';
+  if (st === 'inactiva') return 'Pagada';
+  return String(st || '—');
+}
+
+function facInformePdfPopulateProvSelect() {
+  const sel = document.getElementById('fac-pdf-prov');
+  if (!sel) return;
+  const keep = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  Object.keys(state.facturas || {}).sort(function(a, b) { return a.localeCompare(b, 'es'); }).forEach(function(pn) {
+    const o = document.createElement('option');
+    o.value = pn;
+    o.textContent = pn;
+    sel.appendChild(o);
+  });
+  if (keep && Array.from(sel.options).some(function(op) { return op.value === keep; })) sel.value = keep;
+}
+
+function facInformePdfRenderList() {
+  const tbody = document.getElementById('fac-pdf-tbody');
+  const sumEl = document.getElementById('fac-pdf-summary');
+  const master = document.getElementById('fac-pdf-master');
+  if (!tbody) return;
+  const rows = facInformePdfGetFilteredRows();
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:18px;">Sin facturas con estos filtros.</td></tr>';
+    if (sumEl) sumEl.textContent = '';
+    if (master) master.checked = false;
+    return;
+  }
+  const tot = rows.reduce(function(s, r) { return s + (r.fac.monto || 0); }, 0);
+  tbody.innerHTML = rows.map(function(r) {
+    const f = r.fac;
+    const fv = facInformePdfParseDate(f.vence);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const venClass = (f.estado === 'activa' && fv && fv < today) ? ' style="color:var(--danger);font-weight:700;"' : '';
+    return '<tr>' +
+      '<td style="text-align:center;"><input type="checkbox" data-fac-prov="' + esc(r.prov) + '" data-fac-id="' + esc(f.id) + '" checked></td>' +
+      '<td>' + esc(r.prov) + '</td>' +
+      '<td style="font-family:monospace;font-weight:700;">' + esc(f.nro) + '</td>' +
+      '<td style="font-size:10px;">' + esc(f.rut || '—') + '</td>' +
+      '<td>' + esc(f.emision || '—') + '</td>' +
+      '<td' + venClass + '>' + esc(f.vence || '—') + '</td>' +
+      '<td style="text-align:right;">' + fmt(f.monto) + '</td>' +
+      '<td>' + facInformePdfEstadoLabel(f.estado) + '</td>' +
+      '</tr>';
+  }).join('');
+  if (sumEl) {
+    sumEl.textContent = rows.length + ' factura(s) mostrada(s) · suma montos ' + fmt(tot) + ' · marca las que quieras en el PDF.';
+  }
+  if (master) master.checked = true;
+}
+
+function facInformePdfSelectAll(on) {
+  document.querySelectorAll('#fac-pdf-tbody input[type="checkbox"][data-fac-id]').forEach(function(cb) { cb.checked = !!on; });
+  const master = document.getElementById('fac-pdf-master');
+  if (master) master.checked = !!on;
+}
+
+function facInformePdfToggleMaster(cb) {
+  document.querySelectorAll('#fac-pdf-tbody input[type="checkbox"][data-fac-id]').forEach(function(el) { el.checked = cb.checked; });
+}
+
+function facInformePdfResetFilters() {
+  const ids = ['fac-pdf-prov', 'fac-pdf-estado', 'fac-pdf-sort', 'fac-pdf-emi-desde', 'fac-pdf-emi-hasta', 'fac-pdf-ven-desde', 'fac-pdf-ven-hasta', 'fac-pdf-q', 'fac-pdf-mmin', 'fac-pdf-mmax', 'fac-pdf-solo-venc'];
+  ids.forEach(function(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.type === 'checkbox') el.checked = false;
+    else if (el.tagName === 'SELECT') el.value = id === 'fac-pdf-sort' ? 'emi_desc' : '';
+    else el.value = '';
+  });
+  facInformePdfRenderList();
+}
+
+function facInformePdfOpen() {
+  facInit();
+  facInformePdfPopulateProvSelect();
+  const m = document.getElementById('facInformePdfModal');
+  if (!m) return;
+  m.classList.add('open');
+  facInformePdfRenderList();
+}
+
+function facInformePdfClose() {
+  const m = document.getElementById('facInformePdfModal');
+  if (m) m.classList.remove('open');
+}
+
+function facInformePdfCloseBg(e) {
+  if (e.target === document.getElementById('facInformePdfModal')) facInformePdfClose();
+}
+
+function facInformePdfFilterSummaryText() {
+  const o = facInformePdfReadOpts();
+  const parts = [];
+  parts.push(o.provSel ? ('Proveedor: ' + o.provSel) : 'Proveedores: todos');
+  if (o.estFil) parts.push('Estado: ' + facInformePdfEstadoLabel(o.estFil));
+  if (o.emiDesde || o.emiHasta) parts.push('Emisión: ' + (o.emiDesde || '…') + ' → ' + (o.emiHasta || '…'));
+  if (o.venDesde || o.venHasta) parts.push('Venc.: ' + (o.venDesde || '…') + ' → ' + (o.venHasta || '…'));
+  if (o.q) parts.push('Buscar: «' + o.q + '»');
+  if (o.montoMin != null || o.montoMax != null) parts.push('Monto: ' + (o.montoMin != null ? fmt(o.montoMin) : '—') + ' – ' + (o.montoMax != null ? fmt(o.montoMax) : '—'));
+  if (o.soloVenc) parts.push('Solo activas vencidas');
+  return parts.join(' · ');
+}
+
+function facInformePdfHtmlForProv(prov, list) {
+  const sum = list.reduce(function(s, r) { return s + (r.fac.monto || 0); }, 0);
+  const rows = list.map(function(r) {
+    const f = r.fac;
+    const fv = facInformePdfParseDate(f.vence);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const vCell = (f.estado === 'activa' && fv && fv < today)
+      ? '<td style="color:#c0392b;font-weight:700;">' + esc(f.vence || '—') + ' (venc.)</td>'
+      : '<td>' + esc(f.vence || '—') + '</td>';
+    return '<tr><td>' + esc(f.nro) + '</td><td>' + esc(f.rut || '—') + '</td><td>' + esc(f.emision || '—') + '</td>' + vCell +
+      '<td style="text-align:right;">' + fmt(f.monto) + '</td><td>' + facInformePdfEstadoLabel(f.estado) + '</td><td style="font-size:9px;color:#64748b;">' + esc(f.comentario || '') + '</td></tr>';
+  }).join('');
+  return '<div class="print-page">' +
+    '<div class="cred-print-cred-title" style="margin-bottom:10px;">' + esc(prov) + '</div>' +
+    '<div class="print-kpi-row" style="margin-bottom:12px;">' +
+    '<div class="print-kpi" style="border-left:4px solid #2980b9"><div class="print-kpi-label">Facturas</div><div class="print-kpi-val">' + list.length + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #c0392b"><div class="print-kpi-label">Suma montos</div><div class="print-kpi-val">' + fmt(sum) + '</div></div></div>' +
+    '<table class="print-table fac-pdf-informe"><thead><tr><th>N°</th><th>RUT</th><th>Emisión</th><th>Vence</th><th style="text-align:right;">Monto</th><th>Estado</th><th>Comentario</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</div>';
+}
+
+function facInformePdfGenerate() {
+  const cbs = document.querySelectorAll('#fac-pdf-tbody input[type="checkbox"][data-fac-id]:checked');
+  if (!cbs.length) { notify('⚠ Marca al menos una factura'); return; }
+  const picked = [];
+  cbs.forEach(function(cb) {
+    const prov = cb.getAttribute('data-fac-prov');
+    const id = cb.getAttribute('data-fac-id');
+    const facs = (state.facturas || {})[prov] || [];
+    const f = facs.find(function(x) { return String(x.id) === String(id); });
+    if (f) picked.push({ prov: prov, fac: f });
+  });
+  if (!picked.length) { notify('⚠ No se encontraron las facturas seleccionadas'); return; }
+  picked.sort(function(a, b) {
+    const c = a.prov.localeCompare(b.prov, 'es');
+    if (c !== 0) return c;
+    const da = facInformePdfParseDate(a.fac.emision);
+    const db = facInformePdfParseDate(b.fac.emision);
+    return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+  });
+  const byProv = {};
+  picked.forEach(function(r) {
+    if (!byProv[r.prov]) byProv[r.prov] = [];
+    byProv[r.prov].push(r);
+  });
+  const provKeys = Object.keys(byProv).sort(function(a, b) { return a.localeCompare(b, 'es'); });
+  const totalM = picked.reduce(function(s, r) { return s + (r.fac.monto || 0); }, 0);
+  const ts = new Date().toLocaleString('es-CL', { dateStyle: 'long', timeStyle: 'short' });
+  const filtTxt = facInformePdfFilterSummaryText();
+  const cover = '<div class="print-page cred-print-cover">' +
+    '<div class="print-header"><div class="print-title">Facturas proveedores — Informe</div>' +
+    '<div class="print-sub">Aquí Jaime · ' + esc(ts) + '</div></div>' +
+    '<div class="print-sec"><div class="print-sec-title">Filtros aplicados</div><p style="font-size:11px;color:#34495e;line-height:1.5;margin:0;">' + esc(filtTxt) + '</p></div>' +
+    '<div class="print-kpi-row">' +
+    '<div class="print-kpi" style="border-left:4px solid #2c3e50"><div class="print-kpi-label">Facturas en PDF</div><div class="print-kpi-val">' + picked.length + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #c0392b"><div class="print-kpi-label">Suma montos</div><div class="print-kpi-val">' + fmt(totalM) + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #2980b9"><div class="print-kpi-label">Proveedores</div><div class="print-kpi-val">' + provKeys.length + '</div></div>' +
+    '</div></div>';
+  const body = provKeys.map(function(pn) { return facInformePdfHtmlForProv(pn, byProv[pn]); }).join('');
+  document.getElementById('pdf-print-area').innerHTML = cover + body;
+  document.getElementById('pdf-print-area').style.display = 'block';
+  facInformePdfClose();
+  setTimeout(function() {
+    window.print();
+    setTimeout(function() {
+      document.getElementById('pdf-print-area').style.display = 'none';
+      document.getElementById('pdf-print-area').innerHTML = '';
+    }, 800);
+  }, 200);
+  notify('🖨 Preparando PDF / impresión de facturas…');
 }
 
 function facRenderDetail() {
