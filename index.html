@@ -466,7 +466,20 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-filter-btn:hover:not(.active){border-color:var(--accent);color:var(--accent);}
 .cred-table-wrap{background:var(--white);border-radius:10px;box-shadow:var(--shadow);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin-bottom:20px;max-width:100%;}
 .cred-table{width:100%;border-collapse:collapse;font-size:12px;}
-#creditos .cred-table-wrap .cred-table{min-width:1180px;}
+#creditos .cred-table-wrap .cred-table{min-width:0;width:100%;table-layout:fixed;}
+#creditos .cred-table th,#creditos .cred-table td{padding:7px 6px;font-size:11px;}
+#creditos .cred-table th{background:#fafbfc;font-size:8px;padding:8px 5px;letter-spacing:.2px;}
+#creditos .cred-table th:first-child,#creditos .cred-table td:first-child{text-align:left;width:19%;min-width:108px;}
+#creditos .cred-table th:nth-child(n+2):not(.cred-th-actions),#creditos .cred-table td:nth-child(n+2):not(.cred-actions-cell){text-align:right;}
+#creditos .cred-table th.cred-th-actions,#creditos .cred-table td.cred-actions-cell{text-align:right;width:22%;min-width:118px;}
+#creditos .cred-cell-credito .cred-nro{display:block;line-height:1.2;}
+#creditos .cred-cell-credito .cred-acr-short{display:block;font-size:10px;font-weight:600;color:#64748b;margin-top:2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+#creditos .cred-bar-track{min-width:36px;}
+#creditos .cred-bar-wrap span{font-size:9px!important;min-width:22px!important;}
+#creditos .cred-actions .btn-pagar{font-size:9px;padding:4px 6px;}
+#creditos .cred-table td:nth-child(9){max-width:0;}
+.cred-table-scroll-hint{display:none;font-size:10px;color:#94a3b8;margin:0 0 8px;line-height:1.35;}
+@media(max-width:1100px){.cred-table-scroll-hint{display:block;}}
 .cred-table th{background:#fafbfc;font-weight:700;color:#9aacb8;font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);}
 .cred-table th:not(:first-child):not(:nth-child(2)){text-align:right;}
 .cred-table td{padding:9px 12px;border-bottom:1px solid #f4f6f8;vertical-align:middle;}
@@ -493,7 +506,7 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
 .btn-pagar{background:var(--success);color:white;border:none;border-radius:5px;padding:5px 10px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;}
 .btn-pagar:hover{opacity:.88;}
-.cred-table th.cred-th-actions,.cred-table td.cred-actions-cell{min-width:158px;width:auto;white-space:normal;vertical-align:top;box-sizing:border-box;}
+.cred-table th.cred-th-actions,.cred-table td.cred-actions-cell{min-width:118px;width:auto;white-space:normal;vertical-align:top;box-sizing:border-box;}
 .cred-table th.cred-th-actions{white-space:nowrap;}
 .cred-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;align-items:center;max-width:100%;box-sizing:border-box;}
 .cred-actions .btn-pagar{margin:0 !important;white-space:normal;line-height:1.2;text-align:center;}
@@ -532,6 +545,8 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 @media(max-width:700px){
   .cred-kpi-grid{grid-template-columns:1fr 1fr;}
   .cred-nuevo-grid{grid-template-columns:1fr;}
+  #creditos .cred-filter-btn{padding:5px 9px;font-size:10px;}
+  #creditos .btn-nueva-cred{padding:8px 12px;font-size:11px;}
 }
 
 /* ---- FACTURAS PROVEEDORES ---- */
@@ -3896,12 +3911,12 @@ body.dark-mode .conflict-overlay{
       <!-- KPIs resumen -->
       <div class="cred-kpi-grid">
         <div class="cred-kpi" style="border-left-color:#2980b9;">
-          <div class="cred-kpi-label">🔵 Total expuesto Alberto</div>
+          <div class="cred-kpi-label">🔵 Alberto — deuda activa</div>
           <div class="cred-kpi-val" id="cred-total-a" style="color:#2980b9;">$0</div>
           <div class="cred-kpi-sub" id="cred-cuotas-a">0 cuotas pendientes</div>
         </div>
         <div class="cred-kpi" style="border-left-color:#8e44ad;">
-          <div class="cred-kpi-label">🟣 Total expuesto Schele/Pancho</div>
+          <div class="cred-kpi-label">🟣 Pancho — deuda activa</div>
           <div class="cred-kpi-val" id="cred-total-m" style="color:#8e44ad;">$0</div>
           <div class="cred-kpi-sub" id="cred-cuotas-m">0 cuotas pendientes</div>
         </div>
@@ -3921,7 +3936,7 @@ body.dark-mode .conflict-overlay{
       <div class="cred-filter">
         <button class="cred-filter-btn active" id="crf-todos"   onclick="credFilter('todos')">Todos</button>
         <button class="cred-filter-btn"        id="crf-alberto" onclick="credFilter('alberto')">🔵 Alberto</button>
-        <button class="cred-filter-btn"        id="crf-pancho"  onclick="credFilter('pancho')">🟣 Schele/Pancho</button>
+        <button class="cred-filter-btn"        id="crf-pancho"  onclick="credFilter('pancho')" title="Schele / Pancho">🟣 Pancho</button>
         <button class="cred-filter-btn"        id="crf-activos" onclick="credFilter('activos')">Activos</button>
         <button class="cred-filter-btn"        id="crf-pagados" onclick="credFilter('pagados')">Pagados</button>
         <button class="cred-filter-btn" onclick="credOpenPagosReport()">📄 Informe pagos</button>
@@ -3953,22 +3968,22 @@ body.dark-mode .conflict-overlay{
         </div>
       </div>
 
+      <p class="cred-table-scroll-hint">Desliza <strong>horizontalmente</strong> sobre la tabla blanca si no entran todas las columnas (también con trackpad o ratón sobre la tarjeta).</p>
       <!-- Tabla de créditos -->
       <div class="cred-table-wrap">
         <table class="cred-table">
           <thead><tr>
-            <th>Nro</th>
-            <th>Otorgado por</th>
-            <th>Val. Otorgado</th>
-            <th>Val. a Pagar</th>
-            <th>Total Pagado</th>
+            <th>Crédito</th>
+            <th>V. otorg.</th>
+            <th>V. pagar</th>
+            <th>Pagado</th>
             <th>Saldo</th>
-            <th>Cuotas Rest.</th>
-            <th>Progreso</th>
-            <th>Fecha</th>
-            <th>Último pago</th>
+            <th>Cuotas</th>
+            <th>%</th>
+            <th>Emisión</th>
+            <th>Últ. pago</th>
             <th>Estado</th>
-            <th class="cred-th-actions">Acciones</th>
+            <th class="cred-th-actions">Acc.</th>
           </tr></thead>
           <tbody id="cred-tbody"></tbody>
         </table>
@@ -6873,11 +6888,12 @@ function checkCreditAlerts(forceShow) {
     banner.classList.add('show');
     list.innerHTML = credAlerts.map(c => {
       const isUrgent = c.cuotasRest <= 2;
-      const acrLabel = c.otorgado==='alberto'?'🔵 Alberto':c.otorgado==='pancho'?'🟣 Schele/Pancho':'🟠 '+c.otorgado;
+      const acrFull = credAcreedorLabel(c);
+      const acrMini = credOtorgadoShort(c);
       return `<div class="cred-alert-item ${isUrgent?'':'warn2'}">
-        <div>
+        <div title="${esc(acrFull)}">
           <span style="font-family:'Courier New';font-weight:700;font-size:11px;color:${isUrgent?'var(--danger)':'var(--accent)'}">${c.id}</span>
-          <span style="font-size:10px;color:#9aacb8;margin-left:6px;">${acrLabel}</span>
+          <span style="font-size:10px;color:#9aacb8;margin-left:6px;">${esc(acrMini)}</span>
         </div>
         <span style="font-weight:700;color:${isUrgent?'var(--danger)':'var(--accent)'};">${c.cuotasRest} cuota${c.cuotasRest!==1?'s':''} restante${c.cuotasRest!==1?'s':''} · ${fmt(credSaldo(c))}</span>
       </div>`;
@@ -8516,7 +8532,7 @@ function renderCreditos() {
   if (!tbody) return;
   const visible = state.creditos.filter(credVisible);
   if (!visible.length) {
-    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#9aacb8;padding:24px 0;">No hay créditos en esta categoría.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:#9aacb8;padding:24px 0;">No hay créditos en esta categoría.</td></tr>';
     return;
   }
   tbody.innerHTML = visible.map(c => {
@@ -8525,7 +8541,7 @@ function renderCreditos() {
     const progPct = Math.min(100, Math.round((c.totalPagado||0) / (c.valorPagar||1) * 100));
     const barColor= paid ? 'var(--success)' : progPct >= 75 ? 'var(--accent)' : '#2980b9';
     const nroClass= c.otorgado==='alberto' ? 'alberto' : c.otorgado==='pancho' ? 'pancho' : '';
-    const acrLabel= c.otorgado==='alberto' ? '🔵 Alberto' : c.otorgado==='pancho' ? '🟣 Schele/Pancho' : '🟠 ' + c.otorgado;
+    const acrTitle = credAcreedorLabel(c);
     const badge   = paid
       ? '<span class="cred-badge paid">✓ Pagado</span>'
       : (c.cuotasRest||0) <= 3
@@ -8533,17 +8549,17 @@ function renderCreditos() {
         : `<span class="cred-badge active">${c.cuotasRest||0} cuotas</span>`;
     const lastPago = credLastPago(c);
     const regTxt = credPagoRegistroTxt(lastPago);
-    const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')">💸 Pagar</button>`;
+    const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')" title="Registrar pago de cuota">Pagar</button>`;
     const undoBtn = lastPago
-      ? `<button class="btn-pagar" style="background:#f59e0b;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶ Deshacer</button>`
+      ? `<button class="btn-pagar" style="background:#f59e0b;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶</button>`
       : '';
     const histBtn = (Array.isArray(c.pagosHist) && c.pagosHist.length)
-      ? `<button class="btn-pagar" style="background:#475569;" onclick="credToggleHist('${c.id}')">${_credHistOpen===c.id?'▴ Ocultar':'▾ Historial'}</button>`
+      ? `<button class="btn-pagar" style="background:#475569;" onclick="credToggleHist('${c.id}')" title="${_credHistOpen===c.id?'Ocultar historial':'Ver historial de pagos'}">${_credHistOpen===c.id?'▴':'▾'} Hist.</button>`
       : '';
     const delBtn = `<button type="button" class="btn-pagar" style="background:#b91c1c;" onclick="credDeleteCred('${c.id}')" title="Eliminar crédito (3 confirmaciones)">🗑</button>`;
     const histRow = (_credHistOpen===c.id && Array.isArray(c.pagosHist) && c.pagosHist.length)
       ? `<tr>
-          <td colspan="12" style="background:#f8fafc;padding:10px 12px;border-top:1px dashed #e2e8f0;">
+          <td colspan="11" style="background:#f8fafc;padding:10px 12px;border-top:1px dashed #e2e8f0;">
             <div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Historial de pagos de ${esc(c.id)}</div>
             <div style="display:flex;flex-direction:column;gap:6px;">
               ${c.pagosHist.map((p, i) => {
@@ -8562,8 +8578,7 @@ function renderCreditos() {
         </tr>`
       : '';
     return `<tr class="${paid?'cred-paid':''}">
-      <td><span class="cred-nro ${nroClass}">${c.id}</span></td>
-      <td style="font-size:11px;font-weight:600;">${acrLabel}</td>
+      <td class="cred-cell-credito" title="${esc(acrTitle)}"><span class="cred-nro ${nroClass}">${c.id}</span><span class="cred-acr-short">${esc(credOtorgadoShort(c))}</span></td>
       <td>${fmt(c.valorOtorgado||0)}</td>
       <td>${fmt(c.valorPagar||0)}</td>
       <td style="color:var(--success)">${fmt(c.totalPagado||0)}</td>
@@ -8576,9 +8591,8 @@ function renderCreditos() {
         </div>
       </td>
       <td style="font-size:10px;color:#9aacb8;">${c.fechaEmision}</td>
-      <td style="font-size:10px;color:#94a3b8;white-space:nowrap;" title="${esc(regTxt||'Sin stamp de registro')}">
-        <div>${esc(credLastPagoTxt(c))}</div>
-        ${regTxt ? `<div style="font-size:9px;color:#c0c8d0;">reg: ${esc(regTxt)}</div>` : ''}
+      <td style="font-size:10px;color:#94a3b8;" title="${esc(regTxt ? credLastPagoTxt(c) + ' · reg: ' + regTxt : credLastPagoTxt(c))}">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(credLastPagoTxt(c))}</div>
       </td>
       <td>${badge}</td>
       <td class="cred-actions-cell"><div class="cred-actions">${pagarBtn}${undoBtn}${histBtn}${delBtn}</div></td>
@@ -8842,6 +8856,15 @@ function credAcreedorLabel(c) {
   if (o === 'alberto') return 'Alberto';
   if (o === 'pancho') return 'Schele/Pancho';
   return String(o || '—');
+}
+
+/** Etiqueta corta para tabla / listas (nombre completo en title con credAcreedorLabel). */
+function credOtorgadoShort(c) {
+  const o = (c && c.otorgado) || '';
+  if (o === 'alberto') return 'Alb.';
+  if (o === 'pancho') return 'Pancho';
+  const s = String(o || '—');
+  return s.length > 10 ? s.slice(0, 9) + '…' : s;
 }
 
 function credInformeCompare(a, b, sort) {
