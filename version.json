@@ -1,4 +1,4 @@
 {
-  "version": "2026.04.29.1",
-  "notes": "Fix crítico guardado Bodega: conserva Semana Actual y demás módulos al guardar, evitando sobrescritura cruzada."
+  "version": "2026.05.04.1",
+  "notes": "Inventario: PDF/Excel Todas agrupado por categoría. Pedidos: opción archivar movimientos al cerrar semana. SAC: monto editable al importar gastos fijos + confirmar si actualiza Config. Informe: monto editable al importar egresos."
 }

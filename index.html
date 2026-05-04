@@ -5156,6 +5156,7 @@ body.dark-mode .conflict-overlay{
           <button onclick="movLimpiarFiltros()"
             style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;cursor:pointer;color:#94a3b8;">✕ Limpiar</button>
         </div>
+        <div id="mov-archivo-resumen" style="display:none;margin-bottom:12px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius);font-size:11px;color:#166534;"></div>
 
         <!-- Tabla historial -->
         <div style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;">
@@ -13916,6 +13917,7 @@ function _postLoadSetup() {
   if (!state.provDocumentos)             state.provDocumentos             = {};
   if (!state.unidadesInventario)         state.unidadesInventario         = ['kg','g','L','ml','unidad','caja','paquete','bolsa','lata','botella','docena','porción','filete','saco','Bandeja'];
   if (!Array.isArray(state.movimientosAudit)) state.movimientosAudit = [];
+  if (!Array.isArray(state.movimientosArchivo)) state.movimientosArchivo = [];
   if (!state.unidadesInventario.some(u => String(u).toLowerCase() === 'bandeja')) state.unidadesInventario.push('Bandeja');
   if (!state.sacEfectivo)               state.sacEfectivo               = 0;
   if (!state.sacCajaChica)              state.sacCajaChica              = 0;
@@ -14857,63 +14859,101 @@ function invRenderCatTabs() {
 }
 function invSetCat(cat) { _invCatFilter=cat; invRenderCatTabs(); invRenderTable(); }
 
-/** Lista filtrada y ordenada como la tabla actual (respeta pestaña categoría, búsqueda y filtros). */
-function invGetVisibleProducts() {
-  invInit();
-  const q     = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
+/** Filtros de la tabla de inventario (sin ordenar). `skipCat=true` ignora la pestaña Todas/X. */
+function invProductPassesInvFilters(p, skipCat) {
+  if (!skipCat && _invCatFilter !== 'todas' && (p.cat || 'Sin categoría') !== _invCatFilter) return false;
+  const q = (document.getElementById('inv-search')?.value || '').toLowerCase().trim();
   const stockF = document.getElementById('inv-filter-stock')?.value || 'todos';
   const famF = document.getElementById('inv-filter-familia')?.value || '';
   const subF = document.getElementById('inv-filter-subfamilia')?.value || '';
-  const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
-  return state.inventario.filter(p => {
-    if (_invCatFilter !== 'todas' && (p.cat || 'Sin categoría') !== _invCatFilter) return false;
-    if (q) {
-      const n = (p.nombre || '').toLowerCase();
-      const c = (p.cat || '').toLowerCase();
-      const f = (p.familia || '').toLowerCase();
-      const sf = (p.subfamilia || '').toLowerCase();
-      const u = (p.unidad || '').toLowerCase();
-      if (!n.includes(q) && !c.includes(q) && !f.includes(q) && !sf.includes(q) && !u.includes(q)) return false;
+  if (q) {
+    const n = (p.nombre || '').toLowerCase();
+    const c = (p.cat || '').toLowerCase();
+    const f = (p.familia || '').toLowerCase();
+    const sf = (p.subfamilia || '').toLowerCase();
+    const u = (p.unidad || '').toLowerCase();
+    if (!n.includes(q) && !c.includes(q) && !f.includes(q) && !sf.includes(q) && !u.includes(q)) return false;
+  }
+  if (famF && (p.familia || '') !== famF) return false;
+  if (subF && (p.subfamilia || '') !== subF) return false;
+  const st = p.stock || 0;
+  const em = invEfectivMin_(p);
+  if (stockF === 'critico') {
+    if (!(st <= em && em > 0)) return false;
+  } else if (stockF === 'agotado') {
+    if (st > 0) return false;
+  } else if (stockF === 'con_stock') {
+    if (st <= 0) return false;
+  } else if (stockF === 'ok') {
+    if (em > 0 && st <= em) return false;
+  } else if (stockF === 'sin_prov') {
+    if ((p.prov || '').trim()) return false;
+  }
+  return true;
+}
+
+function invCompareVisibleProducts(a, b, sortF) {
+  if (sortF === 'nombre') return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+  if (sortF === 'familia_nombre') {
+    if ((a.familia || '') !== (b.familia || '')) return (a.familia || '').localeCompare(b.familia || '', 'es');
+    if ((a.familia || '') === 'Bebidas' && (b.familia || '') === 'Bebidas') {
+      const ia = invSubfamOrderIndexBebidas(a.subfamilia);
+      const ib = invSubfamOrderIndexBebidas(b.subfamilia);
+      if (ia !== ib) return ia - ib;
     }
-    if (famF && (p.familia || '') !== famF) return false;
-    if (subF && (p.subfamilia || '') !== subF) return false;
-    const st = p.stock || 0;
-    const em = invEfectivMin_(p);
-    if (stockF === 'critico') {
-      if (!(st <= em && em > 0)) return false;
-    } else if (stockF === 'agotado') {
-      if (st > 0) return false;
-    } else if (stockF === 'con_stock') {
-      if (st <= 0) return false;
-    } else if (stockF === 'ok') {
-      if (em > 0 && st <= em) return false;
-    } else if (stockF === 'sin_prov') {
-      if ((p.prov || '').trim()) return false;
-    }
-    return true;
-  }).sort((a, b) => {
-    if (sortF === 'nombre') return (a.nombre || '').localeCompare(b.nombre || '', 'es');
-    if (sortF === 'familia_nombre') {
-      if ((a.familia || '') !== (b.familia || '')) return (a.familia || '').localeCompare(b.familia || '', 'es');
-      if ((a.familia || '') === 'Bebidas' && (b.familia || '') === 'Bebidas') {
-        const ia = invSubfamOrderIndexBebidas(a.subfamilia);
-        const ib = invSubfamOrderIndexBebidas(b.subfamilia);
-        if (ia !== ib) return ia - ib;
-      }
-      if ((a.subfamilia || '') !== (b.subfamilia || '')) return (a.subfamilia || '').localeCompare(b.subfamilia || '', 'es');
-      return (a.nombre || '').localeCompare(b.nombre || '', 'es');
-    }
-    if (sortF === 'stock_desc') return (b.stock || 0) - (a.stock || 0);
-    if (sortF === 'stock_asc') return (a.stock || 0) - (b.stock || 0);
-    if (sortF === 'minimo_desc') return (b.minimo || 0) - (a.minimo || 0);
-    if (sortF === 'cat_nombre' || !sortF) {
-      const oa = typeof a.invOrden === 'number' ? a.invOrden : null;
-      const ob = typeof b.invOrden === 'number' ? b.invOrden : null;
-      if (oa != null && ob != null && oa !== ob) return oa - ob;
-    }
-    if ((a.cat || '') !== (b.cat || '')) return (a.cat || '').localeCompare(b.cat || '', 'es');
+    if ((a.subfamilia || '') !== (b.subfamilia || '')) return (a.subfamilia || '').localeCompare(b.subfamilia || '', 'es');
     return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+  }
+  if (sortF === 'stock_desc') return (b.stock || 0) - (a.stock || 0);
+  if (sortF === 'stock_asc') return (a.stock || 0) - (b.stock || 0);
+  if (sortF === 'minimo_desc') return (b.minimo || 0) - (a.minimo || 0);
+  if (sortF === 'cat_nombre' || !sortF) {
+    const oa = typeof a.invOrden === 'number' ? a.invOrden : null;
+    const ob = typeof b.invOrden === 'number' ? b.invOrden : null;
+    if (oa != null && ob != null && oa !== ob) return oa - ob;
+  }
+  if ((a.cat || '') !== (b.cat || '')) return (a.cat || '').localeCompare(b.cat || '', 'es');
+  return (a.nombre || '').localeCompare(b.nombre || '', 'es');
+}
+
+/** PDF/Excel con pestaña «Todas»: una sección por categoría; dentro, mismo orden que la tabla. */
+function invGetExportSectionsGrouped() {
+  invInit();
+  const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
+  if (_invCatFilter !== 'todas') {
+    const rows = invGetVisibleProducts();
+    return rows.length ? [{ title: null, rows }] : [];
+  }
+  const base = state.inventario.filter(p => invProductPassesInvFilters(p, true));
+  if (!base.length) return [];
+  const byKey = {};
+  base.forEach(p => {
+    const k = p.cat || 'Sin categoría';
+    if (!byKey[k]) byKey[k] = [];
+    byKey[k].push(p);
   });
+  const catOrder = invGetCategories();
+  const seen = new Set();
+  const sections = [];
+  catOrder.forEach(c => {
+    if (byKey[c] && byKey[c].length) {
+      seen.add(c);
+      sections.push({ title: c, rows: byKey[c].slice().sort((a, b) => invCompareVisibleProducts(a, b, sortF)) });
+    }
+  });
+  Object.keys(byKey).sort((a, b) => a.localeCompare(b, 'es')).forEach(c => {
+    if (!seen.has(c) && byKey[c].length) {
+      sections.push({ title: c, rows: byKey[c].slice().sort((a, b) => invCompareVisibleProducts(a, b, sortF)) });
+    }
+  });
+  return sections;
+}
+
+/** Lista filtrada y ordenada como la tabla actual (respeta pestaña categoría, búsqueda y filtros). */
+function invGetVisibleProducts() {
+  invInit();
+  const sortF = document.getElementById('inv-filter-sort')?.value || 'cat_nombre';
+  return state.inventario.filter(p => invProductPassesInvFilters(p, false)).sort((a, b) => invCompareVisibleProducts(a, b, sortF));
 }
 
 function invEstadoDueña_(p) {
@@ -14926,24 +14966,30 @@ function invEstadoDueña_(p) {
 
 function invExportDueñaPdf() {
   invInit();
-  const rows = invGetVisibleProducts();
-  if (!rows.length) {
+  const sections = invGetExportSectionsGrouped();
+  const totalRows = sections.reduce((s, sec) => s + sec.rows.length, 0);
+  if (!totalRows) {
     notify('⚠ No hay productos que exportar con los filtros actuales');
     return;
   }
   const fecha = new Date().toLocaleString('es-CL');
-  const sub = `CEREBRUS · ${rows.length} producto(s) · ${fecha}`;
-  const rowsHtml = rows.map((p, i) => {
-    const provSug = (invBestProvider(p) || '').trim() || '—';
-    const u = (p.unidad || 'u');
-    const st = p.stock || 0;
-    const minRaw = p.minimo || 0;
-    const minEf = invEfectivMin_(p);
-    const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
-    const est = invEstadoDueña_(p);
-    const zebra = i % 2 === 0 ? '#f8fafc' : '#ffffff';
-    const estColor = est === 'Agotado' ? '#dc2626' : est === 'Crítico' ? '#d97706' : '#059669';
-    return `<tr style="background:${zebra};">
+  const sub = `CEREBRUS · ${totalRows} producto(s) · ${fecha}`;
+  let zebraIdx = 0;
+  const rowsHtml = sections.map(sec => {
+    const head = sec.title
+      ? `<tr><td colspan="6" style="padding:14px 12px 8px;border-bottom:2px solid #6366f1;background:#eef2ff;font-size:12px;font-weight:800;color:#3730a3;">${esc(sec.title)}</td></tr>`
+      : '';
+    const body = sec.rows.map(p => {
+      const provSug = (invBestProvider(p) || '').trim() || '—';
+      const u = (p.unidad || 'u');
+      const st = p.stock || 0;
+      const minRaw = p.minimo || 0;
+      const minEf = invEfectivMin_(p);
+      const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
+      const est = invEstadoDueña_(p);
+      const zebra = zebraIdx++ % 2 === 0 ? '#f8fafc' : '#ffffff';
+      const estColor = est === 'Agotado' ? '#dc2626' : est === 'Crítico' ? '#d97706' : '#059669';
+      return `<tr style="background:${zebra};">
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:600;color:#0f172a;">${esc(p.nombre || '')}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right;font-variant-numeric:tabular-nums;font-weight:800;color:#334155;">${esc(String(st))}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;">${esc(u)}</td>
@@ -14951,7 +14997,12 @@ function invExportDueñaPdf() {
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:12px;color:#475569;">${esc(provSug)}</td>
       <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700;color:${estColor};">${esc(est)}</td>
     </tr>`;
+    }).join('');
+    return head + body;
   }).join('');
+  const noteExtra = _invCatFilter === 'todas' && sections.length > 1
+    ? ' Agrupado por categoría (pestaña «Todas»).'
+    : '';
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Inventario CEREBRUS</title>
 <style>
 @page { margin: 16mm; }
@@ -14966,7 +15017,7 @@ th:nth-child(2),th:nth-child(4){text-align:right;}
 .brand{font-size:10px;color:#94a3b8;margin-top:18px;}
 </style></head><body>
 <div class="hdr"><h1>Inventario · stock actual</h1><p>${esc(sub)}</p></div>
-<p class="note">Proveedor sugerido: mejor precio registrado en la ficha, o proveedor principal si no hay lista de precios. Stock crítico usa el mínimo de Cerebrus (y multiplicador de calendario si aplica).</p>
+<p class="note">Proveedor sugerido: mejor precio registrado en la ficha, o proveedor principal si no hay lista de precios. Stock crítico usa el mínimo de Cerebrus (y multiplicador de calendario si aplica).${noteExtra}</p>
 <table><thead><tr>
 <th>Producto</th><th>Stock</th><th>Unidad</th><th>Mínimo / crítico</th><th>Proveedor sugerido</th><th>Estado</th>
 </tr></thead><tbody>${rowsHtml}</tbody></table>
@@ -14984,23 +15035,29 @@ th:nth-child(2),th:nth-child(4){text-align:right;}
 
 function invExportDueñaExcel() {
   invInit();
-  const rows = invGetVisibleProducts();
-  if (!rows.length) {
+  const sections = invGetExportSectionsGrouped();
+  const totalRows = sections.reduce((s, sec) => s + sec.rows.length, 0);
+  if (!totalRows) {
     notify('⚠ No hay productos que exportar con los filtros actuales');
     return;
   }
   const fecha = new Date();
   const stamp = fecha.toISOString().slice(0, 10).replace(/-/g, '');
-  const rowsHtml = rows.map((p, i) => {
-    const provSug = (invBestProvider(p) || '').trim() || '—';
-    const u = (p.unidad || 'u');
-    const st = p.stock || 0;
-    const minRaw = p.minimo || 0;
-    const minEf = invEfectivMin_(p);
-    const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
-    const est = invEstadoDueña_(p);
-    const zebra = i % 2 === 0 ? '#f8fafc' : '#ffffff';
-    return `<tr style="background:${zebra};">
+  let zebraIdx = 0;
+  const rowsHtml = sections.map(sec => {
+    const head = sec.title
+      ? `<tr style="background:#eef2ff;"><td colspan="6" style="padding:10px 12px;border:1px solid #c7d2fe;font-weight:800;color:#3730a3;">${esc(sec.title)}</td></tr>`
+      : '';
+    const body = sec.rows.map(p => {
+      const provSug = (invBestProvider(p) || '').trim() || '—';
+      const u = (p.unidad || 'u');
+      const st = p.stock || 0;
+      const minRaw = p.minimo || 0;
+      const minEf = invEfectivMin_(p);
+      const minShow = minRaw > 0 ? (minEf !== minRaw ? `${minEf} (base ${minRaw})` : String(minEf)) : '—';
+      const est = invEstadoDueña_(p);
+      const zebra = zebraIdx++ % 2 === 0 ? '#f8fafc' : '#ffffff';
+      return `<tr style="background:${zebra};">
       <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(p.nombre || '')}</td>
       <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${esc(String(st))}</td>
       <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(u)}</td>
@@ -15008,8 +15065,10 @@ function invExportDueñaExcel() {
       <td style="padding:8px 10px;border:1px solid #e2e8f0;">${esc(provSug)}</td>
       <td style="padding:8px 10px;border:1px solid #e2e8f0;font-weight:700;">${esc(est)}</td>
     </tr>`;
+    }).join('');
+    return head + body;
   }).join('');
-  const meta = `Generado ${fecha.toLocaleString('es-CL')} · ${rows.length} filas · CEREBRUS`;
+  const meta = `Generado ${fecha.toLocaleString('es-CL')} · ${totalRows} filas · CEREBRUS`;
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head><meta charset="UTF-8"><meta name="ExcelCreated" content="true"></head>
 <body>
@@ -16121,6 +16180,30 @@ function cuadConfirmar() {
   sem.comentario   = document.getElementById('cuad-comentario')?.value || '';
   sem.fechaCierre  = new Date().toLocaleDateString('es-CL');
 
+  let _movArchivados = 0;
+  const archMovs = document.getElementById('cuad-archivar-movs')?.checked;
+  if (archMovs) {
+    const activos = movGetActiveRows();
+    if (activos.length) {
+      if (!Array.isArray(state.movimientosArchivo)) state.movimientosArchivo = [];
+      state.movimientosArchivo.unshift({
+        id: 'movarch_' + Date.now(),
+        alCerrarSemana: sem.nombre || '',
+        semanaId: sem.id || '',
+        ts: Date.now(),
+        count: activos.length,
+        items: activos.map(m => JSON.parse(JSON.stringify(m)))
+      });
+      _movArchivados = activos.length;
+      state.movimientos = [];
+      try { movLimpiarFiltros(); } catch (e1) {}
+    }
+  }
+  try {
+    const cb = document.getElementById('cuad-archivar-movs');
+    if (cb) cb.checked = false;
+  } catch (e2) {}
+
   if (!state.semanasHistorial) state.semanasHistorial = [];
   state.semanasHistorial.unshift({...sem});
   state.semanaActiva = null;
@@ -16131,7 +16214,10 @@ function cuadConfirmar() {
   invRenderConsumo();
 
   const nMermas  = sem.mermas.length;
-  notify(`✅ Semana cerrada — consumo calculado${nMermas>0?' · '+nMermas+' merma(s) registrada(s)':''}`);
+  let msg = `✅ Semana cerrada — consumo calculado${nMermas>0?' · '+nMermas+' merma(s) registrada(s)':''}`;
+  if (_movArchivados > 0) msg += ' · Movimientos archivados (' + _movArchivados + ') y lista en cero';
+  notify(msg);
+  try { movRender(); } catch (e3) {}
 }
 
 function cuadCerrar() {
@@ -16782,6 +16868,7 @@ function movRender() {
 
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Sin movimientos con estos filtros.</td></tr>';
+    movRenderArchivoResumen();
     return;
   }
 
@@ -16821,6 +16908,7 @@ function movRender() {
       </td>
     </tr>`).join('');
   movRenderAudit();
+  movRenderArchivoResumen();
 }
 
 function movRenderAudit() {
@@ -16939,17 +17027,12 @@ function movEditar(id) {
   notify('✅ Movimiento editado');
 }
 
-function movExportPdfPreview() {
-  const rows = movGetFilteredRows();
-  if (!rows.length) { notify('⚠ No hay movimientos para exportar con los filtros actuales'); return; }
+function movExportPdfPreviewFromRows(rows, filtrosLabel) {
+  if (!rows || !rows.length) { notify('⚠ No hay movimientos para exportar'); return; }
   const totalMovs = rows.length;
   const totalMerma = rows.filter(r => r.tipo === 'merma').reduce((s,r) => s + (r.cantidad || 0), 0);
   const totalIngresoPedido = rows.filter(r => r.tipo === 'ingreso_pedido').reduce((s,r) => s + (r.cantidad || 0), 0);
-  const filtros = [
-    document.getElementById('mov-f-tipo')?.value ? 'Tipo: ' + document.getElementById('mov-f-tipo').value : '',
-    document.getElementById('mov-f-dest')?.value ? 'Destino: ' + document.getElementById('mov-f-dest').value : '',
-    movRangoFechasEtiqueta()
-  ].filter(Boolean).join(' · ') || 'Sin filtros';
+  const filtros = filtrosLabel || 'Sin filtros';
 
   const tipoLabel = {despacho:'Despacho', devolucion:'Devolución', ingreso_pedido:'Ingreso pedido', preelaboracion:'Preelaboración', merma:'Merma'};
   const trs = rows.map(m => `
@@ -17003,6 +17086,43 @@ function movExportPdfPreview() {
   if (!win) { notify('⚠ Activa ventanas emergentes para abrir la vista previa'); return; }
   win.document.write(html);
   win.document.close();
+}
+
+function movExportPdfPreview() {
+  const rows = movGetFilteredRows();
+  if (!rows.length) { notify('⚠ No hay movimientos para exportar con los filtros actuales'); return; }
+  const filtros = [
+    document.getElementById('mov-f-tipo')?.value ? 'Tipo: ' + document.getElementById('mov-f-tipo').value : '',
+    document.getElementById('mov-f-dest')?.value ? 'Destino: ' + document.getElementById('mov-f-dest').value : '',
+    movRangoFechasEtiqueta()
+  ].filter(Boolean).join(' · ') || 'Sin filtros';
+  movExportPdfPreviewFromRows(rows, filtros);
+}
+
+function movArchivoPreview(idx) {
+  const arr = Array.isArray(state.movimientosArchivo) ? state.movimientosArchivo : [];
+  const b = arr[idx];
+  if (!b || !Array.isArray(b.items) || !b.items.length) { notify('⚠ Bloque de archivo vacío'); return; }
+  const lbl = 'Archivo cierre · ' + (b.alCerrarSemana || '—') + ' · ' + b.count + ' mov.';
+  movExportPdfPreviewFromRows(b.items.slice().reverse(), lbl);
+}
+
+function movRenderArchivoResumen() {
+  const el = document.getElementById('mov-archivo-resumen');
+  if (!el) return;
+  const arr = Array.isArray(state.movimientosArchivo) ? state.movimientosArchivo : [];
+  if (!arr.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  const rows = arr.slice(0, 6).map((b, i) => {
+    const d = b.ts ? new Date(b.ts).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(22,101,52,.15);">
+      <div style="min-width:0;"><span style="font-weight:700;">${esc(b.alCerrarSemana || 'Cierre')}</span>
+        <span style="color:#15803d;font-size:10px;"> · ${b.count || 0} mov. · ${esc(d)}</span></div>
+      <button type="button" class="fac-btn" style="font-size:10px;padding:4px 10px;flex-shrink:0;" onclick="movArchivoPreview(${i})">PDF</button>
+    </div>`;
+  }).join('');
+  el.innerHTML = '<div style="font-weight:800;margin-bottom:6px;color:#14532d;">Historial archivado (al cerrar semana en Pedidos)</div>' + rows +
+    (arr.length > 6 ? `<div style="font-size:10px;color:#15803d;margin-top:6px;">+ ${arr.length - 6} bloque(s) más antiguos</div>` : '');
 }
 
 function invValorTotal() {
@@ -19181,7 +19301,11 @@ function infOpenEgresosSelector() {
           ${c.estado==='parcial'?` · Pendiente de ${fmt(c.monto)}`:''}
         </div>
       </div>
-      <div style="font-size:13px;font-weight:800;color:var(--danger);white-space:nowrap;">${fmt(monto)}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;" onclick="event.stopPropagation();">
+        <span style="font-size:9px;font-weight:700;color:#94a3b8;">Al informe</span>
+        <input type="text" inputmode="numeric" class="inf-eg-monto-inp" data-inf-eg-idx="${i}" value="${monto}"
+          style="width:100px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:800;font-family:inherit;color:var(--danger);background:var(--white);">
+      </div>
     </label>`;
   }).join('');
 
@@ -19238,8 +19362,10 @@ function infOpenEgresosSelector() {
       const idx = parseInt(cb.value);
       const c = pendientes[idx];
       if (!c) return;
-      const monto = sacCargaPendienteAcum(c);
-      infAddItem('cargas', c.nombre, monto);
+      const inp = overlay.querySelector('.inf-eg-monto-inp[data-inf-eg-idx="' + idx + '"]');
+      const montoBase = sacCargaPendienteAcum(c);
+      const montoInf = parseInt(String(inp && inp.value != null ? inp.value : montoBase).replace(/[^\d]/g, ''), 10) || 0;
+      infAddItem('cargas', c.nombre, montoInf);
       added++;
     });
     close();
@@ -24396,14 +24522,21 @@ function sacOpenConfigSel() {
     html += `<div style="font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;padding:8px 0 4px;">${keyLabels[k]}</div>`;
     html += items.map(item => {
       const alreadyIn = existing.has(k+'-'+item.id);
-      return `<label class="sac-sel-item">
+      return `<div style="display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);padding:6px 0;">
+        <label class="sac-sel-item" style="flex:1;border:none;padding:0;margin:0;">
         <input type="checkbox" value="${k}|${item.id}" ${alreadyIn?'checked disabled':''}>
         <div style="flex:1;">
           <div style="font-weight:600;font-size:12px;">${esc(item.name)}</div>
-          <div style="font-size:10px;color:#94a3b8;">${freqLabel(item.freq)} · ${fmt(item.amount)}</div>
+          <div style="font-size:10px;color:#94a3b8;">${freqLabel(item.freq)} · preset ${fmt(item.amount)}</div>
         </div>
-        <div style="font-weight:800;font-size:12px;color:var(--accent2);">${fmt(item.amount)}</div>
-      </label>`;
+        </label>
+        <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+          <span style="font-size:9px;font-weight:700;color:#94a3b8;">Monto carga</span>
+          <input type="text" inputmode="numeric" class="sac-sel-monto-inp" value="${item.amount||0}"
+            ${alreadyIn?'disabled':''}
+            style="width:92px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:800;font-family:inherit;color:var(--accent2);background:var(--white);">
+        </div>
+      </div>`;
     }).join('');
   });
   body.innerHTML = html || '<div style="padding:20px;text-align:center;color:#94a3b8;">No hay ítems en Configuración</div>';
@@ -24455,17 +24588,42 @@ function sacImportSelected() {
     pasivos:'Crédito', socias:'Retiro', gestion:'Crédito', ingresos:'Ingreso'};
   const checked = document.querySelectorAll('#sac-sel-body input[type=checkbox]:checked:not(:disabled)');
   if (!checked.length) { notify('⚠ Selecciona al menos un ítem'); return; }
+  const cambiosCfg = [];
+  checked.forEach(cb => {
+    const [secKey, itemId] = cb.value.split('|');
+    const item = (state[secKey]||[]).find(x=>String(x.id)===itemId);
+    if (!item) return;
+    const wrap = cb.closest('div');
+    const inp = wrap ? wrap.querySelector('.sac-sel-monto-inp') : null;
+    const montoNuevo = parseInt(String(inp && inp.value != null ? inp.value : item.amount).replace(/[^\d]/g, ''), 10) || 0;
+    const montoPrev = parseInt(String(item.amount != null ? item.amount : 0).replace(/[^\d]/g, ''), 10) || 0;
+    if (montoNuevo !== montoPrev) cambiosCfg.push({ secKey, item, montoNuevo, montoPrev });
+  });
+  let aplicarDefinitivo = false;
+  if (cambiosCfg.length) {
+    aplicarDefinitivo = confirm(
+      'Cambiaste el monto respecto al preset en ' + cambiosCfg.length + ' ítem(es).\n\n' +
+      'Aceptar = guardar también en Configuración (permanente para próximas semanas).\n' +
+      'Cancelar = solo esta semana en cargas (no modifica el preset).'
+    );
+  }
   pushUndo();
   let added = 0;
   checked.forEach(cb => {
     const [secKey, itemId] = cb.value.split('|');
     const item = (state[secKey]||[]).find(x=>String(x.id)===itemId);
     if (!item) return;
+    const wrap = cb.closest('div');
+    const inp = wrap ? wrap.querySelector('.sac-sel-monto-inp') : null;
+    const montoNuevo = parseInt(String(inp && inp.value != null ? inp.value : item.amount).replace(/[^\d]/g, ''), 10) || 0;
+    if (aplicarDefinitivo && montoNuevo !== (parseInt(String(item.amount != null ? item.amount : 0).replace(/[^\d]/g, ''), 10) || 0)) {
+      item.amount = montoNuevo;
+    }
     const itemCarga = {
       id:       'sc_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       nombre:   item.name,
       cat:      keyLabels[secKey] || 'Otro',
-      monto:    item.amount,
+      monto:    montoNuevo,
       montoReal: null,
       estado:   'nopagado',
       resp:     '',
@@ -24479,7 +24637,10 @@ function sacImportSelected() {
   sacCloseSel();
   sacRenderCargas();
   sacCalcBalance();
-  notify(`✅ ${added} ítem${added!==1?'s':''} agregado${added!==1?'s':''} a la semana`);
+  let msg = `✅ ${added} ítem${added!==1?'s':''} agregado${added!==1?'s':''} a la semana`;
+  if (cambiosCfg.length && aplicarDefinitivo) msg += ' · Presets actualizados en Configuración';
+  else if (cambiosCfg.length) msg += ' · Montos solo en esta semana (preset sin cambiar)';
+  notify(msg);
 }
 
 // ── UNSAVED CHANGES ──
@@ -26134,6 +26295,11 @@ window.onload = function() {
         <textarea id="cuad-comentario" rows="2" placeholder="Observaciones del período, novedades, incidentes…"
           style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-family:inherit;font-size:12px;resize:vertical;color:var(--primary);background:transparent;"></textarea>
       </div>
+
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:12px;background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.2);border-radius:8px;cursor:pointer;font-size:11px;line-height:1.45;color:#334155;">
+        <input type="checkbox" id="cuad-archivar-movs" style="margin-top:2px;accent-color:#0ea5e9;flex-shrink:0;">
+        <span><b>Archivar movimientos de inventario</b> al confirmar: guarda el historial actual en un bloque archivado y deja la lista de movimientos en <b>cero</b> para la próxima semana. No borra el pasado: puedes abrir PDF del archivo desde Movimientos.</span>
+      </label>
 
       <!-- Resumen -->
       <div class="cuad-resumen" id="cuad-resumen"></div>
