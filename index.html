@@ -4969,11 +4969,13 @@ body.dark-mode .conflict-overlay{
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
               <button class="fac-btn" id="inv-btn-import-pdf" onclick="invOpenPedidoPdfImport()">📥 Importar pedido PDF</button>
               <button class="fac-btn" id="inv-btn-fill-precios" onclick="invPedidoRellenarPreciosDesdeInventario()" title="Usa precios del inventario (lista por proveedor o factura). No cambia productos ni stock. Omite líneas recepcionadas y líneas que ya tienen precio > 0.">💲 Rellenar precios</button>
+              <button class="fac-btn" id="inv-btn-import-rescate-precios" onclick="invOpenRescatePreciosJson()" title="Lee un respaldo JSON (estado completo), toma precios unitarios de la última semana con pedido valorizado y los copia a preciosProveedor + líneas de pedido actuales/historial (mismo prodId y proveedor). No toca stock.">📂 Precios desde respaldo</button>
               <button class="fac-btn" id="inv-btn-hotload-04may" onclick="invHotLoadPedidoSem04May2026()" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">🔥 Cargar pedido 04-10 mayo ahora</button>
               <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPedidoPdfPorProveedor()" style="display:none;">📄 PDF proveedores</button>
               <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
               <button class="fac-btn" id="inv-btn-transfer" onclick="transferirPedidoAMercaderia()" style="display:none;background:rgba(16,185,129,.1);color:var(--success);border-color:var(--success);">→ Enviar total a Mercadería</button>
               <input type="file" id="inv-pedido-pdf-input" accept="application/pdf,.pdf" style="display:none;" onchange="invImportPedidoPdfOnPick(event)">
+              <input type="file" id="inv-rescate-precios-json" accept="application/json,.json" style="display:none;" onchange="invImportPreciosRescateJsonPick(event)">
             </div>
           </div>
           <div id="inv-sem-kpis" style="display:none;margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
@@ -16249,6 +16251,156 @@ function invPedidoRellenarPreciosDesdeInventario(opts) {
   if (skipped) msg += ' · omitidas (ya con precio o recepcionadas): ' + skipped;
   if (noProv) msg += ' · sin proveedor elegido: ' + noProv;
   notify(msg);
+}
+
+/** Precio unitario en JSON de respaldo (subtotal en UI = qty × precio). */
+function invUnitPriceFromRescateLine_(qty, precioCampo) {
+  var p = Number(precioCampo);
+  if (!isFinite(p) || p <= 0) return 0;
+  return Math.round(p);
+}
+
+function invPickSemanaParaRescatePrecios_(hist) {
+  if (!Array.isArray(hist) || !hist.length) return null;
+  for (var i = 0; i < hist.length; i++) {
+    var sem = hist[i];
+    if (!sem || !Array.isArray(sem.ordenes)) continue;
+    var has = false;
+    sem.ordenes.forEach(function(o) {
+      (o.items || []).forEach(function(it) {
+        if (Number(it.qty) > 0 && Number(it.precio) > 0) has = true;
+      });
+    });
+    if (has) return sem;
+  }
+  return null;
+}
+
+/** map[prodId][invNormTxt(prov)] = { prov, unitPx, sem } (última línea gana si hay duplicados). */
+function invBuildMapPreciosDesdeSemanaRescate_(sem) {
+  var semTag = String(sem.nombre || sem.periodoLabel || '').trim();
+  var map = {};
+  (sem.ordenes || []).forEach(function(o) {
+    (o.items || []).forEach(function(it) {
+      var q = Number(it.qty);
+      var p = Number(it.precio);
+      if (!(q > 0) || !(p > 0)) return;
+      var provRaw = String(it.prov || '').trim();
+      if (!provRaw || provRaw === '__otro__' || provRaw === '__nuevo__') return;
+      var unitPx = invUnitPriceFromRescateLine_(q, p);
+      if (!(unitPx > 0)) return;
+      var provCanon = invEnsureProveedorCatalog(facNormalizeProvNombre(provRaw)) || facNormalizeProvNombre(provRaw);
+      var nk = invNormTxt(provCanon);
+      if (!it.prodId) return;
+      if (!map[it.prodId]) map[it.prodId] = {};
+      map[it.prodId][nk] = { prov: provCanon, unitPx: unitPx, sem: semTag };
+    });
+  });
+  return map;
+}
+
+function invRescateMapLookup_(map, prodId, provRaw) {
+  var sub = map[prodId];
+  if (!sub) return null;
+  var pv = invEnsureProveedorCatalog(facNormalizeProvNombre(String(provRaw || '').trim())) || facNormalizeProvNombre(String(provRaw || '').trim());
+  var nk = invNormTxt(pv);
+  if (sub[nk]) return sub[nk];
+  for (var k in sub) {
+    if (invNormTxt(k) === nk) return sub[k];
+  }
+  return null;
+}
+
+function invApplyPreciosMapToInventario_(map) {
+  var n = 0;
+  Object.keys(map).forEach(function(prodId) {
+    var prod = (state.inventario || []).find(function(p) { return p.id === prodId; });
+    if (!prod) return;
+    var sub = map[prodId];
+    Object.keys(sub).forEach(function(nk) {
+      var e = sub[nk];
+      if (!e || !(e.unitPx > 0) || !e.prov) return;
+      invUpsertPrecioProveedor(prodId, e.prov, Math.round(e.unitPx), { source: 'rescate_json', sem: e.sem || '' });
+      n++;
+    });
+  });
+  return n;
+}
+
+function invApplyPreciosMapAPedidosEnState_(map, semLabel) {
+  var n = 0;
+  function scanSem(sem) {
+    if (!sem || !Array.isArray(sem.ordenes)) return;
+    (sem.ordenes || []).forEach(function(o) {
+      (o.items || []).forEach(function(it) {
+        if (!it || !(Number(it.qty) > 0)) return;
+        var e = invRescateMapLookup_(map, it.prodId, it.prov);
+        if (!e || !(e.unitPx > 0)) return;
+        it.precio = Math.round(e.unitPx);
+        it.precioMeta = { source: 'rescate_pedido', sem: semLabel || e.sem || '' };
+        n++;
+      });
+    });
+  }
+  if (state.semanaActiva) scanSem(state.semanaActiva);
+  (state.semanasHistorial || []).forEach(scanSem);
+  return n;
+}
+
+function invImportPreciosDesdeEstadoRescate_(backupState, fileLabel) {
+  invInit();
+  var hist = backupState.semanasHistorial || [];
+  var srcSem = invPickSemanaParaRescatePrecios_(hist);
+  if (!srcSem && backupState.semanaActiva && Array.isArray(backupState.semanaActiva.ordenes)) {
+    srcSem = invPickSemanaParaRescatePrecios_([backupState.semanaActiva]);
+  }
+  if (!srcSem) {
+    notify('⚠ En el respaldo no hay semana (historial ni activa) con líneas qty>0 y precio>0');
+    return;
+  }
+  var semLabel = (srcSem.nombre || '') + (srcSem.periodoLabel ? ' · ' + srcSem.periodoLabel : '');
+  var map = invBuildMapPreciosDesdeSemanaRescate_(srcSem);
+  var prodKeys = Object.keys(map).filter(function(pid) { return Object.keys(map[pid] || {}).length > 0; });
+  if (!prodKeys.length) {
+    notify('⚠ No se extrajeron precios del pedido en esa semana');
+    return;
+  }
+  var msg = '¿Importar precios desde esta semana del respaldo?\n\n' + semLabel +
+    '\n\n• Se actualizará preciosProveedor (lista por producto/proveedor).\n• Se actualizarán precios en pedido semanal abierto e historial donde coincida prodId+proveedor.\n• No se modifica stock ni cantidades pedidas.\n\nArchivo: ' + (fileLabel || '—');
+  if (!confirm(msg)) return;
+  pushUndo();
+  var invN = invApplyPreciosMapToInventario_(map);
+  var pedN = invApplyPreciosMapAPedidosEnState_(map, semLabel);
+  try { invRender(); } catch (e1) {}
+  try { invRenderPedido(); } catch (e2) {}
+  invUpdateSemKpis();
+  markUnsaved();
+  notify('✅ Precios desde respaldo · lista inventario: ' + invN + ' · líneas pedido/historial: ' + pedN + ' · productos en mapa: ' + prodKeys.length);
+}
+
+function invOpenRescatePreciosJson() {
+  var inp = document.getElementById('inv-rescate-precios-json');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
+}
+
+function invImportPreciosRescateJsonPick(ev) {
+  var f = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function() {
+    try {
+      var parsed = JSON.parse(reader.result);
+      var st = parsed.state || parsed;
+      if (!st || typeof st !== 'object') throw new Error('JSON sin objeto state');
+      invImportPreciosDesdeEstadoRescate_(st, f.name);
+    } catch (e) {
+      notify('⚠ No se pudo leer el respaldo: ' + (e.message || e), 20000);
+    }
+  };
+  reader.onerror = function() { notify('⚠ Error leyendo archivo', 8000); };
+  reader.readAsText(f, 'UTF-8');
 }
 
 function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {

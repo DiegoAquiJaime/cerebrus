@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.5",
-  "notes": "Inventario pedido semanal: botón Rellenar precios desde inventario/lista/factura (solo líneas con qty, precio 0, sin recepción; no toca inventario ni stock)."
+  "version": "2026.05.04.6",
+  "notes": "Inventario: importar precios desde respaldo JSON (semana historial) a preciosProveedor + líneas de pedido/historial; no toca stock ni cantidades."
 }
