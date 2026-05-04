@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.6",
-  "notes": "Inventario: importar precios desde respaldo JSON (semana historial) a preciosProveedor + líneas de pedido/historial; no toca stock ni cantidades."
+  "version": "2026.05.04.7",
+  "notes": "Inventario lista: botón Precios desde respaldo en barra principal (input file compartido con pedido semanal)."
 }

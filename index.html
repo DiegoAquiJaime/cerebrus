@@ -4846,11 +4846,13 @@ body.dark-mode .conflict-overlay{
           </button>
           <button class="fac-btn" onclick="openInvImportFromFacsModal()">🔗 Desde facturas</button>
           <button class="fac-btn" onclick="invOpenRestoreFile()">♻ Restaurar inventario</button>
+          <button class="fac-btn" onclick="invOpenRescatePreciosJson()" title="Importa precios unitarios desde un respaldo de estado (semana en historial) a preciosProveedor y a líneas de pedido/historial. No toca stock.">📂 Precios desde respaldo</button>
           <button class="fac-btn" onclick="cereBackupNowAll()">💾 Respaldos JSON</button>
           <button class="fac-btn" onclick="invExportDueñaPdf()" title="Respeta búsqueda y filtros actuales">📄 PDF inventario</button>
           <button class="fac-btn" onclick="invExportDueñaExcel()" title="Abre en Excel · respeta filtros">📊 Excel inventario</button>
         </div>
         <input type="file" id="inv-restore-file" accept=".json,application/json" style="display:none;" onchange="invHandleRestoreFile(this.files && this.files[0])">
+        <input type="file" id="inv-rescate-precios-json" accept="application/json,.json" style="display:none;" onchange="invImportPreciosRescateJsonPick(event)">
         <input type="file" id="seb-comp-tsv-file" accept=".txt,.tsv,.csv,text/plain,text/tab-separated-values" style="display:none;" onchange="sebHandleCompTsvFile(this.files && this.files[0])">
         <input type="file" id="seb-fm-pack-file" multiple accept=".tab,.txt,.tsv,.csv,text/plain,text/tab-separated-values" style="display:none;" onchange="sebHandleFmPackFiles(this.files)">
         <div class="inv-filter-bar" id="inv-filter-bar">
@@ -4975,7 +4977,6 @@ body.dark-mode .conflict-overlay{
               <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
               <button class="fac-btn" id="inv-btn-transfer" onclick="transferirPedidoAMercaderia()" style="display:none;background:rgba(16,185,129,.1);color:var(--success);border-color:var(--success);">→ Enviar total a Mercadería</button>
               <input type="file" id="inv-pedido-pdf-input" accept="application/pdf,.pdf" style="display:none;" onchange="invImportPedidoPdfOnPick(event)">
-              <input type="file" id="inv-rescate-precios-json" accept="application/json,.json" style="display:none;" onchange="invImportPreciosRescateJsonPick(event)">
             </div>
           </div>
           <div id="inv-sem-kpis" style="display:none;margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
