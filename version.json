@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.2",
-  "notes": "Informe diario: importar egresos — monto del modal parsea formato Chile (2.000) con parseNumCL; input decimal + format al blur. Montos informe: validación ya tolera miles . y decimales ,."
+  "version": "2026.05.04.3",
+  "notes": "Inventario pedido semanal: botón importación PDF por OCR + parser de líneas (proveedor/producto/cantidad/unidad). Se agregó auto-carga one-shot del pedido 04-10 mayo 2026 para usuario Bodega."
 }

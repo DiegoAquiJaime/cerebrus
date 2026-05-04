@@ -4967,9 +4967,12 @@ body.dark-mode .conflict-overlay{
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="fac-btn" id="inv-btn-iniciar" onclick="invOpenSemanaModal()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
+              <button class="fac-btn" id="inv-btn-import-pdf" onclick="invOpenPedidoPdfImport()">📥 Importar pedido PDF</button>
+              <button class="fac-btn" id="inv-btn-hotload-04may" onclick="invHotLoadPedidoSem04May2026()" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">🔥 Cargar pedido 04-10 mayo ahora</button>
               <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPedidoPdfPorProveedor()" style="display:none;">📄 PDF proveedores</button>
               <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
               <button class="fac-btn" id="inv-btn-transfer" onclick="transferirPedidoAMercaderia()" style="display:none;background:rgba(16,185,129,.1);color:var(--success);border-color:var(--success);">→ Enviar total a Mercadería</button>
+              <input type="file" id="inv-pedido-pdf-input" accept="application/pdf,.pdf" style="display:none;" onchange="invImportPedidoPdfOnPick(event)">
             </div>
           </div>
           <div id="inv-sem-kpis" style="display:none;margin-top:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
@@ -13993,6 +13996,9 @@ function _postLoadSetup() {
     }, spokeBitacora ? 4200 : 600);
   }, 800);
   infInit();
+  setTimeout(function() {
+    try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
+  }, 1200);
 }
 
 // ============================================================
@@ -15288,6 +15294,280 @@ function invIniciarSemana(startIso, endIso) {
   notify('▶ Semana iniciada (' + state.semanaActiva.periodoLabel + ')');
 }
 
+function invOpenPedidoPdfImport() {
+  const sem = invGetSemana();
+  if (!sem || sem.cerrada) {
+    notify('⚠ Inicia una semana activa antes de importar pedido PDF');
+    invSubTab('pedido');
+    return;
+  }
+  const inp = document.getElementById('inv-pedido-pdf-input');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
+}
+
+function invParsePedidoFromText(rawText) {
+  const lines = String(rawText || '')
+    .split(/\r?\n/)
+    .map(function(l) { return l.replace(/\s+/g, ' ').trim(); })
+    .filter(Boolean);
+  const rows = [];
+  let prov = '';
+  lines.forEach(function(line) {
+    if (/^--\s*\d+\s+of\s+\d+\s*--$/i.test(line)) return;
+    if (/^TOTAL\s+/i.test(line)) return;
+    if (/^PRODUCTO\s+QTY\s+UNIDAD/i.test(line)) return;
+    if (/^📋\s*PEDIDO/i.test(line)) return;
+    if (/^CEREBRUS/i.test(line)) return;
+    if (/^ADMINISTRADO POR/i.test(line)) return;
+    if (/^🏷\s*/.test(line)) {
+      prov = line.replace(/^🏷\s*/, '').trim();
+      return;
+    }
+    if (!prov) return;
+    const clean = line.replace(/\s+\$[\d\.\,]+(\s+\$[\d\.\,]+)?$/g, '').trim();
+    const m = clean.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)\s+([A-Za-zÁÉÍÓÚÜÑa-z0-9\/]+)$/);
+    if (!m) return;
+    rows.push({
+      proveedor: prov,
+      producto: m[1].trim(),
+      qty: parseNumCL(m[2], false) || 0,
+      unidad: (m[3] || 'unidad').trim()
+    });
+  });
+  return rows;
+}
+
+function invFindProductoByNombrePedido(nombre) {
+  const target = invNormTxt(nombre);
+  if (!target) return null;
+  const inv = state.inventario || [];
+  let exact = inv.find(function(p) { return invNormTxt(p.nombre) === target; });
+  if (exact) return exact;
+  exact = inv.find(function(p) {
+    const pn = invNormTxt(p.nombre);
+    return pn.includes(target) || target.includes(pn);
+  });
+  if (exact) return exact;
+  return null;
+}
+
+function invApplyPedidoRows(rows, sourceLabel) {
+  const sem = invGetSemana();
+  if (!sem || sem.cerrada) return { ok:false, reason:'no_semana' };
+  const orden = invGetOrdenDestino(sem);
+  if (!orden) return { ok:false, reason:'no_orden' };
+  let ok = 0, miss = 0;
+  pushUndo();
+  rows.forEach(function(r) {
+    if (!r || !(r.qty > 0)) return;
+    const prod = invFindProductoByNombrePedido(r.producto);
+    if (!prod) { miss++; return; }
+    let it = invFindItem(orden, prod.id);
+    if (!it) {
+      it = {
+        prodId: prod.id, qty: 0, prov: '', precio: invBestPrice(prod) || 0,
+        unidadPedido: (prod.unidad || 'u'), recibido: false, qtyRecibida: 0, stockAppliedQty: 0
+      };
+      orden.items.push(it);
+    }
+    it.qty = Math.max(0, Number(it.qty || 0) + Number(r.qty || 0));
+    const provCatalog = invEnsureProveedorCatalog(r.proveedor || '');
+    if (provCatalog) it.prov = provCatalog;
+    if (r.unidad) it.unidadPedido = r.unidad;
+    ok++;
+  });
+  invRenderPedido();
+  invUpdateSemKpis();
+  markUnsaved();
+  notify(`✅ Pedido importado (${sourceLabel || 'PDF'}) · ${ok} líneas${miss ? ' · '+miss+' sin match' : ''}`);
+  return { ok:true, imported:ok, missed:miss };
+}
+
+async function invImportPedidoPdfOnPick(ev) {
+  const file = ev && ev.target && ev.target.files ? ev.target.files[0] : null;
+  if (!file) return;
+  const sem = invGetSemana();
+  if (!sem || sem.cerrada) { notify('⚠ Inicia una semana activa antes de importar'); return; }
+  try {
+    notify('⏳ Leyendo PDF de pedido...');
+    const base64 = await iaToBase64(file);
+    const uploadRes = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action:'subirPDF', nombre:file.name, base64, mtype:'application/pdf' })
+    });
+    const uploadData = await cerebrusReadJson(uploadRes, 'Subida PDF pedido');
+    if (!uploadData.ok) throw new Error(uploadData.error || 'No se pudo subir el PDF');
+    const ocrData = await cerebrusOcrFileWithBackoff(uploadData.fileId);
+    const txt = String(ocrData && ocrData.text || '').trim();
+    if (txt.length < 20) throw new Error('OCR sin contenido útil');
+    const rows = invParsePedidoFromText(txt);
+    if (!rows.length) throw new Error('No se detectaron líneas de pedido');
+    invApplyPedidoRows(rows, file.name);
+  } catch (e) {
+    notify('⚠ Error importando pedido PDF: ' + (e.message || e), 18000);
+  }
+}
+
+function invAutoImportPedidoSem04May2026IfNeeded() {
+  try {
+    if (state._invAutoPedidoSem04May2026Done) return;
+    if (state.semanaActiva && !state.semanaActiva.cerrada) return;
+    invIniciarSemana('2026-05-04', '2026-05-10');
+    const raw = `🏷 AGROLMUE
+PULPA FRUTILLA 10 kg
+PULPA MANGO 10 kg
+🏷 AGROMAR
+ALMEJAS 5 kg
+CHOLGAS 10 kg
+CONGRIO FRESCO 50 kg
+PINZAS DE JAIBA 1 kg
+🏷 ARIZTIA
+PECHUGA DE POLLO 2 cj
+TRUTRO DE POLLO 1 cj
+🏷 ASEO TORRES
+BOLSA PREPICADO 20X30 1 unidad
+BOLSA PREPICADO 30X50 1 unidad
+CLORO 5 lt
+PAÑOS AMARILLO 4 unidad
+PAP ROJO 1 unidad
+PAPEL HIGIENICO 1 pack
+TOALLA DE PAPEL ELITE 1 display
+TRAPEROS 2 unidad
+🏷 CCU
+AGUA BIDON SIN GAS 6 LT 12 unidad
+AGUA MINERAL CON GAS 3 pack
+AGUA MINERAL SIN GAS 4 pack
+AUSTRAL LAGER 24 unidad
+CANADA DRY 24 unidad
+CANADA DRY CERO 48 unidad
+HEINEKEN 24 unidad
+KUNSTMANN LAGER 24 unidad
+KUNSTMANN SIN ALCOHOL 24 unidad
+KUNSTMANN TOROBAYO 24 unidad
+PEPSI ZERO 60 unidad
+RAMAZZOTTI 6 unidad
+SEVEN UP 24 unidad
+SOL 24 unidad
+TONICA 24 unidad
+VINA MAR BRUT 1/2 12 unidad
+VINA MAR BRUT 3/4 6 unidad
+🏷 COLUN
+CREMA DE LECHE 2 cj
+LECHE ENTERA 5 cj
+MANJAR 6 kg
+MANTEQUILLA 10 kg
+🏷 DON CARLOS SAAVEDRA
+PISCO CAMPANARIO 40 36 unidad
+🏷 EBISU
+CONGRIO HGT 70 kg
+OSTIÓN A GRANEL BOLSA 5 kg
+🏷 ENVASES EUROPACK
+GUANTES L 1 unidad
+GUANTES S 1 unidad
+JABON DESINFECTANTE COCINA 5 lt
+PAPEL ALUMINIO 1 unidad
+SERVILLETAS NEGRAS 1 cj
+TOALLA DE PAPEL CORRIENTE 5 display
+🏷 FRIGOSORNO
+CARNE MOLIDA 6 kg
+FILETE ENTERO 12 kg
+LOMO LISO ENTERO 7 kg
+PALANCA ENTERA 6 kg
+🏷 FRUTAS, VERDURAS Y HIERBAS
+LIMONES JUGO 4 malla
+🏷 FRUTATTO
+HELADO VAINILLA 4 unidad
+🏷 GLOBAL FROZEN
+CAMARÓN EC.. UATORIANO KILO 20 kg
+CAMARÓN NACIONAL KILO 10 kg
+🏷 ICB
+ACEITE MARAVILLA 12 lt
+ARROZ ARBORIO 4 kg
+ARROZ G1 10 kg
+AZÚCAR FLOR 2 kg
+AZÚCAR GRANULADA 25 kg
+CONCENTRADO TOMATE 1 kg
+FIDEOS 7 unidad
+LECHE EVAPORADA 3 unidad
+LENTEJAS 2 kg
+MAICENA 2 kg
+MAYONESA (2K) 3 unidad
+PALMITOS ENTEROS 800 G 6 unidad
+PAPAS FRITAS 16 bolsa
+SAL 6 kg
+VINAGRE BLANCO O MANZANA 5 lt
+🏷 K. SHARIFF
+LOCOS FRASCOS 12 unidad
+MACHAS 1/2 CONCHA 100 bandeja
+🏷 LOGISTICA COSTERA
+SALMÓN FRESCO 35 kg
+🏷 MAR AZUL
+ACEITE DE ALTA FRITURA 60 l
+LANGOSTINOS 2 kg
+🏷 PREMIUM BRANDS
+CHAMPAGNE TATTINGER 3 unidad
+MONTE ALPHA CARMENERE 6 unidad
+MONTE OUTER LIMITS S. BLANC 12 unidad
+MONTES CLASSIC SERIES S. BLANC 6 unidad
+MONTGRAS ANTU CARMENERE 6 unidad
+🏷 QUESOS JUAN ARDILES
+QUESO DE CABRA 2 kg
+QUESO PARMESANOO REGGIANITO 1 unidad
+🏷 SALVADOR RAMOS
+CARNE DE JAIBA 8 kg
+🏷 SEGAFREDO
+CAFÉ GRANO 3 kg
+🏷 SEVEN SPA
+PAN RALLADO 6 kg
+🏷 VINOTECA
+ALBUMINA 2 kg
+AMARETTO DISARONNO 2 unidad
+AMARGO ANGOSTURA 1 unidad
+APEROL 60 unidad
+BAILEYS 1 unidad
+CASAS DEL BOSQUES S. BLANC 12 unidad
+CREMA DE CASSIS MITJANS 1 unidad
+GIN BEEFEATER 1 unidad
+JEREZ TIO PEPE 1 unidad
+LICOR CACAO MITJANS 1 unidad
+LICOR CAFÉ MITJANS 1 unidad
+MENTA MARIE BRIZAT 1 unidad
+PISCO ALTO DEL CARMEN 40 3 unidad
+STA. EMA TERROIR CHARDONNAY 3/4 12 unidad
+STA. EMA TERROIR MERLOT 3/4 12 unidad
+TEQUILA OLMECA 1 unidad
+TRIPLE SEC MITJANS 1 unidad
+VINO BLANCO BIDON 2 unidad
+🏷 VIRGINIA
+BRIOMIL DESENGRASANTE 5 lt
+LAVALOZA 10 lt`;
+    const rows = invParsePedidoFromText(raw);
+    const res = invApplyPedidoRows(rows, 'Pedido Semana 04-10 MAYO');
+    if (res && res.ok) {
+      state._invAutoPedidoSem04May2026Done = true;
+      markUnsaved();
+      notify('✅ Pedido 04-10 mayo cargado automáticamente');
+    }
+  } catch (e) {
+    console.warn('[inv auto import pedido sem 04 may 2026]', e);
+  }
+}
+
+function invHotLoadPedidoSem04May2026() {
+  try {
+    state._invAutoPedidoSem04May2026Done = false;
+    if (!state.semanaActiva || state.semanaActiva.cerrada) {
+      invIniciarSemana('2026-05-04', '2026-05-10');
+    }
+    invAutoImportPedidoSem04May2026IfNeeded();
+    invSubTab('pedido');
+  } catch (e) {
+    notify('⚠ No se pudo cargar en caliente: ' + (e.message || e), 18000);
+  }
+}
+
 function invAgregarOrden() {
   const sem = invGetSemana(); if (!sem||sem.cerrada) return;
   pushUndo();
@@ -15318,6 +15598,11 @@ function invRenderPedido() {
   const btnExportXls = document.getElementById('inv-btn-export-xls');
 
   if (!sem) {
+    if (!state._invAutoPedidoSem04May2026Done) {
+      setTimeout(function() {
+        try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
+      }, 80);
+    }
     set('inv-sem-titulo','Ninguna semana iniciada');
     set('inv-sem-estado','Presiona ▶ Iniciar semana para comenzar');
     if (document.getElementById('inv-sem-kpis')) document.getElementById('inv-sem-kpis').style.display='none';
