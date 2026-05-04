@@ -5997,60 +5997,72 @@ let _warnFocusEl = null;  // el input que generó la advertencia
 // Acumula advertencias durante el ingreso actual y las muestra juntas
 const _pendingWarns = [];
 
+/** Tras quitar $, espacios, dígitos y separadores chilenos (., y - inicial), ¿queda basura? */
+function amountRawHasInvalidChars(raw) {
+  let s = String(raw || '').trim().replace(/\$/g, '').replace(/\s/g, '');
+  if (!s) return false;
+  if (s.startsWith('-')) s = s.slice(1);
+  const junk = s.replace(/[\d.,]/g, '');
+  return junk.length > 0;
+}
+
 function validateAmount(key, itemName, rawInput, parsedValue, inputEl) {
   const issues = [];
 
-  // 1. ¿Contiene letras u otros caracteres no numéricos?
+  // 1. Caracteres no permitidos (permite 1.234,56 y 2.000 miles chilenos; no mezcla con regex antigua que confundía)
   const strVal = String(rawInput).trim();
-  if (strVal !== '' && (isNaN(parsedValue) || /[a-zA-Z!@#$%^&*()_+=\[\]{};':"\\|,<>?/]/.test(strVal))) {
+  const parsedNum = typeof parsedValue === 'number' && !isNaN(parsedValue)
+    ? parsedValue
+    : parseNumCL(strVal, true);
+  if (strVal !== '' && (isNaN(parsedNum) || !isFinite(parsedNum) || amountRawHasInvalidChars(strVal))) {
     issues.push({
       level: 'error',
       icon: '🔤',
       title: 'Texto en campo numérico',
-      msg: `"${esc(strVal)}" no es un número válido. Solo se permiten cifras.`
+      msg: `"${esc(strVal)}" no es un número válido. Usa formato Chile: miles con punto (2.000) y decimales con coma (1.234,5).`
     });
   }
 
-  if (issues.length === 0 && !isNaN(parsedValue)) {
+  if (issues.length === 0 && !isNaN(parsedNum) && isFinite(parsedNum)) {
     // 2. Valor negativo
-    if (parsedValue < 0) {
+    if (parsedNum < 0) {
       issues.push({
         level: 'error',
         icon: '➖',
         title: 'Valor negativo',
-        msg: `El monto ingresado es negativo (${fmt(parsedValue)}). Los montos deben ser positivos.`
+        msg: `El monto ingresado es negativo (${fmt(parsedNum)}). Los montos deben ser positivos.`
       });
     }
 
     // 3. Decimal sospechoso: valor > 0 pero < 1 (ej: 0.3)
-    if (parsedValue > 0 && parsedValue < 1) {
+    if (parsedNum > 0 && parsedNum < 1) {
       issues.push({
         level: 'error',
         icon: '🔢',
         title: 'Decimal sin sentido',
-        msg: `El valor ${parsedValue} parece un error. ¿Olvidaste ingresar el monto completo? Los montos son en pesos chilenos.`
+        msg: `El valor ${parsedNum} parece un error. ¿Olvidaste ingresar el monto completo? Los montos son en pesos chilenos.`
       });
     }
 
     // 4. Valor demasiado bajo para la sección
     const min = VAL_MIN[key] || 1000;
-    if (parsedValue > 0 && parsedValue < min) {
+    if (parsedNum > 0 && parsedNum < min) {
       issues.push({
         level: 'warn',
         icon: '💡',
         title: 'Monto inusualmente bajo',
-        msg: `${fmt(parsedValue)} parece muy bajo para "${esc(itemName)}". ¿Es en pesos? El mínimo esperado para esta sección es ${fmt(min)}.`
+        msg: `${fmt(parsedNum)} parece muy bajo para "${esc(itemName)}". ¿Es en pesos? El mínimo esperado para esta sección es ${fmt(min)}.`
       });
     }
 
     // 5. Valor excesivamente alto
     const max = VAL_MAX[key] || 9999999999;
-    if (parsedValue > max) {
+    if (parsedNum > max) {
       issues.push({
         level: 'warn',
         icon: '📈',
         title: 'Monto excepcionalmente alto',
-        msg: `${fmt(parsedValue)} supera el máximo esperado (${fmt(max)}). Verifica que no hayas ingresado un dígito de más.`
+        msg: `${fmt(parsedNum)} supera el máximo esperado (${fmt(max)}). Verifica que no hayas ingresado un dígito de más.`
       });
     }
   }
@@ -6240,8 +6252,8 @@ function handleAmountInput(inputEl, key, id) {
     if (el) el.textContent = fmt(item.amount * item.freq);
     calc();
   }
-  // Real-time letter detection: show immediately
-  if (raw !== '' && /[a-zA-Z!@#$%^&*()_+=\[\]{};':"\\|<>?/]/.test(raw)) {
+  // Detección en vivo: caracteres fuera de formato Chile (miles . decimales ,)
+  if (raw !== '' && amountRawHasInvalidChars(raw)) {
     inputEl.classList.add('val-error');
     clearTimeout(inputEl._vt);
     inputEl._vt = setTimeout(() => {
@@ -19303,7 +19315,8 @@ function infOpenEgresosSelector() {
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;" onclick="event.stopPropagation();">
         <span style="font-size:9px;font-weight:700;color:#94a3b8;">Al informe</span>
-        <input type="text" inputmode="numeric" class="inf-eg-monto-inp" data-inf-eg-idx="${i}" value="${monto}"
+        <input type="text" inputmode="decimal" class="inf-eg-monto-inp" data-inf-eg-idx="${i}" value="${monto}"
+          onblur="formatNumericInputValue(this)"
           style="width:100px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:800;font-family:inherit;color:var(--danger);background:var(--white);">
       </div>
     </label>`;
@@ -19364,7 +19377,8 @@ function infOpenEgresosSelector() {
       if (!c) return;
       const inp = overlay.querySelector('.inf-eg-monto-inp[data-inf-eg-idx="' + idx + '"]');
       const montoBase = sacCargaPendienteAcum(c);
-      const montoInf = parseInt(String(inp && inp.value != null ? inp.value : montoBase).replace(/[^\d]/g, ''), 10) || 0;
+      const rawM = inp && inp.value != null && String(inp.value).trim() !== '' ? inp.value : montoBase;
+      const montoInf = Math.max(0, parseNumCL(rawM, true) || 0);
       infAddItem('cargas', c.nombre, montoInf);
       added++;
     });

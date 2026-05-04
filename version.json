@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.1",
-  "notes": "Inventario: PDF/Excel Todas agrupado por categoría. Pedidos: opción archivar movimientos al cerrar semana. SAC: monto editable al importar gastos fijos + confirmar si actualiza Config. Informe: monto editable al importar egresos."
+  "version": "2026.05.04.2",
+  "notes": "Informe diario: importar egresos — monto del modal parsea formato Chile (2.000) con parseNumCL; input decimal + format al blur. Montos informe: validación ya tolera miles . y decimales ,."
 }
