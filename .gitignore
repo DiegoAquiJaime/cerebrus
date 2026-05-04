@@ -13,6 +13,8 @@ data/backups/
 scripts/*
 !scripts/parse-bodega-csv.mjs
 !scripts/generate-cerebrus-architecture-pdf.py
+# PDF generado localmente (regenerar con scripts/generate-cerebrus-architecture-pdf.py)
+Cerebrus_Arquitectura_y_flujo.pdf
 # Respaldos / reportes generados localmente (no versionar)
 Cerebrus_Respaldo_*.json
 reporte_facturas_pendientes_proveedores.*
