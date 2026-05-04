@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.4",
-  "notes": "Pedido semanal mayo: hotload con force + merge opcional (hotload reemplaza cantidades según PDF, sin duplicar al re-pulsar). Auto-import solo crea semana si no hay abierta."
+  "version": "2026.05.04.5",
+  "notes": "Inventario pedido semanal: botón Rellenar precios desde inventario/lista/factura (solo líneas con qty, precio 0, sin recepción; no toca inventario ni stock)."
 }

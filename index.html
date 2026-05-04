@@ -4968,6 +4968,7 @@ body.dark-mode .conflict-overlay{
               <button class="fac-btn" id="inv-btn-iniciar" onclick="invOpenSemanaModal()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
               <button class="fac-btn" id="inv-btn-import-pdf" onclick="invOpenPedidoPdfImport()">📥 Importar pedido PDF</button>
+              <button class="fac-btn" id="inv-btn-fill-precios" onclick="invPedidoRellenarPreciosDesdeInventario()" title="Usa precios del inventario (lista por proveedor o factura). No cambia productos ni stock. Omite líneas recepcionadas y líneas que ya tienen precio > 0.">💲 Rellenar precios</button>
               <button class="fac-btn" id="inv-btn-hotload-04may" onclick="invHotLoadPedidoSem04May2026()" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">🔥 Cargar pedido 04-10 mayo ahora</button>
               <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPedidoPdfPorProveedor()" style="display:none;">📄 PDF proveedores</button>
               <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
@@ -16150,6 +16151,104 @@ function invSetOrdenProv(semId,ordenId,prodId,val){
   }
   invRenderPedido();
   markUnsaved();
+}
+
+/** Precio desde facturas sin prompts (batch). Solo si unidad factura compatible con inventario. */
+function invPrecioFacturaSilentParaProv_(prod, prov) {
+  if (!prod || !prov) return null;
+  var hits = invColectarPreciosFacturaHits_(prod, prov);
+  if (!hits.length) return null;
+  hits.sort(function(a, b) {
+    if (b.ts !== a.ts) return b.ts - a.ts;
+    return (b.sc || 0) - (a.sc || 0);
+  });
+  for (var i = 0; i < hits.length; i++) {
+    var h = hits[i];
+    var line = h.line || {};
+    if (!invInvYFacturaUnidadCompatibles(prod.unidad, line.unidad).ok) continue;
+    var pu = Number(h.precio || 0);
+    if (!(pu > 0)) continue;
+    var fac = h.fac || {};
+    return {
+      precio: pu,
+      precioMeta: {
+        source: 'factura',
+        facNro: fac.nro || '',
+        facEmi: fac.emision || '',
+        lineUnidad: String(line.unidad || '').trim(),
+        unitWarn: false,
+        sc: h.sc
+      }
+    };
+  }
+  return null;
+}
+
+/**
+ * Asigna precio unitario a una línea de pedido según inventario/lista/facturas (no modifica inventario).
+ * @returns true si quedó precio > 0
+ */
+function invPedidoLineSetPrecioDesdeCatalogo_(it, prod) {
+  if (!it || !prod) return false;
+  var prov = String(it.prov || '').trim();
+  if (!prov || prov === '__otro__' || prov === '__nuevo__') return false;
+  delete it.precioMeta;
+  var pe = _getPreciosUnified(prod).find(function(x) { return (x.prov || x.nombre) === prov; });
+  if (pe && pe.precio) {
+    it.precio = pe.precio;
+    it.precioMeta = { source: 'lista', prov: prov };
+    return true;
+  }
+  var facSilent = invPrecioFacturaSilentParaProv_(prod, prov);
+  if (facSilent && facSilent.precio) {
+    it.precio = facSilent.precio;
+    it.precioMeta = facSilent.precioMeta;
+    return true;
+  }
+  var best = invBestPrice(prod);
+  if (best > 0) {
+    it.precio = best;
+    var bp = invBestProvider(prod) || '';
+    it.precioMeta = { source: 'lista', prov: bp };
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Rellena precios en pedido semanal desde datos de inventario (lista por proveedor / factura / mejor precio).
+ * No altera productos ni stock. Por defecto solo líneas con precio 0 y sin recepción confirmada.
+ */
+function invPedidoRellenarPreciosDesdeInventario(opts) {
+  opts = opts || {};
+  var onlyZeros = opts.onlyZeros !== false;
+  var sem = invGetSemana();
+  if (!sem || sem.cerrada) {
+    notify('⚠ Abre una semana activa para rellenar precios');
+    invSubTab('pedido');
+    return;
+  }
+  var n = 0, skipped = 0, noProv = 0;
+  pushUndo();
+  sem.ordenes.forEach(function(o) {
+    (o.items || []).forEach(function(it) {
+      if (!(Number(it.qty) > 0)) return;
+      if (it.recibido) { skipped++; return; }
+      if (onlyZeros && Number(it.precio || 0) > 0) { skipped++; return; }
+      var prod = state.inventario.find(function(p) { return p.id === it.prodId; });
+      if (!prod) return;
+      var pv = String(it.prov || '').trim();
+      if (!pv || pv === '__otro__' || pv === '__nuevo__') { noProv++; return; }
+      if (invPedidoLineSetPrecioDesdeCatalogo_(it, prod)) n++;
+    });
+  });
+  invRenderPedido();
+  invUpdateSemKpis();
+  markUnsaved();
+  var msg = '✅ Precios rellenados: ' + n + ' línea' + (n !== 1 ? 's' : '');
+  if (skipped) msg += ' · omitidas (ya con precio o recepcionadas): ' + skipped;
+  if (noProv) msg += ' · sin proveedor elegido: ' + noProv;
+  notify(msg);
 }
 
 function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {
