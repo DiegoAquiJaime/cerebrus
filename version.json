@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.3",
-  "notes": "Inventario pedido semanal: botón importación PDF por OCR + parser de líneas (proveedor/producto/cantidad/unidad). Se agregó auto-carga one-shot del pedido 04-10 mayo 2026 para usuario Bodega."
+  "version": "2026.05.04.4",
+  "notes": "Pedido semanal mayo: hotload con force + merge opcional (hotload reemplaza cantidades según PDF, sin duplicar al re-pulsar). Auto-import solo crea semana si no hay abierta."
 }

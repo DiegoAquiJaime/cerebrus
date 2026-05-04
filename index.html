@@ -15353,7 +15353,9 @@ function invFindProductoByNombrePedido(nombre) {
   return null;
 }
 
-function invApplyPedidoRows(rows, sourceLabel) {
+function invApplyPedidoRows(rows, sourceLabel, applyOpts) {
+  applyOpts = applyOpts || {};
+  const merge = applyOpts.merge !== false;
   const sem = invGetSemana();
   if (!sem || sem.cerrada) return { ok:false, reason:'no_semana' };
   const orden = invGetOrdenDestino(sem);
@@ -15372,7 +15374,8 @@ function invApplyPedidoRows(rows, sourceLabel) {
       };
       orden.items.push(it);
     }
-    it.qty = Math.max(0, Number(it.qty || 0) + Number(r.qty || 0));
+    const q = Math.max(0, Number(r.qty || 0));
+    it.qty = merge ? Math.max(0, Number(it.qty || 0) + q) : q;
     const provCatalog = invEnsureProveedorCatalog(r.proveedor || '');
     if (provCatalog) it.prov = provCatalog;
     if (r.unidad) it.unidadPedido = r.unidad;
@@ -15410,11 +15413,15 @@ async function invImportPedidoPdfOnPick(ev) {
   }
 }
 
-function invAutoImportPedidoSem04May2026IfNeeded() {
+function invAutoImportPedidoSem04May2026IfNeeded(opts) {
+  opts = opts || {};
+  const force = !!opts.force;
   try {
-    if (state._invAutoPedidoSem04May2026Done) return;
-    if (state.semanaActiva && !state.semanaActiva.cerrada) return;
-    invIniciarSemana('2026-05-04', '2026-05-10');
+    if (!force && state._invAutoPedidoSem04May2026Done) return;
+    if (!force && state.semanaActiva && !state.semanaActiva.cerrada) return;
+    if (!state.semanaActiva || state.semanaActiva.cerrada) {
+      invIniciarSemana('2026-05-04', '2026-05-10');
+    }
     const raw = `🏷 AGROLMUE
 PULPA FRUTILLA 10 kg
 PULPA MANGO 10 kg
@@ -15544,11 +15551,10 @@ VINO BLANCO BIDON 2 unidad
 BRIOMIL DESENGRASANTE 5 lt
 LAVALOZA 10 lt`;
     const rows = invParsePedidoFromText(raw);
-    const res = invApplyPedidoRows(rows, 'Pedido Semana 04-10 MAYO');
+    const res = invApplyPedidoRows(rows, force ? 'Pedido Semana 04-10 MAYO (hotload)' : 'Pedido Semana 04-10 MAYO', { merge: !force });
     if (res && res.ok) {
       state._invAutoPedidoSem04May2026Done = true;
       markUnsaved();
-      notify('✅ Pedido 04-10 mayo cargado automáticamente');
     }
   } catch (e) {
     console.warn('[inv auto import pedido sem 04 may 2026]', e);
@@ -15557,11 +15563,10 @@ LAVALOZA 10 lt`;
 
 function invHotLoadPedidoSem04May2026() {
   try {
-    state._invAutoPedidoSem04May2026Done = false;
     if (!state.semanaActiva || state.semanaActiva.cerrada) {
       invIniciarSemana('2026-05-04', '2026-05-10');
     }
-    invAutoImportPedidoSem04May2026IfNeeded();
+    invAutoImportPedidoSem04May2026IfNeeded({ force: true });
     invSubTab('pedido');
   } catch (e) {
     notify('⚠ No se pudo cargar en caliente: ' + (e.message || e), 18000);
