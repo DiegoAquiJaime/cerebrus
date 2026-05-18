@@ -1325,6 +1325,8 @@ body.user-bodega .startup-alert,
 body.user-bodega .cred-alert-banner,
 body.user-bodega .fac-venc-banner { display:none!important; }
 body.user-bodega #nav-inventario { font-weight:800!important; color:var(--accent)!important; }
+body.user-bodega #sac-period-data-hint,
+body.user-bodega #sac-periodos-datos-wrap { display:none!important; }
 .seb-locked{text-align:center;padding:60px 20px;color:#94a3b8;}
 .seb-locked-icon{font-size:48px;margin-bottom:12px;}
 .seb-subtab-bar{display:flex;gap:0;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px;flex-wrap:wrap;}
@@ -3406,14 +3408,22 @@ body.dark-mode .conflict-overlay{
 
       <div class="sac-toolbar">
         <div>
-          <div class="sac-toolbar-lbl">📅 Período en edición <span class="sac-help" title="Define el bloque con «Cambiar período»: rango manual (4 días, 8 días, lo que necesites dentro del máximo) o bloques 1–4 del mes. Lo guardado en estado respeta tus fechas; la clave del período es Desde+Hasta exactos.">?</span></div>
+          <div class="sac-toolbar-lbl">📅 Período en edición <span class="sac-help" title="Ventas y cargas se guardan por clave de período. Por defecto ves la semana ISO actual (lun–dom). Para cerrar la semana anterior usa «Semana pasada». Los bloques 1–4 del mes son distintos (ej. sem. 2 de mayo ≠ 11–17 may).">?</span></div>
           <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
         </div>
         <div class="sac-toolbar-actions">
+          <button type="button" class="fac-btn" onclick="sacPinIsoWeek(1)" title="Semana lunes–domingo anterior">⬅ Semana pasada</button>
+          <button type="button" class="fac-btn" onclick="sacPinIsoWeek(0)" title="Semana lunes–domingo que contiene hoy">📍 Esta semana</button>
           <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()">📆 Cambiar período</button>
           <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
         </div>
       </div>
+      <div id="sac-period-data-hint" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;font-size:11px;line-height:1.45;color:#9a3412;"></div>
+
+      <details id="sac-periodos-datos-wrap" style="display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
+        <summary style="cursor:pointer;font-weight:800;color:#166534;">📁 Períodos con datos guardados (tus semanas no se borran)</summary>
+        <div id="sac-periodos-datos-list" style="margin-top:8px;line-height:1.5;"></div>
+      </details>
 
       <div class="sac-main">
 
@@ -3655,6 +3665,10 @@ body.dark-mode .conflict-overlay{
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
         <div style="font-size:14px;font-weight:800;" id="sac-cierre-title">📆 Período a trabajar</div>
         <button type="button" onclick="sacCierreModalCerrar()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;">✕</button>
+      </div>
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(99,102,241,.08);">
+        <div style="font-size:11px;font-weight:800;margin-bottom:8px;color:var(--primary);">📆 Semanas lunes → domingo (recomendado)</div>
+        <div id="sac-cierre-iso-quick" style="display:flex;flex-direction:column;gap:6px;"></div>
       </div>
       <div style="padding:12px 16px;border-bottom:1px solid var(--border);background:#f8fafc;">
         <div style="font-size:11px;font-weight:800;margin-bottom:6px;color:var(--primary);">📅 Rango manual (entre fechas inclusivas)</div>
@@ -6457,8 +6471,7 @@ function undo() {
   renderAll();
   calc();
   renderHistorial();
-  // Refresh SAC views
-  try { sacRender(); } catch(e){}
+  if (!cerebrusUsuarioBodega()) { try { sacRender(); } catch(e){} }
   // Refresh inventory
   try { invRender(); movRender(); } catch(e){}
   // Refresh weekly view
@@ -7268,9 +7281,13 @@ function sebasModuleAllowed() {
   return currentUser === 'Diego' || currentUser === 'Sebastián';
 }
 
+function cerebrusUsuarioBodega() {
+  return String(currentUser || '').toLowerCase() === 'bodega';
+}
+
 function showTab(tabId) {
   // Bodega: solo inventario
-  if (currentUser === 'Bodega' && tabId !== 'inventario') {
+  if (cerebrusUsuarioBodega() && tabId !== 'inventario') {
     tabId = 'inventario';
   }
   if (tabId === 'sebas' && !sebasModuleAllowed()) {
@@ -13152,7 +13169,7 @@ function _finishLogin() {
     document.body.classList.remove('user-sebas-ok');
   }
   // Bodega: solo ve Inventario
-  if (currentUser === 'Bodega') {
+  if (cerebrusUsuarioBodega()) {
     document.body.classList.add('user-bodega');
   } else {
     document.body.classList.remove('user-bodega');
@@ -13979,14 +13996,14 @@ function _postLoadSetup() {
     try { cerebrusBitacoraCleanupReminderMaybe(); } catch (e) {}
   }, 5200);
   // Bodega solo ve inventario, los demás abren Semana Actual
-  if (currentUser === 'Bodega') {
+  if (cerebrusUsuarioBodega()) {
     showTab('inventario');
   } else {
     showTab('sac'); // Abre Semana Actual por defecto
   }
   setTimeout(() => {
     checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
-    if (typeof sacCalcBalance === 'function') sacCalcBalance();
+    if (!cerebrusUsuarioBodega() && typeof sacCalcBalance === 'function') sacCalcBalance();
     if (typeof facSemRender === 'function') facSemRender();
     iaLoadSavedKey();
     if (typeof cerebrusTtsUpdateButton === 'function') cerebrusTtsUpdateButton();
@@ -23399,6 +23416,215 @@ function sacMondaySundayRangeContaining(d) {
   return { type: 'range', start: sacYMDLocal(mon), end: sacYMDLocal(sun) };
 }
 
+/** Semana ISO lun–dom: 0 = la que contiene hoy, 1 = la anterior, etc. */
+function sacIsoWeeksBack(weeksBack) {
+  const d = new Date();
+  const n = Math.max(0, parseInt(weeksBack, 10) || 0);
+  if (n > 0) d.setDate(d.getDate() - n * 7);
+  return sacMondaySundayRangeContaining(d);
+}
+
+function sacPinIsoWeek(weeksBack) {
+  const range = sacIsoWeeksBack(weeksBack);
+  pushUndo();
+  state.sacPeriodoTrabajo = range;
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+  _sacLastVentasKey = '';
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Período SAC ISO', true);
+  const has = sacPeriodKeyHasData(sacDataKey());
+  notify(has ? '✅ ' + sacPeriodLabel() : '✅ ' + sacPeriodLabel() + ' (vacío — revisá otros períodos abajo)');
+}
+
+function sacPeriodKeyHasData(key) {
+  if (!key) return false;
+  const cargas = (state.sacCargas && state.sacCargas[key]) || [];
+  const ing = (state.sacIngresos && state.sacIngresos[key]) || [];
+  if (Array.isArray(cargas) && cargas.length) return true;
+  if (Array.isArray(ing) && ing.length) return true;
+  const days = (state.vsData && state.vsData[key]) || [];
+  if (Array.isArray(days) && days.some(d => (d && ((d.est || 0) > 0 || (d.real || 0) > 0)))) return true;
+  const ex = (state.vsExtraData && state.vsExtraData[key]) || {};
+  if ((ex.monto || 0) > 0 || (ex.realExtra || 0) > 0) return true;
+  return false;
+}
+
+function sacCollectAllSacKeys() {
+  const set = new Set();
+  ['sacCargas', 'sacIngresos', 'vsData', 'vsExtraData'].forEach(store => {
+    const o = state[store];
+    if (!o || typeof o !== 'object') return;
+    Object.keys(o).forEach(k => { if (k) set.add(k); });
+  });
+  return [...set];
+}
+
+function sacKeyToHumanLabel(key) {
+  const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const parts = String(key).split('|');
+  if (parts[0] === 'R' && parts.length >= 3) {
+    const a = sacParseISODate(parts[1]);
+    const b = sacParseISODate(parts[2]);
+    if (a && b) return `${a.getDate()} ${MESES[a.getMonth()]} – ${b.getDate()} ${MESES[b.getMonth()]} ${b.getFullYear()} (lun–dom)`;
+  }
+  if (parts[0] === 'S' && parts.length >= 4) {
+    const y = +parts[1], m = +parts[2], w = +parts[3];
+    const ranges = getCalWeekRanges(y, m - 1);
+    const r = ranges[w - 1];
+    return r ? `Bloque sem. ${w} del mes (${r.start}–${r.end} ${MESES[m - 1]} ${y})` : key;
+  }
+  if (/^[1-4]$/.test(String(key))) return `Semana antigua «${key}» (mes actual)`;
+  return key;
+}
+
+function sacAbrirPeriodoPorKey(key) {
+  if (!key) return;
+  const parts = String(key).split('|');
+  pushUndo();
+  if (parts[0] === 'S' && parts.length >= 4) {
+    state.sacPeriodoTrabajo = { type: 'slot', y: +parts[1], m: +parts[2], w: +parts[3] };
+  } else if (parts[0] === 'R' && parts.length >= 3) {
+    state.sacPeriodoTrabajo = { type: 'range', start: parts[1], end: parts[2] };
+  } else if (/^[1-4]$/.test(String(key))) {
+    const n = new Date();
+    state.sacPeriodoTrabajo = { type: 'slot', y: n.getFullYear(), m: n.getMonth() + 1, w: parseInt(key, 10) };
+  } else {
+    notify('⚠ Clave de período no reconocida: ' + key);
+    return;
+  }
+  if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+  _sacLastVentasKey = '';
+  sacRender();
+  if (typeof vsSavedRender === 'function') vsSavedRender();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Período SAC', true);
+  notify('✅ Abierto: ' + sacKeyToHumanLabel(key));
+}
+
+var _sacPeriodKeysList = [];
+function sacAbrirPeriodoPorKeyIdx(i) {
+  const k = (_sacPeriodKeysList || [])[i];
+  if (k) sacAbrirPeriodoPorKey(k);
+}
+
+function sacPeriodDataStats(key) {
+  const cargas = ((state.sacCargas && state.sacCargas[key]) || []).length;
+  const ing = ((state.sacIngresos && state.sacIngresos[key]) || []).length;
+  const days = (state.vsData && state.vsData[key]) || [];
+  let ventasEst = 0, ventasReal = 0;
+  if (Array.isArray(days)) {
+    days.forEach(d => {
+      if (!d) return;
+      ventasEst += d.est || 0;
+      ventasReal += d.real || 0;
+    });
+  }
+  const ex = (state.vsExtraData && state.vsExtraData[key]) || {};
+  ventasEst += ex.monto || 0;
+  ventasReal += ex.realExtra || 0;
+  return { cargas, ing, ventasEst, ventasReal };
+}
+
+function sacPeriodoFueCerrado(key) {
+  if (!key) return false;
+  return (state.sacCierresHistorial || []).some(c => c && c.periodKey === key);
+}
+
+/** Si la pantalla muestra una semana vacía pero hay otra abierta (sin cierre en historial), ofrecer abrirla. */
+function sacMaybeOfferContinuarSemanaPendiente() {
+  if (cerebrusUsuarioBodega()) return;
+  if (window._sacOfferedPendiente) return;
+  const curKey = sacDataKey();
+  if (sacPeriodKeyHasData(curKey)) return;
+  const open = sacCollectAllSacKeys().filter(k => k !== curKey && sacPeriodKeyHasData(k) && !sacPeriodoFueCerrado(k));
+  if (!open.length) return;
+  const prev = sacIsoWeeksBack(1);
+  const prevKey = 'R|' + prev.start + '|' + prev.end;
+  const pick = open.includes(prevKey) ? prevKey : open[0];
+  window._sacOfferedPendiente = true;
+  const lbl = sacKeyToHumanLabel(pick);
+  if (confirm(
+    'Tienes ventas/cargas guardadas en «' + lbl + '».\n\n' +
+    'No hace falta haber pulsado «Cerrar semana» para que existan: solo estás viendo otra semana (hoy: ' + sacPeriodLabel() + ').\n\n' +
+    '¿Abrir ese período para seguir trabajando y cerrarlo cuando quieras?'
+  )) sacAbrirPeriodoPorKey(pick);
+}
+
+function sacRenderPeriodosConDatosList() {
+  if (cerebrusUsuarioBodega()) return;
+  const wrap = document.getElementById('sac-periodos-datos-wrap');
+  const list = document.getElementById('sac-periodos-datos-list');
+  if (!wrap || !list) return;
+  const keys = sacCollectAllSacKeys()
+    .filter(k => sacPeriodKeyHasData(k))
+    .sort((a, b) => String(b).localeCompare(String(a)));
+  if (!keys.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  const cur = sacDataKey();
+  _sacPeriodKeysList = keys;
+  list.innerHTML = keys.map((k, i) => {
+    const st = sacPeriodDataStats(k);
+    const lbl = esc(sacKeyToHumanLabel(k));
+    const active = k === cur ? ' <span style="color:#15803d;font-weight:800;">← viendo ahora</span>' : '';
+    const btn = k === cur ? '' : ` <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;margin-left:6px;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">Abrir</button>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid #dcfce7;">${lbl}${active}${btn}<br><span style="color:#64748b;font-size:10px;">${st.cargas} cargas · ${st.ing} ingresos · ventas real ${typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal} · est. ${typeof fmt === 'function' ? fmt(st.ventasEst) : st.ventasEst}</span></div>`;
+  }).join('');
+}
+
+function sacRenderPeriodDataBanner() {
+  if (cerebrusUsuarioBodega()) return;
+  const el = document.getElementById('sac-period-data-hint');
+  if (!el) return;
+  const curKey = sacDataKey();
+  if (sacPeriodKeyHasData(curKey)) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  const others = sacCollectAllSacKeys()
+    .filter(k => k !== curKey && sacPeriodKeyHasData(k))
+    .sort((a, b) => String(b).localeCompare(String(a)));
+  if (!others.length) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  _sacPeriodKeysList = others.slice(0, 8);
+  const btns = _sacPeriodKeysList.map((k, i) =>
+    `<button type="button" class="fac-btn" style="font-size:10px;margin:4px 6px 0 0;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">📂 ${esc(sacKeyToHumanLabel(k))}</button>`
+  ).join('');
+  const prev = sacIsoWeeksBack(1);
+  const prevKey = 'R|' + prev.start + '|' + prev.end;
+  let pinPrev = '';
+  if (curKey !== prevKey) {
+    pinPrev = `<div style="margin-top:8px;"><button type="button" class="fac-btn primary" style="font-size:10px;" onclick="sacPinIsoWeek(1)">⬅ Ir a semana pasada (lun–dom)</button></div>`;
+  }
+  el.style.display = 'block';
+  el.innerHTML = `<strong>Período vacío</strong> (${esc(sacPeriodLabel())}). <strong>No necesitaste cerrar la semana</strong> — los datos siguen guardados en otro bloque. Abrí uno o usa <strong>Semana pasada</strong>: ${btns}${pinPrev}`;
+}
+
+function sacCierreModalBuildIsoQuick() {
+  const el = document.getElementById('sac-cierre-iso-quick');
+  if (!el) return;
+  el.innerHTML = [1, 0].map(weeksBack => {
+    const range = sacIsoWeeksBack(weeksBack);
+    const key = 'R|' + range.start + '|' + range.end;
+    const has = sacPeriodKeyHasData(key);
+    const lbl = sacKeyToHumanLabel(key);
+    const pin = weeksBack === 0 ? '📍 Esta semana' : '⬅ Semana pasada';
+    const border = has ? 'border-color:var(--success);' : '';
+    return `<button type="button" class="fac-btn" style="width:100%;text-align:left;${border}" onclick="sacPinIsoWeek(${weeksBack});sacCierreModalCerrar();">
+      <span style="font-weight:800;">${pin}</span> · ${esc(lbl)}${has ? ' · ✓ con datos' : ' · vacío'}
+    </button>`;
+  }).join('');
+}
+
 // Período en edición: slot del mes (1–4) o rango de fechas libre (cualquier N días respetando sacDataKey).
 function sacNormalizedPeriod() {
   const R = state.sacPeriodoTrabajo;
@@ -23577,19 +23803,23 @@ function sacUpdateToolbarDesc() {
   if (!el) return;
   const p = sacNormalizedPeriod();
   const lbl = sacPeriodLabel();
+  const key = sacDataKey();
+  const emptyNote = sacPeriodKeyHasData(key) ? '' : ' · sin datos en esta clave';
   if (p.type === 'range') {
-    el.textContent = `${lbl} · ${sacPeriodDayCount()} días · rango manual`;
+    const isoNow = sacMondaySundayRangeContaining(new Date());
+    const isoTag = (p.start === isoNow.start && p.end === isoNow.end) ? ' · semana ISO actual' : '';
+    el.textContent = `${lbl} · ${sacPeriodDayCount()} días · rango manual${isoTag}${emptyNote}`;
     return;
   }
   const calW = _sacWeekCalendario();
   const n = new Date();
   const sameMonth = p.y === n.getFullYear() && p.m === n.getMonth() + 1;
   if (sameMonth && p.w !== calW) {
-    el.textContent = `${lbl} · otra semana del mes (hoy: sem. ${calW})`;
+    el.textContent = `${lbl} · bloque del mes (≠ lun–dom ISO; hoy: sem. ${calW})${emptyNote}`;
   } else if (!sameMonth) {
-    el.textContent = `${lbl} · mes ${p.m}/${p.y}`;
+    el.textContent = `${lbl} · mes ${p.m}/${p.y}${emptyNote}`;
   } else {
-    el.textContent = `${lbl} · alineada al calendario`;
+    el.textContent = `${lbl} · bloque del mes${emptyNote}`;
   }
 }
 
@@ -23711,13 +23941,18 @@ function sacCierreModalBuildBody() {
   const now = new Date();
   const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
   const calW = _sacWeekCalendario();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
   body.innerHTML = ranges.map((r, i) => {
     const w = i + 1;
     const sel = w === _sacModalPickW ? 'border-color:var(--accent);background:#fff7ed;box-shadow:0 0 0 1px rgba(249,115,22,.25);' : 'border-color:var(--border);background:var(--white);';
     const wlbl = `${r.start}–${r.end} ${MESES[now.getMonth()]} ${now.getFullYear()}`;
     const pin = w === calW ? ' · 📍 calendario' : '';
-    return `<button type="button" class="fac-btn" style="width:100%;margin-bottom:8px;text-align:left;border:2px solid;${sel}" onclick="sacModalSelectWeek(${w})">
-      <span style="font-weight:800;">Semana ${w}</span> · ${wlbl}${pin}
+    const slotKey = 'S|' + y + '|' + m + '|' + w;
+    const hasData = typeof sacPeriodKeyHasData === 'function' && sacPeriodKeyHasData(slotKey);
+    const dataTag = hasData ? ' · ✓ con datos' : '';
+    return `<button type="button" class="fac-btn" style="width:100%;margin-bottom:8px;text-align:left;border:2px solid;${sel}${hasData ? ';border-color:var(--success)' : ''}" onclick="sacModalSelectWeek(${w})">
+      <span style="font-weight:800;">Semana ${w}</span> · ${wlbl}${pin}${dataTag}
     </button>`;
   }).join('');
 }
@@ -23750,6 +23985,15 @@ function sacAbrirElegirSemana() {
   if (t) t.textContent = '📆 Período a trabajar';
   const cb = document.getElementById('sac-cierre-limpiar');
   if (cb) cb.checked = false;
+  if (de && ha && !sacPeriodKeyHasData(sacDataKey())) {
+    const prev = sacIsoWeeksBack(1);
+    const prevKey = 'R|' + prev.start + '|' + prev.end;
+    if (sacPeriodKeyHasData(prevKey)) {
+      de.value = prev.start;
+      ha.value = prev.end;
+    }
+  }
+  sacCierreModalBuildIsoQuick();
   sacCierreModalBuildBody();
   const o = document.getElementById('sac-cierre-overlay');
   if (o) o.classList.add('show');
@@ -23930,6 +24174,7 @@ function sacMigrateLegacySacKeys() {
 
 // ── RENDER ──
 function sacRender() {
+  if (cerebrusUsuarioBodega()) return;
   sacRenderVentasDias();
   const wlbl = sacPeriodLabel();
   const el = document.getElementById('sac-week-lbl'); if (el) el.textContent = wlbl;
@@ -23963,6 +24208,9 @@ function sacRender() {
   sacRenderFinanciamientoPanel();
   sacCalcAll();
   sacUpdateToolbarDesc();
+  sacRenderPeriodDataBanner();
+  sacRenderPeriodosConDatosList();
+  sacMaybeOfferContinuarSemanaPendiente();
   sacRenderHistorialCierres();
   if (typeof cerebrusBitacoraRenderLists === 'function') cerebrusBitacoraRenderLists();
   sacRenderReservaPanel();
