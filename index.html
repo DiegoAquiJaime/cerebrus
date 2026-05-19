@@ -3427,11 +3427,9 @@ body.dark-mode .conflict-overlay{
           <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
         </div>
       </div>
-      <div id="sac-period-data-hint" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;font-size:11px;line-height:1.45;color:#9a3412;"></div>
-
-      <details id="sac-periodos-datos-wrap" style="display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
-        <summary style="cursor:pointer;font-weight:800;color:#166534;">📁 Períodos con datos guardados (tus semanas no se borran)</summary>
-        <div id="sac-periodos-datos-list" style="margin-top:8px;line-height:1.5;"></div>
+      <details id="sac-periodos-datos-wrap" class="sac-period-alt" style="display:none;margin:0 0 10px;">
+        <summary>Otras semanas con datos</summary>
+        <div id="sac-periodos-datos-list" class="sac-period-alt-body"></div>
       </details>
 
       <div class="sac-main">
@@ -13968,6 +13966,8 @@ function _postLoadSetup() {
   if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'slot' && (state.sacPeriodoTrabajo.w < 1 || state.sacPeriodoTrabajo.w > 4)) state.sacPeriodoTrabajo = null;
   if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
   if (typeof sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth === 'function') sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth();
+  if (typeof sacPreferIsoWhenSlotMatchesIsoWeek === 'function') sacPreferIsoWhenSlotMatchesIsoWeek();
+  if (typeof sacAlignPeriodToStoredData === 'function') sacAlignPeriodToStoredData();
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel              = [];
@@ -23597,6 +23597,111 @@ function sacPeriodKeyHasData(key) {
   return false;
 }
 
+/** Fechas YMD del período en edición (bloque del mes o rango manual). */
+function sacPeriodBoundsYMD() {
+  const p = sacNormalizedPeriod();
+  if (p.type === 'range') return { start: p.start, end: p.end };
+  const ranges = getCalWeekRanges(p.y, p.m - 1);
+  const r = ranges[p.w - 1];
+  if (!r) return null;
+  return {
+    start: sacYMDLocal(new Date(p.y, p.m - 1, r.start)),
+    end: sacYMDLocal(new Date(p.y, p.m - 1, r.end))
+  };
+}
+
+function sacIsoRangeKey(bounds) {
+  if (!bounds || !bounds.start || !bounds.end) return '';
+  return 'R|' + bounds.start + '|' + bounds.end;
+}
+
+/** Clave S| del bloque mensual si coincide exactamente con el rango de fechas. */
+function sacSlotKeyForBounds(bounds) {
+  if (!bounds) return '';
+  const a = sacParseISODate(bounds.start);
+  const b = sacParseISODate(bounds.end);
+  if (!a || !b) return '';
+  const y = a.getFullYear();
+  const m = a.getMonth() + 1;
+  const ranges = getCalWeekRanges(y, m - 1);
+  const d0 = a.getDate();
+  const d1 = b.getDate();
+  for (let i = 0; i < ranges.length; i++) {
+    const r = ranges[i];
+    if (r.start === d0 && r.end === d1) return 'S|' + y + '|' + m + '|' + (i + 1);
+  }
+  return '';
+}
+
+/** Claves que comparten el mismo calendario (bloque del mes ↔ lun–dom ISO). */
+function sacRelatedDataKeys() {
+  const keys = new Set();
+  const primary = sacDataKey();
+  if (primary) keys.add(primary);
+  const b = sacPeriodBoundsYMD();
+  if (b) {
+    const rk = sacIsoRangeKey(b);
+    const sk = sacSlotKeyForBounds(b);
+    if (rk) keys.add(rk);
+    if (sk) keys.add(sk);
+  }
+  return [...keys];
+}
+
+function sacCurrentPeriodHasData() {
+  return sacRelatedDataKeys().some(k => sacPeriodKeyHasData(k));
+}
+
+function sacCopyPeriodData(fromKey, toKey) {
+  if (!fromKey || !toKey || fromKey === toKey) return false;
+  if (sacPeriodKeyHasData(toKey) || !sacPeriodKeyHasData(fromKey)) return false;
+  if (!state.vsData) state.vsData = {};
+  if (!state.vsExtraData) state.vsExtraData = {};
+  if (!state.sacCargas) state.sacCargas = {};
+  if (!state.sacIngresos) state.sacIngresos = {};
+  if (state.vsData[fromKey] && !state.vsData[toKey])
+    state.vsData[toKey] = JSON.parse(JSON.stringify(state.vsData[fromKey]));
+  if (state.vsExtraData[fromKey] && !state.vsExtraData[toKey])
+    state.vsExtraData[toKey] = JSON.parse(JSON.stringify(state.vsExtraData[fromKey]));
+  if (state.sacCargas[fromKey] && !state.sacCargas[toKey])
+    state.sacCargas[toKey] = JSON.parse(JSON.stringify(state.sacCargas[fromKey]));
+  if (state.sacIngresos[fromKey] && !state.sacIngresos[toKey])
+    state.sacIngresos[toKey] = JSON.parse(JSON.stringify(state.sacIngresos[fromKey]));
+  return true;
+}
+
+/** Si el bloque del mes es la misma semana lun–dom, usar clave ISO (evita «vacío» con datos en otra clave). */
+function sacPreferIsoWhenSlotMatchesIsoWeek() {
+  try {
+    const p = state.sacPeriodoTrabajo;
+    if (!p || p.type !== 'slot') return false;
+    const b = sacPeriodBoundsYMD();
+    if (!b) return false;
+    const iso = sacMondaySundayRangeContaining(sacParseISODate(b.start) || new Date());
+    if (b.start !== iso.start || b.end !== iso.end) return false;
+    const sk = sacDataKey();
+    const rk = 'R|' + iso.start + '|' + iso.end;
+    sacCopyPeriodData(sk, rk);
+    state.sacPeriodoTrabajo = { type: 'range', start: iso.start, end: iso.end };
+    if (state.sacSemanaTrabajo) delete state.sacSemanaTrabajo;
+    _sacLastVentasKey = '';
+    return true;
+  } catch (e) { return false; }
+}
+
+/** Abre el período donde realmente hay ventas/cargas (misma semana, otra clave S| vs R|). */
+function sacAlignPeriodToStoredData() {
+  try {
+    const cur = sacDataKey();
+    if (sacPeriodKeyHasData(cur)) return false;
+    const related = sacRelatedDataKeys().filter(k => k !== cur && sacPeriodKeyHasData(k));
+    if (!related.length) return false;
+    const pick = related.find(k => k.startsWith('R|')) || related[0];
+    sacAbrirPeriodoPorKey(pick, { silent: true });
+    return true;
+  } catch (e) { return false; }
+}
+
 function sacCollectAllSacKeys() {
   const set = new Set();
   ['sacCargas', 'sacIngresos', 'vsData', 'vsExtraData'].forEach(store => {
@@ -23625,10 +23730,10 @@ function sacKeyToHumanLabel(key) {
   return key;
 }
 
-function sacAbrirPeriodoPorKey(key) {
+function sacAbrirPeriodoPorKey(key, opts) {
   if (!key) return;
   const parts = String(key).split('|');
-  pushUndo();
+  if (!opts || !opts.silent) pushUndo();
   if (parts[0] === 'S' && parts.length >= 4) {
     state.sacPeriodoTrabajo = { type: 'slot', y: +parts[1], m: +parts[2], w: +parts[3] };
   } else if (parts[0] === 'R' && parts.length >= 3) {
@@ -23644,9 +23749,11 @@ function sacAbrirPeriodoPorKey(key) {
   _sacLastVentasKey = '';
   sacRender();
   if (typeof vsSavedRender === 'function') vsSavedRender();
-  markUnsaved();
-  if (typeof saveState === 'function') saveState('Período SAC', true);
-  notify('✅ Abierto: ' + sacKeyToHumanLabel(key));
+  if (!opts || !opts.silent) {
+    markUnsaved();
+    if (typeof saveState === 'function') saveState('Período SAC', true);
+    notify('✅ Abierto: ' + sacKeyToHumanLabel(key));
+  }
 }
 
 var _sacPeriodKeysList = [];
@@ -23680,6 +23787,7 @@ function sacPeriodoFueCerrado(key) {
 
 /** Si la pantalla muestra una semana vacía pero hay otra abierta (sin cierre en historial), ofrecer abrirla. */
 function sacMaybeOfferContinuarSemanaPendiente() {
+  return;
   if (cerebrusUsuarioBodega()) return;
   if (window._sacOfferedPendiente) return;
   const curKey = sacDataKey();
@@ -23703,8 +23811,9 @@ function sacRenderPeriodosConDatosList() {
   const wrap = document.getElementById('sac-periodos-datos-wrap');
   const list = document.getElementById('sac-periodos-datos-list');
   if (!wrap || !list) return;
+  const cur = sacDataKey();
   const keys = sacCollectAllSacKeys()
-    .filter(k => sacPeriodKeyHasData(k))
+    .filter(k => sacPeriodKeyHasData(k) && k !== cur)
     .sort((a, b) => String(b).localeCompare(String(a)));
   if (!keys.length) {
     wrap.style.display = 'none';
@@ -23712,47 +23821,16 @@ function sacRenderPeriodosConDatosList() {
     return;
   }
   wrap.style.display = 'block';
-  const cur = sacDataKey();
   _sacPeriodKeysList = keys;
   list.innerHTML = keys.map((k, i) => {
     const st = sacPeriodDataStats(k);
     const lbl = esc(sacKeyToHumanLabel(k));
-    const active = k === cur ? ' <span style="color:#15803d;font-weight:800;">← viendo ahora</span>' : '';
-    const btn = k === cur ? '' : ` <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;margin-left:6px;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">Abrir</button>`;
-    return `<div style="padding:6px 0;border-bottom:1px solid #dcfce7;">${lbl}${active}${btn}<br><span style="color:#64748b;font-size:10px;">${st.cargas} cargas · ${st.ing} ingresos · ventas real ${typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal} · est. ${typeof fmt === 'function' ? fmt(st.ventasEst) : st.ventasEst}</span></div>`;
+    return `<div class="sac-period-alt-row">${lbl} <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;margin-left:4px;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">Abrir</button><br><span style="color:#94a3b8;">${st.cargas} cargas · ventas ${typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal}</span></div>`;
   }).join('');
 }
 
 function sacRenderPeriodDataBanner() {
-  if (cerebrusUsuarioBodega()) return;
-  const el = document.getElementById('sac-period-data-hint');
-  if (!el) return;
-  const curKey = sacDataKey();
-  if (sacPeriodKeyHasData(curKey)) {
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
-  const others = sacCollectAllSacKeys()
-    .filter(k => k !== curKey && sacPeriodKeyHasData(k))
-    .sort((a, b) => String(b).localeCompare(String(a)));
-  if (!others.length) {
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
-  _sacPeriodKeysList = others.slice(0, 8);
-  const btns = _sacPeriodKeysList.map((k, i) =>
-    `<button type="button" class="fac-btn" style="font-size:10px;margin:4px 6px 0 0;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">📂 ${esc(sacKeyToHumanLabel(k))}</button>`
-  ).join('');
-  const prev = sacIsoWeeksBack(1);
-  const prevKey = 'R|' + prev.start + '|' + prev.end;
-  let pinPrev = '';
-  if (curKey !== prevKey) {
-    pinPrev = `<div style="margin-top:8px;"><button type="button" class="fac-btn primary" style="font-size:10px;" onclick="sacPinIsoWeek(1)">⬅ Ir a semana pasada (lun–dom)</button></div>`;
-  }
-  el.style.display = 'block';
-  el.innerHTML = `<strong>Período vacío</strong> (${esc(sacPeriodLabel())}). <strong>No necesitaste cerrar la semana</strong> — los datos siguen guardados en otro bloque. Abrí uno o usa <strong>Semana pasada</strong>: ${btns}${pinPrev}`;
+  /* Retirado: alineación automática S|↔R| y panel colapsable «Otras semanas con datos». */
 }
 
 function sacCierreModalBuildIsoQuick() {
@@ -23949,7 +24027,7 @@ function sacUpdateToolbarDesc() {
   const p = sacNormalizedPeriod();
   const lbl = sacPeriodLabel();
   const key = sacDataKey();
-  const emptyNote = sacPeriodKeyHasData(key) ? '' : ' · sin datos en esta clave';
+  const emptyNote = sacCurrentPeriodHasData() ? '' : ' · sin datos en esta clave';
   if (p.type === 'range') {
     const isoNow = sacMondaySundayRangeContaining(new Date());
     const isoTag = (p.start === isoNow.start && p.end === isoNow.end) ? ' · semana ISO actual' : '';
@@ -24320,6 +24398,8 @@ function sacMigrateLegacySacKeys() {
 // ── RENDER ──
 function sacRender() {
   if (cerebrusUsuarioBodega()) return;
+  if (typeof sacPreferIsoWhenSlotMatchesIsoWeek === 'function') sacPreferIsoWhenSlotMatchesIsoWeek();
+  if (typeof sacAlignPeriodToStoredData === 'function') sacAlignPeriodToStoredData();
   sacRenderVentasDias();
   const wlbl = sacPeriodLabel();
   const el = document.getElementById('sac-week-lbl'); if (el) el.textContent = wlbl;
@@ -26684,9 +26764,14 @@ function notify(msg, duration) {
     } catch (e) {}
     var raw = userName != null && userName !== '' ? String(userName) : '';
     var name = raw.trim();
-    var phrase = name
-      ? 'Hola, ' + name + ', soy Cerebrus, funciono y cumplo.'
-      : 'Hola, soy Cerebrus, funciono y cumplo.';
+    var phrase;
+    if (/^sebasti/i.test(name)) {
+      phrase = 'Hola, Sebas, mañana miércoles te irás a la isla y descansarás! Merecido descanso.';
+    } else if (name) {
+      phrase = 'Hola, ' + name + ', soy Cerebrus, funciono y cumplo.';
+    } else {
+      phrase = 'Hola, soy Cerebrus, funciono y cumplo.';
+    }
     var run = function() {
       try { speechSynthesis.getVoices(); } catch (e) {}
       speak(phrase, true);
