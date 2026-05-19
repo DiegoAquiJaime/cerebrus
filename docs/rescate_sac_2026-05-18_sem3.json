@@ -1,0 +1,458 @@
+{
+  "label": "Rescate SAC semana 18-24 May 2026",
+  "ts": "2026-05-19T03:41:37.913Z",
+  "state": {
+    "sacCargas": {
+      "S|2026|5|3": [
+        {
+          "id": "sc_1779161678661_dxzz",
+          "nombre": "Bono Locomoción",
+          "cat": "RRHH",
+          "monto": 240000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "rrhh-22",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_fq5d",
+          "nombre": "Bono Comedor",
+          "cat": "RRHH",
+          "monto": 120000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "rrhh-23",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_sbkh",
+          "nombre": "Bono Chef",
+          "cat": "RRHH",
+          "monto": 200000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Quincenal",
+          "_fixedId": "rrhh-24",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_lx16",
+          "nombre": "Bono Marcelo",
+          "cat": "RRHH",
+          "monto": 100000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "rrhh-25",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_5v41",
+          "nombre": "Turnos y Dobles",
+          "cat": "RRHH",
+          "monto": 900000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "rrhh-27",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_oe5e",
+          "nombre": "Seguro Restaurante",
+          "cat": "Servicio",
+          "monto": 430000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Mensual",
+          "_fixedId": "operacion-38",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_gb83",
+          "nombre": "MOVISTAR (Internet + Celulares)",
+          "cat": "Servicio",
+          "monto": 240904,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Mensual",
+          "_fixedId": "operacion-59",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_ubjr",
+          "nombre": "Alberto (Crédito Empresa)",
+          "cat": "Crédito",
+          "monto": 3750000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "pasivos-49",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_rnfv",
+          "nombre": "Matías/Pancho (Crédito)",
+          "cat": "Crédito",
+          "monto": 3750000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "pasivos-50",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_ovni",
+          "nombre": "Sra. Paty – Retiro Personal",
+          "cat": "Retiro",
+          "monto": 250000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "socias-52",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_7l7n",
+          "nombre": "Sra. Paty – Crédito Hipotec.",
+          "cat": "Retiro",
+          "monto": 1300000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Mensual",
+          "_fixedId": "socias-53",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_n7q7",
+          "nombre": "Priscila - Retiro Personal",
+          "cat": "Retiro",
+          "monto": 700000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "socias-61",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_q09b",
+          "nombre": "Retiro Personal Sebastián",
+          "cat": "Crédito",
+          "monto": 1250000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "gestion-56",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_zzl1",
+          "nombre": "Tarjetas y Créditos",
+          "cat": "Crédito",
+          "monto": 3000000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "gestion-57",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161678662_yi1g",
+          "nombre": "Creditos Informales",
+          "cat": "Crédito",
+          "monto": 6250000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "",
+          "nota": "Semanal",
+          "_fixedId": "gestion-65",
+          "_updatedAt": 1779161678662
+        },
+        {
+          "id": "sc_1779161686091",
+          "nombre": "Abastible",
+          "cat": "Servicio",
+          "monto": 490645,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161706482
+        },
+        {
+          "id": "sc_1779161716366",
+          "nombre": "Gas Comedor",
+          "cat": "Compra",
+          "monto": 50000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161728450
+        },
+        {
+          "id": "sc_1779161746170",
+          "nombre": "Alberto informal Beta",
+          "cat": "Crédito",
+          "monto": 3750000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161767283
+        },
+        {
+          "id": "sc_1779161769036",
+          "nombre": "Matías Pancho Informal Beta",
+          "cat": "Crédito",
+          "monto": 3750000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161785614
+        },
+        {
+          "id": "sc_1779161792966",
+          "nombre": "Lavado Jimenez ",
+          "cat": "Proveedor",
+          "monto": 69500,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161820831
+        },
+        {
+          "id": "sc_1779161826934",
+          "nombre": "Facturas",
+          "cat": "Proveedor",
+          "monto": 10800000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161837164
+        },
+        {
+          "id": "sc_1779161838571",
+          "nombre": "Pacto Proveedores",
+          "cat": "Proveedor",
+          "monto": 2000000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161854407
+        },
+        {
+          "id": "sc_1779161860067",
+          "nombre": "Primarias",
+          "cat": "Proveedor",
+          "monto": 4930135,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161879031
+        },
+        {
+          "id": "sc_1779161892085",
+          "nombre": "Bono Basura",
+          "cat": "Bono",
+          "monto": 21000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161903364
+        },
+        {
+          "id": "sc_1779161911137",
+          "nombre": "IVA",
+          "cat": "Impuesto",
+          "monto": 2836778,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161926014
+        },
+        {
+          "id": "sc_1779161933103",
+          "nombre": "Javier Audiovisual",
+          "cat": "RRHH",
+          "monto": 297500,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161944779
+        },
+        {
+          "id": "sc_1779161955544",
+          "nombre": "Mantenimiento",
+          "cat": "RRHH",
+          "monto": 600000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779161965180
+        },
+        {
+          "id": "sc_1779161970314",
+          "nombre": "Contadora ",
+          "cat": "Servicio",
+          "monto": 44000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "Pagos dec. renta",
+          "_updatedAt": 1779161989882
+        },
+        {
+          "id": "sc_1779161994535",
+          "nombre": "Cerebrus Cursor plan",
+          "cat": "Servicio",
+          "monto": 30000,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779162013330
+        },
+        {
+          "id": "sc_1779162032618",
+          "nombre": "Fumigacion",
+          "cat": "Servicio",
+          "monto": 190400,
+          "montoReal": null,
+          "estado": "nopagado",
+          "resp": "Diego",
+          "nota": "",
+          "_updatedAt": 1779162079929
+        }
+      ]
+    },
+    "sacIngresos": {},
+    "vsData": {
+      "S|2026|5|3": [
+        {
+          "est": 1700000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 1700000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 2500000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 3000000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 4000000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 8000000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 5000000,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        }
+      ],
+      "R|2026-05-18|2026-05-24": [
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        },
+        {
+          "est": 0,
+          "real": 0,
+          "caja": 0,
+          "cerrado": false
+        }
+      ]
+    },
+    "vsExtraData": {
+      "S|2026|5|3": {
+        "monto": 0,
+        "nota": "",
+        "realExtra": 0
+      },
+      "R|2026-05-18|2026-05-24": {
+        "monto": 0,
+        "nota": "",
+        "realExtra": 0
+      }
+    }
+  }
+}

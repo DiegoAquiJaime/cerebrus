@@ -3050,6 +3050,7 @@ body.dark-mode .conflict-overlay{
           <div class="export-menu-item" onclick="exportJSON()"><span class="emi">🧩</span> Respaldo JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">estado completo</span></div>
           <div class="export-menu-item" onclick="exportGastosReferenciaWord()"><span class="emi">📝</span> Word · gastos referencia <span style="font-size:10px;color:#9aacb8;margin-left:auto;">fijos + cargas SAC</span></div>
           <div class="export-menu-item" onclick="importJSON()"><span class="emi">📥</span> Importar JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">restaurar estado</span></div>
+          <div class="export-menu-item" onclick="importSacMergeJSON()"><span class="emi">📥</span> Importar SAC desde respaldo <span style="font-size:10px;color:#9aacb8;margin-left:auto;">solo semanas vacías</span></div>
           <hr class="export-sep-line">
           <div class="export-menu-item" onclick="exportExcel()"><span class="emi">📊</span> Excel (.xlsx)</div>
           <div class="export-menu-item" onclick="exportPDF()"><span class="emi">🖨</span> PDF / Imprimir</div>
@@ -23654,20 +23655,82 @@ function sacCurrentPeriodHasData() {
 
 function sacCopyPeriodData(fromKey, toKey) {
   if (!fromKey || !toKey || fromKey === toKey) return false;
-  if (sacPeriodKeyHasData(toKey) || !sacPeriodKeyHasData(fromKey)) return false;
+  if (!sacPeriodKeyHasData(fromKey) || sacPeriodKeyHasData(toKey)) return false;
   if (!state.vsData) state.vsData = {};
   if (!state.vsExtraData) state.vsExtraData = {};
   if (!state.sacCargas) state.sacCargas = {};
   if (!state.sacIngresos) state.sacIngresos = {};
-  if (state.vsData[fromKey] && !state.vsData[toKey])
+  if (state.vsData[fromKey])
     state.vsData[toKey] = JSON.parse(JSON.stringify(state.vsData[fromKey]));
-  if (state.vsExtraData[fromKey] && !state.vsExtraData[toKey])
+  if (state.vsExtraData[fromKey])
     state.vsExtraData[toKey] = JSON.parse(JSON.stringify(state.vsExtraData[fromKey]));
-  if (state.sacCargas[fromKey] && !state.sacCargas[toKey])
+  if (state.sacCargas[fromKey])
     state.sacCargas[toKey] = JSON.parse(JSON.stringify(state.sacCargas[fromKey]));
-  if (state.sacIngresos[fromKey] && !state.sacIngresos[toKey])
+  if (state.sacIngresos[fromKey])
     state.sacIngresos[toKey] = JSON.parse(JSON.stringify(state.sacIngresos[fromKey]));
   return true;
+}
+
+/** Misma semana en clave bloque (S|) y lun–dom (R|): copia la que tenga datos a la(s) vacía(s). */
+function sacSyncRelatedPeriodKeys() {
+  try {
+    const keys = sacRelatedDataKeys();
+    const withData = keys.filter(k => sacPeriodKeyHasData(k));
+    if (!withData.length) return false;
+    const source = withData.find(k => k.startsWith('S|')) || withData.find(k => k.startsWith('R|')) || withData[0];
+    let changed = false;
+    keys.forEach(k => {
+      if (k !== source && sacCopyPeriodData(source, k)) changed = true;
+    });
+    if (changed && typeof markUnsaved === 'function') markUnsaved();
+    return changed;
+  } catch (e) { return false; }
+}
+
+function sacRelatedKeysForKey(key) {
+  const keys = new Set();
+  if (key) keys.add(key);
+  const parts = String(key).split('|');
+  if (parts[0] === 'R' && parts.length >= 3) {
+    const sk = sacSlotKeyForBounds({ start: parts[1], end: parts[2] });
+    if (sk) keys.add(sk);
+  } else if (parts[0] === 'S' && parts.length >= 4) {
+    const y = +parts[1], m = +parts[2], w = +parts[3];
+    const ranges = getCalWeekRanges(y, m - 1);
+    const r = ranges[w - 1];
+    if (r) {
+      keys.add('R|' + sacYMDLocal(new Date(y, m - 1, r.start)) + '|' + sacYMDLocal(new Date(y, m - 1, r.end)));
+    }
+  }
+  return [...keys];
+}
+
+function sacMergeSacStoresFromImported(imported, opts) {
+  if (!imported || typeof imported !== 'object') return { merged: 0, keys: [] };
+  const stores = ['sacCargas', 'sacIngresos', 'vsData', 'vsExtraData'];
+  const onlyEmpty = !(opts && opts.overwrite);
+  const mergedKeys = new Set();
+  stores.forEach(function(store) {
+    const src = imported[store];
+    if (!src || typeof src !== 'object') return;
+    if (!state[store]) state[store] = {};
+    Object.keys(src).forEach(function(k) {
+      if (!k) return;
+      if (onlyEmpty && sacPeriodKeyHasData(k)) return;
+      const val = src[k];
+      if (store === 'sacCargas' || store === 'sacIngresos') {
+        if (!Array.isArray(val) || !val.length) return;
+      } else if (store === 'vsData') {
+        if (!Array.isArray(val) || !val.some(function(d) { return d && ((d.est || 0) > 0 || (d.real || 0) > 0); })) return;
+      } else if (store === 'vsExtraData') {
+        if (!val || ((val.monto || 0) <= 0 && (val.realExtra || 0) <= 0)) return;
+      }
+      state[store][k] = JSON.parse(JSON.stringify(val));
+      mergedKeys.add(k);
+    });
+  });
+  sacSyncRelatedPeriodKeys();
+  return { merged: mergedKeys.size, keys: [...mergedKeys] };
 }
 
 /** Si el bloque del mes es la misma semana lun–dom, usar clave ISO (evita «vacío» con datos en otra clave). */
@@ -24398,7 +24461,9 @@ function sacMigrateLegacySacKeys() {
 // ── RENDER ──
 function sacRender() {
   if (cerebrusUsuarioBodega()) return;
+  if (typeof sacSyncRelatedPeriodKeys === 'function') sacSyncRelatedPeriodKeys();
   if (typeof sacPreferIsoWhenSlotMatchesIsoWeek === 'function') sacPreferIsoWhenSlotMatchesIsoWeek();
+  if (typeof sacSyncRelatedPeriodKeys === 'function') sacSyncRelatedPeriodKeys();
   if (typeof sacAlignPeriodToStoredData === 'function') sacAlignPeriodToStoredData();
   sacRenderVentasDias();
   const wlbl = sacPeriodLabel();
@@ -27478,6 +27543,43 @@ function exportJSON() {
   } catch (e) {
     notify('⚠ No se pudo generar respaldo JSON: ' + (e.message || e));
   }
+}
+
+
+function importSacMergeJSON() {
+  const list = document.getElementById('exportList');
+  if (list) list.classList.remove('open');
+  if (!confirm('¿Importar ventas/cargas SAC desde un respaldo JSON?\n\nSolo rellena semanas que están vacías en Cerebrus (no pisa datos que ya tengas).')) return;
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.style.display = 'none';
+  inp.onchange = async function(ev) {
+    const f = ev.target && ev.target.files ? ev.target.files[0] : null;
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      const payload = JSON.parse(txt);
+      const imported = (payload && payload.data && payload.data.state) || payload.state || payload;
+      if (!imported || typeof imported !== 'object') throw new Error('El archivo no contiene un estado válido');
+      const res = sacMergeSacStoresFromImported(imported, { overwrite: false });
+      if (typeof decompressVsData === 'function') decompressVsData(state);
+      if (typeof _postLoadSetup === 'function') _postLoadSetup();
+      markUnsaved();
+      if (typeof saveState === 'function') saveState('Importar SAC respaldo', true);
+      _sacLastVentasKey = '';
+      if (typeof sacRender === 'function') sacRender();
+      const keys = (res.keys || []).map(function(k) { return typeof sacKeyToHumanLabel === 'function' ? sacKeyToHumanLabel(k) : k; }).slice(0, 6);
+      const more = (res.keys || []).length > 6 ? '…' : '';
+      notify('✅ SAC: ' + res.merged + ' período(s) recuperados' + (keys.length ? ' — ' + keys.join('; ') + more : ''));
+    } catch (e) {
+      notify('⚠ No se pudo importar SAC: ' + (e.message || e));
+    } finally {
+      try { document.body.removeChild(inp); } catch (_) {}
+    }
+  };
+  document.body.appendChild(inp);
+  inp.click();
 }
 
 function importJSON() {
