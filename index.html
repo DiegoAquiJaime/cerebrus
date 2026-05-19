@@ -3048,6 +3048,7 @@ body.dark-mode .conflict-overlay{
         <div class="export-menu-list" id="exportList">
           <div class="export-menu-item" onclick="exportHTML()"><span class="emi">🌐</span> Archivo HTML <span style="font-size:10px;color:#9aacb8;margin-left:auto;">portátil</span></div>
           <div class="export-menu-item" onclick="exportJSON()"><span class="emi">🧩</span> Respaldo JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">estado completo</span></div>
+          <div class="export-menu-item" onclick="exportGastosReferenciaWord()"><span class="emi">📝</span> Word · gastos referencia <span style="font-size:10px;color:#9aacb8;margin-left:auto;">fijos + cargas SAC</span></div>
           <div class="export-menu-item" onclick="importJSON()"><span class="emi">📥</span> Importar JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">restaurar estado</span></div>
           <hr class="export-sep-line">
           <div class="export-menu-item" onclick="exportExcel()"><span class="emi">📊</span> Excel (.xlsx)</div>
@@ -3425,9 +3426,11 @@ body.dark-mode .conflict-overlay{
           <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
         </div>
       </div>
-      <details id="sac-period-alt-wrap" class="sac-period-alt" style="display:none;">
-        <summary id="sac-period-alt-summary">Otras semanas con datos</summary>
-        <div class="sac-period-alt-body" id="sac-period-alt-body"></div>
+      <div id="sac-period-data-hint" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;font-size:11px;line-height:1.45;color:#9a3412;"></div>
+
+      <details id="sac-periodos-datos-wrap" style="display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
+        <summary style="cursor:pointer;font-weight:800;color:#166534;">📁 Períodos con datos guardados (tus semanas no se borran)</summary>
+        <div id="sac-periodos-datos-list" style="margin-top:8px;line-height:1.5;"></div>
       </details>
 
       <div class="sac-main">
@@ -23674,45 +23677,82 @@ function sacPeriodoFueCerrado(key) {
   return (state.sacCierresHistorial || []).some(c => c && c.periodKey === key);
 }
 
-/** Panel discreto (colapsado): solo otras semanas con datos, no la vigente. */
-function sacRenderPeriodAltPanel() {
+/** Si la pantalla muestra una semana vacía pero hay otra abierta (sin cierre en historial), ofrecer abrirla. */
+function sacMaybeOfferContinuarSemanaPendiente() {
   if (cerebrusUsuarioBodega()) return;
-  const wrap = document.getElementById('sac-period-alt-wrap');
-  const body = document.getElementById('sac-period-alt-body');
-  const sum = document.getElementById('sac-period-alt-summary');
-  if (!wrap || !body) return;
+  if (window._sacOfferedPendiente) return;
   const curKey = sacDataKey();
+  if (sacPeriodKeyHasData(curKey)) return;
+  const open = sacCollectAllSacKeys().filter(k => k !== curKey && sacPeriodKeyHasData(k) && !sacPeriodoFueCerrado(k));
+  if (!open.length) return;
+  const prev = sacIsoWeeksBack(1);
+  const prevKey = 'R|' + prev.start + '|' + prev.end;
+  const pick = open.includes(prevKey) ? prevKey : open[0];
+  window._sacOfferedPendiente = true;
+  const lbl = sacKeyToHumanLabel(pick);
+  if (confirm(
+    'Tienes ventas/cargas guardadas en «' + lbl + '».\n\n' +
+    'No hace falta haber pulsado «Cerrar semana» para que existan: solo estás viendo otra semana (hoy: ' + sacPeriodLabel() + ').\n\n' +
+    '¿Abrir ese período para seguir trabajando y cerrarlo cuando quieras?'
+  )) sacAbrirPeriodoPorKey(pick);
+}
+
+function sacRenderPeriodosConDatosList() {
+  if (cerebrusUsuarioBodega()) return;
+  const wrap = document.getElementById('sac-periodos-datos-wrap');
+  const list = document.getElementById('sac-periodos-datos-list');
+  if (!wrap || !list) return;
+  const keys = sacCollectAllSacKeys()
+    .filter(k => sacPeriodKeyHasData(k))
+    .sort((a, b) => String(b).localeCompare(String(a)));
+  if (!keys.length) {
+    wrap.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+  wrap.style.display = 'block';
+  const cur = sacDataKey();
+  _sacPeriodKeysList = keys;
+  list.innerHTML = keys.map((k, i) => {
+    const st = sacPeriodDataStats(k);
+    const lbl = esc(sacKeyToHumanLabel(k));
+    const active = k === cur ? ' <span style="color:#15803d;font-weight:800;">← viendo ahora</span>' : '';
+    const btn = k === cur ? '' : ` <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;margin-left:6px;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">Abrir</button>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid #dcfce7;">${lbl}${active}${btn}<br><span style="color:#64748b;font-size:10px;">${st.cargas} cargas · ${st.ing} ingresos · ventas real ${typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal} · est. ${typeof fmt === 'function' ? fmt(st.ventasEst) : st.ventasEst}</span></div>`;
+  }).join('');
+}
+
+function sacRenderPeriodDataBanner() {
+  if (cerebrusUsuarioBodega()) return;
+  const el = document.getElementById('sac-period-data-hint');
+  if (!el) return;
+  const curKey = sacDataKey();
+  if (sacPeriodKeyHasData(curKey)) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
   const others = sacCollectAllSacKeys()
     .filter(k => k !== curKey && sacPeriodKeyHasData(k))
     .sort((a, b) => String(b).localeCompare(String(a)));
   if (!others.length) {
-    wrap.style.display = 'none';
-    body.innerHTML = '';
+    el.style.display = 'none';
+    el.innerHTML = '';
     return;
   }
-  wrap.style.display = 'block';
-  if (sum) sum.textContent = 'Otras semanas con datos (' + others.length + ')';
-  _sacPeriodKeysList = others;
-  const curEmpty = !sacPeriodKeyHasData(curKey);
-  let intro = '';
-  if (curEmpty) {
-    intro = '<p style="margin:0 0 6px;color:#94a3b8;font-size:10px;">Este período está vacío. Los datos pueden estar en otra semana:</p>';
+  _sacPeriodKeysList = others.slice(0, 8);
+  const btns = _sacPeriodKeysList.map((k, i) =>
+    `<button type="button" class="fac-btn" style="font-size:10px;margin:4px 6px 0 0;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">📂 ${esc(sacKeyToHumanLabel(k))}</button>`
+  ).join('');
+  const prev = sacIsoWeeksBack(1);
+  const prevKey = 'R|' + prev.start + '|' + prev.end;
+  let pinPrev = '';
+  if (curKey !== prevKey) {
+    pinPrev = `<div style="margin-top:8px;"><button type="button" class="fac-btn primary" style="font-size:10px;" onclick="sacPinIsoWeek(1)">⬅ Ir a semana pasada (lun–dom)</button></div>`;
   }
-  body.innerHTML = intro + others.map((k, i) => {
-    const st = sacPeriodDataStats(k);
-    const lbl = esc(sacKeyToHumanLabel(k));
-    return '<div class="sac-period-alt-row">' + lbl +
-      ' <button type="button" class="fac-btn" style="font-size:9px;padding:1px 7px;margin-left:4px;" onclick="sacAbrirPeriodoPorKeyIdx(' + i + ')">Abrir</button>' +
-      '<br><span style="color:#94a3b8;">' + st.cargas + ' cargas · real ' + (typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal) + '</span></div>';
-  }).join('') +
-    '<p style="margin:8px 0 0;"><button type="button" class="fac-btn" style="font-size:9px;padding:3px 8px;" onclick="sacAbrirElegirSemana()">Más opciones…</button></p>';
+  el.style.display = 'block';
+  el.innerHTML = `<strong>Período vacío</strong> (${esc(sacPeriodLabel())}). <strong>No necesitaste cerrar la semana</strong> — los datos siguen guardados en otro bloque. Abrí uno o usa <strong>Semana pasada</strong>: ${btns}${pinPrev}`;
 }
-
-function sacMaybeOfferContinuarSemanaPendiente() { /* sin popup */ }
-
-function sacRenderPeriodosConDatosList() { sacRenderPeriodAltPanel(); }
-
-function sacRenderPeriodDataBanner() { sacRenderPeriodAltPanel(); }
 
 function sacCierreModalBuildIsoQuick() {
   const el = document.getElementById('sac-cierre-iso-quick');
@@ -27210,6 +27250,125 @@ function exportHTML() {
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
   notify('✓ Archivo HTML descargado');
+}
+
+function cerebrusCollectGastosReferencia() {
+  const WDAYS = ['—', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const secLabels = {
+    mercaderia: 'Mercadería', rrhh: 'RRHH', operacion: 'Operación',
+    pasivos: 'Pasivos', socias: 'Socias', gestion: 'Gestión'
+  };
+  const fijos = [];
+  ['mercaderia', 'rrhh', 'operacion', 'pasivos', 'socias', 'gestion'].forEach(function(k) {
+    (state[k] || []).forEach(function(item) {
+      if (!item || !String(item.name || '').trim()) return;
+      let fechaPago = '';
+      if (+item.freq === 1 && item.day > 0) fechaPago = 'Día ' + item.day + ' de cada mes';
+      else if (+item.freq === 4 && item.weekday > 0) fechaPago = 'Cada ' + (WDAYS[item.weekday] || item.weekday);
+      else if (+item.freq === 2) fechaPago = 'Quincenal';
+      else if (+item.freq === 30) fechaPago = 'Diario';
+      fijos.push({
+        nombre: String(item.name).trim(),
+        seccion: secLabels[k] || k,
+        fechaPago: fechaPago,
+        montoRef: item.amount || 0
+      });
+    });
+  });
+  (state.sebasFinanzas && state.sebasFinanzas.gastosFijos || []).forEach(function(g) {
+    if (!g || !String(g.item || '').trim()) return;
+    fijos.push({
+      nombre: String(g.item).trim(),
+      seccion: 'Finanzas Sebas · ' + (g.cat || ''),
+      fechaPago: g.dia ? ('Día ' + g.dia + ' del mes') : '',
+      montoRef: g.valor || 0
+    });
+  });
+  const otrosMap = new Map();
+  const sac = state.sacCargas || {};
+  Object.keys(sac).forEach(function(periodKey) {
+    const arr = sac[periodKey];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function(c) {
+      if (!c || c._esPago || !String(c.nombre || '').trim()) return;
+      const norm = String(c.nombre).trim().toLowerCase();
+      if (!norm) return;
+      let row = otrosMap.get(norm);
+      if (!row) {
+        row = {
+          nombre: String(c.nombre).trim(),
+          cat: c.cat || '',
+          montoRef: 0,
+          veces: 0,
+          periodos: []
+        };
+        otrosMap.set(norm, row);
+      }
+      const m = Math.max(c.monto || 0, c.montoReal || 0, c.pagadoParcial || 0);
+      row.veces++;
+      row.montoRef = Math.max(row.montoRef, m);
+      if (row.periodos.indexOf(periodKey) < 0) row.periodos.push(periodKey);
+    });
+  });
+  const otros = Array.from(otrosMap.values()).sort(function(a, b) {
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
+  return { fijos: fijos, otros: otros };
+}
+
+function sacKeyToHumanLabelExport(key) {
+  if (typeof sacKeyToHumanLabel === 'function') return sacKeyToHumanLabel(key);
+  return key;
+}
+
+function exportGastosReferenciaWord() {
+  document.getElementById('exportList').classList.remove('open');
+  const pack = cerebrusCollectGastosReferencia();
+  const ts = new Date().toLocaleString('es-CL');
+  const fmtM = function(n) {
+    if (typeof fmt === 'function') return fmt(n);
+    return '$' + Math.round(n || 0).toLocaleString('es-CL');
+  };
+  function rowFijo(r) {
+    return '<tr><td>' + esc(r.nombre) + '</td><td>' + esc(r.seccion) + '</td><td>' + esc(r.fechaPago || '—') + '</td><td style="text-align:right;">' + (r.montoRef ? fmtM(r.montoRef) : '—') + '</td><td style="min-width:120px;border-bottom:1px solid #333;">&nbsp;</td></tr>';
+  }
+  function rowOtro(r) {
+    const per = (r.periodos || []).slice(0, 3).map(sacKeyToHumanLabelExport).join('; ');
+    const extra = r.periodos && r.periodos.length > 3 ? '…' : '';
+    return '<tr><td>' + esc(r.nombre) + '</td><td>' + esc(r.cat || '') + '</td><td style="font-size:10px;color:#555;">' + esc(per + extra) + '</td><td style="text-align:right;">' + (r.montoRef ? fmtM(r.montoRef) + ' (máx.)' : '—') + '</td><td style="min-width:120px;border-bottom:1px solid #333;">&nbsp;</td></tr>';
+  }
+  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="UTF-8"><title>Gastos referencia CEREBRUS</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#111;}
+h1{font-size:16pt;} h2{font-size:13pt;margin-top:22px;border-bottom:1px solid #ccc;padding-bottom:4px;}
+p.meta{font-size:10pt;color:#555;}
+table{border-collapse:collapse;width:100%;margin-top:8px;}
+th,td{border:1px solid #999;padding:6px 8px;vertical-align:top;}
+th{background:#f0f0f0;font-size:10pt;}
+</style></head><body>
+<h1>Gastos de referencia — CEREBRUS · Aquí Jaime</h1>
+<p class="meta">Generado: ${esc(ts)} · Usuario: ${esc(typeof currentUser !== 'undefined' ? currentUser : '')}<br>
+Configuración (gastos fijos del plan) + cargas únicas registradas en Semana Actual (todas las semanas guardadas). Complete la columna «Monto nuevo».</p>
+<h2>1. Gastos fijos (Configuración + fechas de pago conocidas)</h2>
+<table><thead><tr><th>Gasto</th><th>Sección</th><th>Fecha de pago</th><th>Monto referencia</th><th>Monto nuevo</th></tr></thead><tbody>
+${pack.fijos.length ? pack.fijos.map(rowFijo).join('') : '<tr><td colspan="5">Sin ítems en configuración</td></tr>'}
+</tbody></table>
+<h2>2. Otros gastos (cargas en semanas anteriores / Semana Actual)</h2>
+<p class="meta">Lista sin duplicar nombres. «Monto referencia» = mayor monto visto en cargas guardadas.</p>
+<table><thead><tr><th>Gasto</th><th>Categoría</th><th>Aparece en períodos</th><th>Monto referencia</th><th>Monto nuevo</th></tr></thead><tbody>
+${pack.otros.length ? pack.otros.map(rowOtro).join('') : '<tr><td colspan="5">Sin cargas en semanas guardadas</td></tr>'}
+</tbody></table>
+</body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Cerebrus_Gastos_referencia_' + new Date().toISOString().slice(0, 10) + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  notify('📝 Word descargado · ' + pack.fijos.length + ' fijos · ' + pack.otros.length + ' otros');
 }
 
 function exportJSON() {
