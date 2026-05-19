@@ -5148,6 +5148,22 @@ body.dark-mode .conflict-overlay{
             📄 Exportar movimientos (preview PDF)
           </button>
         </div>
+        <div id="inv-informe-prod-wrap" style="background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px;margin-bottom:16px;border:1px solid rgba(148,163,184,.2);">
+          <div style="font-size:13px;font-weight:800;margin-bottom:6px;">📊 Informe por productos (solo lectura)</div>
+          <p style="font-size:10px;color:#64748b;margin:0 0 10px;line-height:1.4;">Elegí uno o más productos y un rango de fechas. Resume despachos, devoluciones, ingresos y mermas sin modificar datos.</p>
+          <input type="text" id="inv-informe-prod-q" placeholder="Buscar ej. FILETE, pollo…" oninput="invInformeProdRenderPick()" style="width:100%;max-width:320px;border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:inherit;font-size:12px;margin-bottom:8px;">
+          <div id="inv-informe-prod-pick" style="max-height:120px;overflow-y:auto;margin-bottom:8px;font-size:11px;"></div>
+          <div id="inv-informe-prod-sel" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;">
+            <span style="font-size:10px;font-weight:700;color:#94a3b8;">Desde</span>
+            <input type="date" id="inv-informe-prod-desde" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:11px;">
+            <span style="font-size:10px;font-weight:700;color:#94a3b8;">Hasta</span>
+            <input type="date" id="inv-informe-prod-hasta" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-family:inherit;font-size:11px;">
+            <button type="button" class="fac-btn primary" onclick="invInformeProdGenerar()" style="font-size:11px;">📋 Generar informe</button>
+            <button type="button" class="fac-btn" onclick="invInformeProdPdf()" style="font-size:11px;">📄 PDF / imprimir</button>
+          </div>
+          <div id="inv-informe-prod-result" style="font-size:11px;line-height:1.45;"></div>
+        </div>
         <!-- Filtros -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
           <select id="mov-f-tipo" onchange="movRender()" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:inherit;font-size:11px;background:var(--white);color:var(--primary);">
@@ -15251,7 +15267,7 @@ function invSubTab(panel) {
   });
   if (panel==='pedido')       invRenderPedido();
   if (panel==='consumo')      invRenderConsumo();
-  if (panel==='movimientos')  { movRender(); movRenderDashSemanal(); }
+  if (panel==='movimientos')  { movRender(); movRenderDashSemanal(); if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick(); }
   if (panel==='conteo')       conteoRender();
 }
 
@@ -17668,6 +17684,127 @@ function movExportPdfPreview() {
     movRangoFechasEtiqueta()
   ].filter(Boolean).join(' · ') || 'Sin filtros';
   movExportPdfPreviewFromRows(rows, filtros);
+}
+
+// ── Informe movimientos por productos (solo lectura; no modifica state) ──
+var _invInformeProdSel = {};
+
+function invInformeProdRenderPick() {
+  const pick = document.getElementById('inv-informe-prod-pick');
+  const selEl = document.getElementById('inv-informe-prod-sel');
+  if (!pick) return;
+  const q = (document.getElementById('inv-informe-prod-q')?.value || '').trim().toLowerCase();
+  const prods = (state.inventario || []).filter(function(p) {
+    if (!p || !p.id) return false;
+    if (!q) return true;
+  const nm = String(p.nombre || '').toLowerCase();
+    return nm.indexOf(q) >= 0 || String(p.codigo || '').toLowerCase().indexOf(q) >= 0;
+  }).slice(0, 40);
+  pick.innerHTML = prods.map(function(p) {
+    const on = !!_invInformeProdSel[p.id];
+    return '<label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;">' +
+      '<input type="checkbox" ' + (on ? 'checked' : '') + ' onchange="invInformeProdToggle(\'' + p.id + '\', this.checked)">' +
+      esc(p.nombre || '') + '</label>';
+  }).join('') || '<span style="color:#94a3b8;">Sin coincidencias</span>';
+  if (selEl) {
+    const ids = Object.keys(_invInformeProdSel).filter(function(id) { return _invInformeProdSel[id]; });
+    selEl.innerHTML = ids.map(function(id) {
+      const p = (state.inventario || []).find(function(x) { return x.id === id; });
+      return p ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">' + esc(p.nombre) +
+        ' <button type="button" style="border:none;background:none;cursor:pointer;color:#166534;margin-left:4px;" onclick="invInformeProdToggle(\'' + id + '\',false)">✕</button></span>' : '';
+    }).join('');
+  }
+}
+
+function invInformeProdToggle(id, on) {
+  if (!id) return;
+  if (on) _invInformeProdSel[id] = true;
+  else delete _invInformeProdSel[id];
+  invInformeProdRenderPick();
+}
+
+function invInformeProdRowsForReport() {
+  const ids = Object.keys(_invInformeProdSel).filter(function(k) { return _invInformeProdSel[k]; });
+  if (!ids.length) return { rows: [], names: [], label: '' };
+  const names = [];
+  const nameSet = new Set();
+  ids.forEach(function(id) {
+    const p = (state.inventario || []).find(function(x) { return x.id === id; });
+    if (p) {
+      names.push(p.nombre || id);
+      nameSet.add(String(p.nombre || '').toLowerCase());
+      nameSet.add(String(id));
+    }
+  });
+  const desde = document.getElementById('inv-informe-prod-desde')?.value || '';
+  const hasta = document.getElementById('inv-informe-prod-hasta')?.value || '';
+  let rows = movGetActiveRows().filter(function(m) {
+    if (m.prodId && ids.indexOf(m.prodId) >= 0) return true;
+    const pn = String(m.producto || '').toLowerCase();
+    for (const n of nameSet) { if (n && pn.indexOf(n) >= 0) return true; }
+    return false;
+  });
+  rows = movFiltrarPorRangoFechas(rows, desde, hasta);
+  const label = (desde && hasta ? desde + ' → ' + hasta : (desde ? 'desde ' + desde : hasta ? 'hasta ' + hasta : 'todas las fechas')) +
+    ' · ' + names.join(', ');
+  return { rows: rows, names: names, label: label };
+}
+
+function invInformeProdAggregate(rows) {
+  const agg = {};
+  rows.forEach(function(m) {
+    const key = m.producto || '—';
+    if (!agg[key]) agg[key] = { producto: key, despacho: {}, devolucion: {}, ingreso: 0, merma: 0, preelab: 0, totalMovs: 0 };
+    const a = agg[key];
+    a.totalMovs++;
+    const q = Number(m.cantidad) || 0;
+    const u = m.unidad || '';
+    if (m.tipo === 'despacho') {
+      const d = m.destino || 'Otro';
+      a.despacho[d] = (a.despacho[d] || 0) + q;
+    } else if (m.tipo === 'devolucion') {
+      const o = m.origen || m.destino || 'Origen';
+      a.devolucion[o] = (a.devolucion[o] || 0) + q;
+    } else if (m.tipo === 'ingreso_pedido') a.ingreso += q;
+    else if (m.tipo === 'merma') a.merma += q;
+    else if (m.tipo === 'preelaboracion') a.preelab += q;
+    a._unidad = u || a._unidad || '';
+  });
+  return agg;
+}
+
+function invInformeProdGenerar() {
+  const el = document.getElementById('inv-informe-prod-result');
+  if (!el) return;
+  const pack = invInformeProdRowsForReport();
+  if (!pack.names.length) { notify('⚠ Elige al menos un producto'); return; }
+  if (!pack.rows.length) {
+    el.innerHTML = '<p style="color:#94a3b8;">Sin movimientos para ' + esc(pack.names.join(', ')) + ' en el rango indicado.</p>';
+    return;
+  }
+  const agg = invInformeProdAggregate(pack.rows);
+  const blocks = Object.keys(agg).sort().map(function(pk) {
+    const a = agg[pk];
+    const desp = Object.keys(a.despacho).map(function(d) {
+      return '<li>→ ' + esc(d) + ': <b>' + a.despacho[d].toFixed(2) + '</b> ' + esc(a._unidad || '') + '</li>';
+    }).join('');
+    const dev = Object.keys(a.devolucion).map(function(o) {
+      return '<li>← ' + esc(o) + ': <b>' + a.devolucion[o].toFixed(2) + '</b> ' + esc(a._unidad || '') + '</li>';
+    }).join('');
+    return '<motion style="margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">' +
+      '<div style="font-weight:800;margin-bottom:6px;">' + esc(a.producto) + ' · ' + a.totalMovs + ' mov.</div>' +
+      (desp ? '<div style="font-size:10px;font-weight:700;color:#6366f1;margin-top:4px;">Despachos</motion><ul style="margin:4px 0 8px 16px;font-size:10px;">' + desp + '</ul>' : '') +
+      (dev ? '<motion style="font-size:10px;font-weight:700;color:#10b981;">Devoluciones</div><ul style="margin:4px 0 8px 16px;font-size:10px;">' + dev + '</ul>' : '') +
+      '<div style="font-size:10px;color:#64748b;">Ingreso pedido: <b>' + a.ingreso.toFixed(2) + '</b> · Merma: <b>' + a.merma.toFixed(2) + '</b> · Preelab.: <b>' + a.preelab.toFixed(2) + '</b></div></div>';
+  }).join('');
+  el.innerHTML = '<p style="font-size:10px;color:#64748b;margin:0 0 8px;">' + esc(pack.label) + ' · ' + pack.rows.length + ' movimientos</p>' + blocks;
+}
+
+function invInformeProdPdf() {
+  const pack = invInformeProdRowsForReport();
+  if (!pack.names.length) { notify('⚠ Elige al menos un producto'); return; }
+  if (!pack.rows.length) { notify('⚠ Sin movimientos en el rango'); return; }
+  movExportPdfPreviewFromRows(pack.rows.slice().reverse(), 'Informe productos · ' + pack.label);
 }
 
 function movArchivoPreview(idx) {
@@ -24616,7 +24753,8 @@ function sacRenderCargas() {
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : c.estado === 'pausa' ? 'pausa' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : c.estado === 'pausa' ? '⏸ Pausa' : '○ No pagado';
     const pagadoParcial = c.pagadoParcial || 0;
-    const pendienteParcial = c.monto - pagadoParcial;
+    const pendienteParcial = Math.max(0, (c.monto || 0) - pagadoParcial);
+    const puedePagarTodo = !c._esPago && c.estado !== 'pagado' && c.estado !== 'pausa' && pendienteParcial > 0 && (c.estado === 'parcial' || pagadoParcial > 0);
     const montoEf = c._esPago ? c.monto :
                     c.estado === 'parcial' && pagadoParcial > 0 ? pendienteParcial :
                     c.montoReal != null ? c.montoReal : c.monto;
@@ -24648,7 +24786,8 @@ function sacRenderCargas() {
         ${c.estado === 'pausa'
           ? `<button type="button" class="sac-estado-btn pausa" onclick="sacTogglePausa('${c.id}')">⏸ PAUSA · Reactivar</button>`
           : `<button type="button" class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
-             ${!c._esPago ? `<button type="button" onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>
+             ${!c._esPago ? `${puedePagarTodo ? `<button type="button" onclick="sacPagarTodoSaldo('${c.id}')" style="font-size:9px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--success);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:800;">✓ Pagar TODO (${fmt(pendienteParcial)})</button>` : ''}
+             <button type="button" onclick="sacPagarParcial('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.1);border:none;color:var(--accent2);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;">◑ Pago parcial</button>
              <button type="button" onclick="sacAjustarSaldo('${c.id}')" style="font-size:9px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);color:var(--warning);cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:700;">✏ Ajustar saldo</button>
              <button type="button" onclick="sacTogglePausa('${c.id}')" style="font-size:9px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.35);color:#6366f1;cursor:pointer;font-family:inherit;border-radius:4px;padding:2px 6px;font-weight:700;">⏸ Pausar</button>` : ''}`}
       </div>
@@ -24673,6 +24812,44 @@ function sacCargaSortTs(c) {
 }
 function sacTouchCarga(c) {
   if (c && typeof c === 'object') c._updatedAt = Date.now();
+}
+
+var SAC_LOG_LABELS = {
+  abono: 'Abono parcial',
+  pagar_todo: 'Pago saldo completo',
+  pausa: 'Pausa',
+  reactivar: 'Reactivar',
+  estado_pagado: 'Marcado pagado',
+  estado_nopagado: 'No pagado',
+  estado_parcial: 'Parcial',
+  ajuste_saldo: 'Ajuste saldo'
+};
+
+function sacCargaLogPush(c, accion, extra) {
+  if (!c || typeof c !== 'object') return;
+  if (!Array.isArray(c.auditLog)) c.auditLog = [];
+  const now = new Date();
+  c.auditLog.push({
+    accion: accion,
+    usuario: (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '?',
+    fecha: now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    hora: now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    ts: Date.now(),
+  ...(extra || {})
+  });
+  if (c.auditLog.length > 50) c.auditLog = c.auditLog.slice(-50);
+}
+
+function sacCargaAuditHtml(c) {
+  if (!c || !Array.isArray(c.auditLog) || !c.auditLog.length) return '';
+  return '<div class="sac-audit-log" style="margin-top:4px;">' +
+    c.auditLog.slice(-6).reverse().map(function(e) {
+      const lab = SAC_LOG_LABELS[e.accion] || e.accion || 'Acción';
+      const m = e.monto != null && e.monto > 0 ? ' · ' + fmt(e.monto) : '';
+      return '<div style="font-size:8px;color:#64748b;line-height:1.35;">' +
+        esc(e.fecha || '') + (e.hora ? ' ' + esc(e.hora) : '') + ' · ' + esc(e.usuario || '?') +
+        ' · ' + esc(lab) + m + '</div>';
+    }).join('') + '</div>';
 }
 
 function sacCalcCargasTotals() {
@@ -25091,6 +25268,7 @@ function sacTogglePausa(id) {
     pushUndo();
     c._pausaPrevEstado = (c.estado === 'parcial' || c.estado === 'pagado' || c.estado === 'nopagado') ? c.estado : 'nopagado';
     c.estado = 'pausa';
+    sacCargaLogPush(c, 'pausa', {});
   } else {
     const prev = c._pausaPrevEstado || 'nopagado';
     const lab = { nopagado: 'No pagado (pendiente de pago)', parcial: 'Parcial', pagado: 'Pagado' }[prev] || 'No pagado';
@@ -25098,6 +25276,7 @@ function sacTogglePausa(id) {
     pushUndo();
     c.estado = prev;
     delete c._pausaPrevEstado;
+    sacCargaLogPush(c, 'reactivar', { detalle: lab });
   }
   sacTouchCarga(c);
   sacRenderCargas();
@@ -25133,6 +25312,14 @@ async function sacCycleEstado(id) {
   pushUndo();
   c.estado = next;
   if (c.estado==='pagado' && c.montoReal==null) c.montoReal = c.monto;
+  if (next === 'pagado') {
+    c.pagadoParcial = c.monto || 0;
+    sacCargaLogPush(c, 'estado_pagado', { monto: montoPagoBanco || c.monto });
+  } else if (next === 'parcial') {
+    sacCargaLogPush(c, 'estado_parcial', {});
+  } else {
+    sacCargaLogPush(c, 'estado_nopagado', {});
+  }
   if (next === 'pagado' && bankOpt.descontar && montoPagoBanco > 0) {
     sacDescontarBancoPorEgreso_(montoPagoBanco, c.nombre);
   }
@@ -25155,6 +25342,48 @@ function sacEditMonto(id) {
   sacRenderCargas();
   sacCalcBalance();
   notify(`✓ Monto real: ${fmt(real)}`);
+}
+
+/** Saldar el resto pendiente de una carga con abonos previos. */
+async function sacPagarTodoSaldo(id) {
+  const c = sacGetCargas().find(x => x.id === id);
+  if (!c || c._esPago) return;
+  if (c.estado === 'pausa') { notify('⚠ Quita PAUSA antes de pagar.'); return; }
+  if (c.estado === 'pagado') { notify('⚠ Ya está pagada.'); return; }
+  const pendiente = Math.max(0, sacCargaPendienteAcum(c));
+  if (pendiente <= 0) { notify('⚠ No hay saldo pendiente'); return; }
+  if (!confirm(`¿Pagar TODO el saldo de "${c.nombre}"?\n\nPendiente: ${fmt(pendiente)}`)) return;
+  const bankOpt = await sacAskAutoBancoDescuento_({
+    titulo: 'Pago saldo completo',
+    detalle: c.nombre,
+    monto: pendiente
+  });
+  if (bankOpt.cancel) return;
+  pushUndo();
+  const cargas = sacGetCargas();
+  c.pagadoParcial = (c.pagadoParcial || 0) + pendiente;
+  c.estado = 'pagado';
+  c.montoReal = c.monto;
+  sacCargaLogPush(c, 'pagar_todo', { monto: pendiente });
+  const pago = {
+    id: 'sc_pago_' + Date.now(),
+    nombre: `✓ Pago saldo — ${c.nombre}`,
+    cat: c.cat,
+    monto: pendiente,
+    montoReal: pendiente,
+    estado: 'pagado',
+    resp: c.resp || '',
+    nota: `Saldo completo ${fmt(pendiente)}`,
+    _esPago: true
+  };
+  sacTouchCarga(pago);
+  cargas.push(pago);
+  if (bankOpt.descontar && pendiente > 0) sacDescontarBancoPorEgreso_(pendiente, c.nombre);
+  sacTouchCarga(c);
+  sacRenderCargas();
+  sacCalcBalance();
+  markUnsaved();
+  notify(`✅ "${c.nombre}" saldada · ${fmt(c.monto)}`);
 }
 
 // ── Pago parcial con registro automático ──
@@ -25193,6 +25422,7 @@ async function sacPagarParcial(id) {
     c.pagadoParcial = nuevoTotal;
     c.montoReal     = nuevoTotal;
     c.estado        = 'pagado';
+    sacCargaLogPush(c, 'pagar_todo', { monto: abono });
     sacTouchCarga(c);
     notify(`✅ "${c.nombre}" ajustado a ${fmt(nuevoTotal)} y saldado completamente`);
   } else {
@@ -25220,10 +25450,12 @@ async function sacPagarParcial(id) {
       // Saldada completamente
       c.estado    = 'pagado';
       c.montoReal = c.monto;
+      sacCargaLogPush(c, 'pagar_todo', { monto: abono });
       sacTouchCarga(c);
       notify(`✅ "${c.nombre}" — ¡Saldado completamente! ${fmt(c.monto)}`);
     } else {
       c.estado = 'parcial';
+      sacCargaLogPush(c, 'abono', { monto: abono });
       sacTouchCarga(c);
       // Crear registro del abono pagado
       const pago = {
@@ -25272,6 +25504,7 @@ function sacAjustarSaldo(id) {
   c.monto = pagado + nuevoPendiente;
   c.estado = nuevoPendiente <= 0 ? 'pagado' : (pagado > 0 ? 'parcial' : 'nopagado');
   if (c.estado === 'pagado') c.montoReal = c.monto;
+  sacCargaLogPush(c, 'ajuste_saldo', { monto: nuevoPendiente });
   sacTouchCarga(c);
   sacRenderCargas();
   sacCalcBalance();
@@ -25652,7 +25885,7 @@ async function _prepareConcurrentSafeState() {
 function splitStateForCloudParts(st, opts) {
   opts = opts || {};
   const PART_DEF = [
-    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos'] },
+    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'] },
     { id: 'pFac', keys: ['facturas'] },
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
@@ -25697,9 +25930,12 @@ function splitStateForCloudParts(st, opts) {
   return parts;
 }
 
+/**
+ * Bodega solo escribe inventario/movimientos: conserva en nube lo de Semana Actual, facturas, etc.
+ * Admin que solo toca SAC: si no cambió inventario local, conserva movimientos remotos de Bodega.
+ */
 async function enforceBodegaIsolationOnSave_(stateToSave) {
-  const isBodegaUser = String(currentUser || '').toLowerCase() === 'bodega';
-  if (!isBodegaUser) return stateToSave;
+  if (!cerebrusUsuarioBodega()) return stateToSave;
   try {
     const remote = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
@@ -25707,10 +25943,27 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
       'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
       'sacEfectivo','sacCajaChica','sacCajaChicaNota','sacReservaSaldo','sacReservaMovs','sacMerc',
       'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos',
-      'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos','cerebrusCalEventos','cerebrusBitacora'
+      'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos','cerebrusCalEventos','cerebrusBitacora',
+      'cajaEmpresa','revisarPapel','provDocumentos','calMultOverrides'
     ];
     keepRemoteKeys.forEach(function(k) {
       if (remote[k] !== undefined) merged[k] = remote[k];
+    });
+    return merged;
+  } catch (e) {
+    return stateToSave;
+  }
+}
+
+async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
+  if (cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
+  try {
+    const remote = await _fetchCloudStateRaw();
+    const merged = JSON.parse(JSON.stringify(stateToSave || {}));
+    const invKeys = ['inventario','preciosProveedor','catInventario','unidadesInventario','movimientos','movimientosAudit','movimientosArchivo','invFamilias','invBodegaN3Applied','inventorySnapshotId','inventorySnapshotDate','inventorySnapshotSource'];
+    const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
+    invKeys.forEach(function(k) {
+      if (!localChanged.has(k) && remote[k] !== undefined) merged[k] = remote[k];
     });
     return merged;
   } catch (e) {
@@ -25766,7 +26019,8 @@ async function saveToCloud(description, silent) {
       }
     }
 
-    const safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
+    let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
+    safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     const stateToSave = compressStateForSave(safeStateToSave);
 
     try {
@@ -25897,11 +26151,16 @@ function compressStateForSave(st) {
       s.vsExtraData = Object.keys(ce).length ? ce : undefined;
     }
 
-    // Compress sacCargas: remove empty weeks
+    // Compress sacCargas: remove empty weeks (conserva auditLog en cada carga)
     if (s.sacCargas) {
       const cc = {};
       Object.entries(s.sacCargas).forEach(([w, arr]) => {
-        if (Array.isArray(arr) && arr.length) cc[w] = arr;
+        if (Array.isArray(arr) && arr.length) {
+          arr.forEach(function(c) {
+            if (c && Array.isArray(c.auditLog) && c.auditLog.length > 50) c.auditLog = c.auditLog.slice(-50);
+          });
+          cc[w] = arr;
+        }
       });
       s.sacCargas = Object.keys(cc).length ? cc : undefined;
     }
