@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.04.7",
-  "notes": "Inventario lista: botón Precios desde respaldo en barra principal (input file compartido con pedido semanal)."
+  "version": "2026.05.18.1",
+  "notes": "SAC: recuperar semana 18–24 may (claves S|/R|), importar SAC desde respaldo, Word referencia. Voz bienvenida Sebas. Actualización sin caché al aceptar."
 }

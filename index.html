@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -3050,7 +3052,6 @@ body.dark-mode .conflict-overlay{
           <div class="export-menu-item" onclick="exportJSON()"><span class="emi">🧩</span> Respaldo JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">estado completo</span></div>
           <div class="export-menu-item" onclick="exportGastosReferenciaWord()"><span class="emi">📝</span> Word · gastos referencia <span style="font-size:10px;color:#9aacb8;margin-left:auto;">fijos + cargas SAC</span></div>
           <div class="export-menu-item" onclick="importJSON()"><span class="emi">📥</span> Importar JSON <span style="font-size:10px;color:#9aacb8;margin-left:auto;">restaurar estado</span></div>
-          <div class="export-menu-item" onclick="importSacMergeJSON()"><span class="emi">📥</span> Importar SAC desde respaldo <span style="font-size:10px;color:#9aacb8;margin-left:auto;">solo semanas vacías</span></div>
           <hr class="export-sep-line">
           <div class="export-menu-item" onclick="exportExcel()"><span class="emi">📊</span> Excel (.xlsx)</div>
           <div class="export-menu-item" onclick="exportPDF()"><span class="emi">🖨</span> PDF / Imprimir</div>
@@ -6869,7 +6870,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.04.29.1';
+const APP_VERSION = '2026.05.18.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6915,7 +6916,14 @@ async function checkAppVersion(forceShowUpToDate) {
     try { localStorage.setItem(seenKey, '1'); } catch (e) {}
     _versionPromptOpen = false;
     if (ask) {
-      location.reload();
+      try {
+        const url = new URL(location.href);
+        url.searchParams.set('v', remoteVersion);
+        url.searchParams.set('_', String(Date.now()));
+        location.replace(url.toString());
+      } catch (e) {
+        location.href = location.pathname + '?v=' + encodeURIComponent(remoteVersion) + '&_=' + Date.now();
+      }
       return;
     }
     notify('ℹ️ Puedes actualizar cuando quieras con "🔄 Actualizar".');
@@ -27543,43 +27551,6 @@ function exportJSON() {
   } catch (e) {
     notify('⚠ No se pudo generar respaldo JSON: ' + (e.message || e));
   }
-}
-
-
-function importSacMergeJSON() {
-  const list = document.getElementById('exportList');
-  if (list) list.classList.remove('open');
-  if (!confirm('¿Importar ventas/cargas SAC desde un respaldo JSON?\n\nSolo rellena semanas que están vacías en Cerebrus (no pisa datos que ya tengas).')) return;
-  const inp = document.createElement('input');
-  inp.type = 'file';
-  inp.accept = '.json,application/json';
-  inp.style.display = 'none';
-  inp.onchange = async function(ev) {
-    const f = ev.target && ev.target.files ? ev.target.files[0] : null;
-    if (!f) return;
-    try {
-      const txt = await f.text();
-      const payload = JSON.parse(txt);
-      const imported = (payload && payload.data && payload.data.state) || payload.state || payload;
-      if (!imported || typeof imported !== 'object') throw new Error('El archivo no contiene un estado válido');
-      const res = sacMergeSacStoresFromImported(imported, { overwrite: false });
-      if (typeof decompressVsData === 'function') decompressVsData(state);
-      if (typeof _postLoadSetup === 'function') _postLoadSetup();
-      markUnsaved();
-      if (typeof saveState === 'function') saveState('Importar SAC respaldo', true);
-      _sacLastVentasKey = '';
-      if (typeof sacRender === 'function') sacRender();
-      const keys = (res.keys || []).map(function(k) { return typeof sacKeyToHumanLabel === 'function' ? sacKeyToHumanLabel(k) : k; }).slice(0, 6);
-      const more = (res.keys || []).length > 6 ? '…' : '';
-      notify('✅ SAC: ' + res.merged + ' período(s) recuperados' + (keys.length ? ' — ' + keys.join('; ') + more : ''));
-    } catch (e) {
-      notify('⚠ No se pudo importar SAC: ' + (e.message || e));
-    } finally {
-      try { document.body.removeChild(inp); } catch (_) {}
-    }
-  };
-  document.body.appendChild(inp);
-  inp.click();
 }
 
 function importJSON() {
