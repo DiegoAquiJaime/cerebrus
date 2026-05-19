@@ -1325,8 +1325,7 @@ body.user-bodega .startup-alert,
 body.user-bodega .cred-alert-banner,
 body.user-bodega .fac-venc-banner { display:none!important; }
 body.user-bodega #nav-inventario { font-weight:800!important; color:var(--accent)!important; }
-body.user-bodega #sac-period-data-hint,
-body.user-bodega #sac-periodos-datos-wrap { display:none!important; }
+body.user-bodega #sac-period-alt-wrap { display:none!important; }
 .seb-locked{text-align:center;padding:60px 20px;color:#94a3b8;}
 .seb-locked-icon{font-size:48px;margin-bottom:12px;}
 .seb-subtab-bar{display:flex;gap:0;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px;flex-wrap:wrap;}
@@ -1610,6 +1609,16 @@ body.dark-mode .sac-res-mov{border-color:#334155;}
 .sac-toolbar-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 .sac-toolbar-actions .fac-btn{font-size:11px;padding:7px 12px;}
 .sac-toolbar-actions .sac-close-btn{font-weight:800;background:linear-gradient(135deg,var(--accent),#fb923c);color:white;border:none;}
+.sac-period-alt{margin:0 0 10px;font-size:10px;color:#64748b;}
+.sac-period-alt summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:4px;padding:2px 0;color:#64748b;font-weight:600;}
+.sac-period-alt summary::-webkit-details-marker{display:none;}
+.sac-period-alt summary::before{content:'▸';font-size:9px;color:#94a3b8;}
+.sac-period-alt[open] summary::before{content:'▾';}
+.sac-period-alt-body{margin-top:6px;padding:8px 10px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;line-height:1.4;}
+.sac-period-alt-row{padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:10px;}
+.sac-period-alt-row:last-child{border-bottom:none;}
+.sac-modal-iso-fold summary{font-size:11px;font-weight:600;color:#64748b;cursor:pointer;padding:4px 0;}
+.sac-modal-iso-fold summary::-webkit-details-marker{display:none;}
 @media(max-width:800px){.sac-main{flex-direction:column;}}
 /* ventas */
 .sac-ventas-card{background:var(--white);border-radius:18px;box-shadow:0 8px 28px rgba(15,23,42,.07);border:1px solid rgba(148,163,184,.22);border-left:4px solid #6366f1;overflow:hidden;width:100%;min-width:0;}
@@ -3408,21 +3417,17 @@ body.dark-mode .conflict-overlay{
 
       <div class="sac-toolbar">
         <div>
-          <div class="sac-toolbar-lbl">📅 Período en edición <span class="sac-help" title="Ventas y cargas se guardan por clave de período. Por defecto ves la semana ISO actual (lun–dom). Para cerrar la semana anterior usa «Semana pasada». Los bloques 1–4 del mes son distintos (ej. sem. 2 de mayo ≠ 11–17 may).">?</span></div>
+          <div class="sac-toolbar-lbl">📅 Período en edición <span class="sac-help" title="Ventas y cargas se guardan por período (lun–dom). Usa «Cambiar período» para otra semana. Los bloques 1–4 del mes no siempre coinciden con lun–dom.">?</span></div>
           <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
         </div>
         <div class="sac-toolbar-actions">
-          <button type="button" class="fac-btn" onclick="sacPinIsoWeek(1)" title="Semana lunes–domingo anterior">⬅ Semana pasada</button>
-          <button type="button" class="fac-btn" onclick="sacPinIsoWeek(0)" title="Semana lunes–domingo que contiene hoy">📍 Esta semana</button>
           <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()">📆 Cambiar período</button>
           <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
         </div>
       </div>
-      <div id="sac-period-data-hint" style="display:none;margin:0 0 12px;padding:10px 14px;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;font-size:11px;line-height:1.45;color:#9a3412;"></div>
-
-      <details id="sac-periodos-datos-wrap" style="display:none;margin:0 0 12px;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:11px;">
-        <summary style="cursor:pointer;font-weight:800;color:#166534;">📁 Períodos con datos guardados (tus semanas no se borran)</summary>
-        <div id="sac-periodos-datos-list" style="margin-top:8px;line-height:1.5;"></div>
+      <details id="sac-period-alt-wrap" class="sac-period-alt" style="display:none;">
+        <summary id="sac-period-alt-summary">Otras semanas con datos</summary>
+        <div class="sac-period-alt-body" id="sac-period-alt-body"></div>
       </details>
 
       <div class="sac-main">
@@ -23669,82 +23674,45 @@ function sacPeriodoFueCerrado(key) {
   return (state.sacCierresHistorial || []).some(c => c && c.periodKey === key);
 }
 
-/** Si la pantalla muestra una semana vacía pero hay otra abierta (sin cierre en historial), ofrecer abrirla. */
-function sacMaybeOfferContinuarSemanaPendiente() {
+/** Panel discreto (colapsado): solo otras semanas con datos, no la vigente. */
+function sacRenderPeriodAltPanel() {
   if (cerebrusUsuarioBodega()) return;
-  if (window._sacOfferedPendiente) return;
+  const wrap = document.getElementById('sac-period-alt-wrap');
+  const body = document.getElementById('sac-period-alt-body');
+  const sum = document.getElementById('sac-period-alt-summary');
+  if (!wrap || !body) return;
   const curKey = sacDataKey();
-  if (sacPeriodKeyHasData(curKey)) return;
-  const open = sacCollectAllSacKeys().filter(k => k !== curKey && sacPeriodKeyHasData(k) && !sacPeriodoFueCerrado(k));
-  if (!open.length) return;
-  const prev = sacIsoWeeksBack(1);
-  const prevKey = 'R|' + prev.start + '|' + prev.end;
-  const pick = open.includes(prevKey) ? prevKey : open[0];
-  window._sacOfferedPendiente = true;
-  const lbl = sacKeyToHumanLabel(pick);
-  if (confirm(
-    'Tienes ventas/cargas guardadas en «' + lbl + '».\n\n' +
-    'No hace falta haber pulsado «Cerrar semana» para que existan: solo estás viendo otra semana (hoy: ' + sacPeriodLabel() + ').\n\n' +
-    '¿Abrir ese período para seguir trabajando y cerrarlo cuando quieras?'
-  )) sacAbrirPeriodoPorKey(pick);
-}
-
-function sacRenderPeriodosConDatosList() {
-  if (cerebrusUsuarioBodega()) return;
-  const wrap = document.getElementById('sac-periodos-datos-wrap');
-  const list = document.getElementById('sac-periodos-datos-list');
-  if (!wrap || !list) return;
-  const keys = sacCollectAllSacKeys()
-    .filter(k => sacPeriodKeyHasData(k))
-    .sort((a, b) => String(b).localeCompare(String(a)));
-  if (!keys.length) {
-    wrap.style.display = 'none';
-    list.innerHTML = '';
-    return;
-  }
-  wrap.style.display = 'block';
-  const cur = sacDataKey();
-  _sacPeriodKeysList = keys;
-  list.innerHTML = keys.map((k, i) => {
-    const st = sacPeriodDataStats(k);
-    const lbl = esc(sacKeyToHumanLabel(k));
-    const active = k === cur ? ' <span style="color:#15803d;font-weight:800;">← viendo ahora</span>' : '';
-    const btn = k === cur ? '' : ` <button type="button" class="fac-btn" style="font-size:9px;padding:2px 8px;margin-left:6px;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">Abrir</button>`;
-    return `<div style="padding:6px 0;border-bottom:1px solid #dcfce7;">${lbl}${active}${btn}<br><span style="color:#64748b;font-size:10px;">${st.cargas} cargas · ${st.ing} ingresos · ventas real ${typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal} · est. ${typeof fmt === 'function' ? fmt(st.ventasEst) : st.ventasEst}</span></div>`;
-  }).join('');
-}
-
-function sacRenderPeriodDataBanner() {
-  if (cerebrusUsuarioBodega()) return;
-  const el = document.getElementById('sac-period-data-hint');
-  if (!el) return;
-  const curKey = sacDataKey();
-  if (sacPeriodKeyHasData(curKey)) {
-    el.style.display = 'none';
-    el.innerHTML = '';
-    return;
-  }
   const others = sacCollectAllSacKeys()
     .filter(k => k !== curKey && sacPeriodKeyHasData(k))
     .sort((a, b) => String(b).localeCompare(String(a)));
   if (!others.length) {
-    el.style.display = 'none';
-    el.innerHTML = '';
+    wrap.style.display = 'none';
+    body.innerHTML = '';
     return;
   }
-  _sacPeriodKeysList = others.slice(0, 8);
-  const btns = _sacPeriodKeysList.map((k, i) =>
-    `<button type="button" class="fac-btn" style="font-size:10px;margin:4px 6px 0 0;" onclick="sacAbrirPeriodoPorKeyIdx(${i})">📂 ${esc(sacKeyToHumanLabel(k))}</button>`
-  ).join('');
-  const prev = sacIsoWeeksBack(1);
-  const prevKey = 'R|' + prev.start + '|' + prev.end;
-  let pinPrev = '';
-  if (curKey !== prevKey) {
-    pinPrev = `<div style="margin-top:8px;"><button type="button" class="fac-btn primary" style="font-size:10px;" onclick="sacPinIsoWeek(1)">⬅ Ir a semana pasada (lun–dom)</button></div>`;
+  wrap.style.display = 'block';
+  if (sum) sum.textContent = 'Otras semanas con datos (' + others.length + ')';
+  _sacPeriodKeysList = others;
+  const curEmpty = !sacPeriodKeyHasData(curKey);
+  let intro = '';
+  if (curEmpty) {
+    intro = '<p style="margin:0 0 6px;color:#94a3b8;font-size:10px;">Este período está vacío. Los datos pueden estar en otra semana:</p>';
   }
-  el.style.display = 'block';
-  el.innerHTML = `<strong>Período vacío</strong> (${esc(sacPeriodLabel())}). <strong>No necesitaste cerrar la semana</strong> — los datos siguen guardados en otro bloque. Abrí uno o usa <strong>Semana pasada</strong>: ${btns}${pinPrev}`;
+  body.innerHTML = intro + others.map((k, i) => {
+    const st = sacPeriodDataStats(k);
+    const lbl = esc(sacKeyToHumanLabel(k));
+    return '<div class="sac-period-alt-row">' + lbl +
+      ' <button type="button" class="fac-btn" style="font-size:9px;padding:1px 7px;margin-left:4px;" onclick="sacAbrirPeriodoPorKeyIdx(' + i + ')">Abrir</button>' +
+      '<br><span style="color:#94a3b8;">' + st.cargas + ' cargas · real ' + (typeof fmt === 'function' ? fmt(st.ventasReal) : st.ventasReal) + '</span></div>';
+  }).join('') +
+    '<p style="margin:8px 0 0;"><button type="button" class="fac-btn" style="font-size:9px;padding:3px 8px;" onclick="sacAbrirElegirSemana()">Más opciones…</button></p>';
 }
+
+function sacMaybeOfferContinuarSemanaPendiente() { /* sin popup */ }
+
+function sacRenderPeriodosConDatosList() { sacRenderPeriodAltPanel(); }
+
+function sacRenderPeriodDataBanner() { sacRenderPeriodAltPanel(); }
 
 function sacCierreModalBuildIsoQuick() {
   const el = document.getElementById('sac-cierre-iso-quick');
@@ -23754,10 +23722,9 @@ function sacCierreModalBuildIsoQuick() {
     const key = 'R|' + range.start + '|' + range.end;
     const has = sacPeriodKeyHasData(key);
     const lbl = sacKeyToHumanLabel(key);
-    const pin = weeksBack === 0 ? '📍 Esta semana' : '⬅ Semana pasada';
-    const border = has ? 'border-color:var(--success);' : '';
-    return `<button type="button" class="fac-btn" style="width:100%;text-align:left;${border}" onclick="sacPinIsoWeek(${weeksBack});sacCierreModalCerrar();">
-      <span style="font-weight:800;">${pin}</span> · ${esc(lbl)}${has ? ' · ✓ con datos' : ' · vacío'}
+    const pin = weeksBack === 0 ? 'Esta semana' : 'Semana pasada';
+    return `<button type="button" class="fac-btn" style="width:100%;text-align:left;font-size:11px;${has ? 'border-color:var(--success);' : ''}" onclick="sacPinIsoWeek(${weeksBack});sacCierreModalCerrar();">
+      ${esc(pin)} · ${esc(lbl)}${has ? ' · con datos' : ''}
     </button>`;
   }).join('');
 }
