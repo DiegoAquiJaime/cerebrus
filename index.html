@@ -6870,7 +6870,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.05.18.1';
+const APP_VERSION = '2026.05.18.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -20479,6 +20479,54 @@ function infGenerar() {
 
   // #5: Auto-save to state for persistence
   infGuardarEnState();
+  infOfferSacAdjustAfterInforme(d);
+}
+
+/** Solo Sebastián: tras generar informe, voz + opción de pasar Banco/Caja (o caja manual) a Semana Actual. */
+function infApplyBancoCajaToSac(d) {
+  pushUndo();
+  if (!state.cajaEmpresa) state.cajaEmpresa = {};
+  state.cajaEmpresa.banco = Math.round(d.banco || 0);
+  state.sacEfectivo = Math.round(d.caja || 0);
+  markUnsaved();
+  if (typeof sacRender === 'function') sacRender();
+  if (typeof saveState === 'function') saveState('Informe → Semana Actual', true);
+  notify('✅ Banco y Caja actualizados en Semana Actual');
+}
+
+function infOfferSacAdjustAfterInforme(d) {
+  if (!/^sebasti/i.test(String(typeof currentUser !== 'undefined' ? currentUser : ''))) return;
+  setTimeout(function() {
+    try {
+      if (typeof cerebrusTtsInformeSacAdjustPrompt === 'function') cerebrusTtsInformeSacAdjustPrompt();
+    } catch (e) {}
+    setTimeout(function() {
+      const periodLbl = typeof sacPeriodLabel === 'function' ? sacPeriodLabel() : 'Semana Actual';
+      const B = typeof sacGetBalanceEstimado === 'function' ? sacGetBalanceEstimado() : null;
+      let msg = '¿Ajustar montos en «' + periodLbl + '» según este informe?\n\n';
+      msg += '• Banco (cuenta empresa): ' + infFmt(d.banco) + '\n';
+      msg += '• Caja principal / efectivo: ' + infFmt(d.caja) + '\n';
+      msg += '• Saldo del informe (referencia del día): ' + infFmt(d.saldo);
+      if (B) msg += '\n\nBalance estimado en SAC ahora: ' + fmt(B.balance);
+      msg += '\n\nAceptar = copiar Banco y Caja del informe a Semana Actual.\nCancelar = no cambiar (luego puedes ajustar solo la caja).';
+      if (confirm(msg)) {
+        infApplyBancoCajaToSac(d);
+        return;
+      }
+      if (!confirm('¿Quieres ingresar solo el monto de Caja principal en Semana Actual?\n(Cancelar = dejar Semana Actual sin cambios)')) return;
+      const raw = prompt(
+        'Caja principal / efectivo en Semana Actual ($):',
+        String(Math.round(state.sacEfectivo || d.caja || 0))
+      );
+      if (raw == null || String(raw).trim() === '') return;
+      pushUndo();
+      state.sacEfectivo = Math.max(0, parseNumCL(raw, false) || 0);
+      markUnsaved();
+      if (typeof sacRender === 'function') sacRender();
+      if (typeof saveState === 'function') saveState('Ajuste caja SAC desde informe', true);
+      notify('✅ Caja principal actualizada en Semana Actual');
+    }, 700);
+  }, 1400);
 }
 
 function infGuardarImagen() {
@@ -26829,6 +26877,12 @@ function notify(msg, duration) {
     }
     speechSynthesis.speak(u);
   }
+  window.cerebrusTtsSpeak = function(text, welcome) {
+    speak(text, !!welcome);
+  };
+  window.cerebrusTtsInformeSacAdjustPrompt = function() {
+    speak('Sebas, el informe está listo. ¿Quieres ajustar el banco, la caja o el monto final en Semana Actual?', false);
+  };
   window.cerebrusTtsWelcomeOnce = function(userName) {
     if (!window.speechSynthesis || isMuted()) return;
     try {
@@ -26839,7 +26893,7 @@ function notify(msg, duration) {
     var name = raw.trim();
     var phrase;
     if (/^sebasti/i.test(name)) {
-      phrase = 'Hola, Sebas, mañana miércoles te irás a la isla y descansarás! Merecido descanso.';
+      phrase = 'Hola, Sebas. Que este día todo te salga bien!';
     } else if (name) {
       phrase = 'Hola, ' + name + ', soy Cerebrus, funciono y cumplo.';
     } else {
