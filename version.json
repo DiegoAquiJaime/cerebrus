@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.18.3",
-  "notes": "Facturas IA: solo cabecera comercial (RUT, monto, fechas); sin productos; validación y anti-duplicados al importar."
+  "version": "2026.05.18.4",
+  "notes": "Unifica RUT Juan Ardiles (9063782-7); corrige typo 963782-7 en facturas y rutMap."
 }

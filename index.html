@@ -6870,7 +6870,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.05.18.2';
+const APP_VERSION = '2026.05.18.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -9570,6 +9570,7 @@ let _facMergeProvsList = [];
 function facInit() {
   if (!state.facturas) state.facturas = makeDefaultFacturas();
   ensureProvRuts();
+  facMigrateJuanArdilesRut();
   facAutoLearnRuts();
   facSpreadProvRutToInvoices();
   facUnifyProvidersByRut();
@@ -11010,6 +11011,75 @@ function normRut(rut) {
 }
 function rutKey(rut) { return normRut(rut).replace(/-/g,''); }
 
+/** RUT canónico y typos conocidos (p. ej. OCR sin el 0 inicial). */
+const FAC_JUAN_ARDILES_PROV = 'JUAN ARDILES';
+const FAC_JUAN_ARDILES_RUT  = '9063782-7';
+const FAC_JUAN_ARDILES_RUT_KEYS_WRONG = new Set(['9637827', '963782', '9063782']);
+
+function facIsJuanArdilesProvName(name) {
+  const u = String(name || '').toUpperCase().replace(/\s+/g, ' ').trim();
+  return u === 'JUAN ARDILES' || /^JUAN\s+ARDILES\b/.test(u);
+}
+
+function facIsJuanArdilesWrongRutKey(rk) {
+  if (!rk) return false;
+  const k = String(rk);
+  return FAC_JUAN_ARDILES_RUT_KEYS_WRONG.has(k) || k === '9637827' || /^963782\d?$/.test(k);
+}
+
+function facMigrateJuanArdilesRut() {
+  if (!state.facturas) return;
+  ensureProvRuts();
+  const canonRut = normRut(FAC_JUAN_ARDILES_RUT);
+  const canonRk  = rutKey(canonRut);
+  if (!state.facturas[FAC_JUAN_ARDILES_PROV]) state.facturas[FAC_JUAN_ARDILES_PROV] = [];
+  let changed = false;
+
+  const mergeProvs = new Set();
+  Object.keys(state.facturas).forEach(pn => {
+    if (pn === FAC_JUAN_ARDILES_PROV) return;
+    if (facIsJuanArdilesProvName(pn)) mergeProvs.add(pn);
+    if (facIsJuanArdilesWrongRutKey(rutKey(state.provRuts[pn] || ''))) mergeProvs.add(pn);
+    (state.facturas[pn] || []).forEach(f => {
+      if (facIsJuanArdilesWrongRutKey(rutKey(f.rut || ''))) mergeProvs.add(pn);
+    });
+  });
+
+  mergeProvs.forEach(pn => {
+    if (!state.facturas[pn]) return;
+    changed = true;
+    state.facturas[FAC_JUAN_ARDILES_PROV].push(...state.facturas[pn]);
+    delete state.facturas[pn];
+    delete state.provRuts[pn];
+    if (_facCurrentProv === pn) _facCurrentProv = FAC_JUAN_ARDILES_PROV;
+  });
+
+  (state.facturas[FAC_JUAN_ARDILES_PROV] || []).forEach(f => {
+    const rk = rutKey(f.rut || '');
+    if (!f.rut || rk !== canonRk || facIsJuanArdilesWrongRutKey(rk)) { f.rut = canonRut; changed = true; }
+  });
+
+  Object.entries(state.facturas).forEach(([, facs]) => {
+    (facs || []).forEach(f => {
+      if (facIsJuanArdilesWrongRutKey(rutKey(f.rut || ''))) { f.rut = canonRut; changed = true; }
+    });
+  });
+
+  if (state.provRuts[FAC_JUAN_ARDILES_PROV] !== canonRut) changed = true;
+  state.provRuts[FAC_JUAN_ARDILES_PROV] = canonRut;
+  if (!state.rutMap) state.rutMap = {};
+  FAC_JUAN_ARDILES_RUT_KEYS_WRONG.forEach(k => { delete state.rutMap[k]; });
+  delete state.rutMap['9637827'];
+  state.rutMap[canonRk] = FAC_JUAN_ARDILES_PROV;
+  state.rutMap['9637827'] = FAC_JUAN_ARDILES_PROV;
+
+  (state.facSemana || []).forEach(s => {
+    if (facIsJuanArdilesProvName(s.prov) || facIsJuanArdilesWrongRutKey(rutKey(s.rut || ''))) {
+      s.prov = FAC_JUAN_ARDILES_PROV;
+    }
+  });
+}
+
 // ── GUARDAR FACTURA con RUT ──
 function facSaveNuevaFactura() {
   if (!_facCurrentProv) return;
@@ -12414,7 +12484,8 @@ function aiResolveMontoComercial(doc) {
 
 function aiMatchProveedorComercial(rut, nombre) {
   facInit();
-  const rk = rutKey(rut || '');
+  let rk = rutKey(rut || '');
+  if (facIsJuanArdilesWrongRutKey(rk)) rk = rutKey(FAC_JUAN_ARDILES_RUT);
   if (rk && rk !== AI_CEREBRUS_RUT_PROPIO_KEY && state.rutMap && state.rutMap[rk]) return state.rutMap[rk];
   let n = facNormalizeProvNombre(nombre || '');
   if (!n || n === 'ILEGIBLE') return 'DESCONOCIDO';
@@ -12663,7 +12734,7 @@ async function processAiText(file, ext) {
         apiKey,
         model: 'claude-sonnet-4-6',
         max_tokens: 8000,
-        messages: [{ role:'user', content: aiPrompt() + '\n\nDATOS:\n' + textContent.slice(0,10000) }]
+        messages: [{ role:'user', content: aiPromptComercial() + '\n\nDATOS:\n' + textContent.slice(0,10000) }]
       })
     });
     setAiProgress(80, 'Procesando…');
@@ -12753,8 +12824,9 @@ function aiShowPreview(rows) {
     alertHtml += `<div class="ai-alert-box ai-alert-warn">⚠ <div><strong>${dudas.length} documento${dudas.length>1?'s':''} con dudas</strong> — Claude no estaba 100% seguro. Revisa las filas amarillas.</div></div>`;
   if (nuevos.length)
     alertHtml += `<div class="ai-alert-box ai-alert-info">✦ <div><strong>${nuevos.length} proveedor${nuevos.length>1?'es':''} nuevo${nuevos.length>1?'s':''}: ${nuevos.join(', ')}</strong> — se crearán automáticamente al importar.</div></div>`;
-  if (!alertHtml)
-    alertHtml = `<div class="ai-alert-box ai-alert-info">✓ <div>Todo se detectó sin problemas. Revisa los datos y confirma.</div></div>`;
+  alertHtml = `<div class="ai-alert-box ai-alert-info">📋 <div><strong>Solo cabecera comercial</strong> — proveedor, RUT, N°, fechas y monto a pagar. Los productos no se importan.</div></div>` + alertHtml;
+  if (!dudas.length && !ilegibles.length)
+    alertHtml += `<div class="ai-alert-box ai-alert-info">✓ <div>Revisa N°, RUT y monto en la tabla antes de confirmar.</div></div>`;
   alertsWrap.innerHTML   = alertHtml;
   alertsWrap.style.display = 'block';
 
