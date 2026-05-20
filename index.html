@@ -4588,7 +4588,7 @@ body.dark-mode .conflict-overlay{
       <div class="ai-modal-head">
         <div>
           <h3>✦ Importar facturas con IA</h3>
-          <p>Claude detecta el proveedor de cada factura y las agrupa automáticamente</p>
+          <p>Solo datos comerciales para pagar: proveedor, RUT, N°, fechas y monto total (sin líneas de productos)</p>
         </div>
       </div>
       <div class="ai-modal-body">
@@ -4602,7 +4602,7 @@ body.dark-mode .conflict-overlay{
           <input type="file" id="ai-file-input" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv" onchange="handleAiFile(this.files[0])">
           <div class="ai-drop-icon">📄</div>
           <div class="ai-drop-title">Arrastra el PDF aquí o haz clic</div>
-          <div class="ai-drop-sub">PDF · JPG · PNG · foto de factura · Claude extrae los datos automáticamente</div>
+          <div class="ai-drop-sub">PDF · JPG · PNG · Solo cabecera tributaria (monto a pagar, no detalle de ítems)</div>
         </div>
         <!-- Progress -->
         <div class="ai-progress" id="ai-progress">
@@ -4621,7 +4621,7 @@ body.dark-mode .conflict-overlay{
           <!-- Inventario automático -->
           <div id="ai-inv-import-wrap" style="display:none;"></div>
         </div>
-        <div class="ai-api-note" style="margin-top:10px;">Las facturas se importan como "Activas". Tras importar, en Facturas → abre la factura y puedes corregir N°, RUT, fechas y monto.</div>
+        <div class="ai-api-note" style="margin-top:10px;">Se importan como <strong>Activas</strong> (solo cabecera). Revisa filas amarillas/rojas antes de confirmar. Los productos los cargas tú después si hace falta.</div>
       </div>
       <div class="ai-modal-footer">
         <button class="fac-btn" onclick="closeAiModalBtn()">Cancelar</button>
@@ -12379,54 +12379,121 @@ function setAiProgress(pct, msg) {
   document.getElementById('ai-prog-msg').textContent = msg;
 }
 
-// Build the prompt with known providers list
-function aiPrompt() {
+var AI_CEREBRUS_RUT_PROPIO_KEY = '779123308';
+
+function aiNormalizeFechaChile(s) {
+  if (!s) return '';
+  const t = String(s).trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m = t.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if (m) {
+    const d = String(m[1]).padStart(2, '0');
+    const mo = String(m[2]).padStart(2, '0');
+    let y = String(m[3]);
+    if (y.length === 2) y = (parseInt(y, 10) > 50 ? '19' : '20') + y;
+    return `${d}-${mo}-${y}`;
+  }
+  return t;
+}
+
+function aiResolveMontoComercial(doc) {
+  const neto = Math.round(Math.abs(Number(doc.montoNeto) || 0));
+  const iva = Math.round(Math.abs(Number(doc.montoIVA) || 0));
+  const ila = Math.round(Math.abs(Number(doc.montoILA) || 0));
+  const ret = Math.round(Math.abs(Number(doc.montoRetencion) || 0));
+  const totalDoc = Math.round(Math.abs(Number(doc.totalDoc) || 0));
+  const monto = Math.round(Math.abs(Number(doc.monto) || 0));
+  const subtotalIva = neto + iva + ila;
+  const candidates = [totalDoc, monto, subtotalIva > 0 ? subtotalIva - ret : 0, neto].filter(n => n > 0);
+  if (!candidates.length) return 0;
+  if (totalDoc > 0) return totalDoc;
+  if (monto > 0) return monto;
+  return Math.max(...candidates);
+}
+
+function aiMatchProveedorComercial(rut, nombre) {
+  facInit();
+  const rk = rutKey(rut || '');
+  if (rk && rk !== AI_CEREBRUS_RUT_PROPIO_KEY && state.rutMap && state.rutMap[rk]) return state.rutMap[rk];
+  let n = facNormalizeProvNombre(nombre || '');
+  if (!n || n === 'ILEGIBLE') return 'DESCONOCIDO';
+  if (state.facturas && state.facturas[n]) return n;
+  const keys = Object.keys(state.facturas || {});
+  const nu = n.toUpperCase();
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i], ku = k.toUpperCase();
+    if (ku === nu || (nu.length >= 4 && (ku.includes(nu) || nu.includes(ku)))) return k;
+  }
+  return n;
+}
+
+function cerebrusNormalizeFacturaComercial(doc) {
+  if (!doc || typeof doc !== 'object') return doc;
+  const out = Object.assign({}, doc);
+  out.items = [];
+  out.rut = normRut(out.rut || '') || '';
+  if (rutKey(out.rut) === AI_CEREBRUS_RUT_PROPIO_KEY) out.rut = '';
+  out.proveedor = aiMatchProveedorComercial(out.rut, out.proveedor);
+  out.emision = aiNormalizeFechaChile(out.emision);
+  out.vence = aiNormalizeFechaChile(out.vence);
+  out.nro = String(out.nro || '').trim().replace(/\s+/g, '');
+  out.monto = aiResolveMontoComercial(out);
+  out.totalDoc = out.monto;
+  const notes = [];
+  if (!out.nro) notes.push('sin número');
+  if (!out.rut) notes.push('sin RUT emisor');
+  if (!out.emision) notes.push('sin fecha emisión');
+  if (!out.monto) notes.push('sin monto total');
+  if (out.proveedor === 'DESCONOCIDO') notes.push('proveedor no identificado');
+  if (notes.length && out.confianza === 'ok') out.confianza = 'duda';
+  if (notes.length) {
+    const obs = (out.observacion || '').trim();
+    out.observacion = (obs ? obs + ' · ' : '') + notes.join(', ');
+  }
+  if (!out.vence && out.emision) {
+    try {
+      const p = out.emision.split('-').map(Number);
+      if (p.length === 3) {
+        const d = new Date(p[2], p[1] - 1, p[0]);
+        d.setDate(d.getDate() + 30);
+        out.vence = `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+      }
+    } catch (e) {}
+  }
+  return out;
+}
+
+function aiPromptComercial() {
   facInit();
   const known = Object.keys(state.facturas).sort().join(', ');
-  const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
-  // Build inventory product list for matching
-  const invProds = (state.inventario||[]).map(p=>`${p.id}:${p.nombre}(${p.cat||''})`).join(', ');
-  return `Eres un asistente experto en contabilidad de restaurantes chilenos.
-Analiza este documento de proveedor del restaurante "Aquí Jaime".
+  const rutMapEntries = Object.entries(state.rutMap || {}).map(([r, p]) => `${r} = ${p}`).join(', ');
+  return `Eres un asistente contable chileno. Extrae SOLO la cabecera comercial de facturas/notas para registrar pagos a proveedores del restaurante Aquí Jaime.
 
-IMPORTANTE — RUT PROPIO DEL RESTAURANTE:
-El RUT 77.912.330-8 corresponde al RESTAURANTE MISMO. Nunca lo uses como proveedor.
-Si aparece como RECEPTOR es un documento recibido de un proveedor.
+NO extraigas líneas de productos, cantidades ni precios unitarios. Ignora el detalle de ítems por completo.
+items debe ser siempre [].
 
-Proveedores conocidos: ${known || '(ninguno aún)'}
-RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
-Productos en inventario: ${invProds || '(ninguno aún)'}
+RUT del restaurante (RECEPTOR, NO es proveedor): 77.912.330-8
+El EMISOR del documento es el proveedor.
 
-Para CADA documento extrae un objeto JSON con:
+Proveedores en el sistema: ${known || '(ninguno)'}
+RUT → proveedor: ${rutMapEntries || '(ninguno)'}
+
+Por CADA documento, un objeto JSON:
 - tipoDoc: "factura" | "nc" | "nd" | "guia" | "otro"
-- nro: número del documento
-- nroRef: si es NC/ND, número de la factura referenciada
-- rutRef: RUT de la factura referenciada si es NC/ND
-- rut: RUT del proveedor emisor (con puntos y guión)
-- proveedor: nombre del proveedor
-- emision: fecha DD-MM-YYYY
-- monto: monto TOTAL en pesos, entero sin puntos ni $
-- vence: fecha vencimiento DD-MM-YYYY (vacío si no aplica)
-- comentario: glosa o motivo
-- confianza: "ok" | "duda" | "ilegible"
-- observacion: qué no quedó claro
-- items: array de líneas de detalle del documento. Para CADA línea extrae:
-  * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
-  * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
-  * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide o servicio (string)
-  * cantidad: número decimal si aplica (ej. 0,3 kg → JSON cantidad 0.3 y unidad "kg"). Solo número en cantidad; coma decimal solo en string si no puedes usar número, el sistema la interpreta
-  * unidad: "kg" | "L" | "un" | "caja" | "bolsa" | u otra que aparezca
-  * precioUnit: precio unitario en pesos (entero, 0 si no aparece)
-  * subtotal: subtotal de la línea en pesos (entero, 0 si no aparece)
-  * invProdId: si el producto coincide con alguno de la lista de inventario, pon su ID. Si no coincide, deja vacío.
-  Si el documento no tiene detalle de líneas o no es una factura/guía, deja items como array vacío [].
+- nro, nroRef, rutRef, rut (EMISOR 12.345.678-9), proveedor (razón social emisor)
+- emision, vence: DD-MM-YYYY
+- monto: total a pagar en pesos (entero), del cuadro MONTO TOTAL / TOTAL A PAGAR (con IVA). No sumes líneas.
+- comentario, confianza: "ok"|"duda"|"ilegible", observacion
+- montoNeto, montoIVA, montoILA, montoRetencion, totalDoc: enteros del cuadro de totales o 0
+- items: []
 
-Totales e impuestos (extrae SOLO lo impreso en el documento; no inventes):
-- montoNeto, montoIVA, montoILA, montoRetencion, totalDoc: enteros en pesos o 0 si no aparecen.
-- montoILA > 0 SOLO si la factura muestra explícitamente ILA, impuesto adicional al alcohol o línea equivalente. Si solo ves IVA (19%), montoILA debe ser 0.
+Responde SOLO array JSON válido. Sin markdown.
+Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORIFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","montoNeto":262605,"montoIVA":49895,"montoILA":0,"montoRetencion":0,"totalDoc":312500,"items":[]}]`;
+}
 
-Responde SOLO con array JSON válido. Sin texto, sin markdown, sin backticks. Sin saltos de línea dentro de valores de texto (descripción, nombres).
-Ejemplo: [{"tipoDoc":"factura","nro":"34691","nroRef":"","rutRef":"","rut":"76.543.210-5","proveedor":"FRIGORÍFICO SUR","emision":"23-03-2026","monto":312500,"vence":"23-04-2026","comentario":"","confianza":"ok","observacion":"","montoNeto":0,"montoIVA":0,"montoILA":0,"montoRetencion":0,"totalDoc":0,"items":[{"descripcion":"Lomo vetado","cantidad":15,"unidad":"kg","precioUnit":8900,"subtotal":133500,"invProdId":"inv_123"},{"descripcion":"Pollo entero","cantidad":20,"unidad":"un","precioUnit":3200,"subtotal":64000,"invProdId":""}]}]`;
+function aiPrompt() {
+  return aiPromptComercial();
 }
 
 // Subida en chunks: divide el archivo en trozos de 200KB
@@ -12501,7 +12568,7 @@ async function processAiPdf(file) {
           action: 'anthropicProxy',
           apiKey,
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 16384,
+          max_tokens: 8192,
           messages: [{ role: 'user', content: aiPromptTexto() + '\n\nTEXTO EXTRAÍDO (OCR de Google):\n' + textoOcr }]
         })
       });
@@ -12537,81 +12604,10 @@ async function processAiPdf(file) {
   }
 }
 
-// Prompt para texto OCR (más simple que para imágenes — solo texto plano)
 function aiPromptTexto() {
-  facInit();
-  const known = Object.keys(state.facturas).sort().join(', ');
-  const rutMapEntries = Object.entries(state.rutMap||{}).map(([r,p])=>`${r} = ${p}`).join(', ');
-  // Inyectar categorías exactas del estado para que la IA no invente categorías
-  const cats = (state.catInventario||['Carnes y Aves','Pescados y Mariscos','Frutas y Verduras',
-    'Lácteos','Abarrotes','Aguas y Bebidas','Panadería','Huevos','Salón','Aseo','Sin categoría']).join(' | ');
-  // Inyectar nombres exactos del inventario para fuzzy matching
-  const prodNombres = (state.inventario||[]).map(p=>p.nombre).filter(Boolean).join(', ');
-  return `Eres un asistente experto en contabilidad chilena.
-Contexto de catálogo del restaurante: cortes premium de corral y abastecimiento gastronómico.
-Analiza el siguiente TEXTO extraído de documentos tributarios chilenos mediante OCR.
-El texto puede tener errores tipográficos por el OCR (letras confundidas, manchas, números invertidos, acentos mal leídos, espacios extras). 
-Aplica coincidencia difusa (fuzzy matching): si un texto se parece a un producto conocido del inventario, usa el nombre exacto del inventario.
-Asume errores de OCR agresivos (manchas, dígitos como letras y viceversa) y corrige por contexto semántico de restaurante.
-Ejemplos: "REINETS" → "REINETA", "F1LETE" → "FILETE", "C0RRAL" → "CORRAL", "LOINO" → "LOMO".
-Corrige errores de OCR usando el contexto del documento (tipo de proveedor, categoría esperada, etc.).
+  return aiPromptComercial() + `
 
-RUT propio del restaurante (NO es proveedor): 77.912.330-8
-Proveedores conocidos: ${known || '(ninguno aún)'}
-RUTs conocidos: ${rutMapEntries || '(ninguno aún)'}
-
-CATEGORÍAS EXACTAS DEL SISTEMA (usa SOLO estas, sin inventar otras):
-${cats}
-Cada item DEBE clasificarse obligatoriamente en exactamente una categoría de la lista anterior.
-Si hay ambigüedad, elige la categoría más probable de la lista; nunca inventes categorías nuevas.
-
-PRODUCTOS YA EN INVENTARIO (para fuzzy matching — asocia productos del OCR a estos nombres si coinciden):
-${prodNombres || '(inventario vacío)'}
-
-REGLAS DE PRECIOS — MUY IMPORTANTE:
-1. Verifica matemáticamente si los precios son netos o brutos usando el MONTO NETO (no el total final):
-   - Suma (cantidad × precioUnit de cada línea) = esto debe dar el Monto Neto
-   - Si suma ≈ Monto Neto → precios son NETOS → multiplica cada precioUnit × 1.19 y redondea al entero más cercano
-   - Si suma ≈ SubTotal (Neto + IVA) → precios YA incluyen IVA → úsalos directamente
-   - IMPORTANTE: el "Monto Total" puede incluir Retención (RET 5%) u otros descuentos — NO uses el Monto Total para verificar, usa el Monto Neto o SubTotal
-2. precioUnit en el resultado siempre debe ser CON IVA incluido (precio neto × 1.19)
-3. La Retención (RET) es un descuento al pago, NO afecta el precio del producto — ignórala para calcular precios unitarios
-4. monto en el JSON debe ser el SubTotal (Neto + IVA) SIN restar la retención — es lo que realmente vale la mercadería
-5. ILA: solo si la factura muestra ese impuesto en totales o líneas; si no consta, montoILA=0 y no asumas ILA por el nombre del producto
-6. Si la factura muestra precio por caja, divide por las unidades para obtener precio unitario
-
-Para CADA documento extrae un JSON con:
-- tipoDoc: "factura" | "nc" | "nd" | "guia" | "otro"
-- nro: número del documento
-- nroRef: referencia si es NC/ND
-- rut: RUT del proveedor (con puntos y guión)
-- proveedor: nombre del proveedor
-- emision: fecha DD-MM-YYYY
-- monto: monto TOTAL con IVA en pesos entero
-- vence: fecha vencimiento DD-MM-YYYY
-- comentario: glosa
-- confianza: "ok" | "duda" | "ilegible"
-- observacion: si hay dudas sobre IVA u otros datos
-- tieneIVA: true si detectaste que los precios de línea incluyen IVA, false si son netos, null si no puedes determinarlo
-- montoNeto: subtotal neto sin IVA (si se puede determinar)
-- montoIVA: monto de IVA del documento
-- montoILA: impuesto adicional (alcohol/ILA) SOLO si aparece explícito en la factura; si solo hay IVA, debe ser 0 (no inventes ILA)
-- montoRetencion: retención (ej. 5%) si aparece
-- montoFlete: flete/despacho si aparece como cargo
-- montoOtrosImpuestos: otros impuestos/cargos no clasificados
-- totalDoc: total final del documento tal como aparece
-- items: array de líneas con:
-  * descripcion: nombre del producto (corrige errores OCR si puedes identificarlo)
-  * categoria: categoría del producto — USA SOLO las categorías listadas arriba, mapea al más apropiado
-  * matchInventario: nombre exacto del producto en inventario si coincide con la lista de productos conocidos, null si no coincide
-  * cantidad: número (decimales con punto en JSON: 0.3 para 300 g en kg; no pongas "kg" dentro de cantidad)
-  * unidad: "kg" | "L" | "un" | "caja" u otra
-  * precioUnit: precio unitario CON IVA incluido — SIEMPRE entero en pesos, sin decimales, usa Math.round()
-  * subtotal: subtotal de la línea CON IVA (entero en pesos)
-  * precioOriginal: precio como aparece en la factura (antes de aplicar IVA si era neto)
-  * eraNetoIVA: true si tuviste que multiplicar por 1.19
-
-Responde SOLO con array JSON válido. Sin texto ni markdown. Sin saltos de línea dentro de strings.`;
+El texto siguiente viene de OCR (puede tener errores en RUT, folio o totales). Prioriza el cuadro de totales del documento, no las líneas de detalle.`;
 }
 
 async function processAiImage(file, ext) {
@@ -12625,25 +12621,25 @@ async function processAiImage(file, ext) {
     r.onerror = rej;
     r.readAsDataURL(file);
   });
-  setAiProgress(40, 'Enviando a Claude vía Make…');
+  setAiProgress(40, 'Analizando imagen (solo cabecera comercial)…');
   try {
-    const payload = {
-      model: 'claude-opus-4-6',
-      max_tokens: 8000,
-      messages: [{ role:'user', content:[
-        { type:'image', source:{ type:'base64', media_type:mtype, data:base64 } },
-        { type:'text', text: aiPrompt() }
-      ]}]
-    };
-    const res  = await fetch(MAKE_URL, {
+    const res = await fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        action: 'anthropicProxy',
+        apiKey,
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: mtype, data: base64 } },
+          { type: 'text', text: aiPromptComercial() }
+        ]}]
+      })
     });
     setAiProgress(80, 'Procesando respuesta…');
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
-    const text = data.content.map(c=>c.text||'').join('');
+    const data = await cerebrusReadJson(res, 'Claude API');
+    if (!data.ok) throw new Error(data.error || 'Error del proxy');
+    const text = data.content.map(c => c.text || '').join('');
     const rows = cerebrusParseJsonArray(text, 'Facturas imagen');
     aiShowPreview(rows);
     setAiProgress(100, `✓ Claude procesó ${rows.length} documento${rows.length!==1?'s':''}`);
@@ -12727,7 +12723,7 @@ function aiInvILABadgeHTML_(it) {
 
 function aiShowPreview(rows) {
   facInit();
-  rows = cerebrusNormalizeDocItems(rows);
+  rows = (Array.isArray(rows) ? rows : []).map(r => cerebrusNormalizeFacturaComercial(r));
   _aiParsedRows = rows.map((r,i) => ({...r, tipoDoc: r.tipoDoc||'factura', _keep:true, _idx:i}));
   const known   = Object.keys(state.facturas);
 
@@ -12928,9 +12924,15 @@ function aiRemoveRow(i) {
 
 function aiConfirmImport() {
   facInit();
-  // Separate by doc type
-  const allKeep  = _aiParsedRows.filter(r => r._keep && r.nro);
-  const facturas = allKeep.filter(r => (!r.tipoDoc || r.tipoDoc === 'factura') && r.monto > 0);
+  const allKeep  = _aiParsedRows.filter(r => r._keep && String(r.nro || '').trim());
+  const facturas = allKeep.filter(r => {
+    const t = r.tipoDoc || 'factura';
+    return (t === 'factura' || !r.tipoDoc) && (r.monto || 0) > 0;
+  });
+  const sinMonto = allKeep.filter(r => (r.tipoDoc === 'factura' || !r.tipoDoc) && !(r.monto > 0));
+  if (sinMonto.length) {
+    notify('⚠ ' + sinMonto.length + ' factura(s) sin monto — corrige en la tabla antes de importar', 5000);
+  }
   const ncs      = allKeep.filter(r => r.tipoDoc === 'nc');
   const nds      = allKeep.filter(r => r.tipoDoc === 'nd');
   const guias    = allKeep.filter(r => r.tipoDoc === 'guia');
@@ -12959,9 +12961,16 @@ function aiConfirmImport() {
   });
   if (revisarPapelNuevo) notify('📋 ' + revisarPapelNuevo + ' tarea(s) «revisar papel» — panel ámbar en Facturas Proveedores');
 
-  // ── Import facturas normally (solo cabecera, sin líneas de productos) ──
+  let dupSkip = 0;
   facturas.forEach(r => {
     const provName = resolveProvName(r);
+    const dupWarn = typeof facFindDuplicate === 'function'
+      ? facFindDuplicate(r.nro, r.monto, r.rut, provName, r.emision, null)
+      : null;
+    if (dupWarn) {
+      dupSkip++;
+      return;
+    }
     if (!state.facturas[provName]) state.facturas[provName] = [];
     const rutNorm = rutKey(r.rut||'');
     if (r.rut) {
@@ -13036,7 +13045,8 @@ function aiConfirmImport() {
   const lines = Object.entries(summary).map(([p,n])=>`${n} en ${p}`).join(', ');
   const ncMsg = (ncs.length+nds.length+guias.length+otros.length) > 0
     ? ` · ${ncs.length+nds.length+guias.length+otros.length} doc(s) pendiente(s) de acción` : '';
-  notify(`✦ ${facturas.length} facturas importadas${lines?' — '+lines:''}${ncMsg}`);
+  const dupMsg = dupSkip > 0 ? ` · ${dupSkip} omitida(s) por posible duplicado` : '';
+  notify(`✦ ${Object.values(summary).reduce((a,b)=>a+b,0)} factura(s) importada(s)${lines?' — '+lines:''}${dupMsg}${ncMsg}`);
 }
 
 // ============================================================

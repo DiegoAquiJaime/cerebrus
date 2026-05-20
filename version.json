@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.18.2",
-  "notes": "Voz Sebas: bienvenida y tras informe diario opción de ajustar Banco/Caja en Semana Actual."
+  "version": "2026.05.18.3",
+  "notes": "Facturas IA: solo cabecera comercial (RUT, monto, fechas); sin productos; validación y anti-duplicados al importar."
 }
