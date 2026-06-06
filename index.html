@@ -5377,13 +5377,13 @@ body.dark-mode .conflict-overlay{
         <!-- Barra de uso -->
         <div style="margin-bottom:16px;">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-bottom:4px;">
-            <span>Uso del almacenamiento</span>
+            <span>Uso en nube (al guardar)</span>
             <span id="arch-size-label">Calculando…</span>
           </div>
           <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
             <div id="arch-size-bar" style="height:100%;border-radius:4px;background:var(--success);width:0%;transition:width .4s;"></div>
           </div>
-          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Referencia local ~4.500 KB. La nube guarda en partes si el estado es más grande.</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Calculado igual que el guardado en nube (comprimir + 5 particiones). El % es la partición más grande vs límite de celda 50 KB.</div>
         </div>
 
         <!-- Desglose por módulo -->
@@ -6778,7 +6778,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.05.18.4';
+const APP_VERSION = '2026.06.06.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18519,7 +18519,81 @@ function archGetStateSize() {
   try { return JSON.stringify(state).length; } catch(e) { return 0; }
 }
 
-var ARCH_STORAGE_LIMIT_BYTES = 4500000;
+var ARCH_CLOUD_CELL_LIMIT_BYTES = 50000;
+var ARCH_CLOUD_CHUNK_BYTES = 42000;
+var ARCH_CLOUD_PART_LABELS = {
+  main: 'Núcleo (main)',
+  pInv: 'Inventario',
+  pFac: 'Facturas',
+  pSem: 'Semana / SAC',
+  pMisc: 'Varios'
+};
+
+/** Misma lógica que saveToCloud → saveParted (compress + particiones). */
+function archBuildCloudSaveMetrics_(st) {
+  var clone;
+  try {
+    clone = JSON.parse(JSON.stringify(st || state));
+    delete clone.cerebrusCalEventos;
+    delete clone.cerebrusBitacora;
+    delete clone.calendarioModuloOff;
+  } catch (e) {
+    clone = st || state;
+  }
+  var compressed;
+  try { compressed = compressStateForSave(clone); } catch (e2) { compressed = clone; }
+  var compressedStateBytes = 0;
+  try { compressedStateBytes = JSON.stringify(compressed).length; } catch (e3) {}
+  var parts = {};
+  try { parts = splitStateForCloudParts(compressed); } catch (e4) { parts = {}; }
+  var partRows = [];
+  var cloudTotalBytes = 0;
+  var maxPartBytes = 0;
+  var maxPartId = 'main';
+  Object.keys(parts).forEach(function(id) {
+    var bytes = String(parts[id] || '').length;
+    cloudTotalBytes += bytes;
+    partRows.push({ id: id, label: ARCH_CLOUD_PART_LABELS[id] || id, bytes: bytes });
+    if (bytes > maxPartBytes) {
+      maxPartBytes = bytes;
+      maxPartId = id;
+    }
+  });
+  partRows.sort(function(a, b) { return b.bytes - a.bytes; });
+  var pctMaxPart = maxPartBytes > 0
+    ? Math.min(100, Math.round(maxPartBytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 1000) / 10)
+    : 0;
+  return {
+    compressedStateBytes: compressedStateBytes,
+    cloudTotalBytes: cloudTotalBytes,
+    maxPartBytes: maxPartBytes,
+    maxPartId: maxPartId,
+    maxPartLabel: ARCH_CLOUD_PART_LABELS[maxPartId] || maxPartId,
+    pctMaxPart: pctMaxPart,
+    partRows: partRows
+  };
+}
+
+function archGetStorageMetrics() {
+  const localRaw = archGetStateSize();
+  let localComp = localRaw;
+  try { localComp = JSON.stringify(compressStateForSave(state)).length; } catch (e) {}
+  const cloud = archBuildCloudSaveMetrics_(state);
+  return {
+    rawSize: localRaw,
+    compSize: cloud.cloudTotalBytes,
+    cloudTotalBytes: cloud.cloudTotalBytes,
+    compressedStateBytes: cloud.compressedStateBytes,
+    maxPartBytes: cloud.maxPartBytes,
+    maxPartId: cloud.maxPartId,
+    maxPartLabel: cloud.maxPartLabel,
+    pctMaxPart: cloud.pctMaxPart,
+    partRows: cloud.partRows,
+    localCopyBytes: localComp,
+    limit: ARCH_CLOUD_CELL_LIMIT_BYTES,
+    pct: cloud.pctMaxPart
+  };
+}
 
 var ARCH_KEY_LABELS = {
   facturas: 'Facturas',
@@ -18547,15 +18621,6 @@ var ARCH_KEY_LABELS = {
   catInventario: 'Catálogo inventario',
   unidadesInventario: 'Unidades inventario'
 };
-
-function archGetStorageMetrics() {
-  const rawSize = archGetStateSize();
-  let compSize = rawSize;
-  try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch (e) {}
-  const limit = ARCH_STORAGE_LIMIT_BYTES;
-  const pct = Math.min(100, Math.round(compSize / limit * 100));
-  return { rawSize, compSize, limit, pct };
-}
 
 function archCountPedidoSemanasExtra_(keep) {
   keep = parseInt(keep, 10) || 8;
@@ -18640,7 +18705,9 @@ function archCountOldFacSemana() {
 function archRenderStats() {
   const m = archGetStorageMetrics();
   const rawSize = m.rawSize;
-  const compSize = m.compSize;
+  const cloudTotal = m.cloudTotalBytes;
+  const maxPart = m.maxPartBytes;
+  const maxLabel = m.maxPartLabel || m.maxPartId || 'main';
   const limit = m.limit;
   const pct = m.pct;
 
@@ -18654,9 +18721,9 @@ function archRenderStats() {
 
     kpiWrap.innerHTML = `
       <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent);">
-        <div style="font-size:9px;color:#94a3b8;font-weight:700;">TAMAÑO COMPRIMIDO</div>
-        <div style="font-size:16px;font-weight:800;color:${pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'};">${(compSize/1024).toFixed(1)} KB</div>
-        <div style="font-size:9px;color:#94a3b8;">Raw: ${(rawSize/1024).toFixed(1)} KB</div>
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">NUBE (AL GUARDAR)</div>
+        <div style="font-size:16px;font-weight:800;color:${pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'};">${(cloudTotal/1024).toFixed(1)} KB</div>
+        <div style="font-size:9px;color:#94a3b8;">Max ${maxLabel}: ${(maxPart/1024).toFixed(1)} KB (${pct}% celda)</div>
       </div>
       <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #6366f1;">
         <div style="font-size:9px;color:#94a3b8;font-weight:700;">FACTURAS</div>
@@ -18670,18 +18737,30 @@ function archRenderStats() {
       <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent2);">
         <div style="font-size:9px;color:#94a3b8;font-weight:700;">INFORMES</div>
         <div style="font-size:16px;font-weight:800;">${infCount}</div>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 12px;border-left:3px solid #94a3b8;">
+        <div style="font-size:9px;color:#94a3b8;font-weight:700;">LOCAL NAVEGADOR</div>
+        <div style="font-size:16px;font-weight:800;">${(rawSize/1024).toFixed(1)} KB</div>
+        <div style="font-size:9px;color:#94a3b8;">Comprimido: ${(m.localCopyBytes/1024).toFixed(1)} KB</div>
       </div>`;
   }
 
-  // Size bar
+  // Size bar — % = partición más grande vs límite celda Google Sheets (50 KB)
   const bar   = document.getElementById('arch-size-bar');
   const label = document.getElementById('arch-size-label');
   const note  = document.getElementById('arch-size-note');
   if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
-  if (label) label.textContent = `${(compSize/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%) — comprimido de ${(rawSize/1024).toFixed(1)} KB`;
+  if (label) {
+    label.textContent = `${(cloudTotal/1024).toFixed(1)} KB en nube · ${maxLabel} ${(maxPart/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%)`;
+  }
   if (note) {
-    if (pct > 70) note.textContent = '⚠ Uso alto del almacenamiento local (~4.500 KB). Respaldá JSON y archivá datos antiguos abajo.';
-    else note.textContent = 'Referencia local ~4.500 KB. La nube acepta estados más grandes (guardado en partes).';
+    if (maxPart > ARCH_CLOUD_CELL_LIMIT_BYTES) {
+      note.textContent = '⚠ Una partición supera 50 KB — el guardado en nube puede fallar. Archivá datos antiguos y guardá de nuevo.';
+    } else if (pct > 70) {
+      note.textContent = '⚠ Partición grande en nube (' + pct + '% del límite de celda). Respaldá JSON y archivá datos antiguos abajo.';
+    } else {
+      note.textContent = 'Medido igual que saveParted (comprimir + 5 particiones). Local navegador: ' + (rawSize/1024).toFixed(1) + ' KB.';
+    }
   }
 
   archRenderBreakdown();
@@ -18794,7 +18873,7 @@ function archExecute() {
   const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
 
   let totalRemoved = 0;
-  const sizeBefore = archGetStateSize();
+  const cloudBefore = archGetStorageMetrics().cloudTotalBytes;
 
   // Confirm
   archCalcPreview();
@@ -18890,8 +18969,8 @@ function archExecute() {
     totalRemoved += removedWeeks.length;
   }
 
-  const sizeAfter = archGetStateSize();
-  const saved     = sizeBefore - sizeAfter;
+  const cloudAfter = archGetStorageMetrics().cloudTotalBytes;
+  const saved     = cloudBefore - cloudAfter;
 
   archRenderStats();
   markUnsaved();
@@ -18903,21 +18982,23 @@ function archExecute() {
       <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:12px 14px;">
         <div style="font-size:13px;font-weight:800;color:var(--success);margin-bottom:4px;">✅ Archivado completado</div>
         <div style="font-size:11px;color:#64748b;">
-          ${totalRemoved} registros eliminados · ${(saved/1024).toFixed(1)} KB liberados
-          <br>Tamaño actual: ${(sizeAfter/1024).toFixed(1)} KB
+          ${totalRemoved} registros eliminados · ${(saved/1024).toFixed(1)} KB menos en nube
+          <br>Nube actual: ${(cloudAfter/1024).toFixed(1)} KB (5 particiones)
         </div>
       </div>`;
   }
 
-  notify(`✅ ${totalRemoved} registros archivados · ${(saved/1024).toFixed(1)} KB liberados`);
+  notify(`✅ ${totalRemoved} registros archivados · ${(saved/1024).toFixed(1)} KB menos en nube`);
 }
 
 // Auto-warning when state gets large (called on save)
 function archCheckSize() {
   try {
     const m = archGetStorageMetrics();
-    if (m.pct > 85) {
-      notify('⚠ Almacenamiento local al ' + m.pct + '% (' + (m.compSize / 1024).toFixed(0) + ' KB de ~' + (m.limit / 1024).toFixed(0) + ' KB). La nube sigue guardando OK. Archivá en ⚙ Configuración → Mantenimiento.');
+    if (m.maxPartBytes > ARCH_CLOUD_CELL_LIMIT_BYTES) {
+      notify('⚠ ' + (m.maxPartLabel || m.maxPartId) + ' supera 50 KB en nube (' + (m.maxPartBytes / 1024).toFixed(1) + ' KB). El guardado puede fallar. Archivá en ⚙ Configuración → Mantenimiento.');
+    } else if (m.pct > 85) {
+      notify('⚠ Nube al ' + m.pct + '% del límite de celda (' + (m.maxPartLabel || m.maxPartId) + ': ' + (m.maxPartBytes / 1024).toFixed(1) + ' KB). Archivá en ⚙ Configuración → Mantenimiento.');
     }
   } catch(e) {}
 }
@@ -18947,25 +19028,24 @@ function archDiagnostic() {
 function archRenderBreakdown() {
   const wrap = document.getElementById('arch-breakdown');
   if (!wrap) return;
-  const sorted = archDiagnostic();
-  if (!sorted.length) {
+  const m = archGetStorageMetrics();
+  const rows = m.partRows || [];
+  if (!rows.length) {
     wrap.innerHTML = '<div style="color:#94a3b8;">Sin datos.</div>';
     return;
   }
-  const total = sorted.reduce(function(s, e) { return s + e[1]; }, 0) || 1;
-  const top = sorted.slice(0, 14);
-  const rows = top.map(function(entry) {
-    const k = entry[0];
-    const bytes = entry[1];
-    const pct = Math.max(1, Math.round(bytes / total * 100));
-    const label = ARCH_KEY_LABELS[k] || k;
+  const total = m.cloudTotalBytes || rows.reduce(function(s, r) { return s + r.bytes; }, 0) || 1;
+  const rowsHtml = rows.map(function(row) {
+    const pct = Math.max(1, Math.round(row.bytes / total * 100));
+    const cellPct = Math.round(row.bytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 100);
+    const warn = row.bytes > ARCH_CLOUD_CELL_LIMIT_BYTES ? ' color:var(--danger);' : (cellPct > 70 ? ' color:var(--warning);' : '');
     return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 52px 36px;gap:8px;align-items:center;margin-bottom:6px;">'
-      + '<div style="min-width:0;"><div style="font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</div>'
+      + '<div style="min-width:0;"><div style="font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + row.label + ' <span style="font-size:9px;color:#94a3b8;">(' + row.id + ')</span></div>'
       + '<div style="height:5px;background:#e2e8f0;border-radius:3px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:var(--accent);border-radius:3px;"></div></div></div>'
-      + '<div style="text-align:right;font-weight:700;">' + (bytes / 1024).toFixed(1) + '</div>'
-      + '<div style="text-align:right;color:#94a3b8;">' + pct + '%</div></div>';
+      + '<div style="text-align:right;font-weight:700;' + warn + '">' + (row.bytes / 1024).toFixed(1) + '</div>'
+      + '<div style="text-align:right;color:#94a3b8;' + warn + '">' + cellPct + '%</div></div>';
   }).join('');
-  wrap.innerHTML = rows + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;">Total medido: ' + (total / 1024).toFixed(1) + ' KB · Top ' + top.length + ' módulos</div>';
+  wrap.innerHTML = rowsHtml + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;">Total nube: ' + (total / 1024).toFixed(1) + ' KB · % columna derecha = uso vs celda 50 KB</div>';
 }
 
 function cerebrusStripCalendarioBitacoraModulo_() {

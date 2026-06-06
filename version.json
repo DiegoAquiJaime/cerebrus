@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.3",
-  "notes": "Eliminado módulo Calendario/Bitácora (menú, UI, datos). Se mantiene calendario feriados Chile en Dashboard para stock mínimo."
+  "version": "2026.06.06.4",
+  "notes": "Indicadores de Mantenimiento miden payload nube (compress + 5 particiones), no localStorage 4,5 MB."
 }
