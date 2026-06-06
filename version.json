@@ -1,4 +1,4 @@
 {
-  "version": "2026.05.18.4",
-  "notes": "Unifica RUT Juan Ardiles (9063782-7); corrige typo 963782-7 en facturas y rutMap."
+  "version": "2026.06.06.3",
+  "notes": "Eliminado módulo Calendario/Bitácora (menú, UI, datos). Se mantiene calendario feriados Chile en Dashboard para stock mínimo."
 }

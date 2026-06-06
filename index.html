@@ -1319,7 +1319,6 @@ body.user-bodega #nav-facturas,
 body.user-bodega #nav-informe,
 body.user-bodega #nav-propinas,
 body.user-bodega #nav-detalle,
-body.user-bodega #nav-calendario,
 body.user-bodega .nav-sep:last-of-type,
 body.user-bodega .nav-item[onclick*="goto"] { display:none!important; }
 body.user-bodega .export-menu { display:none!important; }
@@ -2924,7 +2923,6 @@ body.dark-mode .conflict-overlay{
   </div>
   <div class="nav-sep">Vistas</div>
   <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
-  <div class="nav-item" id="nav-calendario" onclick="showTab('calendario')"><span class="ni">📆</span> Calendario</div>
   <div class="nav-item" id="nav-informe" onclick="showTab('informe')"><span class="ni">📋</span> Informe Diario</div>
   <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
   <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
@@ -3317,23 +3315,6 @@ body.dark-mode .conflict-overlay{
   <div id="sac" class="tab-content">
     <div class="content">
 
-      <div id="bitacora-sac-wrap" class="bitacora-sac-wrap">
-        <div class="bitacora-sac-head">
-          <div>
-            <h3 class="bitacora-sac-title">💬 Bitácora del equipo</h3>
-            <p class="bitacora-sac-sub">Avisos recientes. Publicar y editar en la pestaña <button type="button" class="bitacora-sac-link" onclick="showTab('calendario')">Calendario</button>.</p>
-          </div>
-          <div class="bitacora-sac-head-actions">
-            <span id="bitacora-sac-badge" class="bitacora-sac-new" style="display:none;">Nuevo</span>
-            <button type="button" class="fac-btn bitacora-sac-btn-cal" onclick="showTab('calendario')">📆 Calendario</button>
-          </div>
-        </div>
-        <div id="bitacora-list-sac" class="bitacora-list bitacora-list-sac"></div>
-        <div class="bitacora-sac-foot" id="bitacora-sac-foot" style="display:none;">
-          <button type="button" class="bitacora-sac-mark" onclick="cerebrusBitacoraMarkSeen(); cerebrusBitacoraRenderLists();">Marcar avisos como vistos</button>
-        </div>
-      </div>
-
       <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 8px 22px rgba(15,23,42,.05);overflow:hidden;">
         <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;">📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></div>
         <div id="sac-cierres-hist-body"></div>
@@ -3566,95 +3547,6 @@ body.dark-mode .conflict-overlay{
 
       <div id="sac-fin-panel-wrap" style="display:none;margin-top:4px;"></div>
 
-    </div>
-  </div>
-
-  <!-- ======= TAB CALENDARIO (interno + bitácora equipo) — tras Semana Actual ======= -->
-  <div id="calendario" class="tab-content">
-    <div class="content">
-      <div class="cal-modulo-hero">
-        <div class="cal-modulo-clock-card">
-          <div class="cal-modulo-clock-label">Hora local · America/Santiago</div>
-          <div class="cal-modulo-clock" id="cal-modulo-clock">—</div>
-          <div class="cal-modulo-date" id="cal-modulo-date">—</div>
-        </div>
-      </div>
-      <p class="cal-modulo-hint">Calendario y mensajes viven en CEREBRUS (se guardan con el resto de datos en nube). Así todos ven lo mismo sin iniciar sesión en Google aquí.</p>
-
-      <div class="cal-modulo-layout">
-        <div class="cal-int-panel">
-          <div class="cal-int-head">
-            <span class="cal-int-month" id="cal-int-month-label">—</span>
-            <div class="cal-int-nav">
-              <button type="button" onclick="cerebrusCalMonthNav(-1)">‹</button>
-              <button type="button" onclick="cerebrusCalMonthNav(0)">Hoy</button>
-              <button type="button" onclick="cerebrusCalMonthNav(1)">›</button>
-            </div>
-          </div>
-          <div class="cal-int-weekhdr">
-            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-          </div>
-          <div class="cal-int-grid" id="cal-int-grid"></div>
-        </div>
-        <div class="cal-int-side">
-          <h4>Eventos y recordatorios</h4>
-          <div class="cal-int-date-lbl" id="cal-int-sel-label">Selecciona un día</div>
-          <input type="text" class="cal-int-inp" id="cal-int-title" placeholder="Título (ej. reunión, pedido, cierre…)" maxlength="120">
-          <textarea class="cal-int-inp cal-int-ta" id="cal-int-note" placeholder="Detalle opcional" maxlength="800"></textarea>
-          <button type="button" class="cal-int-add" onclick="cerebrusCalAddEvent()">Agregar a este día</button>
-          <div class="cal-int-evlist" id="cal-int-ev-list"></div>
-        </div>
-      </div>
-
-      <div class="bitacora-panel">
-        <h3>Bitácora del equipo</h3>
-        <p class="tip">Notas y avisos para el equipo (Bodega no ve este módulo). Podés adjuntar <strong>imágenes</strong>, <strong>PDF o texto</strong>, y <strong>notas de voz</strong> cortas (se guardan en la nube con el resto de datos; tamaños limitados).</p>
-        <input type="file" id="bitacora-file-input" style="display:none;" multiple accept="image/*,.pdf,.txt,text/plain,application/pdf" onchange="cerebrusBitacoraOnFilesPick(event)">
-        <div class="bitacora-toolbar">
-          <button type="button" class="bitacora-toolbtn" onclick="document.getElementById('bitacora-file-input').click()">📎 Adjuntar archivos</button>
-          <button type="button" class="bitacora-toolbtn" id="bitacora-voice-btn" onclick="cerebrusBitacoraVoiceToggle()">🎤 Nota de voz</button>
-        </div>
-        <div class="bitacora-pending" id="bitacora-pending" style="display:none;"></div>
-        <textarea class="bitacora-ta" id="bitacora-input" placeholder="Texto del mensaje (opcional si adjuntás algo)…" maxlength="2000"></textarea>
-        <button type="button" class="bitacora-btn" onclick="cerebrusBitacoraPost()">Publicar en la bitácora</button>
-        <details class="bitacora-cleanup" id="bitacora-cleanup-box">
-          <summary>Liberar espacio (adjuntos y mensajes viejos)</summary>
-          <div class="bitacora-cleanup-body">
-            <p class="tip" style="font-size:11px;margin:0 0 10px 0;">Los adjuntos viven en el mismo archivo que guarda la nube; al quitarlos se reduce el tamaño total. Podés hacerlo por mensaje (abajo) o por antigüedad aquí.</p>
-            <div class="bitacora-cleanup-row">
-              <label for="bitacora-reminder-days">Recordatorio al abrir la app:</label>
-              <select id="bitacora-reminder-days" onchange="cerebrusBitacoraReminderSet(this.value)">
-                <option value="0">No recordar</option>
-                <option value="2">Cada 2 días</option>
-                <option value="7">Cada semana</option>
-                <option value="14">Cada 2 semanas</option>
-              </select>
-            </div>
-            <div class="bitacora-cleanup-row">
-              <span>Quitar adjuntos de mensajes más viejos que</span>
-              <select id="bitacora-strip-age">
-                <option value="2">2 días</option>
-                <option value="7" selected>7 días</option>
-                <option value="14">14 días</option>
-                <option value="30">30 días</option>
-              </select>
-              <button type="button" class="bitacora-toolbtn" onclick="cerebrusBitacoraBulkStripOlderThan()">Ejecutar</button>
-            </div>
-            <p class="tip" style="font-size:10px;color:var(--text-muted);margin:0 0 8px 0;">La limpieza por fecha solo la pueden hacer Diego o Sebastián. Cualquiera con permiso puede usar «Quitar adjuntos» en cada mensaje.</p>
-            <div class="bitacora-cleanup-row">
-              <span>Eliminar mensajes completos más viejos que</span>
-              <select id="bitacora-delete-age">
-                <option value="7">7 días</option>
-                <option value="14">14 días</option>
-                <option value="30" selected>30 días</option>
-                <option value="90">90 días</option>
-              </select>
-              <button type="button" class="bitacora-toolbtn" onclick="cerebrusBitacoraBulkDeleteOlderThan()">Eliminar…</button>
-            </div>
-          </div>
-        </details>
-        <div class="bitacora-list" id="bitacora-list"></div>
-      </div>
     </div>
   </div>
 
@@ -4870,6 +4762,7 @@ body.dark-mode .conflict-overlay{
           <button class="fac-btn" onclick="openInvImportFromFacsModal()">🔗 Desde facturas</button>
           <button class="fac-btn" onclick="invOpenRestoreFile()">♻ Restaurar inventario</button>
           <button class="fac-btn" onclick="invOpenRescatePreciosJson()" title="Importa precios unitarios desde un respaldo de estado (semana en historial) a preciosProveedor y a líneas de pedido/historial. No toca stock.">📂 Precios desde respaldo</button>
+          <button class="fac-btn" onclick="invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true })" title="Rellena precios vacíos desde semanas de pedido guardadas. No toca stock.">💲 Rescatar desde pedidos</button>
           <button class="fac-btn" onclick="cereBackupNowAll()">💾 Respaldos JSON</button>
           <button class="fac-btn" onclick="invExportDueñaPdf()" title="Respeta búsqueda y filtros actuales">📄 PDF inventario</button>
           <button class="fac-btn" onclick="invExportDueñaExcel()" title="Abre en Excel · respeta filtros">📊 Excel inventario</button>
@@ -4995,6 +4888,7 @@ body.dark-mode .conflict-overlay{
               <button class="fac-btn" id="inv-btn-import-pdf" onclick="invOpenPedidoPdfImport()">📥 Importar pedido PDF</button>
               <button class="fac-btn" id="inv-btn-fill-precios" onclick="invPedidoRellenarPreciosDesdeInventario()" title="Usa precios del inventario (lista por proveedor o factura). No cambia productos ni stock. Omite líneas recepcionadas y líneas que ya tienen precio > 0.">💲 Rellenar precios</button>
               <button class="fac-btn" id="inv-btn-import-rescate-precios" onclick="invOpenRescatePreciosJson()" title="Lee un respaldo JSON (estado completo), toma precios unitarios de la última semana con pedido valorizado y los copia a preciosProveedor + líneas de pedido actuales/historial (mismo prodId y proveedor). No toca stock.">📂 Precios desde respaldo</button>
+              <button class="fac-btn" id="inv-btn-rescate-precios-hist" onclick="invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true })" title="Rellena precios vacíos en la lista y en pedidos usando semanas guardadas (activa + historial). No borra precios existentes ni stock.">💲 Rescatar desde pedidos</button>
               <button class="fac-btn" id="inv-btn-hotload-04may" onclick="invHotLoadPedidoSem04May2026()" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5;">🔥 Cargar pedido 04-10 mayo ahora</button>
               <button class="fac-btn" id="inv-btn-export-prov" onclick="invExportPedidoPdfPorProveedor()" style="display:none;">📄 PDF proveedores</button>
               <button class="fac-btn" id="inv-btn-export-xls" onclick="invExportPedidoExcelPorProveedor()" style="display:none;">📊 Excel proveedores</button>
@@ -5489,7 +5383,16 @@ body.dark-mode .conflict-overlay{
           <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
             <div id="arch-size-bar" style="height:100%;border-radius:4px;background:var(--success);width:0%;transition:width .4s;"></div>
           </div>
-          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Capacidad: ~250 KB con guardado en múltiples celdas</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Referencia local ~4.500 KB. La nube guarda en partes si el estado es más grande.</div>
+        </div>
+
+        <!-- Desglose por módulo -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;">Qué ocupa espacio</div>
+            <button type="button" onclick="archRenderBreakdown()" class="fac-btn" style="font-size:10px;padding:4px 10px;">↻ Actualizar</button>
+          </div>
+          <div id="arch-breakdown" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:220px;overflow-y:auto;">Abre esta pestaña para calcular…</div>
         </div>
 
         <!-- Opciones de archivado -->
@@ -5515,9 +5418,14 @@ body.dark-mode .conflict-overlay{
             <input type="checkbox" id="arch-fsem"> <span>📋 Facturas a pagar en semana (ya pagadas)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-fsem-count">0</span>
           </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">
+            <input type="checkbox" id="arch-pedhist"> <span>📦 Pedidos semanales cerrados (conservar últimas <select id="arch-pedhist-keep" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select> semanas en la app)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-pedhist-count">0</span>
+          </label>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button onclick="archCalcPreview()" class="fac-btn" style="font-size:11px;">🔍 Previsualizar</button>
+          <button onclick="cereBackupRespaldoGeneral()" class="fac-btn" style="font-size:11px;" title="JSON completo del estado → carpeta respaldo-general o descarga">💾 Respaldo general (JSON)</button>
           <button onclick="archDownloadBackup()" class="fac-btn" style="font-size:11px;">💾 Descargar respaldo JSON</button>
           <button onclick="archExecute()" class="fac-btn danger" style="font-size:11px;">🗑 Archivar seleccionados</button>
         </div>
@@ -7328,13 +7236,13 @@ function showTab(tabId) {
   }
   _activeTabId = tabId;
   closeNav();
-  ['resumen','calendario','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
+  ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
     const nav = document.getElementById('nav-'+t);
     if (nav) nav.classList.toggle('active', t===tabId);
   });
-  const titles = {resumen:'Dashboard', calendario:'📆 Calendario', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
+  const titles = {resumen:'Dashboard', sac:'⚡ Semana Actual', semanas:'Plan de Carga Semanal', venta:'Venta Semanal — Estimado vs Real', historial:'Historial de Meses', creditos:'Créditos Informales', facturas:'Facturas Proveedores', inventario:'Inventario y Pedido Semanal', propinas:'💵 Propinas', sebas:'🔐 Finanzas Personales Sebastián', informe:'Informe Diario Financiero', detalle:'Configuración'};
   set('tab-title', titles[tabId]||tabId);
   if (tabId==='sac')        sacRender();
   if (tabId==='semanas')    { renderWeeks(); calRenderWeekStrip(0); }
@@ -7347,7 +7255,6 @@ function showTab(tabId) {
   if (tabId==='sebas')      sebRender();
   if (tabId==='informe')    infInit();
   if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
-  if (tabId==='calendario')  { cerebrusBitacoraMarkSeen(); calModuloRender(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
     // Refresh SAC summary on dashboard
@@ -11075,9 +10982,11 @@ function facMigrateJuanArdilesRut() {
 
   (state.facSemana || []).forEach(s => {
     if (facIsJuanArdilesProvName(s.prov) || facIsJuanArdilesWrongRutKey(rutKey(s.rut || ''))) {
+      if (s.prov !== FAC_JUAN_ARDILES_PROV) changed = true;
       s.prov = FAC_JUAN_ARDILES_PROV;
     }
   });
+  if (changed && typeof markUnsaved === 'function') markUnsaved();
 }
 
 // ── GUARDAR FACTURA con RUT ──
@@ -13992,8 +13901,61 @@ function invMigrateCategoryNames_() {
   return changed;
 }
 
+function invPreciosMapCount_(pp) {
+  if (!pp || typeof pp !== 'object') return 0;
+  var n = 0;
+  Object.keys(pp).forEach(function(pid) {
+    (pp[pid] || []).forEach(function(r) {
+      if (Number(r && r.precio) > 0) n++;
+    });
+  });
+  return n;
+}
+
+/** Combina mapas de precios: conserva todos los >0; en conflicto gana el lado `prefer` (local). */
+function invMergePreciosProveedorPreferRicher_(remotePP, localPP, prefer) {
+  prefer = prefer || 'local';
+  var out = JSON.parse(JSON.stringify(remotePP || {}));
+  var local = localPP || {};
+  Object.keys(local).forEach(function(pid) {
+    if (!out[pid]) out[pid] = [];
+    (local[pid] || []).forEach(function(row) {
+      var precio = Number(row && row.precio) || 0;
+      if (!(precio > 0)) return;
+      var nk = invNormTxt(row.prov || row.nombre || '');
+      var ix = out[pid].findIndex(function(x) { return invNormTxt(x.prov || x.nombre || '') === nk; });
+      var copy = JSON.parse(JSON.stringify(row));
+      if (ix < 0) out[pid].push(copy);
+      else if (!(Number(out[pid][ix].precio) > 0)) out[pid][ix] = copy;
+      else if (prefer === 'local') out[pid][ix] = copy;
+    });
+  });
+  return out;
+}
+
+function invCountPreciosEnPedidosHistorial_(st) {
+  if (!st) return 0;
+  var n = 0;
+  function scan(sem) {
+    if (!sem || !Array.isArray(sem.ordenes)) return;
+    sem.ordenes.forEach(function(o) {
+      (o.items || []).forEach(function(it) {
+        if (Number(it.qty) > 0 && Number(it.precio) > 0 && String(it.prov || '').trim()) n++;
+      });
+    });
+  }
+  scan(st.semanaActiva);
+  (st.semanasHistorial || []).forEach(scan);
+  return n;
+}
+
 function invClearAllPreciosOneShot_() {
   if (!state || state._invPreciosCleared_20260426) return 0;
+  // Si ya hay precios en lista o en pedidos históricos, no borrar (migración antigua ya aplicada).
+  if (invPreciosMapCount_(state.preciosProveedor) > 0 || invCountPreciosEnPedidosHistorial_(state) > 0) {
+    state._invPreciosCleared_20260426 = true;
+    return 0;
+  }
   let changed = 0;
   if (state.preciosProveedor && Object.keys(state.preciosProveedor).length) {
     state.preciosProveedor = {};
@@ -14081,6 +14043,16 @@ function _postLoadSetup() {
   if (!state.vsExtraData)               state.vsExtraData               = {};
   invMigrateCategoryNames_();
   const clearedPrecios = invClearAllPreciosOneShot_();
+  try {
+    const rescued = invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true, silent: true });
+    if ((rescued.inv > 0 || rescued.ped > 0) && !clearedPrecios) {
+      const k = 'cerebrus_precios_rescue_' + new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem(k) !== '1') {
+        localStorage.setItem(k, '1');
+        notify('💲 Recuperados ' + rescued.inv + ' precios en lista y ' + rescued.ped + ' líneas de pedido desde historial (solo vacíos).');
+      }
+    }
+  } catch (e) {}
   applyBodegaN3PlantillaIfNeeded();
   applyInventorySnapshot20260331IfNeeded();
   applyPdfMasterAdditionsIfNeeded();
@@ -14101,16 +14073,13 @@ function _postLoadSetup() {
     if (k==='ingresos' && i.confirmed===undefined) i.confirmed=false;
   }); });
   try { if(localStorage.getItem('cerebrus_dark')==='1'){document.body.classList.add('dark-mode');document.getElementById('dark-btn').textContent='☀️';} } catch(e){}
+  try { cerebrusStripCalendarioBitacoraModulo_(); } catch (e) {}
   _calMap = buildCalMap(_calYear);
   calRender();
   renderAll(); calc(); renderHistorial(); vsSavedRender();
   if (clearedPrecios > 0) {
     notify('🧹 Precios de Inventario limpiados (one-shot): ahora debes cargarlos manualmente.');
   }
-  try { cerebrusBitacoraInitSeenIfNeeded(); } catch (e) {}
-  setTimeout(function() {
-    try { cerebrusBitacoraCleanupReminderMaybe(); } catch (e) {}
-  }, 5200);
   // Bodega solo ve inventario, los demás abren Semana Actual
   if (cerebrusUsuarioBodega()) {
     showTab('inventario');
@@ -14126,11 +14095,6 @@ function _postLoadSetup() {
     startVersionChecker();
     if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
     if (typeof cerebrusClockStart === 'function') cerebrusClockStart();
-    var spokeBitacora = false;
-    try { spokeBitacora = !!cerebrusBitacoraTtsCheckNewFromOthers(); } catch (e) {}
-    setTimeout(function() {
-      try { cerebrusCalTtsTodayIfNeeded(); } catch (e) {}
-    }, spokeBitacora ? 4200 : 600);
   }, 800);
   infInit();
   setTimeout(function() {
@@ -14325,14 +14289,58 @@ function _backupBlobDownload(name, obj) {
 async function _backupWriteToPickedFolder(dirHandle, fileName, obj) {
   if (!dirHandle) return false;
   try {
-    const sub = await dirHandle.getDirectoryHandle('respaldos rescates inventario', { create: true });
-    const handle = await sub.getFileHandle(fileName, { create: true });
+    const handle = await dirHandle.getFileHandle(fileName, { create: true });
     const writable = await handle.createWritable();
     await writable.write(JSON.stringify(obj, null, 2));
     await writable.close();
     return true;
   } catch(e) {
     return false;
+  }
+}
+
+async function _backupWriteToPickedFolderLegacy(dirHandle, fileName, obj) {
+  if (!dirHandle) return false;
+  try {
+    const sub = await dirHandle.getDirectoryHandle('respaldos rescates inventario', { create: true });
+    return _backupWriteToPickedFolder(sub, fileName, obj);
+  } catch(e) {
+    return false;
+  }
+}
+
+async function cereBackupRespaldoGeneral() {
+  try {
+    const tag = _backupDateTag();
+    const payload = {
+      meta: {
+        type: 'respaldo_general',
+        date: new Date().toISOString(),
+        user: typeof currentUser !== 'undefined' ? currentUser : '',
+        note: 'Estado completo Cerebrus — usar para restauración total'
+      },
+      state: state,
+      nid: typeof _nid !== 'undefined' ? _nid : 200
+    };
+    const fileName = 'respaldo-general-estado-completo-' + tag + '.json';
+    if (window.showDirectoryPicker) {
+      const useFolder = confirm(
+        '¿Guardar en carpeta del disco?\n\nAceptar = elige carpeta (recomendado: …/Cerebrus/backups/respaldo-general).\nCancelar = descarga el JSON al navegador.'
+      );
+      if (useFolder) {
+        const root = await window.showDirectoryPicker({ mode: 'readwrite' });
+        const sub = await root.getDirectoryHandle('respaldo-general', { create: true });
+        const ok = await _backupWriteToPickedFolder(sub, fileName, payload);
+        if (ok) {
+          notify('✅ Respaldo general guardado en carpeta respaldo-general/' + fileName);
+          return;
+        }
+      }
+    }
+    _backupBlobDownload(fileName, payload);
+    notify('✅ Respaldo general descargado: ' + fileName);
+  } catch (e) {
+    notify('⚠ Error respaldo general: ' + (e.message || e));
   }
 }
 
@@ -14365,9 +14373,9 @@ async function cereBackupNowAll() {
     const useFolder = confirm('¿Guardar respaldos en carpeta "respaldos rescates inventario"?\n\nAceptar = elegir carpeta y guardar ahí.\nCancelar = descargar JSON al navegador.');
     if (useFolder && window.showDirectoryPicker) {
       const root = await window.showDirectoryPicker({ mode: 'readwrite' });
-      const ok1 = await _backupWriteToPickedFolder(root, n1, payloadInv);
-      const ok2 = await _backupWriteToPickedFolder(root, n2, payloadFac);
-      const ok3 = await _backupWriteToPickedFolder(root, n3, payloadState);
+      const ok1 = await _backupWriteToPickedFolderLegacy(root, n1, payloadInv);
+      const ok2 = await _backupWriteToPickedFolderLegacy(root, n2, payloadFac);
+      const ok3 = await _backupWriteToPickedFolderLegacy(root, n3, payloadState);
       if (ok1 && ok2 && ok3) {
         try { localStorage.setItem('cerebrus_last_weekly_backup', String(Date.now())); } catch(e){}
         notify('✅ Respaldos guardados en carpeta "respaldos rescates inventario"');
@@ -14418,19 +14426,23 @@ function invUpsertPrecioProveedor(prodId, prov, precio, extraMeta) {
   if (!state.preciosProveedor) state.preciosProveedor = {};
   if (!state.preciosProveedor[prodId]) state.preciosProveedor[prodId] = [];
   const lista = state.preciosProveedor[prodId];
-  const idx = lista.findIndex(x => (x.prov||'') === prov);
+  const provCanon = facNormalizeProvNombre(String(prov).trim()) || String(prov).trim();
+  const idx = lista.findIndex(function(x) { return invNormTxt(x.prov || x.nombre || '') === invNormTxt(provCanon); });
   if (precio <= 0) {
     if (idx >= 0) lista.splice(idx, 1);
+    if (typeof markUnsaved === 'function') markUnsaved();
     return;
   }
   if (idx >= 0) {
     lista[idx].precio = precio;
+    lista[idx].prov = provCanon;
     if (extraMeta && typeof extraMeta === 'object') Object.assign(lista[idx], extraMeta);
   } else {
-    const row = { prov, precio };
+    const row = { prov: provCanon, precio };
     if (extraMeta && typeof extraMeta === 'object') Object.assign(row, extraMeta);
     lista.push(row);
   }
+  if (typeof markUnsaved === 'function') markUnsaved();
 }
 function invBestPrice(prod) {
   const lista = _getPreciosUnified(prod).filter(p=>p.precio>0);
@@ -15369,6 +15381,13 @@ function invSubTab(panel) {
   if (panel==='consumo')      invRenderConsumo();
   if (panel==='movimientos')  { movRender(); movRenderDashSemanal(); if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick(); }
   if (panel==='conteo')       conteoRender();
+}
+
+function invSyncConteoPanelIfVisible_(prodId) {
+  const panel = document.getElementById('inv-panel-conteo');
+  if (!panel || panel.style.display === 'none') return;
+  if (prodId) conteoSyncInputFromStock_(prodId);
+  else if (typeof conteoRender === 'function') conteoRender();
 }
 
 function invGetSemana() { return state.semanaActiva||null; }
@@ -16411,6 +16430,51 @@ function invPickSemanaParaRescatePrecios_(hist) {
 }
 
 /** map[prodId][invNormTxt(prov)] = { prov, unitPx, sem } (última línea gana si hay duplicados). */
+function invBuildPrecioMapDesdeTodosLosPedidos_(st) {
+  st = st || state;
+  var map = {};
+  function mergeSem(sem) {
+    if (!sem || !Array.isArray(sem.ordenes)) return;
+    var sub = invBuildMapPreciosDesdeSemanaRescate_(sem);
+    Object.keys(sub).forEach(function(pid) {
+      if (!map[pid]) map[pid] = {};
+      Object.keys(sub[pid]).forEach(function(nk) { map[pid][nk] = sub[pid][nk]; });
+    });
+  }
+  mergeSem(st.semanaActiva);
+  (st.semanasHistorial || []).forEach(mergeSem);
+  return map;
+}
+
+/**
+ * Rellena preciosProveedor y líneas de pedido desde semanas guardadas (solo huecos vacíos por defecto).
+ */
+function invRescuePreciosDesdePedidosHistorial_(opts) {
+  opts = opts || {};
+  invInit();
+  var map = invBuildPrecioMapDesdeTodosLosPedidos_(state);
+  var prodIds = Object.keys(map);
+  if (!prodIds.length) return { inv: 0, ped: 0 };
+  var invN = 0;
+  prodIds.forEach(function(prodId) {
+    var sub = map[prodId];
+    Object.keys(sub).forEach(function(nk) {
+      var e = sub[nk];
+      if (!(e.unitPx > 0)) return;
+      var lista = state.preciosProveedor && state.preciosProveedor[prodId] ? state.preciosProveedor[prodId] : [];
+      var ix = lista.findIndex(function(x) { return invNormTxt(x.prov || '') === nk; });
+      if (opts.onlyEmpty !== false && ix >= 0 && Number(lista[ix].precio) > 0) return;
+      invUpsertPrecioProveedor(prodId, e.prov, e.unitPx, { source: 'rescate_pedido_hist', sem: e.sem || '' });
+      invN++;
+    });
+  });
+  var pedN = invApplyPreciosMapAPedidosEnState_(map, 'historial-pedidos', { onlyEmpty: opts.onlyEmpty !== false });
+  if (!opts.silent && (invN > 0 || pedN > 0)) {
+    notify('💲 Rescate precios desde pedidos: ' + invN + ' en lista · ' + pedN + ' líneas de pedido');
+  }
+  return { inv: invN, ped: pedN };
+}
+
 function invBuildMapPreciosDesdeSemanaRescate_(sem) {
   var semTag = String(sem.nombre || sem.periodoLabel || '').trim();
   var map = {};
@@ -16461,13 +16525,15 @@ function invApplyPreciosMapToInventario_(map) {
   return n;
 }
 
-function invApplyPreciosMapAPedidosEnState_(map, semLabel) {
+function invApplyPreciosMapAPedidosEnState_(map, semLabel, opts) {
+  opts = opts || {};
   var n = 0;
   function scanSem(sem) {
     if (!sem || !Array.isArray(sem.ordenes)) return;
     (sem.ordenes || []).forEach(function(o) {
       (o.items || []).forEach(function(it) {
         if (!it || !(Number(it.qty) > 0)) return;
+        if (opts.onlyEmpty !== false && Number(it.precio || 0) > 0) return;
         var e = invRescateMapLookup_(map, it.prodId, it.prov);
         if (!e || !(e.unitPx > 0)) return;
         it.precio = Math.round(e.unitPx);
@@ -18453,6 +18519,56 @@ function archGetStateSize() {
   try { return JSON.stringify(state).length; } catch(e) { return 0; }
 }
 
+var ARCH_STORAGE_LIMIT_BYTES = 4500000;
+
+var ARCH_KEY_LABELS = {
+  facturas: 'Facturas',
+  creditos: 'Créditos',
+  inventario: 'Inventario',
+  movimientos: 'Movimientos inventario',
+  movimientosArchivo: 'Movimientos archivados',
+  propinas: 'Propinas',
+  informesDiarios: 'Informes diarios',
+  sacCargas: 'SAC cargas',
+  sacIngresos: 'SAC ingresos',
+  sacCierresHistorial: 'SAC cierres hist.',
+  sacFinanciamientoRegistro: 'SAC financiamiento',
+  pagosSemanales: 'Pagos semanales',
+  vsData: 'Semana actual (vsData)',
+  vsExtraData: 'Semana actual extra',
+  facSemana: 'Facturas semana',
+  facSemHistorialPagos: 'Hist. pagos fact. sem.',
+  sebasFinanzas: 'Finanzas Sebas',
+  preciosProveedor: 'Precios proveedor',
+  mercaderiaSemanasSimple: 'Mercadería semanas',
+  semanaActiva: 'Pedido semana activa',
+  semanasHistorial: 'Pedidos semanas cerradas',
+  provDocumentos: 'Docs proveedor',
+  catInventario: 'Catálogo inventario',
+  unidadesInventario: 'Unidades inventario'
+};
+
+function archGetStorageMetrics() {
+  const rawSize = archGetStateSize();
+  let compSize = rawSize;
+  try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch (e) {}
+  const limit = ARCH_STORAGE_LIMIT_BYTES;
+  const pct = Math.min(100, Math.round(compSize / limit * 100));
+  return { rawSize, compSize, limit, pct };
+}
+
+function archCountPedidoSemanasExtra_(keep) {
+  keep = parseInt(keep, 10) || 8;
+  const hist = state.semanasHistorial || [];
+  return Math.max(0, hist.length - keep);
+}
+
+function archPedidoSemanasLabels_(weeks) {
+  return (weeks || []).map(function(s) {
+    return String(s.nombre || s.periodoLabel || s.id || 'semana').trim();
+  }).filter(Boolean);
+}
+
 function archWeeksAgo(weeks) {
   const d = new Date();
   d.setDate(d.getDate() - weeks * 7);
@@ -18522,13 +18638,11 @@ function archCountOldFacSemana() {
 }
 
 function archRenderStats() {
-  const rawSize = archGetStateSize();
-  let compSize = rawSize;
-  try { compSize = JSON.stringify(compressStateForSave(state)).length; } catch(e){}
-  // Realistic ceiling for browser localStorage (safe headroom under ~5MB typical quota).
-  // Previous 250KB value was a legacy sync threshold and produced misleading "98%" alerts.
-  const limit  = 4500000;
-  const pct    = Math.min(100, Math.round(compSize / limit * 100));
+  const m = archGetStorageMetrics();
+  const rawSize = m.rawSize;
+  const compSize = m.compSize;
+  const limit = m.limit;
+  const pct = m.pct;
 
   // KPIs
   const kpiWrap = document.getElementById('arch-kpis');
@@ -18565,13 +18679,18 @@ function archRenderStats() {
   const note  = document.getElementById('arch-size-note');
   if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
   if (label) label.textContent = `${(compSize/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%) — comprimido de ${(rawSize/1024).toFixed(1)} KB`;
-  if (note && pct > 70) note.textContent = '⚠ Uso alto de almacenamiento local: considera respaldo externo + particionar módulos.';
+  if (note) {
+    if (pct > 70) note.textContent = '⚠ Uso alto del almacenamiento local (~4.500 KB). Respaldá JSON y archivá datos antiguos abajo.';
+    else note.textContent = 'Referencia local ~4.500 KB. La nube acepta estados más grandes (guardado en partes).';
+  }
+
+  archRenderBreakdown();
 
   // Update counts
   archUpdateCounts();
 
   // Attach listeners to week selectors (once)
-  ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks'].forEach(id => {
+  ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks','arch-pedhist-keep'].forEach(id => {
     const el = document.getElementById(id);
     if (el && !el._archBound) { el._archBound = true; el.addEventListener('change', archUpdateCounts); }
   });
@@ -18588,6 +18707,8 @@ function archUpdateCounts() {
   set2('arch-inf-count',  archCountOldInformes(infWeeks));
   set2('arch-sac-count',  archCountOldSacCargas());
   set2('arch-fsem-count', archCountOldFacSemana());
+  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
+  set2('arch-pedhist-count', archCountPedidoSemanasExtra_(pedKeep));
 }
 
 function archCalcPreview() {
@@ -18603,6 +18724,8 @@ function archCalcPreview() {
   const doInf  = document.getElementById('arch-inf')?.checked;
   const doSac  = document.getElementById('arch-sac')?.checked;
   const doFsem = document.getElementById('arch-fsem')?.checked;
+  const doPed  = document.getElementById('arch-pedhist')?.checked;
+  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
 
   let total = 0;
   let lines = [];
@@ -18611,6 +18734,12 @@ function archCalcPreview() {
   if (doInf  && infN)  { total+=infN;  lines.push(`📋 ${infN} informes diarios`); }
   if (doSac  && sacN)  { total+=sacN;  lines.push(`⚡ ${sacN} cargas semanales pasadas`); }
   if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
+  const pedN = doPed ? archCountPedidoSemanasExtra_(pedKeep) : 0;
+  if (doPed && pedN) {
+    const removedPreview = (state.semanasHistorial || []).slice(pedKeep);
+    lines.push(`📦 ${pedN} semana(s) de pedido: ${archPedidoSemanasLabels_(removedPreview).slice(0, 4).join(', ')}${pedN > 4 ? '…' : ''}`);
+    total += pedN;
+  }
 
   const el = document.getElementById('arch-preview');
   if (!el) return;
@@ -18657,10 +18786,12 @@ function archExecute() {
   const doInf  = document.getElementById('arch-inf')?.checked;
   const doSac  = document.getElementById('arch-sac')?.checked;
   const doFsem = document.getElementById('arch-fsem')?.checked;
+  const doPed  = document.getElementById('arch-pedhist')?.checked;
 
   const facWeeks = parseInt(document.getElementById('arch-fac-weeks')?.value||'8');
   const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
   const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
 
   let totalRemoved = 0;
   const sizeBefore = archGetStateSize();
@@ -18672,10 +18803,12 @@ function archExecute() {
   const infN  = doInf  ? archCountOldInformes(infWeeks) : 0;
   const sacN  = doSac  ? archCountOldSacCargas() : 0;
   const fsemN = doFsem ? archCountOldFacSemana() : 0;
-  const totalPlan = facN + movN + infN + sacN + fsemN;
+  const pedN  = doPed  ? archCountPedidoSemanasExtra_(pedKeep) : 0;
+  const totalPlan = facN + movN + infN + sacN + fsemN + pedN;
 
   if (!totalPlan) { notify('✓ Nada que archivar'); return; }
-  if (!confirm(`¿Archivar ${totalPlan} registros?\n\nEsto es irreversible. Asegúrate de haber descargado un respaldo JSON primero.`)) return;
+  const pedWarn = pedN ? '\n\nPedido: se descargará un JSON con las semanas eliminadas antes de borrarlas.' : '';
+  if (!confirm(`¿Archivar ${totalPlan} registros/semanas?\n\nEsto es irreversible salvo el JSON de respaldo.${pedWarn}\n\n¿Continuar?`)) return;
 
   pushUndo();
 
@@ -18745,6 +18878,18 @@ function archExecute() {
     totalRemoved += before - state.facSemana.length;
   }
 
+  // 6. Pedidos semanales cerrados (conservar últimas N)
+  if (doPed && pedN > 0) {
+    const hist = state.semanasHistorial || [];
+    const removedWeeks = hist.slice(pedKeep);
+    _backupBlobDownload('pedido-semanas-archivadas-' + _backupDateTag() + '.json', {
+      meta: { type: 'pedido_semanas_archivadas', date: new Date().toISOString(), keep: pedKeep },
+      semanasHistorial: removedWeeks
+    });
+    state.semanasHistorial = hist.slice(0, pedKeep);
+    totalRemoved += removedWeeks.length;
+  }
+
   const sizeAfter = archGetStateSize();
   const saved     = sizeBefore - sizeAfter;
 
@@ -18770,32 +18915,67 @@ function archExecute() {
 // Auto-warning when state gets large (called on save)
 function archCheckSize() {
   try {
-    const compressed = compressStateForSave(state);
-    const size = JSON.stringify(compressed).length;
-    // Keep warning aligned with realistic localStorage headroom.
-    const chunkLimit = 4500000;
-    const pct = Math.round(size / chunkLimit * 100);
-    if (pct > 85) {
-      notify(`⚠ Almacenamiento al ${pct}% (${(size/1024).toFixed(1)}KB) — archiva datos antiguos en ⚙ Configuración`);
+    const m = archGetStorageMetrics();
+    if (m.pct > 85) {
+      notify('⚠ Almacenamiento local al ' + m.pct + '% (' + (m.compSize / 1024).toFixed(0) + ' KB de ~' + (m.limit / 1024).toFixed(0) + ' KB). La nube sigue guardando OK. Archivá en ⚙ Configuración → Mantenimiento.');
     }
   } catch(e) {}
 }
 
-// Diagnostic: show what's taking up space
 function archDiagnostic() {
   const parts = {};
-  const keys = ['facturas','creditos','inventario','movimientos','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro','pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos','sebasFinanzas',
-    'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple'];
-  keys.forEach(k => {
-    if (state[k]) parts[k] = JSON.stringify(state[k]).length;
+  const keys = ['facturas','creditos','inventario','movimientos','movimientosArchivo','propinas','informesDiarios',
+    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
+    'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos','sebasFinanzas',
+    'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple',
+    'semanaActiva','semanasHistorial','provDocumentos'];
+  keys.forEach(function(k) {
+    if (state[k] !== undefined && state[k] !== null) {
+      try { parts[k] = JSON.stringify(state[k]).length; } catch (e) { parts[k] = 0; }
+    }
   });
-  // Sort by size descending
-  const sorted = Object.entries(parts).sort((a,b)=>b[1]-a[1]);
-  const total  = sorted.reduce((s,e)=>s+e[1], 0);
-  console.table(sorted.map(([k,v])=>({key:k, bytes:v, KB:(v/1024).toFixed(1), pct:Math.round(v/total*100)+'%'})));
+  const sorted = Object.entries(parts).sort(function(a, b) { return b[1] - a[1]; });
+  if (typeof console !== 'undefined' && console.table) {
+    const total = sorted.reduce(function(s, e) { return s + e[1]; }, 0) || 1;
+    console.table(sorted.map(function(e) {
+      return { key: e[0], KB: (e[1] / 1024).toFixed(1), pct: Math.round(e[1] / total * 100) + '%' };
+    }));
+  }
   return sorted;
 }
+
+function archRenderBreakdown() {
+  const wrap = document.getElementById('arch-breakdown');
+  if (!wrap) return;
+  const sorted = archDiagnostic();
+  if (!sorted.length) {
+    wrap.innerHTML = '<div style="color:#94a3b8;">Sin datos.</div>';
+    return;
+  }
+  const total = sorted.reduce(function(s, e) { return s + e[1]; }, 0) || 1;
+  const top = sorted.slice(0, 14);
+  const rows = top.map(function(entry) {
+    const k = entry[0];
+    const bytes = entry[1];
+    const pct = Math.max(1, Math.round(bytes / total * 100));
+    const label = ARCH_KEY_LABELS[k] || k;
+    return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 52px 36px;gap:8px;align-items:center;margin-bottom:6px;">'
+      + '<div style="min-width:0;"><div style="font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + label + '</div>'
+      + '<div style="height:5px;background:#e2e8f0;border-radius:3px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:var(--accent);border-radius:3px;"></div></div></div>'
+      + '<div style="text-align:right;font-weight:700;">' + (bytes / 1024).toFixed(1) + '</div>'
+      + '<div style="text-align:right;color:#94a3b8;">' + pct + '%</div></div>';
+  }).join('');
+  wrap.innerHTML = rows + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;">Total medido: ' + (total / 1024).toFixed(1) + ' KB · Top ' + top.length + ' módulos</div>';
+}
+
+function cerebrusStripCalendarioBitacoraModulo_() {
+  if (!state) return;
+  delete state.cerebrusCalEventos;
+  delete state.cerebrusBitacora;
+  delete state.calendarioModuloOff;
+}
+function cerebrusCalendarioModuloOff_() { return true; }
+function calModuloRender() { return; }
 
 // ============================================================
 //  CONTEO RÁPIDO DE INVENTARIO
@@ -18892,13 +19072,7 @@ function conteoRender() {
     const modo = conteoGetModo(p.id);
     const embLab = ((p.embalajeLabel || 'caja') + '').trim() || 'caja';
     const uDisp = (p.unidad || 'u');
-    let inpVal = '';
-    if (uxc > 0 && modo === 'emb') {
-      const q = (p.stock || 0) / uxc;
-      inpVal = conteoFmtCant_(q);
-    } else {
-      inpVal = conteoFmtCant_(p.stock || 0);
-    }
+    const inpVal = conteoStockToDisplayValue_(p);
     const modoSel = uxc > 0
       ? `<div style="font-size:10px;color:#64748b;margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <span>Contar en:</span>
@@ -18935,6 +19109,24 @@ function conteoRender() {
   }).join('');
 }
 
+function conteoStockToDisplayValue_(p) {
+  if (!p) return '0';
+  const uxc = invPiezasPorEmbalaje(p);
+  const modo = conteoGetModo(p.id);
+  if (uxc > 0 && modo === 'emb') return conteoFmtCant_((p.stock || 0) / uxc);
+  return conteoFmtCant_(p.stock || 0);
+}
+
+function conteoSyncInputFromStock_(prodId) {
+  const p = (state.inventario || []).find(function(x) { return x.id === prodId; });
+  const inp = document.getElementById('conteo-inp-' + prodId);
+  if (!p || !inp) return;
+  inp.value = conteoStockToDisplayValue_(p);
+  const color = (p.stock || 0) <= 0 ? 'var(--danger)' : (p.stock || 0) <= (p.minimo || 0) && (p.minimo || 0) > 0 ? 'var(--warning)' : 'var(--primary)';
+  inp.style.borderColor = color;
+  inp.style.color = color;
+}
+
 function conteoSetStock(prodId, val) {
   const p = (state.inventario||[]).find(x=>x.id===prodId);
   if (!p) return;
@@ -18948,13 +19140,7 @@ function conteoSetStock(prodId, val) {
     p.stock = raw;
   }
   markUnsaved();
-  // Update border color instantly
-  const inp = document.getElementById('conteo-inp-'+prodId);
-  if (inp) {
-    const color = (p.stock||0) <= 0 ? 'var(--danger)' : (p.stock||0) <= (p.minimo||0) && (p.minimo||0) > 0 ? 'var(--warning)' : 'var(--primary)';
-    inp.style.borderColor = color;
-    inp.style.color = color;
-  }
+  conteoSyncInputFromStock_(prodId);
 }
 
 function conteoGuardarTodo() {
@@ -19368,6 +19554,7 @@ function invEditProd(id) {
     }
     close();
     invRender();
+    invSyncConteoPanelIfVisible_(p.id);
     markUnsaved();
     notify(`✓ "${nombre}" actualizado`);
   };
@@ -19381,7 +19568,7 @@ function invAddPrecio(id) {
   if(!prov) return;
   const ps=prompt('Precio por '+(p.unidad||'unidad')+' en '+prov+' ($):','0');
   if(ps===null) return;
-  const precio=parseInt((ps||'0').replace(/[^\d]/g,''),10)||0;
+  const precio=parseNumCL(ps, false) || 0;
   pushUndo();
   invUpsertPrecioProveedor(p.id, prov, precio);
   if(!p.prov)p.prov=prov;
@@ -19394,7 +19581,7 @@ function invEditPrecio(id,prov) {
   const ex=_getPreciosUnified(p).find(x=>(x.prov||x.nombre)===prov);
   const ps=prompt('Precio de "'+p.nombre+'" en '+prov+' ('+(p.unidad||'u')+').\n0 = eliminar:',ex?ex.precio:0);
   if(ps===null) return;
-  const precio=parseInt((ps||'0').replace(/[^\d]/g,''),10)||0;
+  const precio=parseNumCL(ps, false) || 0;
   pushUndo();
   invUpsertPrecioProveedor(p.id, prov, precio);
   const left=_getPreciosUnified(p);
@@ -22251,8 +22438,7 @@ function cerebrusBitacoraCanModify(m) {
 }
 
 function cerebrusEquipoEnsure() {
-  if (!Array.isArray(state.cerebrusCalEventos)) state.cerebrusCalEventos = [];
-  if (!Array.isArray(state.cerebrusBitacora)) state.cerebrusBitacora = [];
+  cerebrusStripCalendarioBitacoraModulo_();
 }
 function cerebrusDateToIsoLocal(y, m, d) {
   return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -22396,6 +22582,7 @@ function cerebrusBitacoraReminderSyncUI() {
   } catch (e) { rem.value = '0'; }
 }
 function cerebrusBitacoraCleanupReminderMaybe() {
+  if (cerebrusCalendarioModuloOff_()) return;
   if (typeof currentUser === 'undefined' || !currentUser || currentUser === 'Bodega') return;
   var days = 0;
   try { days = parseInt(localStorage.getItem(BITACORA_REMINDER_STORAGE) || '0', 10); } catch (e) {}
@@ -22664,155 +22851,18 @@ function cerebrusCalTtsTodayIfNeeded() {
 }
 
 /** Lista completa (Calendario) + vista compacta (Semana Actual). */
-function cerebrusBitacoraRenderLists() {
-  cerebrusEquipoEnsure();
-  var bl = document.getElementById('bitacora-list');
-  if (bl) {
-    var rows = state.cerebrusBitacora.slice();
-    if (!rows.length) bl.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Aún no hay mensajes.</span>';
-    else {
-      bl.innerHTML = rows.map(function(m) {
-        var when = m.at ? new Date(m.at).toLocaleString('es-CL') : '';
-        var can = cerebrusBitacoraCanModify(m);
-        var editedNote = m.editedAt
-          ? '<span class="bitacora-edited"> · Editado' + (m.editedBy ? ' por ' + esc(m.editedBy) : '') + ' · ' + esc(new Date(m.editedAt).toLocaleString('es-CL')) + '</span>'
-          : '';
-        if (_bitacoraEditingId === m.id && can) {
-          var attEdit = cerebrusBitacoraHtmlAttachments(m);
-          return '<div class="bitacora-item bitacora-item-editing"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span></div>' +
-            (attEdit ? '<p style="font-size:11px;color:var(--text-muted);margin:0 0 8px 0;">Solo se edita el texto; los adjuntos no se cambian aquí.</p>' + attEdit : '') +
-            '<textarea id="bitacora-edit-active" class="bitacora-ta" maxlength="2000">' + escTextareaVal(m.text || '') + '</textarea>' +
-            '<div class="bitacora-edit-actions"><button type="button" class="bitacora-btn-save" onclick="cerebrusBitacoraSaveEdit()">Guardar</button>' +
-            '<button type="button" class="bitacora-btn-cancel" onclick="cerebrusBitacoraCancelEdit()">Cancelar</button></div></div>';
-        }
-        var hasAtt = Array.isArray(m.attachments) && m.attachments.length;
-        var stripBtn = (can && hasAtt)
-          ? '<button type="button" class="bitacora-strip" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStripAttachments(this.getAttribute(\'data-bid\'))" title="Quita archivos, imágenes y notas de voz del mensaje para liberar espacio">Quitar adjuntos</button>'
-          : '';
-        var act = can
-          ? '<div class="bitacora-actions"><button type="button" class="bitacora-edit" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraStartEdit(this.getAttribute(\'data-bid\'))">Editar</button>' +
-            stripBtn +
-            '<button type="button" class="bitacora-del" data-bid="' + esc(m.id) + '" onclick="cerebrusBitacoraDelete(this.getAttribute(\'data-bid\'))">Eliminar</button></div>'
-          : '';
-        var attHtml = cerebrusBitacoraHtmlAttachments(m);
-        var tx = String(m.text || '').trim();
-        var textBlock = tx ? '<div class="bitacora-item-text">' + esc(m.text || '') + '</div>' : (attHtml ? '' : '<div class="bitacora-item-text" style="color:var(--text-muted);">(sin texto)</div>');
-        return '<div class="bitacora-item"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + editedNote + '</span>' + act + '</div>' + textBlock + attHtml + '</div>';
-      }).join('');
-    }
-  }
-  var bs = document.getElementById('bitacora-list-sac');
-  if (bs) {
-    var prev = state.cerebrusBitacora.slice(0, 5);
-    if (!prev.length) {
-      bs.innerHTML = '<span style="font-size:12px;color:var(--text-soft);">Sin mensajes aún. Publica desde la pestaña Calendario.</span>';
-    } else {
-      bs.innerHTML = prev.map(function(m) {
-        var when = m.at ? new Date(m.at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-        var attMark = (Array.isArray(m.attachments) && m.attachments.length) ? '📎 ' : '';
-        var raw = attMark + String(m.text || '');
-        var txt = esc(raw);
-        if (raw.length > 200) txt = esc(raw.slice(0, 200)) + '…';
-        return '<div class="bitacora-item bitacora-item-sac"><div class="bitacora-item-head"><span><span class="bitacora-item-by">' + esc(m.by || '') + '</span> · ' + esc(when) + '</span></div><div class="bitacora-item-text">' + txt + '</div></div>';
-      }).join('');
-    }
-  }
-  var unread = cerebrusBitacoraHasUnread();
-  var badge = document.getElementById('bitacora-sac-badge');
-  if (badge) badge.style.display = unread ? 'inline-flex' : 'none';
-  var foot = document.getElementById('bitacora-sac-foot');
-  if (foot) foot.style.display = unread ? 'block' : 'none';
-  var wrap = document.getElementById('bitacora-sac-wrap');
-  if (wrap) wrap.classList.toggle('bitacora-sac-unread', unread);
-  cerebrusBitacoraUpdateNavIndicator();
-  cerebrusBitacoraReminderSyncUI();
-}
+function cerebrusBitacoraRenderLists() { return; }
 
-function calModuloRender() {
-  cerebrusEquipoEnsure();
-  if (_cintY == null) {
-    const n = new Date();
-    _cintY = n.getFullYear();
-    _cintM = n.getMonth();
-  }
-  if (!_cintSelIso) _cintSelIso = cerebrusIsoToday();
-
-  const lab = document.getElementById('cal-int-month-label');
-  if (lab) lab.textContent = CAL_MONTHS_ES[_cintM] + ' ' + _cintY;
-
-  const grid = document.getElementById('cal-int-grid');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysInMonth = new Date(_cintY, _cintM + 1, 0).getDate();
-  const daysInPrev = new Date(_cintY, _cintM, 0).getDate();
-  const firstWd = new Date(_cintY, _cintM, 1).getDay();
-  const startPad = (firstWd + 6) % 7;
-
-  let html = '';
-  for (let i = startPad; i > 0; i--) {
-    const d = daysInPrev - i + 1;
-    html += '<div class="cal-int-day other">' + d + '</div>';
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    const iso = cerebrusDateToIsoLocal(_cintY, _cintM, d);
-    const dt = new Date(_cintY, _cintM, d);
-    const isToday = dt.getTime() === today.getTime();
-    const nEv = cerebrusCintEventsOnDate(iso).length;
-    let cls = 'cal-int-day';
-    if (isToday) cls += ' today';
-    if (iso === _cintSelIso) cls += ' sel';
-    if (nEv) cls += ' has';
-    html += '<div class="' + cls + '" data-ciso="' + iso + '" onclick="cerebrusCintPickDate(this.dataset.ciso)">' + d + '</div>';
-  }
-  const totalCells = Math.ceil((startPad + daysInMonth) / 7) * 7;
-  for (let d = 1; d <= totalCells - startPad - daysInMonth; d++) {
-    html += '<div class="cal-int-day other">' + d + '</div>';
-  }
-  if (grid) grid.innerHTML = html;
-
-  const sel = _cintSelIso;
-  const sl = document.getElementById('cal-int-sel-label');
-  if (sl) {
-    try {
-      const parts = sel.split('-');
-      const dd = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-      sl.textContent = dd.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    } catch (e) { sl.textContent = sel; }
-  }
-
-  const evl = document.getElementById('cal-int-ev-list');
-  if (evl) {
-    const evs = cerebrusCintEventsOnDate(sel);
-    if (!evs.length) evl.innerHTML = '<span style="font-size:11px;color:var(--text-soft);">Sin eventos este día.</span>';
-    else {
-      evl.innerHTML = evs.map(function(ev) {
-        const when = ev.at ? new Date(ev.at).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
-        const note = ev.note ? '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">' + esc(ev.note) + '</div>' : '';
-        return '<div class="cal-int-ev" data-evid="' + esc(ev.id) + '"><button type="button" class="cal-int-ev-del" onclick="cerebrusCalDeleteEvent(this.closest(\'.cal-int-ev\').getAttribute(\'data-evid\'))" title="Eliminar">✕</button><div class="cal-int-ev-title">' + esc(ev.title) + '</div><div class="cal-int-ev-meta">' + esc(ev.by || '') + (when ? ' · ' + when : '') + '</div>' + note + '</div>';
-      }).join('');
-    }
-  }
-
-  cerebrusBitacoraRenderLists();
-}
-function cerebrusCintPickDate(iso) {
-  if (!iso) return;
-  _cintSelIso = iso;
-  calModuloRender();
-}
+function cerebrusCintPickDate(iso) { return; }
 
 function cerebrusClockTick() {
   const now = new Date();
   const tStr = now.toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
   const dStr = now.toLocaleDateString('es-CL', { timeZone: 'America/Santiago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-  ['dash-clock-time', 'cal-modulo-clock'].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = tStr;
-  });
-  ['dash-clock-date', 'cal-modulo-date'].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = dStr.charAt(0).toUpperCase() + dStr.slice(1);
-  });
+  const tel = document.getElementById('dash-clock-time');
+  if (tel) tel.textContent = tStr;
+  const del = document.getElementById('dash-clock-date');
+  if (del) del.textContent = dStr.charAt(0).toUpperCase() + dStr.slice(1);
 }
 function cerebrusClockStart() {
   if (_cerebrusClockTimer) return;
@@ -26092,6 +26142,23 @@ async function loadFromCloud() {
           }
         }
       } catch (e) {}
+      try {
+        const cloudN = invPreciosMapCount_(state.preciosProveedor);
+        const localN = invPreciosMapCount_(localBefore.preciosProveedor);
+        if (localN > 0 && (localN > cloudN || cloudN === 0)) {
+          state.preciosProveedor = invMergePreciosProveedorPreferRicher_(
+            state.preciosProveedor, localBefore.preciosProveedor, 'local');
+          if (localN > cloudN) {
+            notify('💲 Precios: se conservaron valores locales (' + localN + ' vs ' + cloudN + ' en nube).');
+          }
+        }
+        const pedLocal = invCountPreciosEnPedidosHistorial_(localBefore);
+        const pedCloud = invCountPreciosEnPedidosHistorial_(state);
+        if (pedLocal > pedCloud) {
+          invApplyPreciosMapAPedidosEnState_(
+            invBuildPrecioMapDesdeTodosLosPedidos_(localBefore), 'rescate-local-nube', { onlyEmpty: true });
+        }
+      } catch (e) {}
       cloudVersion = json.meta?.version || '0';
       _cloudBaseVersion = cloudVersion;
       try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
@@ -26176,10 +26243,10 @@ async function _prepareConcurrentSafeState() {
 function splitStateForCloudParts(st, opts) {
   opts = opts || {};
   const PART_DEF = [
-    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'] },
+    { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'] },
     { id: 'pFac', keys: ['facturas'] },
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
-    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
+    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
   // Seguridad: siempre enviar todas las particiones para evitar vaciados cruzados.
   const allowedParts = null;
@@ -26234,7 +26301,7 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
       'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
       'sacEfectivo','sacCajaChica','sacCajaChicaNota','sacReservaSaldo','sacReservaMovs','sacMerc',
       'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos',
-      'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos','cerebrusCalEventos','cerebrusBitacora',
+      'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos',
       'cajaEmpresa','revisarPapel','provDocumentos','calMultOverrides'
     ];
     keepRemoteKeys.forEach(function(k) {
@@ -26251,11 +26318,15 @@ async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
   try {
     const remote = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
-    const invKeys = ['inventario','preciosProveedor','catInventario','unidadesInventario','movimientos','movimientosAudit','movimientosArchivo','invFamilias','invBodegaN3Applied','inventorySnapshotId','inventorySnapshotDate','inventorySnapshotSource'];
+    const invKeys = ['inventario','preciosProveedor','semanaActiva','semanasHistorial','catInventario','unidadesInventario','movimientos','movimientosAudit','movimientosArchivo','invFamilias','invBodegaN3Applied','inventorySnapshotId','inventorySnapshotDate','inventorySnapshotSource'];
     const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
     invKeys.forEach(function(k) {
       if (!localChanged.has(k) && remote[k] !== undefined) merged[k] = remote[k];
     });
+    if (!localChanged.has('preciosProveedor')) {
+      merged.preciosProveedor = invMergePreciosProveedorPreferRicher_(
+        remote.preciosProveedor, merged.preciosProveedor, 'local');
+    }
     return merged;
   } catch (e) {
     return stateToSave;
@@ -26269,10 +26340,10 @@ function getChangedPartitionIdsForSave(st) {
     const out = new Set();
     if (!changedKeys || !changedKeys.size) return out;
     const PART_DEF = [
-      { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'catInventario', 'unidadesInventario', 'movimientos'] },
+      { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos'] },
       { id: 'pFac', keys: ['facturas'] },
       { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
-      { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos', 'cerebrusCalEventos', 'cerebrusBitacora'] }
+      { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
     ];
     PART_DEF.forEach(function(def) {
       if ((def.keys || []).some(function(k) { return changedKeys.has(k); })) out.add(def.id);
@@ -26392,6 +26463,8 @@ async function saveToCloud(description, silent) {
 function compressStateForSave(st) {
   try {
     const s = JSON.parse(JSON.stringify(st)); // deep clone
+    const preciosProveedorSnap = (st.preciosProveedor && typeof st.preciosProveedor === 'object')
+      ? JSON.parse(JSON.stringify(st.preciosProveedor)) : null;
 
     // ── AUTO-PURGE old data before saving ──
     const weeksAgo = (n) => { const d=new Date(); d.setDate(d.getDate()-n*7); return d; };
@@ -26532,6 +26605,13 @@ function compressStateForSave(st) {
       if (Array.isArray(v) && v.length === 0) delete s[k];
       if (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) delete s[k];
     });
+
+    if (preciosProveedorSnap && invPreciosMapCount_(preciosProveedorSnap) > 0) {
+      s.preciosProveedor = preciosProveedorSnap;
+    }
+    delete s.cerebrusCalEventos;
+    delete s.cerebrusBitacora;
+    delete s.calendarioModuloOff;
 
     return s;
   } catch(e) {
