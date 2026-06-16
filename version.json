@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.4",
-  "notes": "Indicadores de Mantenimiento miden payload nube (compress + 5 particiones), no localStorage 4,5 MB."
+  "version": "2026.06.06.5",
+  "notes": "Paso 1 Supabase: panel de prueba en Mantenimiento (paralelo a Sheets, sin cambiar guardado principal)."
 }

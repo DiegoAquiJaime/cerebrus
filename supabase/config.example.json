@@ -1,0 +1,6 @@
+{
+  "url": "https://TU_PROYECTO.supabase.co",
+  "anonKey": "TU_ANON_KEY_PUBLICA",
+  "workspaceId": "cerebrus",
+  "_nota": "Copiar a config.local.json solo en tu Mac (no subir a Git). En la app también puedes pegar URL y key en Mantenimiento."
+}

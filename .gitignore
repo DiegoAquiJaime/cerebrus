@@ -17,3 +17,4 @@ Cerebrus_Arquitectura_y_flujo.pdf
 # Respaldos / reportes generados localmente (no versionar)
 Cerebrus_Respaldo_*.json
 reporte_facturas_pendientes_proveedores.*
+supabase/config.local.json

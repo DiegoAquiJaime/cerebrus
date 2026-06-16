@@ -5430,6 +5430,33 @@ body.dark-mode .conflict-overlay{
           <button onclick="archExecute()" class="fac-btn danger" style="font-size:11px;">🗑 Archivar seleccionados</button>
         </div>
         <div id="arch-preview" style="margin-top:12px;display:none;"></div>
+
+        <!-- Paso 1 Supabase: prueba en paralelo (no reemplaza Google Sheets) -->
+        <div style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--border);">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Paso 1 — Prueba Supabase</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Base de datos en paralelo a Sheets. Configurá credenciales, probá conexión y subí <b>una partición</b> sin cambiar el guardado normal.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <label style="font-size:10px;color:#94a3b8;">Project URL<input type="url" id="supa-url" placeholder="https://xxx.supabase.co" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;"></label>
+            <label style="font-size:10px;color:#94a3b8;">Anon key<input type="password" id="supa-key" placeholder="eyJ…" autocomplete="off" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;"></label>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;">
+            <button type="button" onclick="supaSaveCfgFromUI_()" class="fac-btn" style="font-size:10px;">💾 Guardar en este navegador</button>
+            <button type="button" onclick="supaTestConnection_()" class="fac-btn" style="font-size:10px;">🔌 Probar conexión</button>
+            <label style="font-size:10px;color:#64748b;display:flex;align-items:center;gap:6px;">Partición
+              <select id="supa-part-pick" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;">
+                <option value="pMisc" selected>pMisc (varios)</option>
+                <option value="pFac">pFac (facturas)</option>
+                <option value="pInv">pInv (inventario)</option>
+                <option value="pSem">pSem (semana/SAC)</option>
+                <option value="main">main (núcleo)</option>
+              </select>
+            </label>
+            <button type="button" onclick="supaProbeUploadPart_()" class="fac-btn" style="font-size:10px;">⬆ Subir partición de prueba</button>
+            <button type="button" onclick="supaProbeLoadPart_()" class="fac-btn" style="font-size:10px;">⬇ Leer desde Supabase</button>
+            <button type="button" onclick="supaProbeCompare_()" class="fac-btn" style="font-size:10px;">⚖ Comparar con local</button>
+          </div>
+          <div id="supa-status" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:36px;">Sin configurar. Guía: <code style="font-size:10px;">docs/supabase-paso-1.md</code></div>
+        </div>
       </div>
 
       <!-- 1. INGRESOS -->
@@ -6778,7 +6805,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.4';
+const APP_VERSION = '2026.06.06.5';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18765,6 +18792,8 @@ function archRenderStats() {
 
   archRenderBreakdown();
 
+  if (typeof supaRenderPanel_ === 'function') supaRenderPanel_();
+
   // Update counts
   archUpdateCounts();
 
@@ -19046,6 +19075,199 @@ function archRenderBreakdown() {
       + '<div style="text-align:right;color:#94a3b8;' + warn + '">' + cellPct + '%</div></div>';
   }).join('');
   wrap.innerHTML = rowsHtml + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;">Total nube: ' + (total / 1024).toFixed(1) + ' KB · % columna derecha = uso vs celda 50 KB</div>';
+}
+
+// ── PASO 1 SUPABASE (prueba en paralelo; no reemplaza Google Sheets) ──
+var SUPA_WS_ID = 'cerebrus';
+var SUPA_CFG_KEY = 'cerebrusSupabaseCfg';
+
+function supaGetCfg_() {
+  try {
+    var raw = localStorage.getItem(SUPA_CFG_KEY);
+    if (!raw) return { url: '', key: '' };
+    var o = JSON.parse(raw);
+    return { url: String(o.url || '').replace(/\/$/, ''), key: String(o.key || '') };
+  } catch (e) { return { url: '', key: '' }; }
+}
+
+function supaIsConfigured_() {
+  var c = supaGetCfg_();
+  return !!(c.url && c.key && c.url.indexOf('supabase.co') !== -1);
+}
+
+function supaMaskKey_(k) {
+  if (!k || k.length < 12) return '';
+  return k.slice(0, 8) + '…' + k.slice(-4);
+}
+
+function supaRenderPanel_() {
+  var cfg = supaGetCfg_();
+  var urlEl = document.getElementById('supa-url');
+  var keyEl = document.getElementById('supa-key');
+  var stEl = document.getElementById('supa-status');
+  if (urlEl && !urlEl.value && cfg.url) urlEl.value = cfg.url;
+  if (keyEl && !keyEl.value && cfg.key) keyEl.placeholder = supaMaskKey_(cfg.key) + ' (guardada)';
+  if (stEl && supaIsConfigured_()) {
+    stEl.innerHTML = 'Configurado: <b>' + cfg.url.replace(/^https:\/\//, '') + '</b> · key ' + supaMaskKey_(cfg.key) + ' · Sheets sigue siendo el guardado principal.';
+  }
+}
+
+function supaSaveCfgFromUI_() {
+  var url = (document.getElementById('supa-url')?.value || '').trim().replace(/\/$/, '');
+  var key = (document.getElementById('supa-key')?.value || '').trim();
+  if (!key) {
+    var prev = supaGetCfg_();
+    if (prev.key && url) key = prev.key;
+  }
+  if (!url || !key) { notify('⚠ URL y anon key requeridos'); return; }
+  if (url.indexOf('supabase.co') === -1) { notify('⚠ La URL debe ser de supabase.co'); return; }
+  localStorage.setItem(SUPA_CFG_KEY, JSON.stringify({ url: url, key: key }));
+  notify('✓ Config Supabase guardada en este navegador');
+  supaRenderPanel_();
+}
+
+function supaHeaders_(cfg) {
+  cfg = cfg || supaGetCfg_();
+  return {
+    'apikey': cfg.key,
+    'Authorization': 'Bearer ' + cfg.key,
+    'Content-Type': 'application/json'
+  };
+}
+
+async function supaRest_(path, opts) {
+  var cfg = supaGetCfg_();
+  if (!supaIsConfigured_()) throw new Error('Supabase no configurado (URL + anon key)');
+  opts = opts || {};
+  var url = cfg.url + '/rest/v1/' + path;
+  var headers = Object.assign({}, supaHeaders_(cfg), opts.headers || {});
+  var res = await fetch(url, { method: opts.method || 'GET', headers: headers, body: opts.body });
+  var text = await res.text();
+  var json = null;
+  try { json = text ? JSON.parse(text) : null; } catch (e) {}
+  if (!res.ok) {
+    var msg = (json && (json.message || json.error || json.hint)) || text || res.statusText;
+    throw new Error('Supabase ' + res.status + ': ' + msg);
+  }
+  return json;
+}
+
+function supaBuildPartsForProbe_() {
+  var clone;
+  try {
+    clone = JSON.parse(JSON.stringify(state));
+    delete clone.cerebrusCalEventos;
+    delete clone.cerebrusBitacora;
+    delete clone.calendarioModuloOff;
+  } catch (e) { clone = state; }
+  var compressed;
+  try { compressed = compressStateForSave(clone); } catch (e2) { compressed = clone; }
+  return splitStateForCloudParts(compressed);
+}
+
+async function supaTestConnection_() {
+  var el = document.getElementById('supa-status');
+  if (el) el.textContent = 'Probando conexión…';
+  try {
+    supaSaveCfgFromUI_();
+    var rows = await supaRest_('cerebrus_meta?workspace_id=eq.' + SUPA_WS_ID + '&select=workspace_id,cloud_version,last_save_at');
+    var ver = (rows && rows[0] && rows[0].cloud_version) || 0;
+    if (el) el.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Conexión OK</span> · workspace <b>' + SUPA_WS_ID + '</b> · versión meta: ' + ver;
+    notify('✓ Supabase conectado');
+  } catch (e) {
+    if (el) el.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+    notify('⚠ ' + (e.message || e));
+  }
+}
+
+async function supaProbeUploadPart_() {
+  var el = document.getElementById('supa-status');
+  var partId = document.getElementById('supa-part-pick')?.value || 'pMisc';
+  if (!supaIsConfigured_()) { notify('⚠ Configurá Supabase primero'); return; }
+  if (el) el.textContent = 'Subiendo ' + partId + '…';
+  try {
+    var parts = supaBuildPartsForProbe_();
+    var payload = parts[partId];
+    if (!payload) throw new Error('Partición vacía: ' + partId);
+    var bytes = String(payload).length;
+    await supaRest_('cerebrus_parts?on_conflict=workspace_id,part_id', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' },
+      body: JSON.stringify({
+        workspace_id: SUPA_WS_ID,
+        part_id: partId,
+        payload: payload,
+        version: parseInt(cloudVersion, 10) || 0,
+        updated_by: currentUser || 'prueba',
+        description: 'Paso 1 — prueba (Sheets intacto)'
+      })
+    });
+    await supaRest_('cerebrus_meta?workspace_id=eq.' + SUPA_WS_ID, {
+      method: 'PATCH',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        cloud_version: parseInt(cloudVersion, 10) || 0,
+        last_save_at: new Date().toISOString(),
+        last_save_by: (currentUser || 'prueba') + ' (probe ' + partId + ')',
+        source: 'supabase-probe'
+      })
+    });
+    if (el) {
+      el.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Subido ' + partId + '</span> · ' + (bytes / 1024).toFixed(1) + ' KB · Google Sheets <b>no</b> fue modificado.';
+    }
+    notify('✓ ' + partId + ' copiado a Supabase (' + (bytes / 1024).toFixed(1) + ' KB)');
+  } catch (e) {
+    if (el) el.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+    notify('⚠ ' + (e.message || e));
+  }
+}
+
+async function supaProbeLoadPart_() {
+  var el = document.getElementById('supa-status');
+  var partId = document.getElementById('supa-part-pick')?.value || 'pMisc';
+  if (!supaIsConfigured_()) { notify('⚠ Configurá Supabase primero'); return; }
+  if (el) el.textContent = 'Leyendo ' + partId + '…';
+  try {
+    var rows = await supaRest_('cerebrus_parts?workspace_id=eq.' + SUPA_WS_ID + '&part_id=eq.' + partId + '&select=part_id,payload_bytes,updated_at,updated_by,version,description');
+    if (!rows || !rows.length) throw new Error('No hay fila para ' + partId + ' en Supabase');
+    var r = rows[0];
+    var when = r.updated_at ? new Date(r.updated_at).toLocaleString('es-CL') : '—';
+    if (el) {
+      el.innerHTML = '<b>' + partId + '</b> en Supabase: <b>' + ((r.payload_bytes || 0) / 1024).toFixed(1) + ' KB</b>'
+        + ' · v' + (r.version || 0) + ' · ' + (r.updated_by || '—') + ' · ' + when
+        + '<div style="font-size:10px;color:#94a3b8;margin-top:4px;">' + (r.description || '') + '</div>';
+    }
+    notify('✓ Leído ' + partId + ' desde Supabase');
+  } catch (e) {
+    if (el) el.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+    notify('⚠ ' + (e.message || e));
+  }
+}
+
+async function supaProbeCompare_() {
+  var el = document.getElementById('supa-status');
+  var partId = document.getElementById('supa-part-pick')?.value || 'pMisc';
+  if (!supaIsConfigured_()) { notify('⚠ Configurá Supabase primero'); return; }
+  if (el) el.textContent = 'Comparando ' + partId + '…';
+  try {
+    var parts = supaBuildPartsForProbe_();
+    var localBytes = String(parts[partId] || '').length;
+    var rows = await supaRest_('cerebrus_parts?workspace_id=eq.' + SUPA_WS_ID + '&part_id=eq.' + partId + '&select=payload_bytes,updated_at');
+    var remoteBytes = (rows && rows[0] && rows[0].payload_bytes) || 0;
+    var diff = localBytes - remoteBytes;
+    var ok = remoteBytes > 0 && Math.abs(diff) < 5;
+    var label = ARCH_CLOUD_PART_LABELS[partId] || partId;
+    if (el) {
+      el.innerHTML = '<b>' + label + ' (' + partId + ')</b><br>'
+        + 'Local (al guardar): <b>' + (localBytes / 1024).toFixed(2) + ' KB</b> · Supabase: <b>' + (remoteBytes / 1024).toFixed(2) + ' KB</b>'
+        + (remoteBytes ? ' · diff ' + diff + ' B' : '')
+        + '<br><span style="color:' + (ok ? 'var(--success)' : (remoteBytes ? 'var(--warning)' : 'var(--danger)')) + ';font-weight:700;">'
+        + (remoteBytes ? (ok ? '✓ Coinciden (misma lógica compress + partición)' : '⚠ Difieren — subí de nuevo o revisá cambios locales sin guardar') : '✗ Aún no subida — usa «Subir partición de prueba»')
+        + '</span>';
+    }
+  } catch (e) {
+    if (el) el.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+  }
 }
 
 function cerebrusStripCalendarioBitacoraModulo_() {
