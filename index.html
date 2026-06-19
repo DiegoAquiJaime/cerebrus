@@ -5457,6 +5457,24 @@ body.dark-mode .conflict-overlay{
           </div>
           <div id="supa-status" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:36px;">Sin configurar. Guía: <code style="font-size:10px;">docs/supabase-paso-1.md</code></div>
         </div>
+
+        <!-- Servare: inventario en otro Google Sheet -->
+        <div style="margin-top:18px;padding-top:16px;border-top:1px dashed #16a085;">
+          <div style="font-size:10px;font-weight:700;color:#16a085;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Servare — inventario en otro Sheet</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Mismo modelo que Cerebrus (Apps Script + Sheet). Al activar, <b>pInv</b> no se guarda en el Sheet de Cerebrus. Guía: <code style="font-size:10px;">docs/servare-google-sheet.md</code></div>
+          <label style="font-size:10px;color:#94a3b8;display:block;margin-bottom:8px;">URL Web App Servare (/exec)
+            <input type="url" id="servare-url" placeholder="https://script.google.com/macros/s/…/exec" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;">
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:10px;cursor:pointer;">
+            <input type="checkbox" id="servare-enabled"> <span>Usar Servare para inventario (desacoplado del Sheet Cerebrus)</span>
+          </label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+            <button type="button" onclick="servareSaveCfgFromUI_()" class="fac-btn" style="font-size:10px;">💾 Guardar config</button>
+            <button type="button" onclick="servareTestConnection_()" class="fac-btn" style="font-size:10px;">🔌 Probar Servare</button>
+            <button type="button" onclick="servareMigrateFromCerebrus_()" class="fac-btn" style="font-size:10px;">📦 Migrar inventario desde Cerebrus</button>
+          </div>
+          <div id="servare-status" style="font-size:11px;color:#64748b;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:8px 10px;min-height:36px;">Servare desactivado — inventario sigue en el Sheet de Cerebrus.</div>
+        </div>
       </div>
 
       <!-- 1. INGRESOS -->
@@ -6805,7 +6823,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.5';
+const APP_VERSION = '2026.06.06.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13082,6 +13100,96 @@ const API_URL = (function () {
 const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIPT_EXEC).startsWith('https://');
 
+/** Sheet propio inventario/bodega — pegar URL /exec tras publicar servare-apps-script.js */
+const SERVARE_APPS_SCRIPT_EXEC = '__SERVARE_APPS_SCRIPT_URL__';
+var SERVARE_CFG_KEY = 'cerebrusServareCfg';
+var _servareCloudVersion = '0';
+
+function servareGetCfg_() {
+  try {
+    var raw = localStorage.getItem(SERVARE_CFG_KEY);
+    if (!raw) return { url: '', enabled: false };
+    var o = JSON.parse(raw);
+    return { url: String(o.url || '').replace(/\/$/, ''), enabled: !!o.enabled };
+  } catch (e) { return { url: '', enabled: false }; }
+}
+
+function servareResolveApiUrl_() {
+  try {
+    var q = new URLSearchParams(window.location.search || '');
+    if (q.get('servare')) return String(q.get('servare')).replace(/\/$/, '');
+  } catch (e) {}
+  var cfg = servareGetCfg_();
+  if (cfg.url) return cfg.url;
+  if (SERVARE_APPS_SCRIPT_EXEC && String(SERVARE_APPS_SCRIPT_EXEC).startsWith('https://')) return SERVARE_APPS_SCRIPT_EXEC;
+  return '';
+}
+
+function servareIsEnabled_() {
+  var url = servareResolveApiUrl_();
+  var cfg = servareGetCfg_();
+  return cfg.enabled && !!url && url.indexOf('script.google.com') !== -1;
+}
+
+function servareInvKeys_() {
+  return ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'];
+}
+
+function servareApplyInvObj_(target, invObj) {
+  if (!target || !invObj) return;
+  servareInvKeys_().forEach(function(k) {
+    if (invObj[k] !== undefined) target[k] = invObj[k];
+  });
+}
+
+async function servareFetchInvObj_() {
+  var url = servareResolveApiUrl_();
+  if (!url) throw new Error('Servare sin URL');
+  var res = await fetch(url + '?action=getState&_=' + Date.now());
+  var json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Servare getState');
+  var st = (json.data && json.data.state) ? json.data.state : {};
+  if (json.meta && json.meta.version != null) _servareCloudVersion = String(json.meta.version);
+  return { state: st, meta: json.meta || {} };
+}
+
+async function servareMergeInvIntoState_(st) {
+  if (!servareIsEnabled_() || !st) return st;
+  var remote = await servareFetchInvObj_();
+  servareApplyInvObj_(st, remote.state);
+  return st;
+}
+
+async function servareSaveInvPart_(pInvPayload, description) {
+  if (!pInvPayload) return { ok: false };
+  var url = servareResolveApiUrl_();
+  if (!url) throw new Error('Servare sin URL');
+  var res = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'saveParted',
+      user: currentUser,
+      parts: { pInv: pInvPayload },
+      description: description || 'Inventario (Servare)'
+    })
+  });
+  var json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'Servare saveParted');
+  if (json.version != null) _servareCloudVersion = String(json.version);
+  return json;
+}
+
+async function servareLoadInvMergeAfterCerebrus_() {
+  if (!servareIsEnabled_()) return;
+  try {
+    await servareMergeInvIntoState_(state);
+    if (_cloudBaseState) servareApplyInvObj_(_cloudBaseState, state);
+  } catch (e) {
+    console.warn('[SERVARE] carga inventario:', e);
+    notify('⚠ Servare: no se pudo cargar inventario (' + (e.message || e) + ')');
+  }
+}
+
 let currentUser     = '';
 let cloudVersion    = '0';
 let _cloudBaseVersion = '0';
@@ -18793,6 +18901,7 @@ function archRenderStats() {
   archRenderBreakdown();
 
   if (typeof supaRenderPanel_ === 'function') supaRenderPanel_();
+  if (typeof servareRenderPanel_ === 'function') servareRenderPanel_();
 
   // Update counts
   archUpdateCounts();
@@ -19267,6 +19376,90 @@ async function supaProbeCompare_() {
     }
   } catch (e) {
     if (el) el.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+  }
+}
+
+// ── SERVARE (inventario en Google Sheet aparte) ──
+function servareRenderPanel_() {
+  var cfg = servareGetCfg_();
+  var urlEl = document.getElementById('servare-url');
+  var enEl = document.getElementById('servare-enabled');
+  var stEl = document.getElementById('servare-status');
+  if (urlEl && !urlEl.value && cfg.url) urlEl.value = cfg.url;
+  if (enEl) enEl.checked = !!cfg.enabled;
+  if (stEl) {
+    if (servareIsEnabled_()) {
+      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Servare activo</span> · inventario en Sheet aparte · v' + (_servareCloudVersion || '0');
+    } else if (cfg.url) {
+      stEl.textContent = 'URL guardada pero desactivado — inventario sigue en Sheet Cerebrus.';
+    } else {
+      stEl.textContent = 'Servare desactivado — inventario sigue en el Sheet de Cerebrus.';
+    }
+  }
+}
+
+function servareSaveCfgFromUI_() {
+  var url = (document.getElementById('servare-url')?.value || '').trim().replace(/\/$/, '');
+  var enabled = !!document.getElementById('servare-enabled')?.checked;
+  if (enabled && (!url || url.indexOf('script.google.com') === -1)) {
+    notify('⚠ Para activar Servare necesitas la URL /exec de Apps Script');
+    return;
+  }
+  localStorage.setItem(SERVARE_CFG_KEY, JSON.stringify({ url: url, enabled: enabled }));
+  notify(enabled ? '✓ Servare activado' : '✓ Config Servare guardada (desactivado)');
+  servareRenderPanel_();
+}
+
+async function servareTestConnection_() {
+  var stEl = document.getElementById('servare-status');
+  servareSaveCfgFromUI_();
+  if (stEl) stEl.textContent = 'Probando Servare…';
+  try {
+    var url = servareResolveApiUrl_();
+    if (!url) throw new Error('Falta URL Servare');
+    var res = await fetch(url + '?action=ping&_=' + Date.now());
+    var ping = await res.json();
+    var inv = await servareFetchInvObj_();
+    var bytes = 0;
+    try { bytes = JSON.stringify(inv.state || {}).length; } catch (e2) {}
+    if (stEl) {
+      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Servare conectado</span> · '
+        + (ping.service || 'ok') + ' · inventario remoto ~' + (bytes / 1024).toFixed(1) + ' KB · v' + (_servareCloudVersion || '0');
+    }
+    notify('✓ Servare OK');
+  } catch (e) {
+    if (stEl) stEl.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+    notify('⚠ ' + (e.message || e));
+  }
+}
+
+async function servareMigrateFromCerebrus_() {
+  var stEl = document.getElementById('servare-status');
+  servareSaveCfgFromUI_();
+  var url = servareResolveApiUrl_();
+  if (!url) { notify('⚠ Pegá la URL Servare primero'); return; }
+  if (!confirm('¿Copiar inventario actual (partición pInv) desde el Sheet de Cerebrus hacia Servare?\n\nNo borra nada en Cerebrus.')) return;
+  if (stEl) stEl.textContent = 'Migrando inventario…';
+  try {
+    var res = await fetch(API_URL + '?action=getState&_=' + Date.now());
+    var json = await res.json();
+    if (!json.ok || !json.data) throw new Error('No se pudo leer Cerebrus');
+    var parsed = json.data;
+    if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+    var cerebrusState = parsed.state || {};
+    decompressVsData(cerebrusState);
+    var compressed = compressStateForSave(cerebrusState);
+    var parts = splitStateForCloudParts(compressed);
+    if (!parts.pInv) throw new Error('Cerebrus no tiene partición pInv');
+    await servareSaveInvPart_(parts.pInv, 'Migración desde Sheet Cerebrus');
+    if (stEl) {
+      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Migrado</span> · '
+        + (parts.pInv.length / 1024).toFixed(1) + ' KB en Servare. Activá «Usar Servare» y guardá config.';
+    }
+    notify('✓ Inventario copiado a Servare (' + (parts.pInv.length / 1024).toFixed(1) + ' KB)');
+  } catch (e) {
+    if (stEl) stEl.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
+    notify('⚠ ' + (e.message || e));
   }
 }
 
@@ -26478,6 +26671,7 @@ async function loadFromCloud() {
   } finally {
     clearTimeout(abortT);
   }
+  await servareLoadInvMergeAfterCerebrus_();
   _postLoadSetup();
 }
 
@@ -26510,6 +26704,14 @@ async function _fetchCloudStateRaw() {
   }
   const st = parsed.state || {};
   decompressVsData(st);
+  if (servareIsEnabled_()) {
+    try {
+      var invRemote = await servareFetchInvObj_();
+      servareApplyInvObj_(st, invRemote.state);
+    } catch (e) {
+      console.warn('[SERVARE] _fetchCloudStateRaw:', e);
+    }
+  }
   return st;
 }
 
@@ -26618,9 +26820,11 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
 async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
   if (cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
   try {
-    const remote = await _fetchCloudStateRaw();
+    const remote = servareIsEnabled_()
+      ? (await servareFetchInvObj_()).state
+      : await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
-    const invKeys = ['inventario','preciosProveedor','semanaActiva','semanasHistorial','catInventario','unidadesInventario','movimientos','movimientosAudit','movimientosArchivo','invFamilias','invBodegaN3Applied','inventorySnapshotId','inventorySnapshotDate','inventorySnapshotSource'];
+    const invKeys = servareInvKeys_();
     const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
     invKeys.forEach(function(k) {
       if (!localChanged.has(k) && remote[k] !== undefined) merged[k] = remote[k];
@@ -26690,17 +26894,47 @@ async function saveToCloud(description, silent) {
     try {
       // Modo seguro: enviar todas las particiones para evitar cualquier pérdida cruzada.
       const parts = splitStateForCloudParts(stateToSave);
+      var servarePInv = null;
+      if (servareIsEnabled_()) {
+        servarePInv = parts.pInv;
+        delete parts.pInv;
+      }
+
+      // Bodega + solo inventario: guardar solo en Servare (no tocar Sheet Cerebrus).
+      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv) {
+        var changedParts = getChangedPartitionIdsForSave(state);
+        var onlyInv = changedParts && changedParts.size <= 1 && changedParts.has('pInv');
+        if (onlyInv) {
+          await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
+          try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
+          setSyncStatus('✓ Inventario en Servare', 'ok');
+          markSaved(); dismissConflict();
+          if (!silent) notify('☁ Inventario guardado en Servare por ' + currentUser);
+          return;
+        }
+      }
+
       const resPart = await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
           action: 'saveParted',
           user: currentUser,
           parts: parts,
-          description: (description || 'Guardó cambios') + ' (partido)'
+          description: (description || 'Guardó cambios') + (servareIsEnabled_() ? ' (sin pInv)' : ' (partido)')
         })
       });
       const jsonPart = await resPart.json();
       if (jsonPart.ok) {
+        if (servareIsEnabled_() && servarePInv) {
+          try {
+            await servareSaveInvPart_(servarePInv, description || 'Inventario');
+          } catch (se) {
+            setSyncStatus('⚠ Cerebrus OK · Servare falló', 'err');
+            markUnsaved();
+            if (!silent) notify('⚠ Cerebrus guardado, pero Servare falló: ' + (se.message || se));
+            return;
+          }
+        }
         cloudVersion = jsonPart.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
         try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }

@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.5",
-  "notes": "Paso 1 Supabase: panel de prueba en Mantenimiento (paralelo a Sheets, sin cambiar guardado principal)."
+  "version": "2026.06.06.6",
+  "notes": "Servare: inventario opcional en Google Sheet aparte (mismo modelo Apps Script). Panel en Mantenimiento."
 }
