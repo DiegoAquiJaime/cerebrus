@@ -766,20 +766,28 @@ body.dark-mode .nc-btn{background:#1e293b;}
 .login-overlay{position:fixed;inset:0;background:radial-gradient(ellipse 90% 70% at 50% -15%,rgba(249,115,22,0.14),transparent 48%),linear-gradient(165deg,#07080f 0%,#121a2e 42%,#0c1224 100%);z-index:9999;display:flex;align-items:center;justify-content:center;}
 .login-box{background:rgba(255,255,255,0.96);backdrop-filter:saturate(1.1) blur(40px);-webkit-backdrop-filter:saturate(1.1) blur(40px);border-radius:24px;padding:40px 36px;width:380px;max-width:95vw;border:1px solid rgba(255,255,255,0.45);box-shadow:0 24px 80px rgba(0,0,0,0.38),0 0 0 1px rgba(0,0,0,0.04);text-align:center;animation:fadeUp .5s ease;}
 .login-brand-block{margin-bottom:26px;}
-.login-logo{font-size:15px;font-weight:800;color:var(--accent);letter-spacing:0.14em;margin-bottom:6px;}
-.login-suite{font-size:12px;color:var(--text-muted);margin:0 0 8px;font-weight:500;line-height:1.45;}
+.login-logo{font-size:22px;font-weight:800;letter-spacing:0.16em;margin-bottom:8px;background:linear-gradient(135deg,#f97316 0%,#ea580c 55%,#c2410c 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.login-suite{font-size:12px;color:#475569;margin:0 0 6px;font-weight:500;line-height:1.45;}
 .login-by{font-weight:700;background:linear-gradient(135deg,var(--accent),#ea580c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.login-admin{font-size:10px;color:var(--text-soft);margin:0 0 22px;font-weight:500;line-height:1.45;letter-spacing:0.01em;}
+.login-admin{font-size:10px;color:#64748b;margin:0 0 22px;font-weight:500;line-height:1.45;letter-spacing:0.01em;}
+.login-users{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px;}
+.login-user-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid rgba(15,23,42,0.08);border-radius:14px;cursor:pointer;background:linear-gradient(135deg,#ffffff 0%,#f8fafc 100%);font-family:inherit;transition:all .22s ease;text-align:left;width:100%;box-shadow:0 1px 2px rgba(15,23,42,0.04);}
+.login-user-btn:hover{border-color:rgba(249,115,22,0.35);background:linear-gradient(135deg,#fff7ed 0%,#ffffff 100%);transform:translateY(-1px);box-shadow:0 8px 24px rgba(15,23,42,0.08);}
+.login-user-btn.login-user-sebas{border-left:3px solid #2980b9;}
+.login-user-btn.login-user-alberto{border-left:3px solid #27ae60;}
+.login-user-btn.login-user-diego{border-left:3px solid #e67e22;}
+.login-user-btn.login-user-bodega{border-left:3px solid #16a085;}
+.login-user-btn:active{transform:scale(0.98);}
+.login-avatar{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;box-shadow:0 4px 12px rgba(15,23,42,0.15);}
+.login-avatar.av-sebas{background:linear-gradient(145deg,#5dade2,#2980b9);}
+.login-avatar.av-alberto{background:linear-gradient(145deg,#58d68d,#27ae60);}
+.login-avatar.av-diego{background:linear-gradient(145deg,#f5b041,#e67e22);}
+.login-avatar.av-bodega{background:linear-gradient(145deg,#48c9b0,#16a085);}
+.login-user-name{font-size:14px;font-weight:600;color:#0f172a;letter-spacing:-.01em;}
+.login-user-role{font-size:11px;color:#64748b;font-weight:500;}
 /* Better readability in both modes */
 .section-title,.hist-kpi-label,.inf-block-title,.mob-section-title,.psem-panel-title{color:var(--text-soft);}
 td,.wfall-label,.bar-label,.hist-month-title,.fac-detail-title,.ia-drop-title{color:var(--text-strong);}
-.login-users{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:12px;}
-.login-user-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid rgba(0,0,0,0.06);border-radius:14px;cursor:pointer;background:rgba(0,0,0,0.02);font-family:inherit;transition:all .25s ease;text-align:left;width:100%;}
-.login-user-btn:hover{border-color:var(--accent);background:rgba(249,115,22,.04);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.06);}
-.login-user-btn:active{transform:scale(0.98);}
-.login-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.12);}
-.login-user-name{font-size:14px;font-weight:600;color:var(--primary);letter-spacing:-.01em;}
-.login-user-role{font-size:11px;color:var(--text-soft);font-weight:500;}
 .login-step2{display:none;}
 .login-step2.active{display:block;animation:fadeUp .3s ease;}
 .login-selected{display:flex;align-items:center;gap:12px;padding:14px 16px;background:rgba(0,0,0,0.03);border-radius:14px;margin-bottom:16px;text-align:left;}
@@ -2956,20 +2964,20 @@ body.dark-mode .conflict-overlay{
     <!-- Paso 1: elegir usuario -->
     <div id="login-step1">
       <div class="login-users">
-        <button class="login-user-btn" onclick="selectUser('Sebastián','Gerente General','#2980b9','SE')">
-          <div class="login-avatar" style="background:#2980b9">SE</div>
+        <button class="login-user-btn login-user-sebas" onclick="selectUser('Sebastián','Gerente General','#2980b9','SE')">
+          <div class="login-avatar av-sebas">SE</div>
           <div><div class="login-user-name">Sebastián</div><div class="login-user-role">Gerente General</div></div>
         </button>
-        <button class="login-user-btn" onclick="selectUser('Alberto','Administrador','#27ae60','AL')">
-          <div class="login-avatar" style="background:#27ae60">AL</div>
+        <button class="login-user-btn login-user-alberto" onclick="selectUser('Alberto','Administrador','#27ae60','AL')">
+          <div class="login-avatar av-alberto">AL</div>
           <div><div class="login-user-name">Alberto</div><div class="login-user-role">Administrador</div></div>
         </button>
-        <button class="login-user-btn" onclick="selectUser('Diego','Subgerente','#e67e22','DP')">
-          <div class="login-avatar" style="background:#e67e22">DP</div>
+        <button class="login-user-btn login-user-diego" onclick="selectUser('Diego','Subgerente','#e67e22','DP')">
+          <div class="login-avatar av-diego">DP</div>
           <div><div class="login-user-name">Diego</div><div class="login-user-role">Subgerente</div></div>
         </button>
-        <button class="login-user-btn" onclick="selectUser('Bodega','Bodega / Inventario','#16a085','BO')">
-          <div class="login-avatar" style="background:#16a085">BO</div>
+        <button class="login-user-btn login-user-bodega" onclick="selectUser('Bodega','Bodega / Inventario','#16a085','BO')">
+          <div class="login-avatar av-bodega">BO</div>
           <div><div class="login-user-name">Bodega</div><div class="login-user-role">Bodega / Inventario</div></div>
         </button>
       </div>
@@ -6823,7 +6831,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.8';
+const APP_VERSION = '2026.06.06.9';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -27694,14 +27702,14 @@ function notify(msg, duration) {
       sessionStorage.setItem('cerebrus_voice_welcome', '1');
     } catch (e) {}
     var raw = userName != null && userName !== '' ? String(userName) : '';
-    var name = raw.trim();
+    var display = typeof window.cerebrusTtsPeerDisplayName === 'function'
+      ? window.cerebrusTtsPeerDisplayName(raw.trim())
+      : raw.trim();
     var phrase;
-    if (/^sebasti/i.test(name)) {
-      phrase = 'Hola, Sebas. Que este día todo te salga bien!';
-    } else if (name) {
-      phrase = 'Hola, ' + name + ', soy Cerebrus, funciono y cumplo.';
+    if (display && display !== 'Alguien') {
+      phrase = display + ', Cerebrus listo para cumplir.';
     } else {
-      phrase = 'Hola, soy Cerebrus, funciono y cumplo.';
+      phrase = 'Cerebrus listo para cumplir.';
     }
     var run = function() {
       try { speechSynthesis.getVoices(); } catch (e) {}

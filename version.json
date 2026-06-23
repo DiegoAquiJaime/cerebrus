@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.8",
-  "notes": "Sync: merge por versión (no por mismo usuario), base completa tras guardar, sin fallback clásico peligroso, pedido protegido al guardar Bodega."
+  "version": "2026.06.06.9",
+  "notes": "Saludo por voz admin: «{nombre}, Cerebrus listo para cumplir.» Login visual más moderno (legible)."
 }
