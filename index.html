@@ -4893,6 +4893,7 @@ body.dark-mode .conflict-overlay{
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button class="fac-btn" id="inv-btn-iniciar" onclick="invOpenSemanaModal()" style="background:var(--success);color:white;border-color:var(--success);">▶ Iniciar semana</button>
               <button class="fac-btn" id="inv-btn-cerrar" onclick="invCerrarSemana()" style="display:none;background:var(--warning);color:white;border-color:var(--warning);">⬛ Cerrar semana</button>
+              <button class="fac-btn" id="inv-btn-unify-prov" onclick="invUnifyPedidoProveedoresPrompt()" title="Une variantes del mismo proveedor en pedidos (ej. AGROMAR y AGROMAR SPA)">🔀 Unificar proveedores</button>
               <button class="fac-btn" id="inv-btn-import-pdf" onclick="invOpenPedidoPdfImport()">📥 Importar pedido PDF</button>
               <button class="fac-btn" id="inv-btn-fill-precios" onclick="invPedidoRellenarPreciosDesdeInventario()" title="Usa precios del inventario (lista por proveedor o factura). No cambia productos ni stock. Omite líneas recepcionadas y líneas que ya tienen precio > 0.">💲 Rellenar precios</button>
               <button class="fac-btn" id="inv-btn-import-rescate-precios" onclick="invOpenRescatePreciosJson()" title="Lee un respaldo JSON (estado completo), toma precios unitarios de la última semana con pedido valorizado y los copia a preciosProveedor + líneas de pedido actuales/historial (mismo prodId y proveedor). No toca stock.">📂 Precios desde respaldo</button>
@@ -5408,6 +5409,7 @@ body.dark-mode .conflict-overlay{
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <button type="button" onclick="archPresetInv1Mes_()" class="fac-btn" style="font-size:10px;">📦 Inventario semanal &gt;1 mes</button>
           <button type="button" onclick="archPresetFac2Meses_()" class="fac-btn" style="font-size:10px;">🧾 Facturas pagadas &gt;2 meses</button>
+          <button type="button" onclick="archPresetPed3Semanas_()" class="fac-btn" style="font-size:10px;">📦 Pedidos &gt;3 semanas</button>
           <button type="button" onclick="archPresetRecomendado_()" class="fac-btn" style="font-size:10px;background:#fff7ed;border-color:#fed7aa;color:#c2410c;">⚡ Recomendado (ambos)</button>
         </div>
         <div id="arch-preset-hint" style="display:none;font-size:10px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
@@ -6837,7 +6839,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.10';
+const APP_VERSION = '2026.06.06.12';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -16118,6 +16120,194 @@ function invNormTxt(s) {
     .trim();
 }
 
+/** Clave simple (misma razón social sin SPA/SA). */
+function invPedidoProveedorDedupeKey_(raw) {
+  return invNormTxt(raw)
+    .replace(/\b(SPA|S A|SA|LTDA|LIMITADA|EIRL|SRL)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+var INV_PROV_UNIFY_STOP = { OTROS: 1, OTRO: 1, ASEO: 1, ARTICULOS: 1, PRODUCTOS: 1, LA: 1, LOS: 1, DON: 1, QUESOS: 1, ENVASES: 1, Y: 1, ARTICULO: 1 };
+
+function invProveedorStripForCompare_(raw) {
+  return invNormTxt(raw)
+    .replace(/\b(SPA|S A|SA|LTDA|LIMITADA|EIRL|SRL|RV|CHILE)\b/g, '')
+    .replace(/\bDISTRIBUIDORA\b/g, '')
+    .replace(/\bCOMERCIAL\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** ¿Mismo proveedor? Ej. AGROMAR ≈ DISTRIBUIDORA AGROMAR RV; ASEO TORRES ≈ DISTRIBUIDORA TORRES CHILE. */
+function invProveedorShouldUnify_(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (invPedidoProveedorDedupeKey_(a) === invPedidoProveedorDedupeKey_(b)) return true;
+  var sa = invProveedorStripForCompare_(a);
+  var sb = invProveedorStripForCompare_(b);
+  if (sa && sa === sb) return true;
+  var short = sa.length <= sb.length ? sa : sb;
+  var long = sa.length > sb.length ? sa : sb;
+  if (short.length < 5 || INV_PROV_UNIFY_STOP[short]) return false;
+  if (long.indexOf(short) < 0) return false;
+  var na = invNormTxt(a);
+  var nb = invNormTxt(b);
+  if (/\bDISTRIBUIDORA\b/.test(na) || /\bDISTRIBUIDORA\b/.test(nb)) return true;
+  if (/\bCOMERCIAL\b/.test(na) || /\bCOMERCIAL\b/.test(nb)) return true;
+  return short.split(/\s+/).length === 1;
+}
+
+function invPickCanonicalProveedor_(variants, usage) {
+  var facKeys = Object.keys(state.facturas || {});
+  var score = function(name) {
+    var n = invNormTxt(name);
+    var s = (usage[name] || 0) * 10;
+    if (facKeys.indexOf(name) >= 0) s += 100;
+    if (n.indexOf('DISTRIBUIDORA') >= 0) s -= 300;
+    else if (n.indexOf('COMERCIAL') >= 0) s -= 80;
+    else s += 120;
+    s -= String(name).length * 0.2;
+    return s;
+  };
+  return variants.slice().sort(function(a, b) { return score(b) - score(a); })[0];
+}
+
+function invCollectProveedorNamesForPedido_() {
+  const names = [];
+  const add = function(s) {
+    s = String(s || '').trim();
+    if (s) names.push(s);
+  };
+  Object.keys(state.facturas || {}).forEach(add);
+  (state.inventario || []).forEach(function(p) { add(p.prov); });
+  [state.semanaActiva].concat(state.semanasHistorial || []).filter(Boolean).forEach(function(sem) {
+    (sem.ordenes || []).forEach(function(o) {
+      (o.items || []).forEach(function(it) { add(it.prov); });
+    });
+  });
+  Object.values(state.preciosProveedor || {}).forEach(function(arr) {
+    (arr || []).forEach(function(r) { add(r.prov); });
+  });
+  (state.facSemana || []).forEach(function(s) { add(s.prov); });
+  return names;
+}
+
+function invBuildProveedorCanonicalMap_() {
+  var usage = {};
+  invCollectProveedorNamesForPedido_().forEach(function(name) {
+    usage[name] = (usage[name] || 0) + 1;
+  });
+  var unique = Object.keys(usage);
+  if (unique.length < 2) return {};
+  var parent = {};
+  unique.forEach(function(n) { parent[n] = n; });
+  function find(x) {
+    if (parent[x] !== x) parent[x] = find(parent[x]);
+    return parent[x];
+  }
+  function union(a, b) {
+    var ra = find(a);
+    var rb = find(b);
+    if (ra !== rb) parent[rb] = ra;
+  }
+  var i, j;
+  for (i = 0; i < unique.length; i++) {
+    for (j = i + 1; j < unique.length; j++) {
+      if (invProveedorShouldUnify_(unique[i], unique[j])) union(unique[i], unique[j]);
+    }
+  }
+  var clusters = {};
+  unique.forEach(function(n) {
+    var r = find(n);
+    if (!clusters[r]) clusters[r] = [];
+    clusters[r].push(n);
+  });
+  var map = {};
+  Object.keys(clusters).forEach(function(root) {
+    var variants = clusters[root];
+    if (variants.length < 2) return;
+    var canon = invPickCanonicalProveedor_(variants, usage);
+    variants.forEach(function(v) {
+      if (v !== canon) map[v] = canon;
+    });
+  });
+  return map;
+}
+
+function invApplyProveedorCanonicalMap_(map, opts) {
+  opts = opts || {};
+  if (!map || !Object.keys(map).length) return { lines: 0, facMerged: 0, pairs: 0 };
+  let lines = 0;
+  let facMerged = 0;
+  const applyProv = function(holder, key) {
+    const nv = map[holder[key]];
+    if (nv && holder[key] !== nv) { holder[key] = nv; lines++; }
+  };
+  const applySem = function(sem) {
+    if (!sem) return;
+    (sem.ordenes || []).forEach(function(o) {
+      (o.items || []).forEach(function(it) { applyProv(it, 'prov'); });
+    });
+  };
+  applySem(state.semanaActiva);
+  (state.semanasHistorial || []).forEach(applySem);
+  (state.inventario || []).forEach(function(p) { applyProv(p, 'prov'); });
+  Object.values(state.preciosProveedor || {}).forEach(function(arr) {
+    (arr || []).forEach(function(r) { applyProv(r, 'prov'); });
+  });
+  (state.facSemana || []).forEach(function(s) { applyProv(s, 'prov'); });
+  if (opts.mergeFacturas !== false) {
+    Object.keys(map).forEach(function(from) {
+      const to = map[from];
+      if (!to || from === to) return;
+      if (state.facturas && state.facturas[from]) {
+        if (state.facturas[to]) {
+          if (typeof facMergeOneInto === 'function' && facMergeOneInto(to, from)) facMerged++;
+        } else {
+          state.facturas[to] = state.facturas[from];
+          delete state.facturas[from];
+          facMerged++;
+        }
+      }
+    });
+  }
+  return { lines: lines, facMerged: facMerged, pairs: Object.keys(map).length };
+}
+
+function invUnifyPedidoProveedores_(opts) {
+  invInit();
+  opts = opts || {};
+  const map = invBuildProveedorCanonicalMap_();
+  const r = invApplyProveedorCanonicalMap_(map, opts);
+  window._invProvCanonMapCache = map;
+  return Object.assign({ map: map }, r);
+}
+
+function invUnifyPedidoProveedoresPrompt() {
+  invInit();
+  const map = invBuildProveedorCanonicalMap_();
+  const pairs = Object.keys(map).length;
+  if (!pairs) { notify('✓ No hay proveedores duplicados en pedidos (AGROMAR / DISTRIBUIDORA AGROMAR, etc.)'); return; }
+  const preview = Object.keys(map).slice(0, 8).map(function(from) {
+    return '• ' + from + ' → ' + map[from];
+  }).join('\n');
+  const more = pairs > 8 ? '\n… y ' + (pairs - 8) + ' más' : '';
+  if (!confirm('Se unificarán ' + pairs + ' variantes de proveedor en pedidos, inventario y precios:\n\n' + preview + more + '\n\n¿Continuar?')) return;
+  pushUndo();
+  const r = invUnifyPedidoProveedores_({ mergeFacturas: true });
+  markUnsaved();
+  try { invRenderPedido(); } catch (e) {}
+  notify('🔀 Proveedores: ' + r.lines + ' líneas · ' + r.pairs + ' pares · ' + r.facMerged + ' fusión(es) en facturas' + invNubeReplicaHint());
+}
+
+function invResolveProveedorCanonical_(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  const map = window._invProvCanonMapCache || invBuildProveedorCanonicalMap_();
+  return map[s] || s;
+}
+
 function invFindProveedorByHint(hintRaw) {
   const hint = invNormTxt(hintRaw);
   if (!hint || !state.facturas) return '';
@@ -16199,8 +16389,19 @@ function invPedidoProveedorCatalogFromState(sem) {
   }
   const byNorm = {};
   all.forEach(function(n) {
-    const k = invNormTxt(n);
-    if (k && !byNorm[k]) byNorm[k] = n;
+    const k = invPedidoProveedorDedupeKey_(n) || invNormTxt(n);
+    if (!k) return;
+    const canon = invResolveProveedorCanonical_(n);
+    const pick = canon || n;
+    if (!byNorm[k]) byNorm[k] = pick;
+    else {
+      const cur = byNorm[k];
+      const facKeys = Object.keys(state.facturas || {});
+      const pickInFac = facKeys.indexOf(pick) >= 0;
+      const curInFac = facKeys.indexOf(cur) >= 0;
+      if (pickInFac && !curInFac) byNorm[k] = pick;
+      else if (pick.length > cur.length) byNorm[k] = pick;
+    }
   });
   return Object.values(byNorm).sort(function(a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
 }
@@ -18943,6 +19144,22 @@ function archPresetRecomendado_() {
   archCalcPreview();
 }
 
+function archPresetPed3Semanas_() {
+  window._archPedhistMode = 'days';
+  window._archPedhistDays = 21;
+  window._archFacMode = 'weeks';
+  const set = function(id, on) { const el = document.getElementById(id); if (el) el.checked = !!on; };
+  set('arch-pedhist', true);
+  set('arch-fac', false);
+  set('arch-mov', false);
+  set('arch-inf', false);
+  set('arch-sac', false);
+  set('arch-fsem', false);
+  archSetPresetHint_('Criterio: semanas de inventario/pedido cerradas con más de 21 días (3 semanas).');
+  archUpdateCounts();
+  archCalcPreview();
+}
+
 function archPedidoSemanasLabels_(weeks) {
   return (weeks || []).map(function(s) {
     return String(s.nombre || s.periodoLabel || s.id || 'semana').trim();
@@ -19149,7 +19366,9 @@ function archCalcPreview() {
   if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
   if (doPed && pedN) {
     const removedPreview = archPedidoSemanasToRemove_(pedFilter).removed;
-    lines.push(`📦 ${pedN} semana(s) de inventario` + (pedFilter.mode === 'days' ? ' (>1 mes)' : '')
+    lines.push(`📦 ${pedN} semana(s) de inventario` + (pedFilter.mode === 'days'
+      ? (pedFilter.days === 21 ? ' (>3 semanas)' : pedFilter.days === 30 ? ' (>1 mes)' : ' (>' + pedFilter.days + ' días)')
+      : '')
       + ': ' + archPedidoSemanasLabels_(removedPreview).slice(0, 4).join(', ') + (pedN > 4 ? '…' : ''));
     total += pedN;
   }
