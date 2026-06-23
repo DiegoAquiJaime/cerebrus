@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.13",
-  "notes": "Mantenimiento: gráfico de uso por partición más claro (celdas 50 KB, desglose pInv)."
+  "version": "2026.06.06.14",
+  "notes": "Sin aviso al guardar por particiones >50 KB (el troceo en nube ya lo resuelve)."
 }

@@ -6839,7 +6839,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.13';
+const APP_VERSION = '2026.06.06.14';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -19306,7 +19306,7 @@ function archRenderStats() {
   }
   if (note) {
     if (maxPart > ARCH_CLOUD_CELL_LIMIT_BYTES) {
-      note.textContent = '⚠ ' + maxLabel + ' necesita ~' + m.maxPartChunks + ' celdas de 50 KB (Apps Script las trocea). Archivá movimientos y semanas viejas en pInv, o activá Servare para inventario aparte.';
+      note.textContent = maxLabel + ' usa ~' + m.maxPartChunks + ' celdas de 50 KB (se trocean al guardar). Podés archivar datos viejos abajo para aligerar la nube.';
     } else if (pctRaw > 70) {
       note.textContent = '⚠ Partición grande (' + pctRaw.toFixed(0) + '% del límite de una celda). Respaldá JSON y archivá datos antiguos abajo.';
     } else {
@@ -19567,18 +19567,6 @@ function archExecute() {
   }
 
   notify(`✅ ${totalRemoved} registros archivados · ${(saved/1024).toFixed(1)} KB menos en nube`);
-}
-
-// Auto-warning when state gets large (called on save)
-function archCheckSize() {
-  try {
-    const m = archGetStorageMetrics();
-    if (m.maxPartBytes > ARCH_CLOUD_CELL_LIMIT_BYTES) {
-      notify('⚠ ' + (m.maxPartLabel || m.maxPartId) + ' supera 50 KB en nube (' + (m.maxPartBytes / 1024).toFixed(1) + ' KB). El guardado puede fallar. Archivá en ⚙ Configuración → Mantenimiento.');
-    } else if (m.pct > 85) {
-      notify('⚠ Nube al ' + m.pct + '% del límite de celda (' + (m.maxPartLabel || m.maxPartId) + ': ' + (m.maxPartBytes / 1024).toFixed(1) + ' KB). Archivá en ⚙ Configuración → Mantenimiento.');
-    }
-  } catch(e) {}
 }
 
 function archDiagnostic() {
@@ -28050,8 +28038,6 @@ function saveState(description, silent) {
     }
     saveToCloud(description, silent);
   } else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }
-  // Check if state is getting large
-  if (!silent && typeof archCheckSize === 'function') archCheckSize();
 }
 
 function saveLocalRaw() {
