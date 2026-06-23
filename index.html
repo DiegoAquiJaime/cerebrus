@@ -6823,7 +6823,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.6';
+const APP_VERSION = '2026.06.06.7';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13140,6 +13140,24 @@ function servareApplyInvObj_(target, invObj) {
   servareInvKeys_().forEach(function(k) {
     if (invObj[k] !== undefined) target[k] = invObj[k];
   });
+}
+
+/** ¿Este usuario editó inventario/bodega en esta sesión? (vs _cloudBaseState) */
+function cerebrusInvPartitionTouched_() {
+  if (cerebrusUsuarioBodega()) return true;
+  if (!_cloudBaseState) return false;
+  var changed = _topLevelChangedKeys(_cloudBaseState, state);
+  return servareInvKeys_().some(function(k) { return changed.has(k); });
+}
+
+/** Tras guardar: alinear state y base con inventario que realmente quedó en nube. */
+function cerebrusCommitInvAfterSave_(savedInvSource) {
+  if (!savedInvSource) return;
+  servareApplyInvObj_(state, savedInvSource);
+  try {
+    if (!_cloudBaseState) _cloudBaseState = {};
+    servareApplyInvObj_(_cloudBaseState, savedInvSource);
+  } catch (e) {}
 }
 
 async function servareFetchInvObj_() {
@@ -26640,7 +26658,8 @@ async function loadFromCloud() {
       try {
         const cloudN = invPreciosMapCount_(state.preciosProveedor);
         const localN = invPreciosMapCount_(localBefore.preciosProveedor);
-        if (localN > 0 && (localN > cloudN || cloudN === 0)) {
+        var isAdminUser = !cerebrusUsuarioBodega();
+        if (!isAdminUser && localN > 0 && (localN > cloudN || cloudN === 0)) {
           state.preciosProveedor = invMergePreciosProveedorPreferRicher_(
             state.preciosProveedor, localBefore.preciosProveedor, 'local');
           if (localN > cloudN) {
@@ -26649,7 +26668,7 @@ async function loadFromCloud() {
         }
         const pedLocal = invCountPreciosEnPedidosHistorial_(localBefore);
         const pedCloud = invCountPreciosEnPedidosHistorial_(state);
-        if (pedLocal > pedCloud) {
+        if (!isAdminUser && pedLocal > pedCloud) {
           invApplyPreciosMapAPedidosEnState_(
             invBuildPrecioMapDesdeTodosLosPedidos_(localBefore), 'rescate-local-nube', { onlyEmpty: true });
         }
@@ -26820,18 +26839,26 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
 async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
   if (cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
   try {
-    const remote = servareIsEnabled_()
-      ? (await servareFetchInvObj_()).state
+    const remoteFull = servareIsEnabled_()
+      ? null
       : await _fetchCloudStateRaw();
+    const remoteInv = servareIsEnabled_()
+      ? (await servareFetchInvObj_()).state
+      : remoteFull;
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
     const invKeys = servareInvKeys_();
     const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
+    if (!cerebrusInvPartitionTouched_()) {
+      invKeys.forEach(function(k) {
+        if (remoteInv[k] !== undefined) merged[k] = remoteInv[k];
+      });
+      return merged;
+    }
     invKeys.forEach(function(k) {
-      if (!localChanged.has(k) && remote[k] !== undefined) merged[k] = remote[k];
+      if (!localChanged.has(k) && remoteInv[k] !== undefined) merged[k] = remoteInv[k];
     });
-    if (!localChanged.has('preciosProveedor')) {
-      merged.preciosProveedor = invMergePreciosProveedorPreferRicher_(
-        remote.preciosProveedor, merged.preciosProveedor, 'local');
+    if (!localChanged.has('preciosProveedor') && remoteInv.preciosProveedor !== undefined) {
+      merged.preciosProveedor = remoteInv.preciosProveedor;
     }
     return merged;
   } catch (e) {
@@ -26846,7 +26873,7 @@ function getChangedPartitionIdsForSave(st) {
     const out = new Set();
     if (!changedKeys || !changedKeys.size) return out;
     const PART_DEF = [
-      { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos'] },
+      { id: 'pInv', keys: servareInvKeys_() },
       { id: 'pFac', keys: ['facturas'] },
       { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
       { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
@@ -26892,26 +26919,56 @@ async function saveToCloud(description, silent) {
     const stateToSave = compressStateForSave(safeStateToSave);
 
     try {
-      // Modo seguro: enviar todas las particiones para evitar cualquier pérdida cruzada.
       const parts = splitStateForCloudParts(stateToSave);
-      var servarePInv = null;
+      var servarePInv = parts.pInv;
+      var invTouched = cerebrusInvPartitionTouched_();
+      var changedParts = getChangedPartitionIdsForSave(state);
+      var onlyInv = changedParts && changedParts.size === 1 && changedParts.has('pInv');
+      var onlyNonInv = changedParts && !changedParts.has('pInv');
+
       if (servareIsEnabled_()) {
-        servarePInv = parts.pInv;
         delete parts.pInv;
+      } else if (!invTouched) {
+        delete parts.pInv;
+        servarePInv = null;
       }
 
-      // Bodega + solo inventario: guardar solo en Servare (no tocar Sheet Cerebrus).
-      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv) {
-        var changedParts = getChangedPartitionIdsForSave(state);
-        var onlyInv = changedParts && changedParts.size <= 1 && changedParts.has('pInv');
-        if (onlyInv) {
-          await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
-          try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
-          setSyncStatus('✓ Inventario en Servare', 'ok');
-          markSaved(); dismissConflict();
-          if (!silent) notify('☁ Inventario guardado en Servare por ' + currentUser);
-          return;
-        }
+      // Bodega + solo inventario → no enviar SAC/facturas/etc. al Sheet Cerebrus
+      if (cerebrusUsuarioBodega() && onlyInv && !servareIsEnabled_() && parts.pInv) {
+        const resBodega = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'saveParted',
+            user: currentUser,
+            parts: { pInv: parts.pInv },
+            description: (description || 'Inventario Bodega') + ' (solo pInv)'
+          })
+        });
+        const jsonBodega = await resBodega.json();
+        if (!jsonBodega.ok) throw new Error(jsonBodega.error || 'saveParted pInv');
+        cloudVersion = jsonBodega.version || cloudVersion;
+        _cloudBaseVersion = cloudVersion;
+        cerebrusCommitInvAfterSave_(safeStateToSave);
+        setSyncStatus('✓ Inventario guardado', 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify('☁ Inventario guardado por ' + currentUser + ' (sin tocar otros módulos)');
+        return;
+      }
+
+      // Bodega + solo inventario → Servare
+      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv && onlyInv) {
+        await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
+        cerebrusCommitInvAfterSave_(safeStateToSave);
+        setSyncStatus('✓ Inventario en Servare', 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify('☁ Inventario guardado en Servare por ' + currentUser);
+        return;
+      }
+
+      // Admin (Sebas, etc.) sin tocar inventario → no enviar pInv (evita pisar Bodega)
+      if (!cerebrusUsuarioBodega() && onlyNonInv) {
+        delete parts.pInv;
+        servarePInv = null;
       }
 
       const resPart = await fetch(API_URL, {
@@ -26920,12 +26977,13 @@ async function saveToCloud(description, silent) {
           action: 'saveParted',
           user: currentUser,
           parts: parts,
-          description: (description || 'Guardó cambios') + (servareIsEnabled_() ? ' (sin pInv)' : ' (partido)')
+          description: (description || 'Guardó cambios')
+            + (servareIsEnabled_() ? ' (sin pInv→Servare)' : (!parts.pInv ? ' (sin pInv)' : ' (partido)'))
         })
       });
       const jsonPart = await resPart.json();
       if (jsonPart.ok) {
-        if (servareIsEnabled_() && servarePInv) {
+        if (servareIsEnabled_() && servarePInv && invTouched) {
           try {
             await servareSaveInvPart_(servarePInv, description || 'Inventario');
           } catch (se) {
@@ -26937,10 +26995,13 @@ async function saveToCloud(description, silent) {
         }
         cloudVersion = jsonPart.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
-        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
+        cerebrusCommitInvAfterSave_(safeStateToSave);
         setSyncStatus('✓ Guardado en nube (partido)', 'ok');
         markSaved(); dismissConflict();
-        if (!silent) notify('☁ Guardado por ' + currentUser + ' (partido)');
+        if (!silent) {
+          var skipInv = !parts.pInv && !servarePInv;
+          notify('☁ Guardado por ' + currentUser + (skipInv ? ' (inventario intacto)' : ' (partido)'));
+        }
         return;
       }
       const errPart = String(jsonPart.error || '');
@@ -26949,7 +27010,18 @@ async function saveToCloud(description, silent) {
       console.warn('[CEREBRUS] Guardado partido no disponible o falló, usando modo clásico:', e);
     }
 
-    const dataStr     = JSON.stringify({state:stateToSave, nid:_nid});
+    var stateForClassic = stateToSave;
+    if (!cerebrusInvPartitionTouched_()) {
+      stateForClassic = JSON.parse(JSON.stringify(stateToSave));
+      try {
+        var remClassic = await _fetchCloudStateRaw();
+        servareInvKeys_().forEach(function(k) {
+          if (remClassic[k] !== undefined) stateForClassic[k] = remClassic[k];
+        });
+      } catch (e) {}
+    }
+
+    const dataStr     = JSON.stringify({state:stateForClassic, nid:_nid});
     const CHUNK_SIZE  = 42000; // safe limit per cell
 
     if (dataStr.length <= CHUNK_SIZE) {
