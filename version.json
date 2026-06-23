@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.7",
-  "notes": "Fix: Sebas/admin no envía pInv al guardar si no tocó inventario; Bodega solo envía pInv. Evita pisar bodega."
+  "version": "2026.06.06.8",
+  "notes": "Sync: merge por versión (no por mismo usuario), base completa tras guardar, sin fallback clásico peligroso, pedido protegido al guardar Bodega."
 }

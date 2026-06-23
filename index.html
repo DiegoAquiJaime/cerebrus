@@ -6823,7 +6823,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.7';
+const APP_VERSION = '2026.06.06.8';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13150,14 +13150,19 @@ function cerebrusInvPartitionTouched_() {
   return servareInvKeys_().some(function(k) { return changed.has(k); });
 }
 
-/** Tras guardar: alinear state y base con inventario que realmente quedó en nube. */
-function cerebrusCommitInvAfterSave_(savedInvSource) {
-  if (!savedInvSource) return;
-  servareApplyInvObj_(state, savedInvSource);
+/** Tras guardado en nube: inventario alineado + snapshot completo en _cloudBaseState. */
+function cerebrusCommitAfterCloudSave_(savedSnapshot) {
+  if (savedSnapshot) servareApplyInvObj_(state, savedSnapshot);
   try {
-    if (!_cloudBaseState) _cloudBaseState = {};
-    servareApplyInvObj_(_cloudBaseState, savedInvSource);
-  } catch (e) {}
+    _cloudBaseState = JSON.parse(JSON.stringify(state));
+  } catch (e) {
+    _cloudBaseState = null;
+  }
+}
+
+function cerebrusIsLegacyPartedError_(msg) {
+  msg = String(msg || '');
+  return msg.indexOf('no reconocida') >= 0 || msg.indexOf('No reconocida') >= 0;
 }
 
 async function servareFetchInvObj_() {
@@ -26738,7 +26743,7 @@ async function _prepareConcurrentSafeState() {
   const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
   const vj = await vr.json();
   if (!vj.ok) return {ok:true, stateToSave: state};
-  if (String(vj.version) === String(cloudVersion) || vj.lastUser === currentUser) {
+  if (String(vj.version) === String(cloudVersion)) {
     return {ok:true, stateToSave: state};
   }
   if (!_cloudBaseState) {
@@ -26832,7 +26837,25 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
     });
     return merged;
   } catch (e) {
-    return stateToSave;
+    throw new Error('No se pudo leer nube para aislar Bodega: ' + (e.message || e));
+  }
+}
+
+/** Bodega editó stock pero no pedido → no pisar semanaActiva/semanasHistorial remotas. */
+async function cerebrusBodegaKeepRemotePedidoIfUntouched_(stateToSave) {
+  if (!cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
+  var pedidoKeys = ['semanaActiva', 'semanasHistorial'];
+  var changed = _topLevelChangedKeys(_cloudBaseState, state);
+  if (pedidoKeys.some(function(k) { return changed.has(k); })) return stateToSave;
+  try {
+    var remote = await _fetchCloudStateRaw();
+    var merged = JSON.parse(JSON.stringify(stateToSave || {}));
+    pedidoKeys.forEach(function(k) {
+      if (remote[k] !== undefined) merged[k] = remote[k];
+    });
+    return merged;
+  } catch (e) {
+    throw new Error('No se pudo proteger pedido semanal en nube: ' + (e.message || e));
   }
 }
 
@@ -26915,6 +26938,7 @@ async function saveToCloud(description, silent) {
     }
 
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
+    safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     const stateToSave = compressStateForSave(safeStateToSave);
 
@@ -26922,9 +26946,9 @@ async function saveToCloud(description, silent) {
       const parts = splitStateForCloudParts(stateToSave);
       var servarePInv = parts.pInv;
       var invTouched = cerebrusInvPartitionTouched_();
-      var changedParts = getChangedPartitionIdsForSave(state);
+      var changedParts = getChangedPartitionIdsForSave(safeStateToSave);
       var onlyInv = changedParts && changedParts.size === 1 && changedParts.has('pInv');
-      var onlyNonInv = changedParts && !changedParts.has('pInv');
+      var onlyNonInv = changedParts && changedParts.size > 0 && !changedParts.has('pInv');
 
       if (servareIsEnabled_()) {
         delete parts.pInv;
@@ -26948,7 +26972,7 @@ async function saveToCloud(description, silent) {
         if (!jsonBodega.ok) throw new Error(jsonBodega.error || 'saveParted pInv');
         cloudVersion = jsonBodega.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
-        cerebrusCommitInvAfterSave_(safeStateToSave);
+        cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Inventario guardado', 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify('☁ Inventario guardado por ' + currentUser + ' (sin tocar otros módulos)');
@@ -26958,7 +26982,7 @@ async function saveToCloud(description, silent) {
       // Bodega + solo inventario → Servare
       if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv && onlyInv) {
         await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
-        cerebrusCommitInvAfterSave_(safeStateToSave);
+        cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Inventario en Servare', 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify('☁ Inventario guardado en Servare por ' + currentUser);
@@ -26995,7 +27019,7 @@ async function saveToCloud(description, silent) {
         }
         cloudVersion = jsonPart.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
-        cerebrusCommitInvAfterSave_(safeStateToSave);
+        cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Guardado en nube (partido)', 'ok');
         markSaved(); dismissConflict();
         if (!silent) {
@@ -27005,9 +27029,18 @@ async function saveToCloud(description, silent) {
         return;
       }
       const errPart = String(jsonPart.error || '');
-      if (errPart.indexOf('no reconocida') === -1 && errPart.indexOf('No reconocida') === -1) throw new Error(jsonPart.error || 'saveParted');
+      if (!cerebrusIsLegacyPartedError_(errPart)) throw new Error(jsonPart.error || 'saveParted');
     } catch (e) {
-      console.warn('[CEREBRUS] Guardado partido no disponible o falló, usando modo clásico:', e);
+      if (!cerebrusIsLegacyPartedError_(e.message || e)) {
+        saveLocalRaw();
+        setSyncStatus('⚠ Error al guardar', 'err');
+        markUnsaved();
+        if (!silent) {
+          notify('⚠ Guardado partido falló (no se usa modo clásico para evitar pisar datos). ' + (e.message || e));
+        }
+        return;
+      }
+      console.warn('[CEREBRUS] saveParted no disponible, modo clásico:', e);
     }
 
     var stateForClassic = stateToSave;
@@ -27032,7 +27065,7 @@ async function saveToCloud(description, silent) {
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
-        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
+        cerebrusCommitAfterCloudSave_(stateForClassic);
         setSyncStatus('✓ Guardado en nube', 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify('☁ Guardado por ' + currentUser);
@@ -27055,7 +27088,7 @@ async function saveToCloud(description, silent) {
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
-        try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch(e) { _cloudBaseState = null; }
+        cerebrusCommitAfterCloudSave_(stateForClassic);
         setSyncStatus(`✓ Nube (${totalChunks} partes)`, 'ok');
         markSaved(); dismissConflict();
         if (!silent) notify(`☁ Guardado en ${totalChunks} partes por ${currentUser}`);
@@ -27288,6 +27321,7 @@ async function reloadFromCloud() {
     _cloudBaseVersion = cloudVersion;
     try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
 
+    await servareLoadInvMergeAfterCerebrus_();
     _postLoadSetup();
     // Si conservamos módulos locales, seguimos "unsaved" para que puedas guardar luego.
     if (localChanged.size > 0) markUnsaved(); else markSaved();
