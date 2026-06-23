@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.14",
-  "notes": "Sin aviso al guardar por particiones >50 KB (el troceo en nube ya lo resuelve)."
+  "version": "2026.06.06.15",
+  "notes": "Mantenimiento: archivar semanas SAC cerradas >1 mes en PDF+JSON y liberar memoria."
 }

@@ -5410,6 +5410,7 @@ body.dark-mode .conflict-overlay{
           <button type="button" onclick="archPresetInv1Mes_()" class="fac-btn" style="font-size:10px;">📦 Inventario semanal &gt;1 mes</button>
           <button type="button" onclick="archPresetFac2Meses_()" class="fac-btn" style="font-size:10px;">🧾 Facturas pagadas &gt;2 meses</button>
           <button type="button" onclick="archPresetPed3Semanas_()" class="fac-btn" style="font-size:10px;">📦 Pedidos &gt;3 semanas</button>
+          <button type="button" onclick="archPresetSac1Mes_()" class="fac-btn" style="font-size:10px;">⚡ SAC cerradas &gt;1 mes</button>
           <button type="button" onclick="archPresetRecomendado_()" class="fac-btn" style="font-size:10px;background:#fff7ed;border-color:#fed7aa;color:#c2410c;">⚡ Recomendado (ambos)</button>
         </div>
         <div id="arch-preset-hint" style="display:none;font-size:10px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
@@ -5427,7 +5428,7 @@ body.dark-mode .conflict-overlay{
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-inf-count">0</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
-            <input type="checkbox" id="arch-sac"> <span>⚡ Cargas semanales pasadas (semanas cerradas)</span>
+            <input type="checkbox" id="arch-sac"> <span>⚡ SAC: semanas cerradas &gt;1 mes (PDF + JSON, libera memoria)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-sac-count">0</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
@@ -6839,7 +6840,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.14';
+const APP_VERSION = '2026.06.06.15';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -19172,6 +19173,23 @@ function archPresetPed3Semanas_() {
   archCalcPreview();
 }
 
+function archPresetSac1Mes_() {
+  window._archFacMode = 'weeks';
+  window._archPedhistMode = 'keep';
+  const set = function(id, on) { const el = document.getElementById(id); if (el) el.checked = !!on; };
+  set('arch-sac', true);
+  set('arch-fac', false);
+  set('arch-mov', false);
+  set('arch-inf', false);
+  set('arch-pedhist', false);
+  set('arch-fsem', false);
+  const n = archCountOldSacCargas();
+  const sample = archSacLabelsForGroups_(archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS)).slice(0, 3).join(', ');
+  archSetPresetHint_('Criterio: semanas SAC ya terminadas (fin de período >30 días). Se genera PDF + JSON y se borran de la nube.' + (sample ? ' Ej.: ' + sample + (n > 3 ? '…' : '') : ''));
+  archUpdateCounts();
+  archCalcPreview();
+}
+
 function archPedidoSemanasLabels_(weeks) {
   return (weeks || []).map(function(s) {
     return String(s.nombre || s.periodoLabel || s.id || 'semana').trim();
@@ -19232,14 +19250,256 @@ function archCountOldInformes(weeks) {
 }
 
 function archCountOldSacCargas() {
-  const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
-  let count = 0;
-  Object.entries(state.sacCargas||{}).forEach(([k, arr]) => {
-    if (!/^\d+$/.test(String(k))) return;
-    const wk = parseInt(k, 10);
-    if (wk !== currentW && wk >= 1 && wk <= 4 && Array.isArray(arr) && arr.length) count += arr.length;
+  return archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS).length;
+}
+
+var ARCH_SAC_ARCHIVE_DAYS = 30;
+
+function sacKeyPeriodBoundsYMD(key) {
+  if (!key) return null;
+  const parts = String(key).split('|');
+  if (parts[0] === 'R' && parts.length >= 3) return { start: parts[1], end: parts[2] };
+  if (parts[0] === 'S' && parts.length >= 4) {
+    const y = +parts[1], m = +parts[2], w = +parts[3];
+    const ranges = getCalWeekRanges(y, m - 1);
+    const r = ranges[w - 1];
+    if (!r) return null;
+    return {
+      start: sacYMDLocal(new Date(y, m - 1, r.start)),
+      end: sacYMDLocal(new Date(y, m - 1, r.end))
+    };
+  }
+  if (/^[1-4]$/.test(String(key))) {
+    const n = new Date();
+    const y = n.getFullYear(), m = n.getMonth() + 1, w = parseInt(key, 10);
+    const ranges = getCalWeekRanges(y, m - 1);
+    const r = ranges[w - 1];
+    if (!r) return null;
+    return {
+      start: sacYMDLocal(new Date(y, m - 1, r.start)),
+      end: sacYMDLocal(new Date(y, m - 1, r.end))
+    };
+  }
+  return null;
+}
+
+function archSacProtectedKeys_() {
+  const set = new Set();
+  try {
+    if (typeof sacDataKey === 'function') set.add(sacDataKey());
+    if (typeof sacRelatedDataKeys === 'function') sacRelatedDataKeys().forEach(function(k) { set.add(k); });
+  } catch (e) {}
+  return set;
+}
+
+function archSacRelatedKeysForArchive_(key) {
+  const set = new Set();
+  if (key) set.add(key);
+  const bounds = sacKeyPeriodBoundsYMD(key);
+  if (bounds) {
+    set.add('R|' + bounds.start + '|' + bounds.end);
+    const sk = typeof sacSlotKeyForBounds === 'function' ? sacSlotKeyForBounds(bounds) : '';
+    if (sk) set.add(sk);
+  }
+  return [...set].filter(function(k) {
+    if (!k) return false;
+    if (typeof sacPeriodKeyHasData === 'function' && sacPeriodKeyHasData(k)) return true;
+    if (state.sacCargas && state.sacCargas[k] && state.sacCargas[k].length) return true;
+    if (state.sacIngresos && state.sacIngresos[k] && state.sacIngresos[k].length) return true;
+    if (state.vsData && state.vsData[k]) return true;
+    if (state.vsExtraData && state.vsExtraData[k]) return true;
+    return false;
   });
-  return count;
+}
+
+function archSacGroupsToArchive_(days) {
+  days = parseInt(days, 10) || ARCH_SAC_ARCHIVE_DAYS;
+  const cutoff = archDaysAgo(days);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const protectedKeys = archSacProtectedKeys_();
+  const seen = new Set();
+  const groups = [];
+  const allKeys = typeof sacCollectAllSacKeys === 'function' ? sacCollectAllSacKeys() : [];
+  allKeys.forEach(function(key) {
+    if (protectedKeys.has(key)) return;
+    if (typeof sacPeriodKeyHasData === 'function' && !sacPeriodKeyHasData(key)) return;
+    const bounds = sacKeyPeriodBoundsYMD(key);
+    if (!bounds || !bounds.end) return;
+    const endDay = sacParseISODate(bounds.end);
+    if (!endDay) return;
+    endDay.setHours(0, 0, 0, 0);
+    if (endDay >= todayStart) return;
+    if (endDay >= cutoff) return;
+    const sig = bounds.start + '|' + bounds.end;
+    if (seen.has(sig)) return;
+    seen.add(sig);
+    const keys = archSacRelatedKeysForArchive_(key);
+    const canonical = keys.find(function(k) { return String(k).indexOf('R|') === 0; }) || key;
+    groups.push({ bounds: bounds, sig: sig, canonical: canonical, keys: keys });
+  });
+  groups.sort(function(a, b) { return String(a.bounds.start).localeCompare(String(b.bounds.start)); });
+  return groups;
+}
+
+function archSacLabelsForGroups_(groups) {
+  return (groups || []).map(function(g) {
+    return typeof sacKeyToHumanLabel === 'function' ? sacKeyToHumanLabel(g.canonical) : g.sig;
+  });
+}
+
+function archSacPeriodStatsForKey_(key) {
+  const cargas = typeof sacBaseCargas === 'function'
+    ? sacBaseCargas((state.sacCargas && state.sacCargas[key]) || [])
+    : ((state.sacCargas && state.sacCargas[key]) || []).filter(function(c) { return !c._esPago; });
+  const ingresos = (state.sacIngresos && state.sacIngresos[key]) || [];
+  const days = (state.vsData && state.vsData[key]) || [];
+  const extra = (state.vsExtraData && state.vsExtraData[key]) || {};
+  let ventaReal = 0, ventaEst = 0;
+  days.forEach(function(d) {
+    if (!d) return;
+    ventaReal += d.real || 0;
+    if (!(d.real > 0)) ventaEst += d.est || 0;
+  });
+  ventaReal += extra.realExtra || 0;
+  if (!(extra.realExtra > 0)) ventaEst += extra.monto || 0;
+  const pagado = cargas.reduce(function(s, c) { return s + sacCargaPagadoAcum(c); }, 0);
+  const pendiente = cargas.reduce(function(s, c) { return s + sacCargaPendienteAcum(c); }, 0);
+  const cierre = (state.sacCierresHistorial || []).find(function(c) { return c && c.periodKey === key; });
+  return { cargas: cargas, ingresos: ingresos, days: days, extra: extra, ventaReal: Math.round(ventaReal), ventaEst: Math.round(ventaEst), pagado: Math.round(pagado), pendiente: Math.round(pendiente), cierre: cierre };
+}
+
+function archSacMergedStatsForGroup_(group) {
+  let key = group.canonical;
+  if (typeof sacPeriodKeyHasData === 'function' && !sacPeriodKeyHasData(key)) {
+    key = (group.keys || []).find(function(k) { return sacPeriodKeyHasData(k); }) || group.canonical;
+  }
+  return { key: key, stats: archSacPeriodStatsForKey_(key) };
+}
+
+function archSacDayLineForKey_(key, i) {
+  const bounds = sacKeyPeriodBoundsYMD(key);
+  const names = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  if (!bounds) return 'Día ' + (i + 1);
+  const d0 = sacParseISODate(bounds.start);
+  if (!d0) return 'Día ' + (i + 1);
+  const d = new Date(d0);
+  d.setDate(d.getDate() + i);
+  return names[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
+}
+
+function archSacBuildPeriodPdfPageHtml_(group) {
+  const merged = archSacMergedStatsForGroup_(group);
+  const key = merged.key;
+  const st = merged.stats;
+  const lbl = typeof sacKeyToHumanLabel === 'function' ? sacKeyToHumanLabel(key) : group.sig;
+  const bounds = group.bounds || {};
+  const cierreBal = st.cierre && st.cierre.balanceEstimado != null ? st.cierre.balanceEstimado : null;
+  const dayRows = (st.days || []).map(function(d, i) {
+    if (!d || ((d.est || 0) <= 0 && (d.real || 0) <= 0)) return '';
+    return '<tr><td>' + esc(archSacDayLineForKey_(key, i)) + '</td><td style="text-align:right;">' + fmt(d.est || 0) + '</td><td style="text-align:right;font-weight:700;">' + fmt(d.real || 0) + '</td></tr>';
+  }).join('');
+  const extra = st.extra || {};
+  const extraRow = ((extra.monto || 0) > 0 || (extra.realExtra || 0) > 0)
+    ? '<tr><td>Extra</td><td style="text-align:right;">' + fmt(extra.monto || 0) + '</td><td style="text-align:right;font-weight:700;">' + fmt(extra.realExtra || 0) + '</td></tr>'
+    : '';
+  const cargaRows = (st.cargas || []).map(function(c) {
+    const estTxt = c.estado === 'pagado' ? 'Pagado' : c.estado === 'parcial' ? 'Parcial' : c.estado === 'pausa' ? 'Pausa' : 'Pendiente';
+    return '<tr><td>' + esc(c.cat || 'Otro') + '</td><td>' + esc(c.nombre || '') + '</td><td style="text-align:right;font-weight:700;">' + fmt(c.monto || 0) + '</td><td>' + esc(estTxt) + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="color:#94a3b8;font-style:italic;">Sin egresos</td></tr>';
+  const ingRows = (st.ingresos || []).map(function(it) {
+    const rec = typeof sacIngresoRecibidoAcum === 'function' ? sacIngresoRecibidoAcum(it) : (it.recibidoAcum || 0);
+    return '<tr><td>' + esc(it.nombre || '') + '</td><td style="text-align:right;">' + fmt(it.monto || 0) + '</td><td style="text-align:right;">' + fmt(rec) + '</td></tr>';
+  }).join('');
+  return '<div class="print-page">' +
+    '<div class="print-header"><div class="print-title">SAC — Archivo semanal</div>' +
+    '<div class="print-sub">' + esc(lbl) + ' · ' + esc(bounds.start || '') + ' → ' + esc(bounds.end || '') + '</div></div>' +
+    '<div class="print-kpi-row">' +
+    '<div class="print-kpi" style="border-left:4px solid #10b981"><div class="print-kpi-label">Venta real</div><div class="print-kpi-val">' + fmt(st.ventaReal) + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #6366f1"><div class="print-kpi-label">Venta estimada pend.</div><div class="print-kpi-val">' + fmt(st.ventaEst) + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #c0392b"><div class="print-kpi-label">Egresos pagados</div><div class="print-kpi-val">' + fmt(st.pagado) + '</div></div>' +
+    '<div class="print-kpi" style="border-left:4px solid #f59e0b"><div class="print-kpi-label">Por pagar</div><div class="print-kpi-val">' + fmt(st.pendiente) + '</div></div>' +
+    (cierreBal != null ? '<div class="print-kpi" style="border-left:4px solid #2c3e50"><div class="print-kpi-label">Balance al cierre</div><div class="print-kpi-val">' + fmt(cierreBal) + '</div></div>' : '') +
+    '</div>' +
+    '<div class="print-sec"><div class="print-sec-title">Ventas por día</div>' +
+    '<table class="print-table"><thead><tr><th>Día</th><th style="text-align:right;">Estimado</th><th style="text-align:right;">Real</th></tr></thead><tbody>' + dayRows + extraRow + '</tbody></table></div>' +
+    '<div class="print-sec"><div class="print-sec-title">Egresos / cargas (' + (st.cargas || []).length + ')</div>' +
+    '<table class="print-table"><thead><tr><th>Categoría</th><th>Concepto</th><th style="text-align:right;">Monto</th><th>Estado</th></tr></thead><tbody>' + cargaRows + '</tbody></table></div>' +
+    (ingRows ? '<div class="print-sec"><div class="print-sec-title">Ingresos extra SAC</div><table class="print-table"><thead><tr><th>Concepto</th><th style="text-align:right;">Total</th><th style="text-align:right;">Recibido</th></tr></thead><tbody>' + ingRows + '</tbody></table></div>' : '') +
+    '</div>';
+}
+
+function archSacSnapshotGroupData_(group) {
+  const snap = {
+    bounds: group.bounds,
+    label: typeof sacKeyToHumanLabel === 'function' ? sacKeyToHumanLabel(group.canonical) : group.sig,
+    keys: group.keys,
+    stores: {}
+  };
+  (group.keys || []).forEach(function(key) {
+    snap.stores[key] = {
+      sacCargas: state.sacCargas && state.sacCargas[key],
+      sacIngresos: state.sacIngresos && state.sacIngresos[key],
+      vsData: state.vsData && state.vsData[key],
+      vsExtraData: state.vsExtraData && state.vsExtraData[key]
+    };
+  });
+  const cierre = (state.sacCierresHistorial || []).find(function(c) {
+    return c && (group.keys || []).indexOf(c.periodKey) >= 0;
+  });
+  if (cierre) snap.cierre = cierre;
+  return snap;
+}
+
+function archSacPrintArchivePdf_(groups) {
+  return new Promise(function(resolve) {
+    if (!groups || !groups.length) { resolve(); return; }
+    const ts = new Date().toLocaleString('es-CL', { dateStyle: 'long', timeStyle: 'short' });
+    const labels = archSacLabelsForGroups_(groups);
+    const cover = '<div class="print-page"><div class="print-header"><div class="print-title">SAC — Semanas archivadas</div>' +
+      '<div class="print-sub">Aquí Jaime · ' + esc(ts) + ' · ' + groups.length + ' período(s)</div></div>' +
+      '<div class="print-sec"><div class="print-sec-title">Períodos incluidos</div><ul style="font-size:11px;line-height:1.6;margin:0;padding-left:18px;">' +
+      labels.map(function(l) { return '<li>' + esc(l) + '</li>'; }).join('') +
+      '</ul><p style="font-size:10px;color:#64748b;margin:10px 0 0;">Semanas ya cerradas (fin de período anterior a 30 días). Guardá este PDF antes de cerrar el diálogo de impresión.</p></div></div>';
+    const pages = groups.map(function(g) { return archSacBuildPeriodPdfPageHtml_(g); }).join('');
+    const area = document.getElementById('pdf-print-area');
+    if (!area) { resolve(); return; }
+    area.innerHTML = cover + pages;
+    area.style.display = 'block';
+    let done = false;
+    const finish = function() {
+      if (done) return;
+      done = true;
+      area.style.display = 'none';
+      area.innerHTML = '';
+      resolve();
+    };
+    window.addEventListener('afterprint', finish, { once: true });
+    setTimeout(function() {
+      try { window.print(); } catch (e) { finish(); return; }
+      setTimeout(finish, 90000);
+    }, 220);
+    notify('🖨 Guardá como PDF las semanas SAC archivadas…');
+  });
+}
+
+function archSacRemovePeriodGroup_(group) {
+  let n = 0;
+  (group.keys || []).forEach(function(key) {
+    const cargas = (state.sacCargas && state.sacCargas[key]) || [];
+    const ing = (state.sacIngresos && state.sacIngresos[key]) || [];
+    n += cargas.length + ing.length;
+    if (state.sacCargas && state.sacCargas[key] !== undefined) delete state.sacCargas[key];
+    if (state.sacIngresos && state.sacIngresos[key] !== undefined) delete state.sacIngresos[key];
+    if (state.vsData && state.vsData[key] !== undefined) delete state.vsData[key];
+    if (state.vsExtraData && state.vsExtraData[key] !== undefined) delete state.vsExtraData[key];
+    if (state.sacCierresHistorial) {
+      state.sacCierresHistorial = state.sacCierresHistorial.filter(function(c) {
+        return !(c && c.periodKey === key);
+      });
+    }
+  });
+  return Math.max(1, n);
 }
 
 function archCountOldFacSemana() {
@@ -19381,7 +19641,11 @@ function archCalcPreview() {
   }
   if (doMov  && movN)  { total+=movN;  lines.push(`🔄 ${movN} movimientos`); }
   if (doInf  && infN)  { total+=infN;  lines.push(`📋 ${infN} informes diarios`); }
-  if (doSac  && sacN)  { total+=sacN;  lines.push(`⚡ ${sacN} cargas semanales pasadas`); }
+  if (doSac  && sacN)  {
+    total += sacN;
+    const sacLbl = archSacLabelsForGroups_(archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS)).slice(0, 4).join(', ');
+    lines.push(`⚡ ${sacN} semana(s) SAC cerrada(s) >1 mes` + (sacLbl ? ': ' + sacLbl + (sacN > 4 ? '…' : '') : ''));
+  }
   if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
   if (doPed && pedN) {
     const removedPreview = archPedidoSemanasToRemove_(pedFilter).removed;
@@ -19431,7 +19695,7 @@ function archDownloadBackup() {
   }
 }
 
-function archExecute() {
+async function archExecute() {
   const doFac  = document.getElementById('arch-fac')?.checked;
   const doMov  = document.getElementById('arch-mov')?.checked;
   const doInf  = document.getElementById('arch-inf')?.checked;
@@ -19459,7 +19723,8 @@ function archExecute() {
 
   if (!totalPlan) { notify('✓ Nada que archivar'); return; }
   const pedWarn = pedN ? '\n\nPedido: se descargará un JSON con las semanas eliminadas antes de borrarlas.' : '';
-  if (!confirm(`¿Archivar ${totalPlan} registros/semanas?\n\nEsto es irreversible salvo el JSON de respaldo.${pedWarn}\n\n¿Continuar?`)) return;
+  const sacWarn = sacN ? '\n\nSAC: se descargará JSON y se abrirá un PDF con ' + sacN + ' semana(s) cerrada(s) (>1 mes) antes de borrarlas de la nube.' : '';
+  if (!confirm(`¿Archivar ${totalPlan} registros/semanas?\n\nEsto es irreversible salvo el JSON de respaldo.${pedWarn}${sacWarn}\n\n¿Continuar?`)) return;
 
   pushUndo();
 
@@ -19501,25 +19766,26 @@ function archExecute() {
     totalRemoved += before - state.informesDiarios.length;
   }
 
-  // 4. Cargas semanales pasadas (semana calendario actual, no la de edición)
+  // 4. SAC: semanas cerradas >1 mes (PDF + JSON, luego borrar de nube)
   if (doSac && sacN > 0) {
-    const currentW = typeof _sacWeekCalendario === 'function' ? _sacWeekCalendario() : 1;
-    Object.keys(state.sacCargas||{}).forEach(k => {
-      if (!/^\d+$/.test(String(k))) return;
-      const wk = parseInt(k, 10);
-      if (wk >= 1 && wk <= 4 && wk !== currentW) {
-        totalRemoved += (state.sacCargas[k]||[]).length;
-        delete state.sacCargas[k];
-      }
-    });
-    Object.keys(state.sacIngresos||{}).forEach(k => {
-      if (!/^\d+$/.test(String(k))) return;
-      const wk = parseInt(k, 10);
-      if (wk >= 1 && wk <= 4 && wk !== currentW) {
-        totalRemoved += (state.sacIngresos[k]||[]).length;
-        delete state.sacIngresos[k];
-      }
-    });
+    const groups = archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS);
+    if (groups.length) {
+      _backupBlobDownload('sac-semanas-archivadas-' + _backupDateTag() + '.json', {
+        meta: {
+          type: 'sac_semanas_archivadas',
+          date: new Date().toISOString(),
+          days: ARCH_SAC_ARCHIVE_DAYS,
+          count: groups.length
+        },
+        semanas: groups.map(function(g) { return archSacSnapshotGroupData_(g); })
+      });
+      await archSacPrintArchivePdf_(groups);
+      groups.forEach(function(g) {
+        totalRemoved += archSacRemovePeriodGroup_(g);
+      });
+      if (typeof sacRenderHistorialCierres === 'function') sacRenderHistorialCierres();
+      if (typeof sacRenderPeriodosConDatosList === 'function') sacRenderPeriodosConDatosList();
+    }
   }
 
   // 5. Facturas semanales pagadas
