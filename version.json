@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.9",
-  "notes": "Saludo por voz admin: «{nombre}, Cerebrus listo para cumplir.» Login visual más moderno (legible)."
+  "version": "2026.06.06.10",
+  "notes": "Mantenimiento: botones archivar inventario >1 mes y facturas pagadas >2 meses."
 }

@@ -5405,6 +5405,12 @@ body.dark-mode .conflict-overlay{
 
         <!-- Opciones de archivado -->
         <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Archivar datos antiguos</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <button type="button" onclick="archPresetInv1Mes_()" class="fac-btn" style="font-size:10px;">📦 Inventario semanal &gt;1 mes</button>
+          <button type="button" onclick="archPresetFac2Meses_()" class="fac-btn" style="font-size:10px;">🧾 Facturas pagadas &gt;2 meses</button>
+          <button type="button" onclick="archPresetRecomendado_()" class="fac-btn" style="font-size:10px;background:#fff7ed;border-color:#fed7aa;color:#c2410c;">⚡ Recomendado (ambos)</button>
+        </div>
+        <div id="arch-preset-hint" style="display:none;font-size:10px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
             <input type="checkbox" id="arch-fac" checked> <span>🧾 Facturas pagadas (más de <select id="arch-fac-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option><option value="24">24</option></select> semanas)</span>
@@ -6831,7 +6837,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.9';
+const APP_VERSION = '2026.06.06.10';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18794,6 +18800,149 @@ function archCountPedidoSemanasExtra_(keep) {
   return Math.max(0, hist.length - keep);
 }
 
+function archDaysAgo(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - (parseInt(days, 10) || 0));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function archPedidoSemanaDate_(sem) {
+  if (!sem) return null;
+  return archParseDate(sem.fechaCierre) || archParseDate(sem.fechaInicio) || archParseDate(sem.fecha);
+}
+
+function archCountPedidoSemanasOlderThanDays_(days) {
+  const cutoff = archDaysAgo(days);
+  return (state.semanasHistorial || []).filter(function(sem) {
+    const d = archPedidoSemanaDate_(sem);
+    return d && d < cutoff;
+  }).length;
+}
+
+function archPedidoSemanasToRemove_(opts) {
+  opts = opts || {};
+  const hist = state.semanasHistorial || [];
+  if (opts.mode === 'days') {
+    const cutoff = archDaysAgo(opts.days);
+    const removed = [];
+    const kept = [];
+    hist.forEach(function(sem) {
+      const d = archPedidoSemanaDate_(sem);
+      if (d && d < cutoff) removed.push(sem);
+      else kept.push(sem);
+    });
+    return { removed: removed, kept: kept };
+  }
+  const keep = parseInt(opts.keep, 10) || 8;
+  return { removed: hist.slice(keep), kept: hist.slice(0, keep) };
+}
+
+function archGetPedFilter_() {
+  if (window._archPedhistMode === 'days') {
+    return { mode: 'days', days: window._archPedhistDays || 30 };
+  }
+  return {
+    mode: 'keep',
+    keep: parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10) || 8
+  };
+}
+
+function archCountPedidoForFilter_(filter) {
+  if (filter.mode === 'days') return archCountPedidoSemanasOlderThanDays_(filter.days);
+  return archCountPedidoSemanasExtra_(filter.keep);
+}
+
+function archCountOldFacturasDays(days) {
+  const cutoff = archDaysAgo(days);
+  let count = 0;
+  Object.values(state.facturas || {}).forEach(function(facs) {
+    facs.forEach(function(f) {
+      if (f.estado === 'inactiva') {
+        const d = archParseDate(f.emision) || archParseDate(f.vence);
+        if (d && d < cutoff) count++;
+      }
+    });
+  });
+  return count;
+}
+
+function archGetFacFilter_() {
+  if (window._archFacMode === 'days') {
+    return { mode: 'days', days: window._archFacDays || 60 };
+  }
+  return {
+    mode: 'weeks',
+    weeks: parseInt(document.getElementById('arch-fac-weeks')?.value || '8', 10) || 8
+  };
+}
+
+function archCountFacturasForFilter_(filter) {
+  if (filter.mode === 'days') return archCountOldFacturasDays(filter.days);
+  return archCountOldFacturas(filter.weeks);
+}
+
+function archSetPresetHint_(msg) {
+  const el = document.getElementById('arch-preset-hint');
+  if (!el) return;
+  if (msg) {
+    el.style.display = 'block';
+    el.textContent = msg;
+  } else {
+    el.style.display = 'none';
+    el.textContent = '';
+  }
+}
+
+function archPresetInv1Mes_() {
+  window._archPedhistMode = 'days';
+  window._archPedhistDays = 30;
+  window._archFacMode = 'weeks';
+  const set = function(id, on) { const el = document.getElementById(id); if (el) el.checked = !!on; };
+  set('arch-pedhist', true);
+  set('arch-fac', false);
+  set('arch-mov', false);
+  set('arch-inf', false);
+  set('arch-sac', false);
+  set('arch-fsem', false);
+  archSetPresetHint_('Criterio: inventarios semanales cerrados con fecha de cierre anterior a 30 días.');
+  archUpdateCounts();
+  archCalcPreview();
+}
+
+function archPresetFac2Meses_() {
+  window._archFacMode = 'days';
+  window._archFacDays = 60;
+  window._archPedhistMode = 'keep';
+  const set = function(id, on) { const el = document.getElementById(id); if (el) el.checked = !!on; };
+  set('arch-fac', true);
+  set('arch-pedhist', false);
+  set('arch-mov', false);
+  set('arch-inf', false);
+  set('arch-sac', false);
+  set('arch-fsem', false);
+  archSetPresetHint_('Criterio: facturas pagadas (inactivas) con emisión o vencimiento anterior a 60 días.');
+  archUpdateCounts();
+  archCalcPreview();
+}
+
+function archPresetRecomendado_() {
+  window._archPedhistMode = 'days';
+  window._archPedhistDays = 30;
+  window._archFacMode = 'days';
+  window._archFacDays = 60;
+  const set = function(id, on) { const el = document.getElementById(id); if (el) el.checked = !!on; };
+  set('arch-pedhist', true);
+  set('arch-fac', true);
+  set('arch-mov', false);
+  set('arch-inf', false);
+  set('arch-sac', false);
+  set('arch-fsem', false);
+  archSetPresetHint_('Criterio recomendado: inventario semanal >1 mes + facturas pagadas >2 meses.');
+  archUpdateCounts();
+  archCalcPreview();
+}
+
 function archPedidoSemanasLabels_(weeks) {
   return (weeks || []).map(function(s) {
     return String(s.nombre || s.periodoLabel || s.id || 'semana').trim();
@@ -18934,34 +19083,44 @@ function archRenderStats() {
   if (typeof supaRenderPanel_ === 'function') supaRenderPanel_();
   if (typeof servareRenderPanel_ === 'function') servareRenderPanel_();
 
+  if (window._archPedhistMode == null) window._archPedhistMode = 'keep';
+  if (window._archFacMode == null) window._archFacMode = 'weeks';
+
   // Update counts
   archUpdateCounts();
 
   // Attach listeners to week selectors (once)
   ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks','arch-pedhist-keep'].forEach(id => {
     const el = document.getElementById(id);
-    if (el && !el._archBound) { el._archBound = true; el.addEventListener('change', archUpdateCounts); }
+    if (el && !el._archBound) {
+      el._archBound = true;
+      el.addEventListener('change', function() {
+        if (id === 'arch-fac-weeks') window._archFacMode = 'weeks';
+        if (id === 'arch-pedhist-keep') window._archPedhistMode = 'keep';
+        archSetPresetHint_('');
+        archUpdateCounts();
+      });
+    }
   });
 }
 
 function archUpdateCounts() {
-  const facWeeks = parseInt(document.getElementById('arch-fac-weeks')?.value||'8');
   const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
   const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+  const facFilter = archGetFacFilter_();
+  const pedFilter = archGetPedFilter_();
 
   const set2 = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
-  set2('arch-fac-count',  archCountOldFacturas(facWeeks));
+  set2('arch-fac-count',  archCountFacturasForFilter_(facFilter));
   set2('arch-mov-count',  archCountOldMovimientos(movWeeks));
   set2('arch-inf-count',  archCountOldInformes(infWeeks));
   set2('arch-sac-count',  archCountOldSacCargas());
   set2('arch-fsem-count', archCountOldFacSemana());
-  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
-  set2('arch-pedhist-count', archCountPedidoSemanasExtra_(pedKeep));
+  set2('arch-pedhist-count', archCountPedidoForFilter_(pedFilter));
 }
 
 function archCalcPreview() {
   archUpdateCounts();
-  const facN  = parseInt(document.getElementById('arch-fac-count')?.textContent||'0');
   const movN  = parseInt(document.getElementById('arch-mov-count')?.textContent||'0');
   const infN  = parseInt(document.getElementById('arch-inf-count')?.textContent||'0');
   const sacN  = parseInt(document.getElementById('arch-sac-count')?.textContent||'0');
@@ -18973,19 +19132,25 @@ function archCalcPreview() {
   const doSac  = document.getElementById('arch-sac')?.checked;
   const doFsem = document.getElementById('arch-fsem')?.checked;
   const doPed  = document.getElementById('arch-pedhist')?.checked;
-  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
+  const facFilter = archGetFacFilter_();
+  const pedFilter = archGetPedFilter_();
+  const facN  = doFac  ? archCountFacturasForFilter_(facFilter) : 0;
+  const pedN  = doPed  ? archCountPedidoForFilter_(pedFilter) : 0;
 
   let total = 0;
   let lines = [];
-  if (doFac  && facN)  { total+=facN;  lines.push(`🧾 ${facN} facturas pagadas`); }
+  if (doFac  && facN)  {
+    total += facN;
+    lines.push(`🧾 ${facN} facturas pagadas` + (facFilter.mode === 'days' ? ' (>2 meses)' : ''));
+  }
   if (doMov  && movN)  { total+=movN;  lines.push(`🔄 ${movN} movimientos`); }
   if (doInf  && infN)  { total+=infN;  lines.push(`📋 ${infN} informes diarios`); }
   if (doSac  && sacN)  { total+=sacN;  lines.push(`⚡ ${sacN} cargas semanales pasadas`); }
   if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
-  const pedN = doPed ? archCountPedidoSemanasExtra_(pedKeep) : 0;
   if (doPed && pedN) {
-    const removedPreview = (state.semanasHistorial || []).slice(pedKeep);
-    lines.push(`📦 ${pedN} semana(s) de pedido: ${archPedidoSemanasLabels_(removedPreview).slice(0, 4).join(', ')}${pedN > 4 ? '…' : ''}`);
+    const removedPreview = archPedidoSemanasToRemove_(pedFilter).removed;
+    lines.push(`📦 ${pedN} semana(s) de inventario` + (pedFilter.mode === 'days' ? ' (>1 mes)' : '')
+      + ': ' + archPedidoSemanasLabels_(removedPreview).slice(0, 4).join(', ') + (pedN > 4 ? '…' : ''));
     total += pedN;
   }
 
@@ -19036,22 +19201,22 @@ function archExecute() {
   const doFsem = document.getElementById('arch-fsem')?.checked;
   const doPed  = document.getElementById('arch-pedhist')?.checked;
 
-  const facWeeks = parseInt(document.getElementById('arch-fac-weeks')?.value||'8');
   const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
   const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
-  const pedKeep = parseInt(document.getElementById('arch-pedhist-keep')?.value || '8', 10);
+  const facFilter = archGetFacFilter_();
+  const pedFilter = archGetPedFilter_();
 
   let totalRemoved = 0;
   const cloudBefore = archGetStorageMetrics().cloudTotalBytes;
 
   // Confirm
   archCalcPreview();
-  const facN  = doFac  ? archCountOldFacturas(facWeeks) : 0;
+  const facN  = doFac  ? archCountFacturasForFilter_(facFilter) : 0;
   const movN  = doMov  ? archCountOldMovimientos(movWeeks) : 0;
   const infN  = doInf  ? archCountOldInformes(infWeeks) : 0;
   const sacN  = doSac  ? archCountOldSacCargas() : 0;
   const fsemN = doFsem ? archCountOldFacSemana() : 0;
-  const pedN  = doPed  ? archCountPedidoSemanasExtra_(pedKeep) : 0;
+  const pedN  = doPed  ? archCountPedidoForFilter_(pedFilter) : 0;
   const totalPlan = facN + movN + infN + sacN + fsemN + pedN;
 
   if (!totalPlan) { notify('✓ Nada que archivar'); return; }
@@ -19062,7 +19227,7 @@ function archExecute() {
 
   // 1. Facturas pagadas antiguas
   if (doFac && facN > 0) {
-    const cutoff = archWeeksAgo(facWeeks);
+    const cutoff = facFilter.mode === 'days' ? archDaysAgo(facFilter.days) : archWeeksAgo(facFilter.weeks);
     Object.keys(state.facturas||{}).forEach(prov => {
       const before = state.facturas[prov].length;
       state.facturas[prov] = state.facturas[prov].filter(f => {
@@ -19126,15 +19291,21 @@ function archExecute() {
     totalRemoved += before - state.facSemana.length;
   }
 
-  // 6. Pedidos semanales cerrados (conservar últimas N)
+  // 6. Pedidos semanales cerrados (últimas N o más antiguos que N días)
   if (doPed && pedN > 0) {
-    const hist = state.semanasHistorial || [];
-    const removedWeeks = hist.slice(pedKeep);
+    const split = archPedidoSemanasToRemove_(pedFilter);
+    const removedWeeks = split.removed;
     _backupBlobDownload('pedido-semanas-archivadas-' + _backupDateTag() + '.json', {
-      meta: { type: 'pedido_semanas_archivadas', date: new Date().toISOString(), keep: pedKeep },
+      meta: {
+        type: 'pedido_semanas_archivadas',
+        date: new Date().toISOString(),
+        mode: pedFilter.mode,
+        keep: pedFilter.keep,
+        days: pedFilter.days
+      },
       semanasHistorial: removedWeeks
     });
-    state.semanasHistorial = hist.slice(0, pedKeep);
+    state.semanasHistorial = split.kept;
     totalRemoved += removedWeeks.length;
   }
 
