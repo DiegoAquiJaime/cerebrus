@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.12",
-  "notes": "Unificar proveedores: AGROMAR≈DISTRIBUIDORA AGROMAR, TORRES≈DISTRIBUIDORA TORRES, etc."
+  "version": "2026.06.06.13",
+  "notes": "Mantenimiento: gráfico de uso por partición más claro (celdas 50 KB, desglose pInv)."
 }

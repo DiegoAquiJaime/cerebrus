@@ -5392,7 +5392,7 @@ body.dark-mode .conflict-overlay{
           <div style="height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden;">
             <div id="arch-size-bar" style="height:100%;border-radius:4px;background:var(--success);width:0%;transition:width .4s;"></div>
           </div>
-          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Calculado igual que el guardado en nube (comprimir + 5 particiones). El % es la partición más grande vs límite de celda 50 KB.</div>
+          <div style="font-size:9px;color:#94a3b8;margin-top:4px;" id="arch-size-note">Cada partición tiene límite ~50 KB por celda; si pesa más, se trocea al guardar.</div>
         </div>
 
         <!-- Desglose por módulo -->
@@ -5401,7 +5401,7 @@ body.dark-mode .conflict-overlay{
             <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;">Qué ocupa espacio</div>
             <button type="button" onclick="archRenderBreakdown()" class="fac-btn" style="font-size:10px;padding:4px 10px;">↻ Actualizar</button>
           </div>
-          <div id="arch-breakdown" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:220px;overflow-y:auto;">Abre esta pestaña para calcular…</div>
+          <div id="arch-breakdown" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:360px;overflow-y:auto;">Abre esta pestaña para calcular…</div>
         </div>
 
         <!-- Opciones de archivado -->
@@ -6839,7 +6839,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.12';
+const APP_VERSION = '2026.06.06.13';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -18933,16 +18933,25 @@ function archBuildCloudSaveMetrics_(st) {
     }
   });
   partRows.sort(function(a, b) { return b.bytes - a.bytes; });
-  var pctMaxPart = maxPartBytes > 0
-    ? Math.min(100, Math.round(maxPartBytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 1000) / 10)
+  partRows.forEach(function(row) {
+    row.chunks = Math.max(1, Math.ceil(row.bytes / ARCH_CLOUD_CHUNK_BYTES));
+    row.cellPct = row.bytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 100;
+    row.overLimit = row.bytes > ARCH_CLOUD_CELL_LIMIT_BYTES;
+  });
+  var pctMaxPartRaw = maxPartBytes > 0
+    ? Math.round(maxPartBytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 1000) / 10
     : 0;
+  var pctMaxPart = Math.min(100, pctMaxPartRaw);
   return {
     compressedStateBytes: compressedStateBytes,
+    compressedState: compressed,
     cloudTotalBytes: cloudTotalBytes,
     maxPartBytes: maxPartBytes,
     maxPartId: maxPartId,
     maxPartLabel: ARCH_CLOUD_PART_LABELS[maxPartId] || maxPartId,
     pctMaxPart: pctMaxPart,
+    pctMaxPartRaw: pctMaxPartRaw,
+    maxPartChunks: Math.max(1, Math.ceil(maxPartBytes / ARCH_CLOUD_CHUNK_BYTES)),
     partRows: partRows
   };
 }
@@ -18961,7 +18970,10 @@ function archGetStorageMetrics() {
     maxPartId: cloud.maxPartId,
     maxPartLabel: cloud.maxPartLabel,
     pctMaxPart: cloud.pctMaxPart,
+    pctMaxPartRaw: cloud.pctMaxPartRaw || cloud.pctMaxPart,
+    maxPartChunks: cloud.maxPartChunks || 1,
     partRows: cloud.partRows,
+    compressedState: cloud.compressedState,
     localCopyBytes: localComp,
     limit: ARCH_CLOUD_CELL_LIMIT_BYTES,
     pct: cloud.pctMaxPart
@@ -19281,15 +19293,22 @@ function archRenderStats() {
   const bar   = document.getElementById('arch-size-bar');
   const label = document.getElementById('arch-size-label');
   const note  = document.getElementById('arch-size-note');
-  if (bar)   { bar.style.width = pct+'%'; bar.style.background = pct>80?'var(--danger)':pct>60?'var(--warning)':'var(--success)'; }
+  const pctRaw = m.pctMaxPartRaw != null ? m.pctMaxPartRaw : pct;
+  const barPct = Math.min(100, pctRaw);
+  if (bar) {
+    bar.style.width = (pctRaw > 0 ? Math.max(barPct, 4) : 0) + '%';
+    bar.style.background = pctRaw > 100 ? 'var(--danger)' : (pctRaw > 70 ? 'var(--warning)' : 'var(--success)');
+  }
   if (label) {
-    label.textContent = `${(cloudTotal/1024).toFixed(1)} KB en nube · ${maxLabel} ${(maxPart/1024).toFixed(1)} KB / ${(limit/1024).toFixed(0)} KB (${pct}%)`;
+    const mult = pctRaw > 100 ? ' · ' + (pctRaw / 100).toFixed(1).replace('.', ',') + '× límite' : '';
+    const chunksTxt = m.maxPartChunks > 1 ? ' · ~' + m.maxPartChunks + ' celdas' : '';
+    label.textContent = maxLabel + ' ' + (maxPart / 1024).toFixed(1) + ' KB / 50 KB' + mult + chunksTxt;
   }
   if (note) {
     if (maxPart > ARCH_CLOUD_CELL_LIMIT_BYTES) {
-      note.textContent = '⚠ Una partición supera 50 KB — el guardado en nube puede fallar. Archivá datos antiguos y guardá de nuevo.';
-    } else if (pct > 70) {
-      note.textContent = '⚠ Partición grande en nube (' + pct + '% del límite de celda). Respaldá JSON y archivá datos antiguos abajo.';
+      note.textContent = '⚠ ' + maxLabel + ' necesita ~' + m.maxPartChunks + ' celdas de 50 KB (Apps Script las trocea). Archivá movimientos y semanas viejas en pInv, o activá Servare para inventario aparte.';
+    } else if (pctRaw > 70) {
+      note.textContent = '⚠ Partición grande (' + pctRaw.toFixed(0) + '% del límite de una celda). Respaldá JSON y archivá datos antiguos abajo.';
     } else {
       note.textContent = 'Medido igual que saveParted (comprimir + 5 particiones). Local navegador: ' + (rawSize/1024).toFixed(1) + ' KB.';
     }
@@ -19584,6 +19603,25 @@ function archDiagnostic() {
   return sorted;
 }
 
+function archBuildPInvKeyMetrics_(st) {
+  var keys = ['movimientos', 'semanasHistorial', 'inventario', 'preciosProveedor', 'movimientosArchivo', 'semanaActiva', 'catInventario', 'movimientosAudit'];
+  var rows = [];
+  keys.forEach(function(k) {
+    if (st[k] === undefined || st[k] === null) return;
+    try {
+      var b = JSON.stringify(st[k]).length;
+      if (b > 0) rows.push({ key: k, label: ARCH_KEY_LABELS[k] || k, bytes: b });
+    } catch (e) {}
+  });
+  rows.sort(function(a, b) { return b.bytes - a.bytes; });
+  return rows;
+}
+
+function archFormatCellPctLabel_(cellPct) {
+  if (cellPct <= 100) return Math.round(cellPct) + '%';
+  return Math.round(cellPct) + '% (' + (cellPct / 100).toFixed(1).replace('.', ',') + '×)';
+}
+
 function archRenderBreakdown() {
   const wrap = document.getElementById('arch-breakdown');
   if (!wrap) return;
@@ -19594,17 +19632,47 @@ function archRenderBreakdown() {
     return;
   }
   const total = m.cloudTotalBytes || rows.reduce(function(s, r) { return s + r.bytes; }, 0) || 1;
+  const pInvRows = m.maxPartId === 'pInv' ? archBuildPInvKeyMetrics_(m.compressedState || state) : [];
+
   const rowsHtml = rows.map(function(row) {
-    const pct = Math.max(1, Math.round(row.bytes / total * 100));
-    const cellPct = Math.round(row.bytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 100);
-    const warn = row.bytes > ARCH_CLOUD_CELL_LIMIT_BYTES ? ' color:var(--danger);' : (cellPct > 70 ? ' color:var(--warning);' : '');
-    return '<div style="display:grid;grid-template-columns:minmax(0,1fr) 52px 36px;gap:8px;align-items:center;margin-bottom:6px;">'
-      + '<div style="min-width:0;"><div style="font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + row.label + ' <span style="font-size:9px;color:#94a3b8;">(' + row.id + ')</span></div>'
-      + '<div style="height:5px;background:#e2e8f0;border-radius:3px;margin-top:3px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:var(--accent);border-radius:3px;"></div></div></div>'
-      + '<div style="text-align:right;font-weight:700;' + warn + '">' + (row.bytes / 1024).toFixed(1) + '</div>'
-      + '<div style="text-align:right;color:#94a3b8;' + warn + '">' + cellPct + '%</div></div>';
+    const cellPct = row.cellPct != null ? row.cellPct : (row.bytes / ARCH_CLOUD_CELL_LIMIT_BYTES * 100);
+    const barW = Math.min(100, cellPct);
+    const barColor = row.overLimit || cellPct > 100 ? '#ef4444' : (cellPct > 70 ? '#f59e0b' : '#10b981');
+    const status = row.overLimit || cellPct > 100 ? '✗' : (cellPct > 70 ? '⚠' : '✓');
+    const warn = cellPct > 70 ? ' color:var(--danger);' : '';
+    const sharePct = Math.round(row.bytes / total * 100);
+    var sub = '';
+    if (row.id === 'pInv' && pInvRows.length) {
+      sub = '<div style="margin:6px 0 2px 8px;padding-left:8px;border-left:2px solid #e2e8f0;">'
+        + pInvRows.slice(0, 6).map(function(subRow) {
+          const subPct = Math.round(subRow.bytes / (row.bytes || 1) * 100);
+          return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:9px;color:#64748b;padding:2px 0;">'
+            + '<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;">↳ ' + subRow.label + '</span>'
+            + '<span style="white-space:nowrap;font-weight:600;">' + (subRow.bytes / 1024).toFixed(1) + ' KB · ' + subPct + '%</span></div>';
+        }).join('') + '</div>';
+    }
+    return '<div style="margin-bottom:10px;">'
+      + '<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;">'
+      + '<div style="min-width:0;font-weight:600;color:var(--text-strong,#334155);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'
+      + status + ' ' + row.label + ' <span style="font-size:9px;color:#94a3b8;font-weight:500;">(' + row.id + ')</span></div>'
+      + '<div style="text-align:right;font-weight:700;white-space:nowrap;' + warn + '">' + (row.bytes / 1024).toFixed(1) + ' KB</div>'
+      + '<div style="text-align:right;font-size:10px;color:#64748b;white-space:nowrap;">' + (row.chunks || 1) + ' cel.</div>'
+      + '<div style="text-align:right;font-size:10px;font-weight:700;white-space:nowrap;' + warn + '">' + archFormatCellPctLabel_(cellPct) + '</div>'
+      + '</div>'
+      + '<div style="height:8px;background:#e2e8f0;border-radius:4px;margin-top:4px;overflow:hidden;position:relative;">'
+      + '<div style="height:100%;width:' + barW + '%;background:' + barColor + ';border-radius:4px;"></div>'
+      + (cellPct > 100 ? '<div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 4px,rgba(239,68,68,.25) 4px,rgba(239,68,68,.25) 8px);"></div>' : '')
+      + '</div>'
+      + '<div style="font-size:9px;color:#94a3b8;margin-top:2px;">' + sharePct + '% del total nube · límite 50 KB por celda</div>'
+      + sub + '</div>';
   }).join('');
-  wrap.innerHTML = rowsHtml + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;">Total nube: ' + (total / 1024).toFixed(1) + ' KB · % columna derecha = uso vs celda 50 KB</div>';
+
+  wrap.innerHTML = rowsHtml
+    + '<div style="font-size:9px;color:#94a3b8;margin-top:8px;border-top:1px solid #e2e8f0;padding-top:6px;line-height:1.45;">'
+    + 'Total al guardar: <b>' + (total / 1024).toFixed(1) + ' KB</b> en 5 particiones. '
+    + 'La barra naranja/roja = % de <b>una celda</b> de 50 KB (no del total). '
+    + 'Si una partición pesa más, Cerebrus la parte en varias celdas (~' + ARCH_CLOUD_CHUNK_BYTES + ' B c/u).'
+    + '</div>';
 }
 
 // ── PASO 1 SUPABASE (prueba en paralelo; no reemplaza Google Sheets) ──
