@@ -24,7 +24,7 @@ function handleRequest_(e) {
     }
     var out;
     switch (action) {
-      case 'getState': out = getState_(); break;
+      case 'getState': out = getState_(e); break;
       case 'getVersion': out = getVersion_(); break;
       case 'saveParted': out = saveParted_(body); break;
       case 'verifyPassword': out = verifyPassword_(body); break;
@@ -115,17 +115,37 @@ function writePartChunks_(payload) {
   sh.getRange(2, 1, rows.length, 2).setValues(rows);
 }
 
-function getState_() {
+function getState_(e) {
   var raw = readPartChunks_();
   var inv = {};
   if (raw) {
-    try { inv = JSON.parse(raw); } catch (e) { inv = {}; }
+    try { inv = JSON.parse(raw); } catch (err) { inv = {}; }
+  }
+  var light = e && e.parameter && String(e.parameter.light) === '1';
+  if (light) {
+    inv = {
+      inventario: inv.inventario || [],
+      preciosProveedor: inv.preciosProveedor || {},
+      semanaActiva: inv.semanaActiva || null,
+      catInventario: inv.catInventario,
+      unidadesInventario: inv.unidadesInventario,
+      invFamilias: inv.invFamilias || {},
+      invBodegaN3Applied: inv.invBodegaN3Applied,
+      inventorySnapshotId: inv.inventorySnapshotId,
+      inventorySnapshotDate: inv.inventorySnapshotDate,
+      inventorySnapshotSource: inv.inventorySnapshotSource,
+      movimientos: [],
+      movimientosAudit: [],
+      movimientosArchivo: [],
+      semanasHistorial: []
+    };
   }
   var meta = readMeta_();
   return {
     ok: true,
     data: { state: inv, nid: 1 },
-    meta: meta
+    meta: meta,
+    light: light || undefined
   };
 }
 

@@ -4934,6 +4934,7 @@ body.dark-mode .conflict-overlay{
               <option value="">Todos los proveedores</option>
             </select>
             <button class="fac-btn" onclick="invPedidoLimpiarFiltros()" style="white-space:nowrap;">Limpiar</button>
+            <button id="inv-pedido-btn-toggle-all" class="fac-btn" onclick="invPedidoToggleShowAll()" style="white-space:nowrap;display:none;">Ver todas las líneas</button>
           </div>
         </div>
 
@@ -6840,7 +6841,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.20';
+const APP_VERSION = '2026.06.06.22';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13127,7 +13128,7 @@ const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIPT_EXEC).startsWith('https://');
 
 /** Sheet propio inventario/bodega — pegar URL /exec tras publicar servare-apps-script.js */
-const SERVARE_APPS_SCRIPT_EXEC = 'https://script.google.com/macros/s/AKfycbzS5OdfLbfrgNgmg-5mSCMCy6h9rkebdPeLxXTxBlChvVqlx2FeW0zRGT-6SPVyQ9dMuw/exec';
+const SERVARE_APPS_SCRIPT_EXEC = 'https://script.google.com/macros/s/AKfycbxJ5ebrClmEMDCtpdz_j_i-RgTqnzMNdCmO__ULl5FFnrnGSHJV9U80IcahV3-OVPSt9w/exec';
 var SERVARE_CFG_KEY = 'cerebrusServareCfg';
 var _servareCloudVersion = '0';
 
@@ -13184,10 +13185,9 @@ function cerebrusInvPartitionTouched_() {
 /** Tras guardado en nube: inventario alineado + snapshot completo en _cloudBaseState. */
 function cerebrusCommitAfterCloudSave_(savedSnapshot) {
   if (savedSnapshot) servareApplyInvObj_(state, savedSnapshot);
-  try {
-    _cloudBaseState = JSON.parse(JSON.stringify(state));
-  } catch (e) {
-    _cloudBaseState = null;
+  if (cerebrusUsuarioBodega()) cerebrusSetCloudBaseDeferred_(state);
+  else {
+    try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
   }
 }
 
@@ -13196,21 +13196,71 @@ function cerebrusIsLegacyPartedError_(msg) {
   return msg.indexOf('no reconocida') >= 0 || msg.indexOf('No reconocida') >= 0;
 }
 
-async function servareFetchInvObj_() {
+async function servareFetchInvObj_(opts) {
+  opts = opts || {};
   var url = servareResolveApiUrl_();
   if (!url) throw new Error('Servare sin URL');
-  var res = await fetch(url + '?action=getState&_=' + Date.now());
+  var light = opts.light !== false && (opts.light === true || cerebrusUsuarioBodega());
+  var res = await fetch(url + '?action=getState' + (light ? '&light=1' : '') + '&_=' + Date.now());
   var json = await res.json();
   if (!json.ok) throw new Error(json.error || 'Servare getState');
   var st = (json.data && json.data.state) ? json.data.state : {};
+  if (json.light) {
+    st._servareLightLoad = true;
+  } else {
+    st._servareMovFull = true;
+    delete st._servareLightLoad;
+  }
   if (json.meta && json.meta.version != null) _servareCloudVersion = String(json.meta.version);
-  return { state: st, meta: json.meta || {} };
+  return { state: st, meta: json.meta || {}, light: !!json.light };
 }
 
-async function servareMergeInvIntoState_(st) {
+async function servareHydrateFullInvBeforeSave_(st) {
+  if (!servareIsEnabled_() || !st || !st._servareLightLoad) return st;
+  try {
+    var full = await servareFetchInvObj_({ light: false });
+    var changed = _cloudBaseState ? _topLevelChangedKeys(_cloudBaseState, state) : new Set();
+    servareInvKeys_().forEach(function(k) {
+      if (!changed.has(k) && full.state[k] !== undefined) st[k] = full.state[k];
+    });
+    delete st._servareLightLoad;
+    st._servareMovFull = true;
+    if (state && state !== st) {
+      delete state._servareLightLoad;
+      state._servareMovFull = true;
+    }
+  } catch (e) {
+    console.warn('[SERVARE] hydrate antes de guardar:', e);
+  }
+  return st;
+}
+
+async function servareLoadMovimientosIfNeeded_() {
+  if (!servareIsEnabled_() || state._servareMovFull) return;
+  setSyncStatus('⏳ Cargando movimientos…', '');
+  try {
+    var full = await servareFetchInvObj_({ light: false });
+    ['movimientos', 'movimientosAudit', 'movimientosArchivo', 'semanasHistorial'].forEach(function(k) {
+      if (full.state[k] !== undefined) state[k] = full.state[k];
+    });
+    state._servareMovFull = true;
+    setSyncStatus('✓ Inventario', 'ok');
+  } catch (e) {
+    notify('⚠ No se pudieron cargar movimientos: ' + (e.message || e));
+  }
+}
+
+async function servareMergeInvIntoState_(st, opts) {
   if (!servareIsEnabled_() || !st) return st;
-  var remote = await servareFetchInvObj_();
+  var remote = await servareFetchInvObj_(opts || {});
   servareApplyInvObj_(st, remote.state);
+  if (remote.light) {
+    st._servareLightLoad = true;
+    st._servareMovFull = false;
+  } else {
+    st._servareMovFull = true;
+    delete st._servareLightLoad;
+  }
   return st;
 }
 
@@ -14257,12 +14307,16 @@ function _postLoadSetup() {
     }, 300);
   }
   invEnsureFamiliesState();
-  (state.inventario || []).forEach(function(p) {
-    if (!p.familia) p.familia = 'Sin familia';
-    if (!p.subfamilia) p.subfamilia = 'Sin subfamilia';
-    if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
-    if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
-  });
+  var invFamSync = function() {
+    (state.inventario || []).forEach(function(p) {
+      if (!p.familia) p.familia = 'Sin familia';
+      if (!p.subfamilia) p.subfamilia = 'Sin subfamilia';
+      if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
+      if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
+    });
+  };
+  if (_pldBodega) setTimeout(invFamSync, 50);
+  else invFamSync();
   if (!_pldBodega) {
     SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
       if (i.day===undefined) i.day=0;
@@ -15160,16 +15214,25 @@ function cerebrusSetCloudBaseDeferred_(snap) {
     setTimeout(function() {
       try {
         var light = {};
-        servareInvKeys_().forEach(function(k) {
+        ['inventario', 'preciosProveedor', 'semanaActiva', 'catInventario', 'unidadesInventario', 'invFamilias'].forEach(function(k) {
           if (snap[k] !== undefined) light[k] = snap[k];
         });
+        if (Array.isArray(snap.movimientos) && snap.movimientos.length) light.movimientos = snap.movimientos;
         _cloudBaseState = JSON.parse(JSON.stringify(light));
       } catch (e) { _cloudBaseState = null; }
-    }, 5000);
+    }, 8000);
     return;
   }
   try { _cloudBaseState = JSON.parse(JSON.stringify(snap)); } catch (e) { _cloudBaseState = null; }
 }
+
+function invScheduleChunk_(fn) {
+  var ms = invBodegaYieldMs_();
+  if (ms > 0) setTimeout(fn, ms);
+  else requestAnimationFrame(fn);
+}
+
+function invBodegaYieldMs_() { return cerebrusUsuarioBodega() ? 18 : 0; }
 
 function _invActiveSubPanel_() {
   var panels = ['inventario', 'conteo', 'pedido', 'consumo', 'movimientos'];
@@ -15188,7 +15251,15 @@ function invRenderBodegaLite_() {
   else if (sub === 'conteo') conteoRender();
   else if (sub === 'pedido' && _invPedidoPanelVisible_()) invRenderPedido();
   else if (sub === 'consumo') invRenderConsumo();
-  else if (sub === 'movimientos') { movRender(); movRenderDashSemanal(); }
+  else if (sub === 'movimientos') {
+    if (servareIsEnabled_() && !state._servareMovFull) {
+      servareLoadMovimientosIfNeeded_().then(function() {
+        movRender(); movRenderDashSemanal();
+      });
+      return;
+    }
+    movRender(); movRenderDashSemanal();
+  }
   setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 120);
 }
 
@@ -15241,24 +15312,31 @@ function invRender() {
   }
 }
 
-function invCheckKpis() {
+function invCheckKpis(opts) {
+  opts = opts || {};
   invInit();
   const total   = state.inventario.length;
   const cats    = invGetCategories().length;
-  const vinc    = state.inventario.filter(p=>p.prov).length;
+  set('inv-kpi-total',   total);
+  set('inv-kpi-cats',    cats+' categoría'+(cats!==1?'s':''));
 
+  if (cerebrusUsuarioBodega() && !opts.full) {
+    set('inv-kpi-critico', '…');
+    set('inv-kpi-vinc', '…');
+    set('inv-kpi-valor', '…');
+    setTimeout(function() { try { invCheckKpis({ full: true }); } catch (e) {} }, 3000);
+    return;
+  }
+
+  const vinc    = state.inventario.filter(p=>p.prov).length;
   const { mult: calMult, reason: calReason } = invCalStockMultNow();
 
   const criticosLista = invListProductosStockCriticos();
   const critico = criticosLista.length;
 
-  set('inv-kpi-total',   total);
-  set('inv-kpi-cats',    cats+' categoría'+(cats!==1?'s':''));
   set('inv-kpi-critico', critico);
   set('inv-kpi-vinc',    vinc);
   set('inv-kpi-valor',   fmt(invValorTotal()));
-
-  // Actualizar label del KPI si hay multiplicador
   const kpiEl = document.querySelector('#inv-kpi-critico')?.closest('.inv-kpi')?.querySelector('.inv-kpi-label');
   if (kpiEl) {
     kpiEl.textContent = calMult > 1.0
@@ -15602,7 +15680,7 @@ function invRenderTablePump_(gen, tbody, filtered, idx) {
   for (let i = idx; i < end; i++) html += invInvTableRowHtml_(filtered[i]);
   tbody.insertAdjacentHTML('beforeend', html);
   if (end < filtered.length) {
-    requestAnimationFrame(function() { invRenderTablePump_(gen, tbody, filtered, end); });
+    invScheduleChunk_(function() { invRenderTablePump_(gen, tbody, filtered, end); });
   }
 }
 
@@ -15631,7 +15709,7 @@ function invRenderTable() {
     if (!window._invTableRenderGen) window._invTableRenderGen = 0;
     const gen = ++window._invTableRenderGen;
     tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;padding:16px;">Cargando ' + filtered.length + ' productos…</td></tr>';
-    requestAnimationFrame(function() { invRenderTablePump_(gen, tbody, filtered, 0); });
+    invScheduleChunk_(function() { invRenderTablePump_(gen, tbody, filtered, 0); });
     return;
   }
 
@@ -15649,7 +15727,17 @@ function invSubTab(panel) {
   });
   if (panel==='pedido')       invRenderPedido();
   if (panel==='consumo')      invRenderConsumo();
-  if (panel==='movimientos')  { movRender(); movRenderDashSemanal(); if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick(); }
+  if (panel==='movimientos') {
+    if (servareIsEnabled_() && !state._servareMovFull) {
+      servareLoadMovimientosIfNeeded_().then(function() {
+        movRender(); movRenderDashSemanal();
+        if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick();
+      });
+      return;
+    }
+    movRender(); movRenderDashSemanal();
+    if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick();
+  }
   if (panel==='conteo')       conteoRender();
 }
 
@@ -16014,6 +16102,7 @@ function invAgregarOrdenInterna(sem, label) {
 }
 
 function invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFilter) {
+  if (cerebrusUsuarioBodega() && !window._invPedidoShowAll && (!it.qty || it.qty <= 0)) return false;
   const provTxt = String(it.prov || prod.prov || '').trim();
   if (famFilter && invNormTxt(prod.familia || '') !== famFilter) return false;
   if (subFilter && invNormTxt(prod.subfamilia || '') !== subFilter) return false;
@@ -16088,7 +16177,14 @@ function invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, idx) {
   let html = '';
   for (let i = idx; i < end; i++) html += invPedidoItemRowHtml_(sem, orden, rows[i].it, rows[i].prod, provs);
   tbody.insertAdjacentHTML('beforeend', html);
-  if (end < rows.length) requestAnimationFrame(function() { invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, end); });
+  if (end < rows.length) invScheduleChunk_(function() { invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, end); });
+}
+
+function invPedidoToggleShowAll() {
+  window._invPedidoShowAll = !window._invPedidoShowAll;
+  var btn = document.getElementById('inv-pedido-btn-toggle-all');
+  if (btn) btn.textContent = window._invPedidoShowAll ? 'Solo con cantidad' : 'Ver todas las líneas';
+  invRenderPedido();
 }
 
 function invRenderPedidoCards_(wrap, sem, provs, famFilter, subFilter, provFilter, qFilter, gen) {
@@ -16167,6 +16263,16 @@ function invRenderPedido() {
   const btnTransfer = document.getElementById('inv-btn-transfer');
   if (btnTransfer) btnTransfer.style.display = '';
   if (addCard) addCard.style.display = sem.cerrada ? 'none' : '';
+  var btnToggleAll = document.getElementById('inv-pedido-btn-toggle-all');
+  if (btnToggleAll) {
+    if (cerebrusUsuarioBodega()) {
+      btnToggleAll.style.display = '';
+      btnToggleAll.textContent = window._invPedidoShowAll ? 'Solo con cantidad' : 'Ver todas las líneas';
+    } else {
+      btnToggleAll.style.display = 'none';
+      window._invPedidoShowAll = true;
+    }
+  }
   if (filFam) {
     const prevFam = filFam.value || '';
     const familias = [...new Set((state.inventario||[]).map(p => (p.familia || '').trim()).filter(Boolean))]
@@ -16218,7 +16324,7 @@ function invRenderPedido() {
     });
   });
   wrap.innerHTML = '<div style="padding:14px;text-align:center;color:#64748b;font-size:12px;">Cargando pedido (' + totalRows + ' líneas)…</div>';
-  requestAnimationFrame(function() {
+  invScheduleChunk_(function() {
     if (pedGen !== window._invPedidoRenderGen) return;
     invRenderPedidoCards_(wrap, sem, provs, famFilter, subFilter, provFilter, qFilter, pedGen);
     if (!cerebrusUsuarioBodega()) {
@@ -20476,7 +20582,7 @@ function conteoRender() {
 
   if (!window._conteoRenderGen) window._conteoRenderGen = 0;
   const gen = ++window._conteoRenderGen;
-  const CHUNK = 24;
+  const CHUNK = cerebrusUsuarioBodega() ? 16 : 24;
   lista.innerHTML = '<div id="conteo-loading-msg" style="padding:18px;text-align:center;color:#64748b;font-size:12px;">Cargando ' + prods.length + ' productos…</div>';
 
   let idx = 0;
@@ -20492,10 +20598,10 @@ function conteoRender() {
     lista.insertAdjacentHTML('beforeend', html);
     if (idx < prods.length) {
       lista.insertAdjacentHTML('beforeend', '<div id="conteo-loading-msg" style="padding:10px;text-align:center;color:#94a3b8;font-size:11px;">' + idx + ' / ' + prods.length + '</div>');
-      requestAnimationFrame(pump);
+      invScheduleChunk_(pump);
     }
   }
-  requestAnimationFrame(pump);
+  invScheduleChunk_(pump);
 }
 
 function conteoStockToDisplayValue_(p) {
@@ -27475,7 +27581,8 @@ async function loadFromCloudServareBodegaFast_() {
   try {
     state = makeDefaultState();
     _nid = 200;
-    await servareMergeInvIntoState_(state);
+    await servareMergeInvIntoState_(state, { light: true });
+    state._servareMovFull = false;
     try {
       const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
       const vj = await vr.json();
@@ -27723,6 +27830,7 @@ function splitStateForCloudParts(st, opts) {
  */
 async function enforceBodegaIsolationOnSave_(stateToSave) {
   if (!cerebrusUsuarioBodega()) return stateToSave;
+  if (servareIsEnabled_()) return stateToSave;
   try {
     const remote = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
@@ -27748,6 +27856,9 @@ async function cerebrusBodegaKeepRemotePedidoIfUntouched_(stateToSave) {
   var pedidoKeys = ['semanaActiva', 'semanasHistorial'];
   var changed = _topLevelChangedKeys(_cloudBaseState, state);
   if (pedidoKeys.some(function(k) { return changed.has(k); })) return stateToSave;
+  if (servareIsEnabled_() && state._servareLightLoad) {
+    return stateToSave;
+  }
   try {
     var remote = await _fetchCloudStateRaw();
     var merged = JSON.parse(JSON.stringify(stateToSave || {}));
@@ -27839,6 +27950,10 @@ async function saveToCloud(description, silent) {
     }
 
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
+    if (servareIsEnabled_() && cerebrusUsuarioBodega()) {
+      safeStateToSave = await servareHydrateFullInvBeforeSave_(safeStateToSave);
+      if (prep.merged) state = safeStateToSave;
+    }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     const stateToSave = compressStateForSave(safeStateToSave);
