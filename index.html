@@ -6840,7 +6840,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.16';
+const APP_VERSION = '2026.06.06.17';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13227,6 +13227,7 @@ async function servareSaveInvPart_(pInvPayload, description) {
 async function servareLoadInvMergeAfterCerebrus_() {
   if (!servareIsEnabled_()) return;
   try {
+    setSyncStatus('⏳ Cargando inventario (Servare)…', '');
     await servareMergeInvIntoState_(state);
     if (_cloudBaseState) servareApplyInvObj_(_cloudBaseState, state);
   } catch (e) {
@@ -27322,10 +27323,40 @@ function startAutoSave() {
 }
 
 // ── CLOUD LOAD ──
+/** Bodega + Servare: solo baja inventario (~5 MB), no todo SAC/facturas de Cerebrus. */
+async function loadFromCloudServareBodegaFast_() {
+  if (!servareIsEnabled_() || !cerebrusUsuarioBodega()) return false;
+  setSyncStatus('⏳ Cargando inventario…', '');
+  try {
+    state = makeDefaultState();
+    _nid = 200;
+    await servareMergeInvIntoState_(state);
+    try {
+      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
+      const vj = await vr.json();
+      if (vj.ok) {
+        cloudVersion = String(vj.version || '0');
+        _cloudBaseVersion = cloudVersion;
+      }
+    } catch (e) {}
+    try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
+    setSyncStatus('✓ Inventario', 'ok');
+    _postLoadSetup();
+    return true;
+  } catch (e) {
+    console.warn('[SERVARE] carga rápida Bodega:', e);
+    notify('⚠ Servare: ' + (e.message || e) + ' — reintentando carga completa…');
+    return false;
+  }
+}
+
 async function loadFromCloud() {
+  if (await loadFromCloudServareBodegaFast_()) return;
+
   setSyncStatus('⏳ Cargando…', '');
+  const cloudTimeoutMs = servareIsEnabled_() ? 120000 : 45000;
   const ctrl = new AbortController();
-  const abortT = setTimeout(() => ctrl.abort(), 45000);
+  const abortT = setTimeout(() => ctrl.abort(), cloudTimeoutMs);
   try {
     const res  = await fetch(API_URL + '?action=getState&_=' + Date.now(), { signal: ctrl.signal });
     if (!res.ok) throw new Error('HTTP ' + res.status);
