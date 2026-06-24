@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.18",
-  "notes": "Bodega: omitir render SAC al iniciar y diferir pedido/precios para evitar pantalla pegada."
+  "version": "2026.06.06.19",
+  "notes": "Bodega: conteo por tandas, sin tabla/pedido al entrar, base nube diferida."
 }
