@@ -6840,7 +6840,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.19';
+const APP_VERSION = '2026.06.06.20';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -14263,12 +14263,14 @@ function _postLoadSetup() {
     if (!state.invFamilias[p.familia]) state.invFamilias[p.familia] = ['Sin subfamilia'];
     if (!state.invFamilias[p.familia].includes(p.subfamilia)) state.invFamilias[p.familia].push(p.subfamilia);
   });
-  SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
-    if (i.day===undefined) i.day=0;
-    if (i.weekday===undefined) i.weekday=0;
-    if (!i.note) i.note='';
-    if (k==='ingresos' && i.confirmed===undefined) i.confirmed=false;
-  }); });
+  if (!_pldBodega) {
+    SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
+      if (i.day===undefined) i.day=0;
+      if (i.weekday===undefined) i.weekday=0;
+      if (!i.note) i.note='';
+      if (k==='ingresos' && i.confirmed===undefined) i.confirmed=false;
+    }); });
+  }
   try { if(localStorage.getItem('cerebrus_dark')==='1'){document.body.classList.add('dark-mode');document.getElementById('dark-btn').textContent='☀️';} } catch(e){}
   try { cerebrusStripCalendarioBitacoraModulo_(); } catch (e) {}
   if (!_pldBodega) {
@@ -14403,7 +14405,17 @@ function exportMonthPDF(id) {
 //  MÓDULO INVENTARIO
 // ============================================================
 
-function invInit() { if (!state.inventario) state.inventario = []; }
+function invInit() { if (!state.inventario) state.inventario = []; invInvalidateProdMap_(); }
+
+var _invProdById = null;
+function invInvalidateProdMap_() { _invProdById = null; }
+function invProdById_(id) {
+  if (!_invProdById) {
+    _invProdById = Object.create(null);
+    (state.inventario || []).forEach(function(p) { _invProdById[p.id] = p; });
+  }
+  return _invProdById[id];
+}
 
 function invOpenRestoreFile() {
   const inp = document.getElementById('inv-restore-file');
@@ -15516,6 +15528,84 @@ function invExportDueñaExcel() {
   notify(`✓ Descargado: ${fname}`);
 }
 
+function invInvTableRowHtml_(p) {
+  const precios = _getPreciosUnified(p).filter(x=>x.precio>0).sort((a,b)=>a.precio-b.precio);
+  const best    = precios[0];
+  const provTags = precios.map(x => {
+    const color  = provColor(x.prov);
+    const isBest = best && x.prov===best.prov;
+    return `<span class="inv-prov-tag" style="background:${color}22;color:${color};" title="${esc(x.prov)}: ${fmt(x.precio)}/${p.unidad||'u'}" onclick="invEditPrecio('${p.id}','${esc(x.prov)}')">
+      ${esc(x.prov.length>10?x.prov.slice(0,10)+'…':x.prov)} ${isBest?'★':''} ${fmt(x.precio)}
+    </span>`;
+  }).join('');
+  const stockColor = (p.stock||0)<=0?'var(--danger)':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'var(--warning)':'var(--success)';
+  const bestFromFactura = !!(best && best.source === 'fac_import');
+  const bestMeta = bestFromFactura
+    ? `Precio final importado desde factura. Factor aplicado: ×${(best.factor || 1).toFixed(3)} (incluye IVA/impuestos/cargos prorrateados cuando vienen informados).`
+    : 'Precio manual o histórico del proveedor.';
+  return `<tr id="inv-row-${p.id}">
+    <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">
+      <div>${esc(p.nombre||'')}</div>
+      <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+        <input id="inv-qm-qty-${p.id}" type="text" inputmode="decimal" placeholder="cant."
+          onclick="event.stopPropagation()"
+          style="width:66px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-align:right;background:var(--white);color:var(--primary);">
+        <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','despacho','inv-qm-qty-${p.id}')" title="Sale desde Bodega hacia Cocina/Salón"
+          style="background:#6366f114;border:1px solid #6366f155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#4338ca;">→ Cocina</button>
+        <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','devolucion','inv-qm-qty-${p.id}')" title="Vuelve desde Cocina/Salón hacia Bodega"
+          style="background:#10b98114;border:1px solid #10b98155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#047857;">← Bodega</button>
+        <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','preelaboracion','inv-qm-qty-${p.id}')" title="Sale a preelaboración"
+          style="background:#8b5cf614;border:1px solid #8b5cf655;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6d28d9;">⚗ → Preelab</button>
+        <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','merma','inv-qm-qty-${p.id}')" title="Registrar merma"
+          style="background:#ef444414;border:1px solid #ef444455;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#b91c1c;">⚠ → Merma</button>
+      </div>
+    </td>
+    <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
+    <td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.familia||'Sin familia')} <span style="color:#94a3b8;">/</span> ${esc(p.subfamilia||'Sin subfamilia')}</td>
+    <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
+    <td style="text-align:right;font-weight:700;color:${stockColor};">${p.stock||0}</td>
+    <td style="text-align:right;color:#94a3b8;">${p.minimo||0}</td>
+    <td style="text-align:center;"><span class="inv-semaforo ${(p.stock||0)<=0?'inv-sem-rojo':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'inv-sem-amarillo':'inv-sem-verde'}"></span></td>
+    <td style="max-width:220px;">${provTags||'<span style="color:#94a3b8;font-size:10px;">Sin precios</span>'}
+      <button onclick="invAddPrecio('${p.id}')" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;color:#94a3b8;margin-left:2px;">+ precio</button>
+    </td>
+    <td class="inv-precio-col inv-mejor-precio" style="text-align:right;">${best?fmt(best.precio):'—'}</td>
+    <td style="text-align:right;font-weight:700;color:#0f766e;" title="${esc(bestMeta)}">
+      ${best ? fmt(best.precio) : '—'} ${best ? `
+        <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.3px;vertical-align:middle;${bestFromFactura?'background:#0ea5e920;color:#0369a1;border:1px solid #0ea5e955;':'background:#94a3b820;color:#64748b;border:1px solid #94a3b855;'}">
+          ${bestFromFactura ? 'Factura' : 'Manual'}
+        </span>
+        <span style="font-size:10px;color:#94a3b8;">ⓘ</span>
+      ` : ''}
+    </td>
+    <td style="text-align:center;white-space:nowrap;">
+      <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="invQuickMov('${p.id}','despacho')" style="background:#6366f122;border:1px solid #6366f144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6366f1;white-space:nowrap;">→ Enviar</button>
+        <button onclick="invQuickMov('${p.id}','devolucion')" style="background:#10b98122;border:1px solid #10b98144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#10b981;white-space:nowrap;">← Devol.</button>
+        <button onclick="invQuickMov('${p.id}','merma')" style="background:#ef444422;border:1px solid #ef444444;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#ef4444;white-space:nowrap;">⚠ Merma</button>
+        <button onclick="event.stopPropagation();invQuickAddPedidoFromInv('${p.id}')" style="background:linear-gradient(135deg,#0ea5e9,#2563eb);border:1px solid #1d4ed8;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;color:white;white-space:nowrap;box-shadow:0 2px 8px rgba(37,99,235,.28);">🛒 Pedido semana</button>
+      </div>
+    </td>
+    <td style="display:flex;gap:4px;align-items:center;">
+      <button onclick="invEditProd('${p.id}')" title="Editar producto" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='#94a3b8'">✏</button>
+      <button onclick="invDelete('${p.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
+    </td>
+  </tr>`;
+}
+
+function invRenderTablePump_(gen, tbody, filtered, idx) {
+  if (gen !== window._invTableRenderGen) return;
+  const CHUNK = 16;
+  if (idx === 0) tbody.innerHTML = '';
+  const end = Math.min(idx + CHUNK, filtered.length);
+  let html = '';
+  for (let i = idx; i < end; i++) html += invInvTableRowHtml_(filtered[i]);
+  tbody.insertAdjacentHTML('beforeend', html);
+  if (end < filtered.length) {
+    requestAnimationFrame(function() { invRenderTablePump_(gen, tbody, filtered, end); });
+  }
+}
+
 function invRenderTable() {
   invInit();
   const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
@@ -15537,82 +15627,15 @@ function invRenderTable() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(p => {
-    const precios = _getPreciosUnified(p).filter(x=>x.precio>0).sort((a,b)=>a.precio-b.precio);
-    const best    = precios[0];
-    const provTags = precios.map(x => {
-      const color  = provColor(x.prov);
-      const isBest = best && x.prov===best.prov;
-      return `<span class="inv-prov-tag" style="background:${color}22;color:${color};" title="${esc(x.prov)}: ${fmt(x.precio)}/${p.unidad||'u'}" onclick="invEditPrecio('${p.id}','${esc(x.prov)}')">
-        ${esc(x.prov.length>10?x.prov.slice(0,10)+'…':x.prov)} ${isBest?'★':''} ${fmt(x.precio)}
-      </span>`;
-    }).join('');
-    const stockColor = (p.stock||0)<=0?'var(--danger)':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'var(--warning)':'var(--success)';
-    const bestFromFactura = !!(best && best.source === 'fac_import');
-    const bestMeta = bestFromFactura
-      ? `Precio final importado desde factura. Factor aplicado: ×${(best.factor || 1).toFixed(3)} (incluye IVA/impuestos/cargos prorrateados cuando vienen informados).`
-      : 'Precio manual o histórico del proveedor.';
-    return `<tr id="inv-row-${p.id}">
-      <td style="font-weight:600;cursor:pointer;" onclick="invEditProd('${p.id}')" title="Click para editar">
-        <div>${esc(p.nombre||'')}</div>
-        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
-          <input id="inv-qm-qty-${p.id}" type="text" inputmode="decimal" placeholder="cant."
-            onclick="event.stopPropagation()"
-            style="width:66px;border:1px solid var(--border);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:700;text-align:right;background:var(--white);color:var(--primary);">
-          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','despacho','inv-qm-qty-${p.id}')" title="Sale desde Bodega hacia Cocina/Salón"
-            style="background:#6366f114;border:1px solid #6366f155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#4338ca;">
-            → Cocina
-          </button>
-          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','devolucion','inv-qm-qty-${p.id}')" title="Vuelve desde Cocina/Salón hacia Bodega"
-            style="background:#10b98114;border:1px solid #10b98155;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#047857;">
-            ← Bodega
-          </button>
-          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','preelaboracion','inv-qm-qty-${p.id}')" title="Sale a preelaboración y luego puede regresar procesado"
-            style="background:#8b5cf614;border:1px solid #8b5cf655;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6d28d9;">
-            ⚗ → Preelab
-          </button>
-          <button onclick="event.stopPropagation();invQuickMovFromRow('${p.id}','merma','inv-qm-qty-${p.id}')" title="Sale desde Bodega hacia Merma"
-            style="background:#ef444414;border:1px solid #ef444455;border-radius:999px;padding:2px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#b91c1c;">
-            ⚠ → Merma
-          </button>
-        </div>
-      </td>
-      <td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.cat||'—')}</td>
-      <td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.familia||'Sin familia')} <span style="color:#94a3b8;">/</span> ${esc(p.subfamilia||'Sin subfamilia')}</td>
-      <td style="font-size:11px;cursor:pointer;" onclick="invEditProd('${p.id}')">${esc(p.unidad||'u')}</td>
-      <td style="text-align:right;font-weight:700;color:${stockColor};">${p.stock||0}</td>
-      <td style="text-align:right;color:#94a3b8;">${p.minimo||0}</td>
-      <td style="text-align:center;"><span class="inv-semaforo ${(p.stock||0)<=0?'inv-sem-rojo':(p.stock||0)<=(p.minimo||0)&&(p.minimo||0)>0?'inv-sem-amarillo':'inv-sem-verde'}"></span></td>
-      <td style="max-width:220px;">${provTags||'<span style="color:#94a3b8;font-size:10px;">Sin precios</span>'}
-        <button onclick="invAddPrecio('${p.id}')" style="background:none;border:1px dashed var(--border);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer;color:#94a3b8;margin-left:2px;">+ precio</button>
-      </td>
-      <td class="inv-precio-col inv-mejor-precio" style="text-align:right;">${best?fmt(best.precio):'—'}</td>
-      <td style="text-align:right;font-weight:700;color:#0f766e;" title="${esc(bestMeta)}">
-        ${best ? fmt(best.precio) : '—'} ${best ? `
-          <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:.3px;vertical-align:middle;${bestFromFactura?'background:#0ea5e920;color:#0369a1;border:1px solid #0ea5e955;':'background:#94a3b820;color:#64748b;border:1px solid #94a3b855;'}">
-            ${bestFromFactura ? 'Factura' : 'Manual'}
-          </span>
-          <span style="font-size:10px;color:#94a3b8;">ⓘ</span>
-        ` : ''}
-      </td>
-      <td style="text-align:center;white-space:nowrap;">
-        <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;">
-          <button onclick="invQuickMov('${p.id}','despacho')" title="Despachar a cocina/salón"
-            style="background:#6366f122;border:1px solid #6366f144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#6366f1;white-space:nowrap;">→ Enviar</button>
-          <button onclick="invQuickMov('${p.id}','devolucion')" title="Recibir devolución"
-            style="background:#10b98122;border:1px solid #10b98144;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#10b981;white-space:nowrap;">← Devol.</button>
-          <button onclick="invQuickMov('${p.id}','merma')" title="Registrar merma"
-            style="background:#ef444422;border:1px solid #ef444444;border-radius:5px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#ef4444;white-space:nowrap;">⚠ Merma</button>
-          <button onclick="event.stopPropagation();invQuickAddPedidoFromInv('${p.id}')" title="Agregar al pedido semanal (no altera stock)"
-            style="background:linear-gradient(135deg,#0ea5e9,#2563eb);border:1px solid #1d4ed8;border-radius:7px;padding:4px 9px;font-size:10px;font-weight:800;cursor:pointer;font-family:inherit;color:white;white-space:nowrap;box-shadow:0 2px 8px rgba(37,99,235,.28);">🛒 Pedido semana</button>
-        </div>
-      </td>
-      <td style="display:flex;gap:4px;align-items:center;">
-        <button onclick="invEditProd('${p.id}')" title="Editar producto" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--accent2)'" onmouseout="this.style.color='#94a3b8'">✏</button>
-        <button onclick="invDelete('${p.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:13px;" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='#94a3b8'">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
+  if (cerebrusUsuarioBodega() || filtered.length > 40) {
+    if (!window._invTableRenderGen) window._invTableRenderGen = 0;
+    const gen = ++window._invTableRenderGen;
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;padding:16px;">Cargando ' + filtered.length + ' productos…</td></tr>';
+    requestAnimationFrame(function() { invRenderTablePump_(gen, tbody, filtered, 0); });
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => invInvTableRowHtml_(p)).join('');
 }
 
 // ============================================================
@@ -15990,6 +16013,113 @@ function invAgregarOrdenInterna(sem, label) {
   });
 }
 
+function invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFilter) {
+  const provTxt = String(it.prov || prod.prov || '').trim();
+  if (famFilter && invNormTxt(prod.familia || '') !== famFilter) return false;
+  if (subFilter && invNormTxt(prod.subfamilia || '') !== subFilter) return false;
+  if (provFilter && invNormTxt(provTxt) !== provFilter) return false;
+  if (qFilter) {
+    const hay = invNormTxt([prod.nombre, prod.cat, prod.familia, prod.subfamilia, prod.unidad, provTxt].join(' '));
+    if (!hay.includes(qFilter)) return false;
+  }
+  return true;
+}
+
+function invPedidoItemRowHtml_(sem, orden, it, prod, provs) {
+  const stockAct = prod.stock || 0;
+  const minimo = prod.minimo || 0;
+  const sc = stockAct <= 0 ? 'inv-sem-rojo' : stockAct <= minimo ? 'inv-sem-amarillo' : 'inv-sem-verde';
+  const provOpts = ['', ...provs, '__otro__', '__nuevo__'].map(p => {
+    if (p === '') return `<option value="" ${!it.prov ? 'selected' : ''}>— elige proveedor —</option>`;
+    if (p === '__otro__') return `<option value="__otro__" ${it.prov === '__otro__' ? 'selected' : ''}>Otro</option>`;
+    if (p === '__nuevo__') return `<option value="__nuevo__" ${it.prov === '__nuevo__' ? 'selected' : ''}>+ Nuevo proveedor…</option>`;
+    return `<option value="${esc(p)}" ${it.prov === p ? 'selected' : ''}>${esc(p)}</option>`;
+  }).join('');
+  const qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty || 0);
+  const uDisp = invUnidadPedidoLine(it, prod);
+  const uOpts = invUnidadPedidoSelectOptions(uDisp, prod).map(function(u) {
+    return `<option value="${esc(u)}" ${String(u) === String(uDisp) ? 'selected' : ''}>${esc(u)}</option>`;
+  }).join('');
+  const pm = it.precioMeta;
+  const pmHtml = (pm && pm.source === 'factura')
+    ? `<div style="font-size:8px;color:#64748b;margin-top:4px;max-width:150px;line-height:1.25;text-align:right;" title="Precio referencia desde detalle de factura importada">📄 Fact. ${esc(String(pm.facNro || '—'))} · ${esc(String(pm.facEmi || ''))}${pm.lineUnidad ? ' · u fact.: ' + esc(pm.lineUnidad) : ''}${pm.unitWarn ? ' · ⚠ unidad' : ''}</div>`
+    : (pm && pm.source === 'lista')
+    ? `<div style="font-size:8px;color:#94a3b8;margin-top:4px;">📒 Lista de precios</div>`
+    : '';
+  const recUi = it.qty > 0 ? `
+    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#64748b;cursor:pointer;user-select:none;">
+        <input type="checkbox" ${it.recibido ? 'checked' : ''} ${sem.cerrada ? 'disabled' : ''}
+          onchange="invToggleRecepcionStock('${sem.id}','${orden.id}','${it.prodId}',this.checked)">
+        <span style="color:${it.recibido ? 'var(--success)' : '#94a3b8'};">${it.recibido ? 'Ingresado a bodega' : 'Confirmar ingreso'}</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="font-size:9px;color:#94a3b8;">Recibido</span>
+        <input class="inv-pedido-qty" type="text" inputmode="decimal" value="${qtyRec}"
+          ${sem.cerrada || it.recibido ? 'disabled' : ''}
+          onchange="invSetOrdenQtyRecibida('${sem.id}','${orden.id}','${it.prodId}',this.value)"
+          style="width:62px;">
+        <span style="font-size:9px;color:#94a3b8;">${esc(prod.unidad || 'u')}</span>
+      </div>
+      ${!sem.cerrada ? `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+        <button type="button" onclick="invEditPedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
+          style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:transparent;color:#64748b;cursor:pointer;font-family:inherit;">✏ Editar</button>
+        <button type="button" onclick="invRemovePedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
+          style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:var(--danger);cursor:pointer;font-family:inherit;">✕ Quitar</button>
+      </div>` : ''}
+    </div>` : `<span style="font-size:10px;color:#94a3b8;">—</span>`;
+  return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)} <span style="font-size:11px;color:#64748b;font-weight:700;">(${stockAct} ${esc(prod.unidad || 'u')})</span><div style="font-size:11px;font-weight:700;color:#334155;margin-top:4px;">${esc(prod.cat || '')}</div></td>
+    <td><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+      <input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty || 0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;" ${sem.cerrada ? 'disabled' : ''}>
+      <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada || it.recibido ? 'disabled' : ''}>${uOpts}</select>
+    </div></td>
+    <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:10px;color:var(--primary);background:transparent;min-width:0;max-width:100%;">${provOpts}</select></td>
+    <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio || 0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
+    <td style="text-align:right;font-weight:700;">${it.qty > 0 ? fmt(it.qty * it.precio) : '—'}</td>
+    <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
+}
+
+function invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, idx) {
+  if (gen !== window._invPedidoRenderGen) return;
+  const tbody = document.getElementById(tbId);
+  if (!tbody) return;
+  const CHUNK = cerebrusUsuarioBodega() ? 8 : 12;
+  const end = Math.min(idx + CHUNK, rows.length);
+  let html = '';
+  for (let i = idx; i < end; i++) html += invPedidoItemRowHtml_(sem, orden, rows[i].it, rows[i].prod, provs);
+  tbody.insertAdjacentHTML('beforeend', html);
+  if (end < rows.length) requestAnimationFrame(function() { invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, end); });
+}
+
+function invRenderPedidoCards_(wrap, sem, provs, famFilter, subFilter, provFilter, qFilter, gen) {
+  wrap.innerHTML = '';
+  sem.ordenes.forEach(function(orden) {
+    const ordenTotal = orden.items.reduce(function(s, it) { return s + it.qty * it.precio; }, 0);
+    const filtered = [];
+    orden.items.forEach(function(it) {
+      const prod = invProdById_(it.prodId);
+      if (!prod || !invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFilter)) return;
+      filtered.push({ it: it, prod: prod });
+    });
+    const tbId = 'inv-ped-tb-' + orden.id;
+    wrap.insertAdjacentHTML('beforeend', `<div class="inv-orden-card"><div class="inv-orden-head">
+      <span class="inv-orden-num">${esc(orden.label)}</span>
+      <div class="inv-orden-title">${esc(orden.fecha)}</div>
+      <div class="inv-orden-total">${ordenTotal > 0 ? fmt(ordenTotal) : ''}</div>
+      ${!sem.cerrada ? `<button onclick="invRemoveOrden('${sem.id}','${orden.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:12px;">✕</button>` : ''}
+    </div>
+    <div class="inv-orden-body"><table class="inv-orden-table">
+      <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Recepción</th></tr></thead>
+      <tbody id="${tbId}"></tbody></table></div></div>`);
+    if (!filtered.length) {
+      const tbody = document.getElementById(tbId);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">Sin productos para este filtro.</td></tr>';
+      return;
+    }
+    invPedidoPumpRows_(gen, tbId, sem, orden, provs, filtered, 0);
+  });
+}
+
 function invRenderPedido() {
   invInit();
   const sem   = invGetSemana();
@@ -16078,85 +16208,24 @@ function invRenderPedido() {
   const famFilter = invNormTxt((filFam?.value || '').trim());
   const subFilter = invNormTxt((filSub?.value || '').trim());
   const provFilter = invNormTxt((filProv?.value || '').trim());
-  wrap.innerHTML = sem.ordenes.map((orden,oi) => {
-    const ordenTotal = orden.items.reduce((s,it)=>s+it.qty*it.precio,0);
-    const rows = orden.items.map((it,ii) => {
-      const prod = state.inventario.find(p=>p.id===it.prodId); if(!prod) return '';
-      const provTxt = String(it.prov || prod.prov || '').trim();
-      if (famFilter && invNormTxt(prod.familia || '') !== famFilter) return '';
-      if (subFilter && invNormTxt(prod.subfamilia || '') !== subFilter) return '';
-      if (provFilter && invNormTxt(provTxt) !== provFilter) return '';
-      if (qFilter) {
-        const hay = invNormTxt([
-          prod.nombre, prod.cat, prod.familia, prod.subfamilia, prod.unidad, provTxt
-        ].join(' '));
-        if (!hay.includes(qFilter)) return '';
-      }
-      const stockAct = prod.stock||0; const minimo = prod.minimo||0;
-      const sc = stockAct<=0?'inv-sem-rojo':stockAct<=minimo?'inv-sem-amarillo':'inv-sem-verde';
-      const provOpts = ['',...provs,'__otro__','__nuevo__'].map(p=>{
-        if (p === '') return `<option value="" ${!it.prov?'selected':''}>— elige proveedor —</option>`;
-        if (p === '__otro__') return `<option value="__otro__" ${it.prov==='__otro__'?'selected':''}>Otro</option>`;
-        if (p === '__nuevo__') return `<option value="__nuevo__" ${it.prov==='__nuevo__'?'selected':''}>+ Nuevo proveedor…</option>`;
-        return `<option value="${esc(p)}" ${it.prov===p?'selected':''}>${esc(p)}</option>`;
-      }).join('');
-      const qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty||0);
-      const uDisp = invUnidadPedidoLine(it, prod);
-      const uOpts = invUnidadPedidoSelectOptions(uDisp, prod).map(function(u) {
-        return `<option value="${esc(u)}" ${String(u) === String(uDisp) ? 'selected' : ''}>${esc(u)}</option>`;
-      }).join('');
-      const pm = it.precioMeta;
-      const pmHtml = (pm && pm.source === 'factura')
-        ? `<div style="font-size:8px;color:#64748b;margin-top:4px;max-width:150px;line-height:1.25;text-align:right;" title="Precio referencia desde detalle de factura importada">📄 Fact. ${esc(String(pm.facNro||'—'))} · ${esc(String(pm.facEmi||''))}${pm.lineUnidad ? ' · u fact.: '+esc(pm.lineUnidad) : ''}${pm.unitWarn ? ' · ⚠ unidad' : ''}</div>`
-        : (pm && pm.source === 'lista')
-        ? `<div style="font-size:8px;color:#94a3b8;margin-top:4px;">📒 Lista de precios</div>`
-        : '';
-      const recUi = it.qty>0 ? `
-        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#64748b;cursor:pointer;user-select:none;">
-            <input type="checkbox" ${it.recibido?'checked':''} ${sem.cerrada?'disabled':''}
-              onchange="invToggleRecepcionStock('${sem.id}','${orden.id}','${it.prodId}',this.checked)">
-            <span style="color:${it.recibido?'var(--success)':'#94a3b8'};">${it.recibido?'Ingresado a bodega':'Confirmar ingreso'}</span>
-          </label>
-          <div style="display:flex;align-items:center;gap:4px;">
-            <span style="font-size:9px;color:#94a3b8;">Recibido</span>
-            <input class="inv-pedido-qty" type="text" inputmode="decimal" value="${qtyRec}"
-              ${sem.cerrada||it.recibido?'disabled':''}
-              onchange="invSetOrdenQtyRecibida('${sem.id}','${orden.id}','${it.prodId}',this.value)"
-              style="width:62px;">
-            <span style="font-size:9px;color:#94a3b8;">${esc(prod.unidad||'u')}</span>
-          </div>
-          ${!sem.cerrada ? `<div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
-            <button type="button" onclick="invEditPedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
-              style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid var(--border);background:transparent;color:#64748b;cursor:pointer;font-family:inherit;">✏ Editar</button>
-            <button type="button" onclick="invRemovePedidoLinea('${sem.id}','${orden.id}','${it.prodId}')"
-              style="font-size:9px;padding:2px 7px;border-radius:999px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.06);color:var(--danger);cursor:pointer;font-family:inherit;">✕ Quitar</button>
-          </div>` : ''}
-        </div>` : `<span style="font-size:10px;color:#94a3b8;">—</span>`;
-      return `<tr><td><span class="inv-semaforo ${sc}"></span>${esc(prod.nombre)} <span style="font-size:11px;color:#64748b;font-weight:700;">(${stockAct} ${esc(prod.unidad||'u')})</span><div style="font-size:11px;font-weight:700;color:#334155;margin-top:4px;">${esc(prod.cat||'')}</div></td>
-        <td><div style="display:flex;align-items:center;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
-          <input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.qty||0}" onchange="invSetOrdenQty('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:65px;" ${sem.cerrada?'disabled':''}>
-          <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada||it.recibido?'disabled':''}>${uOpts}</select>
-        </div></td>
-        <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:10px;color:var(--primary);background:transparent;min-width:0;max-width:100%;">${provOpts}</select></td>
-        <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio||0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
-        <td style="text-align:right;font-weight:700;">${it.qty>0?fmt(it.qty*it.precio):'—'}</td>
-        <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
-    }).filter(Boolean).join('');
-    const bodyRows = rows || `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">Sin productos para este filtro.</td></tr>`;
-    return `<div class="inv-orden-card"><div class="inv-orden-head">
-      <span class="inv-orden-num">${esc(orden.label)}</span>
-      <div class="inv-orden-title">${esc(orden.fecha)}</div>
-      <div class="inv-orden-total">${ordenTotal>0?fmt(ordenTotal):''}</div>
-      ${!sem.cerrada?`<button onclick="invRemoveOrden('${sem.id}','${orden.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:12px;">✕</button>`:''}
-    </div>
-    <div class="inv-orden-body"><table class="inv-orden-table">
-      <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Recepción</th></tr></thead>
-      <tbody>${bodyRows}</tbody></table></div></div>`;
-  }).join('');
-
-  invRenderSugerencias();
-  calAlertForWeek(sem);
+  if (!window._invPedidoRenderGen) window._invPedidoRenderGen = 0;
+  const pedGen = ++window._invPedidoRenderGen;
+  let totalRows = 0;
+  sem.ordenes.forEach(function(o) {
+    o.items.forEach(function(it) {
+      const prod = invProdById_(it.prodId);
+      if (prod && invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFilter)) totalRows++;
+    });
+  });
+  wrap.innerHTML = '<div style="padding:14px;text-align:center;color:#64748b;font-size:12px;">Cargando pedido (' + totalRows + ' líneas)…</div>';
+  requestAnimationFrame(function() {
+    if (pedGen !== window._invPedidoRenderGen) return;
+    invRenderPedidoCards_(wrap, sem, provs, famFilter, subFilter, provFilter, qFilter, pedGen);
+    if (!cerebrusUsuarioBodega()) {
+      invRenderSugerencias();
+      calAlertForWeek(sem);
+    }
+  });
 }
 
 function invPedidoLimpiarFiltros() {

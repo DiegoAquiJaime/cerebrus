@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.19",
-  "notes": "Bodega: conteo por tandas, sin tabla/pedido al entrar, base nube diferida."
+  "version": "2026.06.06.20",
+  "notes": "Inventario y pedido semanal por tandas; sin bloqueo al cambiar categoría o pestaña."
 }
