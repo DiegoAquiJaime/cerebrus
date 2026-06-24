@@ -14349,7 +14349,7 @@ function _postLoadSetup() {
     }
     if (!_pldBodega) iaLoadSavedKey();
     if (typeof cerebrusTtsUpdateButton === 'function') cerebrusTtsUpdateButton();
-    startVersionChecker();
+    if (!_pldBodega) startVersionChecker();
     if (!_pldBodega && typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
     if (typeof cerebrusClockStart === 'function') cerebrusClockStart();
   }, _pldBodega ? 200 : 800);
@@ -15211,16 +15211,11 @@ function invBodegaUpdateCritBanner(criticos) {
 function cerebrusSetCloudBaseDeferred_(snap) {
   snap = snap || state;
   if (cerebrusUsuarioBodega()) {
-    setTimeout(function() {
-      try {
-        var light = {};
-        ['inventario', 'preciosProveedor', 'semanaActiva', 'catInventario', 'unidadesInventario', 'invFamilias'].forEach(function(k) {
-          if (snap[k] !== undefined) light[k] = snap[k];
-        });
-        if (Array.isArray(snap.movimientos) && snap.movimientos.length) light.movimientos = snap.movimientos;
-        _cloudBaseState = JSON.parse(JSON.stringify(light));
-      } catch (e) { _cloudBaseState = null; }
-    }, 8000);
+    var light = {};
+    ['inventario', 'preciosProveedor', 'semanaActiva', 'catInventario', 'unidadesInventario', 'invFamilias'].forEach(function(k) {
+      if (snap[k] !== undefined) light[k] = snap[k];
+    });
+    _cloudBaseState = light;
     return;
   }
   try { _cloudBaseState = JSON.parse(JSON.stringify(snap)); } catch (e) { _cloudBaseState = null; }
@@ -15232,7 +15227,9 @@ function invScheduleChunk_(fn) {
   else requestAnimationFrame(fn);
 }
 
-function invBodegaYieldMs_() { return cerebrusUsuarioBodega() ? 18 : 0; }
+function invBodegaYieldMs_() { return cerebrusUsuarioBodega() ? 45 : 0; }
+
+function invTableChunkSize_() { return cerebrusUsuarioBodega() ? 6 : 16; }
 
 function _invActiveSubPanel_() {
   var panels = ['inventario', 'conteo', 'pedido', 'consumo', 'movimientos'];
@@ -15320,11 +15317,13 @@ function invCheckKpis(opts) {
   set('inv-kpi-total',   total);
   set('inv-kpi-cats',    cats+' categoría'+(cats!==1?'s':''));
 
-  if (cerebrusUsuarioBodega() && !opts.full) {
-    set('inv-kpi-critico', '…');
-    set('inv-kpi-vinc', '…');
-    set('inv-kpi-valor', '…');
-    setTimeout(function() { try { invCheckKpis({ full: true }); } catch (e) {} }, 3000);
+  if (cerebrusUsuarioBodega()) {
+    var critN = 0;
+    try { critN = invListProductosStockCriticos().length; } catch (e) {}
+    set('inv-kpi-critico', critN);
+    set('inv-kpi-vinc', '—');
+    set('inv-kpi-valor', '—');
+    try { invBodegaUpdateCritBanner(invListProductosStockCriticos()); } catch (e2) {}
     return;
   }
 
@@ -15606,7 +15605,41 @@ function invExportDueñaExcel() {
   notify(`✓ Descargado: ${fname}`);
 }
 
+function invBodegaEnsureCatFilter_() {
+  if (!cerebrusUsuarioBodega() || _invCatFilter !== 'todas') return;
+  var n = (state.inventario || []).length;
+  if (n <= 55) return;
+  var cats = invGetCategories();
+  if (cats.length) {
+    _invCatFilter = cats[0];
+    invRenderCatTabs();
+  }
+}
+
+function invInvTableRowHtmlBodega_(p) {
+  var stock = p.stock || 0;
+  var minimo = p.minimo || 0;
+  var stockColor = stock <= 0 ? 'var(--danger)' : stock <= minimo && minimo > 0 ? 'var(--warning)' : 'var(--success)';
+  var sc = stock <= 0 ? 'inv-sem-rojo' : stock <= minimo && minimo > 0 ? 'inv-sem-amarillo' : 'inv-sem-verde';
+  return '<tr id="inv-row-' + p.id + '">' +
+    '<td style="font-weight:600;">' + esc(p.nombre || '') +
+      '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' +
+        '<input id="inv-qm-qty-' + p.id + '" type="text" inputmode="decimal" placeholder="cant." style="width:58px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:10px;text-align:right;">' +
+        '<button onclick="invQuickMovFromRow(\'' + p.id + '\',\'despacho\',\'inv-qm-qty-' + p.id + '\')" style="background:#6366f114;border:1px solid #6366f155;border-radius:5px;padding:2px 6px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#4338ca;">→ Cocina</button>' +
+        '<button onclick="invQuickMovFromRow(\'' + p.id + '\',\'devolucion\',\'inv-qm-qty-' + p.id + '\')" style="background:#10b98114;border:1px solid #10b98155;border-radius:5px;padding:2px 6px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#047857;">← Bodega</button>' +
+      '</div></td>' +
+    '<td style="font-size:10px;color:#94a3b8;">' + esc(p.cat || '—') + '</td>' +
+    '<td style="font-size:10px;color:#64748b;">' + esc(p.familia || '') + '</td>' +
+    '<td style="font-size:11px;">' + esc(p.unidad || 'u') + '</td>' +
+    '<td style="text-align:right;font-weight:700;color:' + stockColor + ';">' + stock + '</td>' +
+    '<td style="text-align:right;color:#94a3b8;">' + minimo + '</td>' +
+    '<td style="text-align:center;"><span class="inv-semaforo ' + sc + '"></span></td>' +
+    '<td colspan="5" style="font-size:10px;color:#94a3b8;">—</td>' +
+  '</tr>';
+}
+
 function invInvTableRowHtml_(p) {
+  if (cerebrusUsuarioBodega()) return invInvTableRowHtmlBodega_(p);
   const precios = _getPreciosUnified(p).filter(x=>x.precio>0).sort((a,b)=>a.precio-b.precio);
   const best    = precios[0];
   const provTags = precios.map(x => {
@@ -15673,7 +15706,7 @@ function invInvTableRowHtml_(p) {
 
 function invRenderTablePump_(gen, tbody, filtered, idx) {
   if (gen !== window._invTableRenderGen) return;
-  const CHUNK = 16;
+  const CHUNK = invTableChunkSize_();
   if (idx === 0) tbody.innerHTML = '';
   const end = Math.min(idx + CHUNK, filtered.length);
   let html = '';
@@ -15686,6 +15719,7 @@ function invRenderTablePump_(gen, tbody, filtered, idx) {
 
 function invRenderTable() {
   invInit();
+  invBodegaEnsureCatFilter_();
   const tbody = document.getElementById('inv-tbody'); if (!tbody) return;
   const filtered = invGetVisibleProducts();
 
@@ -16114,7 +16148,33 @@ function invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFi
   return true;
 }
 
+function invPedidoItemRowHtmlBodega_(sem, orden, it, prod) {
+  var stockAct = prod.stock || 0;
+  var minimo = prod.minimo || 0;
+  var sc = stockAct <= 0 ? 'inv-sem-rojo' : stockAct <= minimo ? 'inv-sem-amarillo' : 'inv-sem-verde';
+  var provTxt = esc(it.prov || prod.prov || '—');
+  var qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty || 0);
+  var recUi = it.qty > 0
+    ? '<label style="display:flex;align-items:center;gap:5px;font-size:10px;cursor:pointer;">' +
+        '<input type="checkbox" ' + (it.recibido ? 'checked' : '') + ' ' + (sem.cerrada ? 'disabled' : '') +
+        ' onchange="invToggleRecepcionStock(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.checked)">' +
+        '<span>' + (it.recibido ? 'Ingresado' : 'Confirmar') + '</span></label>' +
+        '<input class="inv-pedido-qty" type="text" value="' + qtyRec + '" ' + (sem.cerrada || it.recibido ? 'disabled' : '') +
+        ' onchange="invSetOrdenQtyRecibida(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:56px;margin-top:4px;">'
+    : '—';
+  return '<tr><td><span class="inv-semaforo ' + sc + '"></span>' + esc(prod.nombre) +
+    ' <span style="font-size:11px;color:#64748b;">(' + stockAct + ' ' + esc(prod.unidad || 'u') + ')</span></td>' +
+    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" value="' + (it.qty || 0) + '" ' +
+    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenQty(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:56px;"></td>' +
+    '<td style="font-size:10px;">' + provTxt + '</td>' +
+    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" value="' + (it.precio || 0) + '" ' +
+    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenPrecio(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:64px;text-align:right;"></td>' +
+    '<td style="text-align:right;font-weight:700;">' + (it.qty > 0 ? fmt(it.qty * it.precio) : '—') + '</td>' +
+    '<td style="text-align:right;font-size:10px;">' + recUi + '</td></tr>';
+}
+
 function invPedidoItemRowHtml_(sem, orden, it, prod, provs) {
+  if (cerebrusUsuarioBodega()) return invPedidoItemRowHtmlBodega_(sem, orden, it, prod);
   const stockAct = prod.stock || 0;
   const minimo = prod.minimo || 0;
   const sc = stockAct <= 0 ? 'inv-sem-rojo' : stockAct <= minimo ? 'inv-sem-amarillo' : 'inv-sem-verde';
@@ -16172,7 +16232,7 @@ function invPedidoPumpRows_(gen, tbId, sem, orden, provs, rows, idx) {
   if (gen !== window._invPedidoRenderGen) return;
   const tbody = document.getElementById(tbId);
   if (!tbody) return;
-  const CHUNK = cerebrusUsuarioBodega() ? 8 : 12;
+  const CHUNK = cerebrusUsuarioBodega() ? 4 : 12;
   const end = Math.min(idx + CHUNK, rows.length);
   let html = '';
   for (let i = idx; i < end; i++) html += invPedidoItemRowHtml_(sem, orden, rows[i].it, rows[i].prod, provs);
@@ -27583,17 +27643,9 @@ async function loadFromCloudServareBodegaFast_() {
     _nid = 200;
     await servareMergeInvIntoState_(state, { light: true });
     state._servareMovFull = false;
-    try {
-      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
-      const vj = await vr.json();
-      if (vj.ok) {
-        cloudVersion = String(vj.version || '0');
-        _cloudBaseVersion = cloudVersion;
-      }
-    } catch (e) {}
     try { cerebrusSetCloudBaseDeferred_(state); } catch (e) { _cloudBaseState = null; }
     setSyncStatus('✓ Inventario', 'ok');
-    _postLoadSetup();
+    setTimeout(function() { _postLoadSetup(); }, 0);
     return true;
   } catch (e) {
     console.warn('[SERVARE] carga rápida Bodega:', e);
@@ -28402,7 +28454,11 @@ function closeConflictDetails() {
 // getOnline debe devolver por sesión { user, idle?, tabFocused? } para mostrar inactivo / otra pestaña.
 function startHeartbeat() {
   sendHeartbeat();
-  _heartbeatTimer = setInterval(() => { sendHeartbeat(); checkVersion(); }, 30000);
+  var ms = cerebrusUsuarioBodega() ? 120000 : 30000;
+  _heartbeatTimer = setInterval(function() {
+    sendHeartbeat();
+    if (!cerebrusUsuarioBodega()) checkVersion();
+  }, ms);
 }
 async function sendHeartbeat() {
   if (!IS_CLOUD || !currentUser) return;

@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.22",
-  "notes": "Nueva URL Servare republicada; carga ligera Bodega."
+  "version": "2026.06.06.23",
+  "notes": "Bodega: tabla y pedido livianos, una categoría por defecto, sin clon JSON pesado."
 }
