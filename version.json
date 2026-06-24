@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.23",
-  "notes": "Bodega: tabla y pedido livianos, una categoría por defecto, sin clon JSON pesado."
+  "version": "2026.06.06.24",
+  "notes": "Bodega: conteo y pedido sin bloqueo (catálogo liviano, una categoría, renders diferidos)."
 }

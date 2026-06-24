@@ -6841,7 +6841,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.22';
+const APP_VERSION = '2026.06.06.23';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7316,9 +7316,8 @@ function showTab(tabId) {
   if (tabId==='inventario') {
     if (cerebrusUsuarioBodega()) {
       invRenderCatTabs();
-      if (_invActiveSubPanel_() !== 'conteo') invSubTab('conteo');
-      else invRenderBodegaLite_();
-      setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 120);
+      invRenderBodegaLite_();
+      setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 600);
     } else {
       invRender();
     }
@@ -15257,7 +15256,7 @@ function invRenderBodegaLite_() {
     }
     movRender(); movRenderDashSemanal();
   }
-  setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 120);
+  setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, cerebrusUsuarioBodega() ? 600 : 120);
 }
 
 function invRender() {
@@ -15754,11 +15753,25 @@ function invRenderTable() {
 //  MÓDULO INVENTARIO — PEDIDOS SEMANALES
 // ============================================================
 
+function invSubTabCancelRenders_() {
+  window._invTableRenderGen = (window._invTableRenderGen || 0) + 1;
+  window._invPedidoRenderGen = (window._invPedidoRenderGen || 0) + 1;
+  window._conteoRenderGen = (window._conteoRenderGen || 0) + 1;
+}
+
 function invSubTab(panel) {
+  invSubTabCancelRenders_();
   ['inventario','conteo','pedido','consumo','movimientos'].forEach(p => {
     const el = document.getElementById('inv-panel-'+p); if(el) el.style.display = p===panel?'':'none';
     const btn = document.getElementById('ist-'+p); if(btn) btn.classList.toggle('active', p===panel);
   });
+  if (cerebrusUsuarioBodega() && (panel === 'pedido' || panel === 'conteo')) {
+    setTimeout(function() {
+      if (panel === 'pedido') invRenderPedido();
+      else if (panel === 'conteo') conteoRender();
+    }, 0);
+    return;
+  }
   if (panel==='pedido')       invRenderPedido();
   if (panel==='consumo')      invRenderConsumo();
   if (panel==='movimientos') {
@@ -16333,7 +16346,7 @@ function invRenderPedido() {
       window._invPedidoShowAll = true;
     }
   }
-  if (filFam) {
+  if (filFam && !cerebrusUsuarioBodega()) {
     const prevFam = filFam.value || '';
     const familias = [...new Set((state.inventario||[]).map(p => (p.familia || '').trim()).filter(Boolean))]
       .filter(f => f !== 'Sin familia')
@@ -16612,6 +16625,7 @@ function invUnifyPedidoProveedoresPrompt() {
 function invResolveProveedorCanonical_(raw) {
   const s = String(raw || '').trim();
   if (!s) return '';
+  if (cerebrusUsuarioBodega()) return s;
   const map = window._invProvCanonMapCache || invBuildProveedorCanonicalMap_();
   return map[s] || s;
 }
@@ -16679,6 +16693,27 @@ function invProveedorSugeridoPedido(prod) {
 
 /** Lista depurada de proveedores/familias para selects del pedido (misma lógica que la tarjeta "Agregar producto"). */
 function invPedidoProveedorCatalogFromState(sem) {
+  if (cerebrusUsuarioBodega()) {
+    var seen = {};
+    var out = [];
+    function add(n) {
+      n = String(n || '').trim();
+      if (!n || seen[n]) return;
+      seen[n] = 1;
+      out.push(n);
+    }
+    if (sem && Array.isArray(sem.ordenes)) {
+      sem.ordenes.forEach(function(o) {
+        (o.items || []).forEach(function(it) {
+          if (!it.qty || it.qty <= 0) return;
+          add(it.prov);
+          var prod = invProdById_(it.prodId);
+          if (prod) add(prod.prov);
+        });
+      });
+    }
+    return out.sort(function(a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
+  }
   const bad = new Set(['', 'SIN FAMILIA', 'SIN SUBFAMILIA', 'REVISAR MANUAL', 'SIN CLASIFICAR']);
   const all = [];
   (state.inventario || []).forEach(function(p) {
@@ -28047,8 +28082,8 @@ async function saveToCloud(description, silent) {
         return;
       }
 
-      // Bodega + solo inventario → Servare
-      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv && onlyInv) {
+      // Bodega → Servare (solo inventario)
+      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv) {
         await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
         cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Inventario en Servare', 'ok');
