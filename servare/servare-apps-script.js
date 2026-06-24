@@ -55,7 +55,7 @@ function ensureSheets_() {
   var meta = ss.getSheetByName(META_SHEET);
   if (meta.getLastRow() < 1) {
     meta.getRange(1, 1, 1, 4).setValues([['version', 'lastUser', 'lastDate', 'notes']]);
-    meta.getRange(2, 1, 2, 4).setValues([[0, '', '', 'Servare inicializado']]);
+    meta.getRange(2, 1, 1, 4).setValues([[0, '', '', 'Servare inicializado']]);
   }
   var users = ss.getSheetByName(USERS_SHEET);
   if (users.getLastRow() < 1) {
@@ -79,7 +79,7 @@ function writeMeta_(user, description) {
   var sh = ss_().getSheetByName(META_SHEET);
   var meta = readMeta_();
   var next = (Number(meta.version) || 0) + 1;
-  sh.getRange(2, 1, 2, 4).setValues([[next, user || '', new Date().toISOString(), description || '']]);
+  sh.getRange(2, 1, 1, 4).setValues([[next, user || '', new Date().toISOString(), description || '']]);
   return next;
 }
 
@@ -104,7 +104,7 @@ function writePartChunks_(payload) {
   sh.getRange(1, 1, 1, 2).setValues([['chunk', 'data']]);
   var str = String(payload || '');
   if (!str) {
-    sh.getRange(2, 1, 2, 2).setValues([[0, '{}']]);
+    sh.getRange(2, 1, 1, 2).setValues([[0, '{}']]);
     return;
   }
   var total = Math.ceil(str.length / CHUNK_SIZE) || 1;

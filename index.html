@@ -6840,7 +6840,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.15';
+const APP_VERSION = '2026.06.06.16';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13118,17 +13118,22 @@ const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIPT_EXEC).startsWith('https://');
 
 /** Sheet propio inventario/bodega — pegar URL /exec tras publicar servare-apps-script.js */
-const SERVARE_APPS_SCRIPT_EXEC = '__SERVARE_APPS_SCRIPT_URL__';
+const SERVARE_APPS_SCRIPT_EXEC = 'https://script.google.com/macros/s/AKfycbzS5OdfLbfrgNgmg-5mSCMCy6h9rkebdPeLxXTxBlChvVqlx2FeW0zRGT-6SPVyQ9dMuw/exec';
 var SERVARE_CFG_KEY = 'cerebrusServareCfg';
 var _servareCloudVersion = '0';
 
 function servareGetCfg_() {
+  var bakedUrl = (SERVARE_APPS_SCRIPT_EXEC && String(SERVARE_APPS_SCRIPT_EXEC).startsWith('https://'))
+    ? String(SERVARE_APPS_SCRIPT_EXEC).replace(/\/$/, '') : '';
   try {
     var raw = localStorage.getItem(SERVARE_CFG_KEY);
-    if (!raw) return { url: '', enabled: false };
+    if (!raw) return { url: bakedUrl, enabled: !!bakedUrl };
     var o = JSON.parse(raw);
-    return { url: String(o.url || '').replace(/\/$/, ''), enabled: !!o.enabled };
-  } catch (e) { return { url: '', enabled: false }; }
+    return {
+      url: String(o.url || bakedUrl || '').replace(/\/$/, ''),
+      enabled: o.enabled !== undefined ? !!o.enabled : !!bakedUrl
+    };
+  } catch (e) { return { url: bakedUrl, enabled: !!bakedUrl }; }
 }
 
 function servareResolveApiUrl_() {

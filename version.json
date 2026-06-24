@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.15",
-  "notes": "Mantenimiento: archivar semanas SAC cerradas >1 mes en PDF+JSON y liberar memoria."
+  "version": "2026.06.06.16",
+  "notes": "Servare en producción: URL embebida en index.html; inventario desacoplado del Sheet Cerebrus."
 }
