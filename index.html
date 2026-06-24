@@ -6840,7 +6840,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.17';
+const APP_VERSION = '2026.06.06.18';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -14177,8 +14177,9 @@ function invClearAllPreciosOneShot_() {
 }
 
 function _postLoadSetup() {
+  const _pldBodega = cerebrusUsuarioBodega();
   if (!state.creditos)    state.creditos    = makeDefaultCreditos();
-  applyOfficialCreditosCloudSyncIfNeeded();
+  if (!_pldBodega) applyOfficialCreditosCloudSyncIfNeeded();
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
   if (!state.inventario)       state.inventario       = [];
   if (!state.movimientos)      state.movimientos      = [];
@@ -14198,10 +14199,12 @@ function _postLoadSetup() {
   if (state.sacSemanaTrabajo && (state.sacSemanaTrabajo.w < 1 || state.sacSemanaTrabajo.w > 4)) state.sacSemanaTrabajo = null;
   if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'range' && (!state.sacPeriodoTrabajo.start || !state.sacPeriodoTrabajo.end || state.sacPeriodoTrabajo.end < state.sacPeriodoTrabajo.start)) state.sacPeriodoTrabajo = null;
   if (state.sacPeriodoTrabajo && state.sacPeriodoTrabajo.type === 'slot' && (state.sacPeriodoTrabajo.w < 1 || state.sacPeriodoTrabajo.w > 4)) state.sacPeriodoTrabajo = null;
-  if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
-  if (typeof sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth === 'function') sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth();
-  if (typeof sacPreferIsoWhenSlotMatchesIsoWeek === 'function') sacPreferIsoWhenSlotMatchesIsoWeek();
-  if (typeof sacAlignPeriodToStoredData === 'function') sacAlignPeriodToStoredData();
+  if (!_pldBodega) {
+    if (typeof sacMigrateLegacySacKeys === 'function') sacMigrateLegacySacKeys();
+    if (typeof sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth === 'function') sacMigrateMonthSlotWhenIsoWeekStartsPriorMonth();
+    if (typeof sacPreferIsoWhenSlotMatchesIsoWeek === 'function') sacPreferIsoWhenSlotMatchesIsoWeek();
+    if (typeof sacAlignPeriodToStoredData === 'function') sacAlignPeriodToStoredData();
+  }
   if (!state.sacFinanciamientoRegistro)  state.sacFinanciamientoRegistro  = [];
   if (!state.facSemana)                  state.facSemana                  = [];
   if (!Array.isArray(state.facSemHoySel)) state.facSemHoySel              = [];
@@ -14223,23 +14226,31 @@ function _postLoadSetup() {
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
   invMigrateCategoryNames_();
-  const clearedPrecios = invClearAllPreciosOneShot_();
-  try {
-    const rescued = invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true, silent: true });
-    if ((rescued.inv > 0 || rescued.ped > 0) && !clearedPrecios) {
-      const k = 'cerebrus_precios_rescue_' + new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem(k) !== '1') {
-        localStorage.setItem(k, '1');
-        notify('💲 Recuperados ' + rescued.inv + ' precios en lista y ' + rescued.ped + ' líneas de pedido desde historial (solo vacíos).');
+  const clearedPrecios = _pldBodega ? 0 : invClearAllPreciosOneShot_();
+  if (!_pldBodega) {
+    try {
+      const rescued = invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true, silent: true });
+      if ((rescued.inv > 0 || rescued.ped > 0) && !clearedPrecios) {
+        const k = 'cerebrus_precios_rescue_' + new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem(k) !== '1') {
+          localStorage.setItem(k, '1');
+          notify('💲 Recuperados ' + rescued.inv + ' precios en lista y ' + rescued.ped + ' líneas de pedido desde historial (solo vacíos).');
+        }
       }
-    }
-  } catch (e) {}
-  applyBodegaN3PlantillaIfNeeded();
-  applyInventorySnapshot20260331IfNeeded();
-  applyPdfMasterAdditionsIfNeeded();
-  setTimeout(function() {
-    applyAbarrotesBienExtraIfNeeded().finally(function() { invApplyAutoUnifyIfNeeded(); });
-  }, 300);
+    } catch (e) {}
+  }
+  if (!_pldBodega) applyBodegaN3PlantillaIfNeeded();
+  if (!_pldBodega) applyInventorySnapshot20260331IfNeeded();
+  if (!_pldBodega) applyPdfMasterAdditionsIfNeeded();
+  if (!_pldBodega) {
+    setTimeout(function() {
+      applyAbarrotesBienExtraIfNeeded().finally(function() { invApplyAutoUnifyIfNeeded(); });
+    }, 300);
+  } else {
+    setTimeout(function() {
+      try { invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true, silent: true }); } catch (e) {}
+    }, 12000);
+  }
   invEnsureFamiliesState();
   (state.inventario || []).forEach(function(p) {
     if (!p.familia) p.familia = 'Sin familia';
@@ -14255,9 +14266,11 @@ function _postLoadSetup() {
   }); });
   try { if(localStorage.getItem('cerebrus_dark')==='1'){document.body.classList.add('dark-mode');document.getElementById('dark-btn').textContent='☀️';} } catch(e){}
   try { cerebrusStripCalendarioBitacoraModulo_(); } catch (e) {}
-  _calMap = buildCalMap(_calYear);
-  calRender();
-  renderAll(); calc(); renderHistorial(); vsSavedRender();
+  if (!_pldBodega) {
+    _calMap = buildCalMap(_calYear);
+    calRender();
+    renderAll(); calc(); renderHistorial(); vsSavedRender();
+  }
   if (clearedPrecios > 0) {
     notify('🧹 Precios de Inventario limpiados (one-shot): ahora debes cargarlos manualmente.');
   }
@@ -14268,19 +14281,23 @@ function _postLoadSetup() {
     showTab('sac'); // Abre Semana Actual por defecto
   }
   setTimeout(() => {
-    checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
-    if (!cerebrusUsuarioBodega() && typeof sacCalcBalance === 'function') sacCalcBalance();
-    if (typeof facSemRender === 'function') facSemRender();
-    iaLoadSavedKey();
+    if (!_pldBodega) {
+      checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
+      if (typeof sacCalcBalance === 'function') sacCalcBalance();
+      if (typeof facSemRender === 'function') facSemRender();
+    }
+    if (!_pldBodega) iaLoadSavedKey();
     if (typeof cerebrusTtsUpdateButton === 'function') cerebrusTtsUpdateButton();
     startVersionChecker();
-    if (typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
+    if (!_pldBodega && typeof cereBackupWeeklyReminder === 'function') cereBackupWeeklyReminder();
     if (typeof cerebrusClockStart === 'function') cerebrusClockStart();
-  }, 800);
-  infInit();
-  setTimeout(function() {
-    try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
-  }, 1200);
+  }, _pldBodega ? 200 : 800);
+  if (!_pldBodega) infInit();
+  if (!_pldBodega) {
+    setTimeout(function() {
+      try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
+    }, 1200);
+  }
 }
 
 // ============================================================
@@ -15126,8 +15143,8 @@ function invRender() {
   invCheckKpis();
   invRenderCatTabs();
   invRenderTable();
-  invRenderPedido();
-  facCheckVencimientos();
+  if (_invPedidoPanelVisible_()) invRenderPedido();
+  if (!cerebrusUsuarioBodega()) facCheckVencimientos();
   const sel = document.getElementById('inv-f-prov');
   if (sel && state.facturas) {
     const provs = Object.keys(state.facturas).sort();
@@ -15206,6 +15223,11 @@ function invRenderCatTabs() {
     cats.map(c=>`<button class="inv-cat-btn ${_invCatFilter===c?'active':''}" onclick="invSetCat('${esc(c)}')">${esc(c)}</button>`).join('');
 }
 function invSetCat(cat) { _invCatFilter=cat; invRenderCatTabs(); invRenderTable(); }
+
+function _invPedidoPanelVisible_() {
+  const el = document.getElementById('inv-panel-pedido');
+  return !!(el && el.style.display !== 'none');
+}
 
 /** Filtros de la tabla de inventario (sin ordenar). `skipCat=true` ignora la pestaña Todas/X. */
 function invProductPassesInvFilters(p, skipCat) {
