@@ -6841,7 +6841,7 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.23';
+const APP_VERSION = '2026.06.06.24';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -15226,7 +15226,7 @@ function invScheduleChunk_(fn) {
   else requestAnimationFrame(fn);
 }
 
-function invBodegaYieldMs_() { return cerebrusUsuarioBodega() ? 45 : 0; }
+function invBodegaYieldMs_() { return cerebrusUsuarioBodega() ? 60 : 0; }
 
 function invTableChunkSize_() { return cerebrusUsuarioBodega() ? 6 : 16; }
 
@@ -16262,7 +16262,42 @@ function invPedidoToggleShowAll() {
 
 function invRenderPedidoCards_(wrap, sem, provs, famFilter, subFilter, provFilter, qFilter, gen) {
   wrap.innerHTML = '';
-  sem.ordenes.forEach(function(orden) {
+  var ordenIdx = 0;
+  var ordenes = sem.ordenes || [];
+
+  function nextOrden() {
+    if (gen !== window._invPedidoRenderGen) return;
+    if (ordenIdx >= ordenes.length) return;
+    var orden = ordenes[ordenIdx++];
+    var ordenTotal = orden.items.reduce(function(s, it) { return s + it.qty * it.precio; }, 0);
+    var filtered = [];
+    orden.items.forEach(function(it) {
+      var prod = invProdById_(it.prodId);
+      if (!prod || !invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFilter)) return;
+      filtered.push({ it: it, prod: prod });
+    });
+    var tbId = 'inv-ped-tb-' + orden.id;
+    wrap.insertAdjacentHTML('beforeend', `<div class="inv-orden-card"><div class="inv-orden-head">
+      <span class="inv-orden-num">${esc(orden.label)}</span>
+      <div class="inv-orden-title">${esc(orden.fecha)}</div>
+      <div class="inv-orden-total">${ordenTotal > 0 ? fmt(ordenTotal) : ''}</div>
+      ${!sem.cerrada ? `<button onclick="invRemoveOrden('${sem.id}','${orden.id}')" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:12px;">✕</button>` : ''}
+    </div>
+    <div class="inv-orden-body"><table class="inv-orden-table">
+      <thead><tr><th>Producto</th><th style="text-align:right;">Cantidad</th><th>Proveedor</th><th style="text-align:right;">Precio unit.</th><th style="text-align:right;">Subtotal</th><th style="text-align:right;">Recepción</th></tr></thead>
+      <tbody id="${tbId}"></tbody></table></div></div>`);
+    if (!filtered.length) {
+      var tbody = document.getElementById(tbId);
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:16px;">Sin productos para este filtro.</td></tr>';
+      invScheduleChunk_(nextOrden);
+      return;
+    }
+    invPedidoPumpRows_(gen, tbId, sem, orden, provs, filtered, 0);
+    invScheduleChunk_(nextOrden);
+  }
+
+  if (cerebrusUsuarioBodega()) invScheduleChunk_(nextOrden);
+  else sem.ordenes.forEach(function(orden) {
     const ordenTotal = orden.items.reduce(function(s, it) { return s + it.qty * it.precio; }, 0);
     const filtered = [];
     orden.items.forEach(function(it) {
@@ -16355,7 +16390,7 @@ function invRenderPedido() {
     const keepFam = familias.find(function(f) { return invNormTxt(f) === invNormTxt(prevFam); });
     if (keepFam) filFam.value = keepFam;
   }
-  if (filSub) {
+  if (filSub && !cerebrusUsuarioBodega()) {
     const prevSub = filSub.value || '';
     const subfamilias = [...new Set((state.inventario || []).map(p => (p.subfamilia || '').trim()).filter(Boolean))]
       .filter(s => s !== 'Sin subfamilia')
@@ -20574,10 +20609,19 @@ function conteoFmtCant_(n) {
   return String(r).replace('.', ',');
 }
 
+function conteoBodegaEnsureCatFilter_(catFilter) {
+  if (!cerebrusUsuarioBodega() || !catFilter) return;
+  if (catFilter.value && catFilter.value !== 'todas') return;
+  var n = (state.inventario || []).length;
+  if (n <= 55) return;
+  var cats = invGetCategories();
+  if (cats.length) catFilter.value = cats[0];
+}
+
 function conteoGetModo(prodId) {
   if (!window._conteoModo) window._conteoModo = {};
   if (window._conteoModo[prodId] == null) {
-    const p = (state.inventario || []).find(x => x.id === prodId);
+    const p = invProdById_(prodId);
     window._conteoModo[prodId] = invPiezasPorEmbalaje(p) > 0 ? 'emb' : 'unidad';
   }
   return window._conteoModo[prodId];
@@ -20637,6 +20681,7 @@ function conteoRender() {
     const current = catFilter.value;
     catFilter.innerHTML = '<option value="todas">Todas las categorías</option>' +
       cats.map(c => `<option value="${esc(c)}" ${c===current?'selected':''}>${esc(c)}</option>`).join('');
+    conteoBodegaEnsureCatFilter_(catFilter);
   }
 
   const selCat = catFilter?.value || 'todas';
@@ -20677,7 +20722,7 @@ function conteoRender() {
 
   if (!window._conteoRenderGen) window._conteoRenderGen = 0;
   const gen = ++window._conteoRenderGen;
-  const CHUNK = cerebrusUsuarioBodega() ? 16 : 24;
+  const CHUNK = cerebrusUsuarioBodega() ? 6 : 24;
   lista.innerHTML = '<div id="conteo-loading-msg" style="padding:18px;text-align:center;color:#64748b;font-size:12px;">Cargando ' + prods.length + ' productos…</div>';
 
   let idx = 0;
@@ -27678,7 +27723,16 @@ async function loadFromCloudServareBodegaFast_() {
     _nid = 200;
     await servareMergeInvIntoState_(state, { light: true });
     state._servareMovFull = false;
+    try {
+      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
+      const vj = await vr.json();
+      if (vj.ok) {
+        cloudVersion = String(vj.version || '0');
+        _cloudBaseVersion = cloudVersion;
+      }
+    } catch (e) {}
     try { cerebrusSetCloudBaseDeferred_(state); } catch (e) { _cloudBaseState = null; }
+    dismissConflict();
     setSyncStatus('✓ Inventario', 'ok');
     setTimeout(function() { _postLoadSetup(); }, 0);
     return true;
@@ -27835,6 +27889,17 @@ async function _fetchCloudStateRaw() {
 }
 
 async function _prepareConcurrentSafeState() {
+  if (cerebrusUsuarioBodega() && servareIsEnabled_()) {
+    try {
+      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
+      const vj = await vr.json();
+      if (vj.ok) {
+        cloudVersion = String(vj.version || cloudVersion || '0');
+        _cloudBaseVersion = cloudVersion;
+      }
+    } catch (e) {}
+    return { ok: true, stateToSave: state };
+  }
   const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
   const vj = await vr.json();
   if (!vj.ok) return {ok:true, stateToSave: state};
