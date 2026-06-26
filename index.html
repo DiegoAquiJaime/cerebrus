@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.25';
+const APP_VERSION = '2026.06.06.26';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7283,6 +7283,10 @@ function closeNav() {
 
 function sebasModuleAllowed() {
   return currentUser === 'Diego' || currentUser === 'Sebastián';
+}
+
+function cerebrusUsuarioBodega() {
+  return String(currentUser || '').toLowerCase() === 'bodega';
 }
 
 function cerebrusPeerIsBodega_(userName) {
@@ -27867,7 +27871,7 @@ async function loadFromCloud() {
   } finally {
     clearTimeout(abortT);
   }
-  await servareLoadInvMergeAfterCerebrus_();
+  if (cerebrusUsuarioBodega()) await servareLoadInvMergeAfterCerebrus_();
   _postLoadSetup();
 }
 
@@ -28514,7 +28518,7 @@ async function reloadFromCloud() {
     _cloudBaseVersion = cloudVersion;
     try { cerebrusSetCloudBaseDeferred_(state); } catch (e) { _cloudBaseState = null; }
 
-    await servareLoadInvMergeAfterCerebrus_();
+    if (cerebrusUsuarioBodega()) await servareLoadInvMergeAfterCerebrus_();
     _postLoadSetup();
     // Si conservamos módulos locales, seguimos "unsaved" para que puedas guardar luego.
     if (localChanged.size > 0) markUnsaved(); else markSaved();
@@ -28626,18 +28630,21 @@ function renderOnlineUsers(sessions) {
   const raw = sessions || [];
   const list = raw.map(s => (typeof s === 'string' ? { user: s } : s)).filter(s => s && s.user);
   const others = list.filter(s => s.user !== currentUser);
-  _sameModulePeers = others.filter(s => {
+  const othersStrip = cerebrusOnlinePeersForStrip_(others);
+  const othersConcurrency = cerebrusOnlinePeersForConcurrency_(others);
+  _sameModulePeers = othersConcurrency.filter(s => {
     const peerTab = String(s.activeTab || s.tab || '');
     return peerTab && peerTab === String(_activeTabId || '') && !_sessionPeerIdle(s) && _sessionPeerTabFocused(s);
   }).map(s => s.user);
-  _hasOtherOnlineUsers = others.length > 0;
+  _hasOtherOnlineUsers = othersStrip.length > 0;
+  _hasSacConcurrencyPeers = othersConcurrency.length > 0;
   updateConcurrencyBadge();
-  if (!others.length) { strip.innerHTML = ''; return; }
+  if (!othersStrip.length) { strip.innerHTML = ''; return; }
 
-  const anyActive = others.some(s => !_sessionPeerIdle(s) && _sessionPeerTabFocused(s));
+  const anyActive = othersStrip.some(s => !_sessionPeerIdle(s) && _sessionPeerTabFocused(s));
   const dotCls = anyActive ? 'online-dot' : 'online-dot online-dot-idle';
 
-  const chips = others.map(s => {
+  const chips = othersStrip.map(s => {
     const idle = _sessionPeerIdle(s);
     const tabOk = _sessionPeerTabFocused(s);
     const col = userColor(s.user);
@@ -28661,10 +28668,10 @@ function renderOnlineUsers(sessions) {
 function updateConcurrencyBadge() {
   const el = document.getElementById('sync-risk');
   if (!el) return;
-  if (!IS_CLOUD) { el.style.display = 'none'; return; }
+  if (!IS_CLOUD || cerebrusUsuarioBodega()) { el.style.display = 'none'; return; }
   const conflictVisible = !!document.getElementById('conflict-banner')?.classList.contains('show');
   const sameModule = (_sameModulePeers || []).length > 0;
-  el.style.display = (_hasOtherOnlineUsers || conflictVisible || sameModule) ? 'inline-flex' : 'none';
+  el.style.display = (_hasSacConcurrencyPeers || conflictVisible || sameModule) ? 'inline-flex' : 'none';
   if (sameModule) {
     const peers = _sameModulePeers.slice(0, 2).join(', ') + (_sameModulePeers.length > 2 ? ' +' + (_sameModulePeers.length - 2) : '');
     el.textContent = '⚠ Mismo módulo: ' + peers;
