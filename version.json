@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.25",
-  "notes": "Bodega sin avisos de voz/banner por guardados SAC en Cerebrus."
+  "version": "2026.06.06.26",
+  "notes": "SAC sin carga Servare al inicio; concurrencia sin contar a Bodega."
 }

@@ -6841,7 +6841,8 @@ let _suppressAlerts = false;
 let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
-const APP_VERSION = '2026.06.06.24';
+let _hasSacConcurrencyPeers = false;
+const APP_VERSION = '2026.06.06.25';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7284,8 +7285,18 @@ function sebasModuleAllowed() {
   return currentUser === 'Diego' || currentUser === 'Sebastián';
 }
 
-function cerebrusUsuarioBodega() {
-  return String(currentUser || '').toLowerCase() === 'bodega';
+function cerebrusPeerIsBodega_(userName) {
+  return String(userName || '').toLowerCase() === 'bodega';
+}
+
+function cerebrusOnlinePeersForStrip_(others) {
+  if (cerebrusUsuarioBodega()) return others;
+  return others.filter(function(s) { return !cerebrusPeerIsBodega_(s.user); });
+}
+
+function cerebrusOnlinePeersForConcurrency_(others) {
+  if (cerebrusUsuarioBodega()) return [];
+  return others.filter(function(s) { return !cerebrusPeerIsBodega_(s.user); });
 }
 
 function showTab(tabId) {
@@ -7320,6 +7331,7 @@ function showTab(tabId) {
       setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 600);
     } else {
       invRender();
+      servareLoadInvForAdminIfNeeded_();
     }
   }
   if (tabId==='propinas')   propRender();
@@ -13282,16 +13294,26 @@ async function servareSaveInvPart_(pInvPayload, description) {
   return json;
 }
 
-async function servareLoadInvMergeAfterCerebrus_() {
+async function servareLoadInvMergeAfterCerebrus_(opts) {
+  opts = opts || {};
   if (!servareIsEnabled_()) return;
+  if (!cerebrusUsuarioBodega() && state._servareInvMerged) return;
   try {
-    setSyncStatus('⏳ Cargando inventario (Servare)…', '');
-    await servareMergeInvIntoState_(state);
+    if (!opts.silent) setSyncStatus('⏳ Cargando inventario (Servare)…', '');
+    await servareMergeInvIntoState_(state, cerebrusUsuarioBodega() ? { light: true } : { light: false });
     if (_cloudBaseState) servareApplyInvObj_(_cloudBaseState, state);
+    if (!cerebrusUsuarioBodega()) state._servareInvMerged = true;
   } catch (e) {
     console.warn('[SERVARE] carga inventario:', e);
-    notify('⚠ Servare: no se pudo cargar inventario (' + (e.message || e) + ')');
+    if (!opts.silent) notify('⚠ Servare: no se pudo cargar inventario (' + (e.message || e) + ')');
   }
+}
+
+function servareLoadInvForAdminIfNeeded_() {
+  if (!servareIsEnabled_() || cerebrusUsuarioBodega() || state._servareInvMerged) return;
+  servareLoadInvMergeAfterCerebrus_().then(function() {
+    try { invRender(); } catch (e) {}
+  });
 }
 
 let currentUser     = '';
@@ -13433,6 +13455,7 @@ function _finishLogin() {
   // Bodega: solo ve Inventario
   if (cerebrusUsuarioBodega()) {
     document.body.classList.add('user-bodega');
+    dismissConflict();
   } else {
     document.body.classList.remove('user-bodega');
   }
@@ -28097,7 +28120,9 @@ async function saveToCloud(description, silent) {
       state = prep.stateToSave;
       if (!silent) {
         notify('🔀 Cambios combinados automáticamente con ' + prep.by + ' (sin conflicto).');
-        try { if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(prep.by); } catch (e) {}
+        if (!cerebrusUsuarioBodega()) {
+          try { if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(prep.by); } catch (e) {}
+        }
       }
     }
 
@@ -28507,7 +28532,7 @@ async function reloadFromCloud() {
 
 // ── CONFLICT DETECTION ──
 async function checkVersion() {
-  if (!IS_CLOUD || !currentUser) return;
+  if (!IS_CLOUD || !currentUser || cerebrusUsuarioBodega()) return;
   try {
     const res  = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
     const json = await res.json();
@@ -28516,13 +28541,19 @@ async function checkVersion() {
   } catch(e) {}
 }
 function showConflict(user, date, keys, conflictKey) {
-  _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: Array.isArray(keys)?keys:[] };
+  var keysArr = Array.isArray(keys) ? keys : [];
+  if (cerebrusUsuarioBodega()) {
+    var invKeys = servareInvKeys_();
+    var touchesInv = keysArr.some(function(k) { return invKeys.indexOf(k) >= 0; });
+    if (!touchesInv) return;
+  }
+  _lastConflictInfo = { user: user||'Otro usuario', date: date||'', keys: keysArr };
   set('conflict-msg', user + ' guardó cambios el ' + date + ' mientras estabas editando.');
   document.getElementById('conflict-banner').classList.add('show');
   updateConcurrencyBadge();
   try {
     var voiceKey = String(user || 'Otro usuario') + '|' + String(conflictKey || date || '');
-    if (voiceKey !== _lastConflictVoiceKey) {
+    if (voiceKey !== _lastConflictVoiceKey && !cerebrusUsuarioBodega()) {
       _lastConflictVoiceKey = voiceKey;
       if (typeof cerebrusTtsPeerSaved === 'function') cerebrusTtsPeerSaved(user, voiceKey);
     }
