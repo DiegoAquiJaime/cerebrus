@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.28';
+const APP_VERSION = '2026.06.06.29';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7254,6 +7254,12 @@ function fmtCL(v, minD, maxD) {
   const min = minD == null ? 0 : minD;
   const max = maxD == null ? 2 : maxD;
   return new Intl.NumberFormat('es-CL', { minimumFractionDigits: min, maximumFractionDigits: max }).format(n);
+}
+/** Valor para inputs de monto/precio (miles con punto, sin $). */
+function fmtInputCL(v) {
+  const n = Number(v || 0);
+  const hasDec = Math.abs(n % 1) > 0.0000001;
+  return fmtCL(n, 0, hasDec ? 2 : 0);
 }
 function fmt(v) {
   const n = Number(v || 0);
@@ -16295,8 +16301,8 @@ function invPedidoItemRowHtmlBodega_(sem, orden, it, prod, provs) {
       '<select onchange="invSetOrdenUnidadPedido(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:2px 4px;font-family:inherit;font-size:10px;max-width:72px;background:var(--white);" ' + (sem.cerrada || it.recibido ? 'disabled' : '') + '>' + uOpts + '</select>' +
     '</div></td>' +
     '<td>' + invBodegaProvSelectHtml_(sem, orden, it, prod, provs) + '</td>' +
-    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="decimal" value="' + (it.precio || 0) + '" ' +
-    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenPrecio(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" onfocus="this.select()" style="width:64px;text-align:right;">' +
+    '<td style="text-align:right;"><input class="inv-pedido-qty inv-precio-inp" type="text" inputmode="decimal" id="inv-ped-precio-' + it.prodId + '" value="' + fmtInputCL(it.precio || 0) + '" ' +
+    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenPrecio(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" onblur="formatNumericInputValue(this)" onfocus="this.select()" style="width:64px;text-align:right;">' +
     ' <span style="font-size:9px;color:#94a3b8;">/' + esc(uDisp) + '</span></td>' +
     '<td style="text-align:right;font-weight:700;" id="inv-ped-sub-' + it.prodId + '">' + (it.qty > 0 ? fmt(it.qty * it.precio) : '—') + '</td>' +
     '<td style="text-align:right;font-size:10px;">' + recUi + '</td></tr>';
@@ -16352,7 +16358,7 @@ function invPedidoItemRowHtml_(sem, orden, it, prod, provs) {
       <select onchange="invSetOrdenUnidadPedido('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;min-width:74px;max-width:120px;background:transparent;" ${sem.cerrada || it.recibido ? 'disabled' : ''}>${uOpts}</select>
     </div></td>
     <td><select onchange="invSetOrdenProv('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:10px;color:var(--primary);background:transparent;min-width:0;max-width:100%;">${provOpts}</select></td>
-    <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty" type="text" inputmode="numeric" value="${it.precio || 0}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
+    <td style="text-align:right;vertical-align:top;"><div style="display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;"><div><input class="inv-pedido-qty inv-precio-inp" type="text" inputmode="decimal" id="inv-ped-precio-${it.prodId}" value="${fmtInputCL(it.precio || 0)}" onchange="invSetOrdenPrecio('${sem.id}','${orden.id}','${it.prodId}',this.value)" onblur="formatNumericInputValue(this)" onfocus="this.select()" style="width:75px;text-align:right;"> <span style="font-size:10px;color:#94a3b8;">/${esc(uDisp)}</span></div>${pmHtml}</div></td>
     <td style="text-align:right;font-weight:700;">${it.qty > 0 ? fmt(it.qty * it.precio) : '—'}</td>
     <td style="text-align:right;white-space:nowrap;">${recUi}</td></tr>`;
 }
@@ -17500,10 +17506,12 @@ function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {
 function invSetOrdenPrecio(semId,ordenId,prodId,val){
   const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
   pushUndo();
-  it.precio=parseNumCL(val, true) || parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  it.precio=Math.round(parseNumCL(val, false) || 0);
   delete it.precioMeta;
   markUnsaved();
   invUpdateSemKpis();
+  var precInp = document.getElementById('inv-ped-precio-' + prodId);
+  if (precInp) formatNumericInputValue(precInp);
   if (cerebrusUsuarioBodega()) {
     var subEl = document.getElementById('inv-ped-sub-' + prodId);
     if (subEl) subEl.textContent = it.qty > 0 ? fmt(it.qty * it.precio) : '—';

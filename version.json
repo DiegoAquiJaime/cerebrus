@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.28",
-  "notes": "Bodega: stock actual editable en tabla de inventario."
+  "version": "2026.06.06.29",
+  "notes": "Precios en pedido: escribir 2000 y formatear automático a 2.000 al salir del campo."
 }
