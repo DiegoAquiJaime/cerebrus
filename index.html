@@ -5165,9 +5165,9 @@ body.dark-mode .conflict-overlay{
           <div class="inf-block-title">Datos del día</div>
           <div class="inf-fields">
             <div class="inf-field inf-full"><label>Fecha</label><input type="date" id="inf-fecha"></div>
-            <div class="inf-field"><label>Banco inicial / Cuenta empresa ($)</label><input type="text" inputmode="decimal" id="inf-banco" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
-            <div class="inf-field"><label>Venta de ayer ($)</label><input type="text" inputmode="decimal" id="inf-venta" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
-            <div class="inf-field inf-full"><label>Caja ($)</label><input type="text" inputmode="decimal" id="inf-caja" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
+            <div class="inf-field"><label>Banco inicial / Cuenta empresa ($)</label><input type="text" inputmode="decimal" class="inf-monto-inp" id="inf-banco" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
+            <div class="inf-field"><label>Venta de ayer ($)</label><input type="text" inputmode="decimal" class="inf-monto-inp" id="inf-venta" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
+            <div class="inf-field inf-full"><label>Caja ($)</label><input type="text" inputmode="decimal" class="inf-monto-inp" id="inf-caja" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
           </div>
         </div>
 
@@ -5210,7 +5210,7 @@ body.dark-mode .conflict-overlay{
         <div class="inf-block" style="border:2px solid rgba(245,158,11,.45);background:rgba(245,158,11,.06);">
           <div class="inf-block-title" style="color:#b45309;">💵 Propina del día (sumar a cargas)</div>
           <div class="inf-fields">
-            <div class="inf-field inf-full"><label>Monto propina ($)</label><input type="text" inputmode="decimal" id="inf-propina" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
+            <div class="inf-field inf-full"><label>Monto propina ($)</label><input type="text" inputmode="decimal" class="inf-monto-inp" id="inf-propina" placeholder="0" oninput="infCalcLive()" onblur="formatNumericInputValue(this)"></div>
           </div>
         </div>
 
@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.29';
+const APP_VERSION = '2026.06.06.32';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6940,6 +6940,7 @@ function checkCreditAlerts(forceShow) {
 
   // ── Popup al inicio: SOLO si NO es recarga desde nube y NO es Bodega ──
   if (_suppressAlerts || currentUser === 'Bodega') { _suppressAlerts = false; return; }
+  if (_activeTabId === 'informe' || cerebrusInformeHasFocus_()) return;
   if (!forceShow && _alertsSeenToday()) return;
   const payAlerts = getPaymentAlerts();
   if (!payAlerts.length) {
@@ -7266,13 +7267,79 @@ function fmt(v) {
   const hasDec = Math.abs(n % 1) > 0.0000001;
   return '$' + fmtCL(n, 0, hasDec ? 2 : 0);
 }
-function formatNumericInputValue(inp) {
-  if (!inp) return;
-  const mode = String(inp.getAttribute('inputmode') || '').toLowerCase();
-  if (mode !== 'numeric' && mode !== 'decimal') return;
-  const n = parseNumCL(inp.value, mode === 'decimal');
+/** Formato miles CL — solo precios de pedido Inventario/Servare (clase inv-precio-inp). */
+function formatServarePrecioInput_(inp) {
+  if (!inp || !inp.classList || !inp.classList.contains('inv-precio-inp')) return;
+  if (inp.value === '' || inp.value == null) return;
+  const n = parseNumCL(inp.value, false);
   const hasDec = Math.abs(n % 1) > 0.0000001;
   inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
+}
+function isInformeMontoInput_(inp) {
+  if (!inp || inp.tagName !== 'INPUT') return false;
+  if (inp.id === 'inf-fecha' || inp.type === 'date') return false;
+  if (inp.classList && (inp.classList.contains('inf-ingresos-nombre') || inp.classList.contains('inf-cargas-nombre'))) return false;
+  if (inp.classList && (inp.classList.contains('inf-ingresos-monto') || inp.classList.contains('inf-cargas-monto') || inp.classList.contains('inf-eg-monto-inp') || inp.classList.contains('inf-monto-inp'))) return true;
+  if (/^inf-(banco|venta|caja|propina)$/.test(inp.id || '')) return true;
+  return !!(inp.closest && inp.closest('#informe') && (inp.classList.contains('inf-monto-inp') || inp.getAttribute('inputmode') === 'decimal' || inp.getAttribute('inputmode') === 'numeric'));
+}
+function formatInformeInputValue(inp) {
+  if (!isInformeMontoInput_(inp)) return;
+  if (inp.value === '' || inp.value == null) return;
+  const allowNeg = inp.id === 'inf-banco';
+  let n = parseNumCL(inp.value, allowNeg);
+  if (!allowNeg && n < 0) n = 0;
+  const hasDec = Math.abs(n % 1) > 0.0000001;
+  inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
+}
+function formatNumericInputValue(inp) {
+  formatServarePrecioInput_(inp);
+  formatInformeInputValue(inp);
+}
+function cerebrusInformeHasFocus_() {
+  const ae = document.activeElement;
+  return !!(ae && ae.closest && ae.closest('#informe'));
+}
+let _cerebrusDeferredWhileInforme = null;
+function cerebrusDeferIfInformeBusy_(fn) {
+  if (_activeTabId === 'informe' || cerebrusInformeHasFocus_()) {
+    _cerebrusDeferredWhileInforme = fn;
+    return;
+  }
+  fn();
+}
+function cerebrusFlushDeferredIfInformeIdle_() {
+  if (_activeTabId === 'informe' || cerebrusInformeHasFocus_()) return;
+  const fn = _cerebrusDeferredWhileInforme;
+  if (!fn) return;
+  _cerebrusDeferredWhileInforme = null;
+  setTimeout(fn, 80);
+}
+function cerebrusSyncTabUiIfNeeded_(tabId) {
+  const id = tabId || _activeTabId || 'sac';
+  const panel = document.getElementById(id);
+  if (panel && panel.classList.contains('active')) {
+    if (id === 'informe') {
+      try { closeStartupAlert(); } catch (e) {}
+      infInit();
+    }
+    return;
+  }
+  showTab(id);
+}
+function cerebrusBindInformeInputs_() {
+  if (window._cerebrusInformeBound) return;
+  window._cerebrusInformeBound = true;
+  const root = document.getElementById('informe');
+  if (!root) return;
+  root.addEventListener('focusin', function(e) {
+    const el = e.target;
+    if (el && el.tagName === 'INPUT' && typeof el.select === 'function' && isInformeMontoInput_(el)) el.select();
+  }, true);
+  root.addEventListener('blur', function(e) {
+    formatInformeInputValue(e.target);
+    setTimeout(cerebrusFlushDeferredIfInformeIdle_, 120);
+  }, true);
 }
 
 // ============================================================
@@ -7318,6 +7385,10 @@ function showTab(tabId) {
     tabId = 'resumen';
     notify('🔐 Finanzas Sebas solo está disponible para Sebastián y Diego.');
   }
+  if (!_cloudInitialLoadDone && tabId !== 'sac' && tabId !== 'resumen') {
+    _userPickedTabBeforeCloud = true;
+  }
+  const _prevTabId = _activeTabId;
   _activeTabId = tabId;
   closeNav();
   ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
@@ -7346,7 +7417,12 @@ function showTab(tabId) {
   }
   if (tabId==='propinas')   propRender();
   if (tabId==='sebas')      sebRender();
-  if (tabId==='informe')    infInit();
+  if (tabId==='informe') {
+    try { closeStartupAlert(); } catch (e) {}
+    infInit();
+  } else if (_prevTabId === 'informe') {
+    cerebrusFlushDeferredIfInformeIdle_();
+  }
   if (tabId==='detalle')    { setTimeout(mercRenderSemanas, 100); catInvRender(); archRenderStats(); }
   if (tabId==='resumen')    {
     if(!document.getElementById('cal-grid').innerHTML) calRender();
@@ -13332,6 +13408,8 @@ let _cloudBaseVersion = '0';
 let _cloudBaseState = null;
 let _activeTabId = 'sac';
 let _sessionNavInitDone = false;
+let _cloudInitialLoadDone = false;
+let _userPickedTabBeforeCloud = false;
 let _sameModulePeers = [];
 let _heartbeatTimer = null;
 /** Sin interacción (clic/teclado/rueda) durante este tiempo → heartbeat marca idle:true */
@@ -14361,9 +14439,11 @@ function _postLoadSetup() {
   try { if(localStorage.getItem('cerebrus_dark')==='1'){document.body.classList.add('dark-mode');document.getElementById('dark-btn').textContent='☀️';} } catch(e){}
   try { cerebrusStripCalendarioBitacoraModulo_(); } catch (e) {}
   if (!_pldBodega) {
-    _calMap = buildCalMap(_calYear);
-    calRender();
-    renderAll(); calc(); renderHistorial(); vsSavedRender();
+    cerebrusDeferIfInformeBusy_(function() {
+      _calMap = buildCalMap(_calYear);
+      calRender();
+      renderAll(); calc(); renderHistorial(); vsSavedRender();
+    });
   }
   if (clearedPrecios > 0) {
     notify('🧹 Precios de Inventario limpiados (one-shot): ahora debes cargarlos manualmente.');
@@ -14373,17 +14453,23 @@ function _postLoadSetup() {
     _sessionNavInitDone = true;
     if (cerebrusUsuarioBodega()) {
       showTab('inventario');
+    } else if (_userPickedTabBeforeCloud && _activeTabId) {
+      cerebrusSyncTabUiIfNeeded_(_activeTabId);
     } else if (_activeTabId && _activeTabId !== 'sac' && _activeTabId !== 'resumen') {
-      showTab(_activeTabId);
+      cerebrusSyncTabUiIfNeeded_(_activeTabId);
     } else {
       showTab('sac');
     }
   } else {
-    showTab(cerebrusUsuarioBodega() ? 'inventario' : (_activeTabId || 'sac'));
+    cerebrusSyncTabUiIfNeeded_(cerebrusUsuarioBodega() ? 'inventario' : (_activeTabId || 'sac'));
   }
   setTimeout(() => {
     if (!_pldBodega) {
-      checkCreditAlerts(); updateTotalDisponible(); mercRenderSemanas();
+      if (_activeTabId === 'informe') {
+        setTimeout(function() { try { checkCreditAlerts(); } catch (e) {} }, 8000);
+      } else {
+        checkCreditAlerts();
+      }
       if (typeof sacCalcBalance === 'function') sacCalcBalance();
       if (typeof facSemRender === 'function') facSemRender();
     }
@@ -14399,6 +14485,7 @@ function _postLoadSetup() {
       try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
     }, 1200);
   }
+  _cloudInitialLoadDone = true;
 }
 
 // ============================================================
@@ -17622,7 +17709,7 @@ function invEditPedidoLinea(semId,ordenId,prodId){
   if(pr===null)return;
   pushUndo();
   it.qty=parseNumCL(q,false)||0;
-  it.precio=parseInt((pr||'0').replace(/[^\d]/g,''),10)||0;
+  it.precio=Math.round(parseNumCL(pr, false) || 0);
   delete it.precioMeta;
   invRenderPedido();invUpdateSemKpis();markUnsaved();
 }
@@ -21936,7 +22023,7 @@ function aiInvShowPreview(rows) {
       <td style="padding:5px 8px;">${flag} <input class="ai-inp-sm" style="width:130px;" value="${esc(r.nombre||'')}" oninput="_aiInvRows[${i}].nombre=this.value"></td>
       <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:72px;text-align:right;" inputmode="decimal" value="${esc(cerebrusFormatQtyForInput(r.stock))}" oninput="(function(el,idx){var n=cerebrusParseQuantity(el.value);_aiInvRows[idx].stock=isNaN(n)?0:n})(this,${i})" onblur="this.value=cerebrusFormatQtyForInput(_aiInvRows[${i}].stock)"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:45px;" value="${esc(r.unidad||'')}" oninput="_aiInvRows[${i}].unidad=this.value" placeholder="kg/u"></td>
-      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:65px;text-align:right;" inputmode="numeric" value="${r.precio||''}" oninput="_aiInvRows[${i}].precio=parseInt(this.value)||0" placeholder="$"></td>
+      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm inv-precio-inp" style="width:65px;text-align:right;" inputmode="decimal" value="${fmtInputCL(r.precio||0)}" oninput="_aiInvRows[${i}].precio=Math.round(parseNumCL(this.value,false)||0)" onblur="formatServarePrecioInput_(this)" placeholder="$"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:80px;" value="${esc(r.categoria||'')}" oninput="_aiInvRows[${i}].categoria=this.value" placeholder="Cat."></td>
       <td style="padding:5px 8px;">${statusBadge}</td>
       <td style="padding:5px 8px;"><button onclick="aiInvRemoveRow(${i})" style="background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:12px;">✕</button></td>
@@ -22045,6 +22132,7 @@ function infInit() {
   if (fEl && !fEl.value) fEl.value = `${yyyy}-${mm}-${dd}`;
   // Initialize storage
   if (!state.informesDiarios) state.informesDiarios = [];
+  cerebrusBindInformeInputs_();
   infRenderHistorial();
 }
 
@@ -22278,7 +22366,7 @@ function infAddItem(tipo, nombre='', monto='') {
   row.className = 'inf-item-row';
   row.innerHTML = `
     <input type="text"   placeholder="Descripción" value="${esc(nombre)}" class="inf-${tipo}-nombre">
-    <input type="text" placeholder="$0"             value="${monto}"       class="inf-${tipo}-monto" inputmode="decimal" oninput="infCalcLive()" onblur="formatNumericInputValue(this)">
+    <input type="text" placeholder="$0"             value="${monto}"       class="inf-${tipo}-monto inf-monto-inp" inputmode="decimal" oninput="infCalcLive()" onblur="formatNumericInputValue(this)">
     <button class="inf-rm-btn" onclick="this.parentElement.remove();infCalcLive()">×</button>`;
   list.appendChild(row);
   formatNumericInputValue(row.querySelector(`.inf-${tipo}-monto`));
