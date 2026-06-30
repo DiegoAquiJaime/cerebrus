@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.26",
-  "notes": "SAC sin carga Servare al inicio; concurrencia sin contar a Bodega."
+  "version": "2026.06.06.27",
+  "notes": "Informe Diario: no sacar de la pestaña al terminar carga nube; Bodega: edición pedido/inventario restaurada."
 }

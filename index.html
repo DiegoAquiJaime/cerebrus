@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.26';
+const APP_VERSION = '2026.06.06.27';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13325,6 +13325,7 @@ let cloudVersion    = '0';
 let _cloudBaseVersion = '0';
 let _cloudBaseState = null;
 let _activeTabId = 'sac';
+let _sessionNavInitDone = false;
 let _sameModulePeers = [];
 let _heartbeatTimer = null;
 /** Sin interacción (clic/teclado/rueda) durante este tiempo → heartbeat marca idle:true */
@@ -14361,11 +14362,18 @@ function _postLoadSetup() {
   if (clearedPrecios > 0) {
     notify('🧹 Precios de Inventario limpiados (one-shot): ahora debes cargarlos manualmente.');
   }
-  // Bodega solo ve inventario, los demás abren Semana Actual
-  if (cerebrusUsuarioBodega()) {
-    showTab('inventario');
+  // Primera carga: respetar pestaña elegida mientras bajaba la nube (p. ej. Informe Diario)
+  if (!_sessionNavInitDone) {
+    _sessionNavInitDone = true;
+    if (cerebrusUsuarioBodega()) {
+      showTab('inventario');
+    } else if (_activeTabId && _activeTabId !== 'sac' && _activeTabId !== 'resumen') {
+      showTab(_activeTabId);
+    } else {
+      showTab('sac');
+    }
   } else {
-    showTab('sac'); // Abre Semana Actual por defecto
+    showTab(cerebrusUsuarioBodega() ? 'inventario' : (_activeTabId || 'sac'));
   }
   setTimeout(() => {
     if (!_pldBodega) {
@@ -15642,21 +15650,53 @@ function invBodegaEnsureCatFilter_() {
   }
 }
 
+function invBodegaProvOptsForLine_(it, prod, catalog) {
+  var seen = {}, out = [];
+  function add(n) {
+    n = String(n || '').trim();
+    if (!n || seen[n]) return;
+    seen[n] = 1;
+    out.push(n);
+  }
+  if (it) add(it.prov);
+  if (prod) {
+    add(prod.prov);
+    var pp = state.preciosProveedor && state.preciosProveedor[prod.id];
+    if (Array.isArray(pp)) pp.forEach(function(x) { add(x.prov || x.nombre); });
+  }
+  (catalog || []).forEach(add);
+  return out.sort(function(a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
+}
+
+function invBodegaProvSelectHtml_(sem, orden, it, prod, catalog) {
+  var cur = String(it.prov || '').trim();
+  var provs = invBodegaProvOptsForLine_(it, prod, catalog);
+  if (cur && provs.indexOf(cur) < 0) provs.unshift(cur);
+  var opts = [''].concat(provs, ['__otro__', '__nuevo__']).map(function(p) {
+    if (p === '') return '<option value=""' + (!cur ? ' selected' : '') + '>— proveedor —</option>';
+    if (p === '__otro__') return '<option value="__otro__"' + (it.prov === '__otro__' ? ' selected' : '') + '>Otro</option>';
+    if (p === '__nuevo__') return '<option value="__nuevo__"' + (it.prov === '__nuevo__' ? ' selected' : '') + '>+ Nuevo…</option>';
+    return '<option value="' + esc(p) + '"' + (cur === p ? ' selected' : '') + '>' + esc(p) + '</option>';
+  }).join('');
+  return '<select onchange="invSetOrdenProv(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:100%;max-width:150px;border:1px solid var(--border);border-radius:6px;padding:3px 5px;font-family:inherit;font-size:10px;background:var(--white);min-width:0;" ' + (sem.cerrada ? 'disabled' : '') + '>' + opts + '</select>';
+}
+
 function invInvTableRowHtmlBodega_(p) {
   var stock = p.stock || 0;
   var minimo = p.minimo || 0;
   var stockColor = stock <= 0 ? 'var(--danger)' : stock <= minimo && minimo > 0 ? 'var(--warning)' : 'var(--success)';
   var sc = stock <= 0 ? 'inv-sem-rojo' : stock <= minimo && minimo > 0 ? 'inv-sem-amarillo' : 'inv-sem-verde';
   return '<tr id="inv-row-' + p.id + '">' +
-    '<td style="font-weight:600;">' + esc(p.nombre || '') +
-      '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' +
+    '<td style="font-weight:600;cursor:pointer;" onclick="invEditProd(\'' + p.id + '\')" title="Editar producto">' + esc(p.nombre || '') +
+      '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;" onclick="event.stopPropagation()">' +
         '<input id="inv-qm-qty-' + p.id + '" type="text" inputmode="decimal" placeholder="cant." style="width:58px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;font-size:10px;text-align:right;">' +
         '<button onclick="invQuickMovFromRow(\'' + p.id + '\',\'despacho\',\'inv-qm-qty-' + p.id + '\')" style="background:#6366f114;border:1px solid #6366f155;border-radius:5px;padding:2px 6px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#4338ca;">→ Cocina</button>' +
         '<button onclick="invQuickMovFromRow(\'' + p.id + '\',\'devolucion\',\'inv-qm-qty-' + p.id + '\')" style="background:#10b98114;border:1px solid #10b98155;border-radius:5px;padding:2px 6px;font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;color:#047857;">← Bodega</button>' +
+        '<button onclick="invEditProd(\'' + p.id + '\')" title="Editar" style="background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;font-size:9px;cursor:pointer;color:#64748b;">✏</button>' +
       '</div></td>' +
-    '<td style="font-size:10px;color:#94a3b8;">' + esc(p.cat || '—') + '</td>' +
-    '<td style="font-size:10px;color:#64748b;">' + esc(p.familia || '') + '</td>' +
-    '<td style="font-size:11px;">' + esc(p.unidad || 'u') + '</td>' +
+    '<td style="font-size:10px;color:#94a3b8;cursor:pointer;" onclick="invEditProd(\'' + p.id + '\')">' + esc(p.cat || '—') + '</td>' +
+    '<td style="font-size:10px;color:#64748b;cursor:pointer;" onclick="invEditProd(\'' + p.id + '\')">' + esc(p.familia || '') + '</td>' +
+    '<td style="font-size:11px;cursor:pointer;" onclick="invEditProd(\'' + p.id + '\')" title="Editar unidad / mínimo">' + esc(p.unidad || 'u') + '</td>' +
     '<td style="text-align:right;font-weight:700;color:' + stockColor + ';">' + stock + '</td>' +
     '<td style="text-align:right;color:#94a3b8;">' + minimo + '</td>' +
     '<td style="text-align:center;"><span class="inv-semaforo ' + sc + '"></span></td>' +
@@ -16188,33 +16228,40 @@ function invPedidoPassesFilters_(prod, it, famFilter, subFilter, provFilter, qFi
   return true;
 }
 
-function invPedidoItemRowHtmlBodega_(sem, orden, it, prod) {
+function invPedidoItemRowHtmlBodega_(sem, orden, it, prod, provs) {
   var stockAct = prod.stock || 0;
   var minimo = prod.minimo || 0;
   var sc = stockAct <= 0 ? 'inv-sem-rojo' : stockAct <= minimo ? 'inv-sem-amarillo' : 'inv-sem-verde';
-  var provTxt = esc(it.prov || prod.prov || '—');
+  var uDisp = invUnidadPedidoLine(it, prod);
+  var uOpts = invUnidadPedidoSelectOptions(uDisp, prod).map(function(u) {
+    return '<option value="' + esc(u) + '"' + (String(u) === String(uDisp) ? ' selected' : '') + '>' + esc(u) + '</option>';
+  }).join('');
   var qtyRec = (it.qtyRecibida != null && it.qtyRecibida !== '') ? it.qtyRecibida : (it.qty || 0);
   var recUi = it.qty > 0
     ? '<label style="display:flex;align-items:center;gap:5px;font-size:10px;cursor:pointer;">' +
         '<input type="checkbox" ' + (it.recibido ? 'checked' : '') + ' ' + (sem.cerrada ? 'disabled' : '') +
         ' onchange="invToggleRecepcionStock(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.checked)">' +
         '<span>' + (it.recibido ? 'Ingresado' : 'Confirmar') + '</span></label>' +
-        '<input class="inv-pedido-qty" type="text" value="' + qtyRec + '" ' + (sem.cerrada || it.recibido ? 'disabled' : '') +
-        ' onchange="invSetOrdenQtyRecibida(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:56px;margin-top:4px;">'
+        '<input class="inv-pedido-qty" type="text" inputmode="decimal" value="' + qtyRec + '" ' + (sem.cerrada || it.recibido ? 'disabled' : '') +
+        ' onchange="invSetOrdenQtyRecibida(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" onfocus="this.select()" style="width:56px;margin-top:4px;">'
     : '—';
-  return '<tr><td><span class="inv-semaforo ' + sc + '"></span>' + esc(prod.nombre) +
+  return '<tr id="inv-ped-row-' + it.prodId + '"><td><span class="inv-semaforo ' + sc + '"></span>' + esc(prod.nombre) +
     ' <span style="font-size:11px;color:#64748b;">(' + stockAct + ' ' + esc(prod.unidad || 'u') + ')</span></td>' +
-    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" value="' + (it.qty || 0) + '" ' +
-    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenQty(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:56px;"></td>' +
-    '<td style="font-size:10px;">' + provTxt + '</td>' +
-    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" value="' + (it.precio || 0) + '" ' +
-    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenPrecio(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="width:64px;text-align:right;"></td>' +
-    '<td style="text-align:right;font-weight:700;">' + (it.qty > 0 ? fmt(it.qty * it.precio) : '—') + '</td>' +
+    '<td style="text-align:right;"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;flex-wrap:wrap;">' +
+      '<input class="inv-pedido-qty" type="text" inputmode="decimal" value="' + (it.qty || 0) + '" ' +
+      (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenQty(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" onfocus="this.select()" style="width:56px;">' +
+      '<select onchange="invSetOrdenUnidadPedido(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" style="border:1px solid var(--border);border-radius:6px;padding:2px 4px;font-family:inherit;font-size:10px;max-width:72px;background:var(--white);" ' + (sem.cerrada || it.recibido ? 'disabled' : '') + '>' + uOpts + '</select>' +
+    '</div></td>' +
+    '<td>' + invBodegaProvSelectHtml_(sem, orden, it, prod, provs) + '</td>' +
+    '<td style="text-align:right;"><input class="inv-pedido-qty" type="text" inputmode="decimal" value="' + (it.precio || 0) + '" ' +
+    (sem.cerrada ? 'disabled' : '') + ' onchange="invSetOrdenPrecio(\'' + sem.id + '\',\'' + orden.id + '\',\'' + it.prodId + '\',this.value)" onfocus="this.select()" style="width:64px;text-align:right;">' +
+    ' <span style="font-size:9px;color:#94a3b8;">/' + esc(uDisp) + '</span></td>' +
+    '<td style="text-align:right;font-weight:700;" id="inv-ped-sub-' + it.prodId + '">' + (it.qty > 0 ? fmt(it.qty * it.precio) : '—') + '</td>' +
     '<td style="text-align:right;font-size:10px;">' + recUi + '</td></tr>';
 }
 
 function invPedidoItemRowHtml_(sem, orden, it, prod, provs) {
-  if (cerebrusUsuarioBodega()) return invPedidoItemRowHtmlBodega_(sem, orden, it, prod);
+  if (cerebrusUsuarioBodega()) return invPedidoItemRowHtmlBodega_(sem, orden, it, prod, provs);
   const stockAct = prod.stock || 0;
   const minimo = prod.minimo || 0;
   const sc = stockAct <= 0 ? 'inv-sem-rojo' : stockAct <= minimo ? 'inv-sem-amarillo' : 'inv-sem-verde';
@@ -16767,10 +16814,13 @@ function invPedidoProveedorCatalogFromState(sem) {
     if (sem && Array.isArray(sem.ordenes)) {
       sem.ordenes.forEach(function(o) {
         (o.items || []).forEach(function(it) {
-          if (!it.qty || it.qty <= 0) return;
           add(it.prov);
           var prod = invProdById_(it.prodId);
-          if (prod) add(prod.prov);
+          if (prod) {
+            add(prod.prov);
+            var pp = state.preciosProveedor && state.preciosProveedor[prod.id];
+            if (Array.isArray(pp)) pp.forEach(function(x) { add(x.prov || x.nombre); });
+          }
         });
       });
     }
@@ -17044,10 +17094,18 @@ function invSetOrdenQty(semId,ordenId,prodId,val){
     invRenderPedido();
     return;
   }
+  const wasZero = !(Number(it.qty) > 0);
   pushUndo();
   it.qty=parseNumCL(val,false)||0;
   if (!it.recibido) it.qtyRecibida = it.qty;
+  markUnsaved();
   invUpdateSemKpis();
+  if (cerebrusUsuarioBodega()) {
+    var subEl = document.getElementById('inv-ped-sub-' + prodId);
+    if (subEl) subEl.textContent = it.qty > 0 ? fmt(it.qty * it.precio) : '—';
+    if (!window._invPedidoShowAll && wasZero && it.qty > 0) invRenderPedido();
+    return;
+  }
   invRenderPedido();
 }
 
@@ -17400,9 +17458,15 @@ function invSetOrdenUnidadPedido(semId, ordenId, prodId, val) {
 function invSetOrdenPrecio(semId,ordenId,prodId,val){
   const it=invFindItem(invFindOrden(semId,ordenId),prodId);if(!it)return;
   pushUndo();
-  it.precio=parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
+  it.precio=parseNumCL(val, true) || parseInt((val||'0').replace(/[^\d]/g,''),10)||0;
   delete it.precioMeta;
+  markUnsaved();
   invUpdateSemKpis();
+  if (cerebrusUsuarioBodega()) {
+    var subEl = document.getElementById('inv-ped-sub-' + prodId);
+    if (subEl) subEl.textContent = it.qty > 0 ? fmt(it.qty * it.precio) : '—';
+    return;
+  }
   invRenderPedido();
 }
 function invRemoveOrden(semId,ordenId){const sem=state.semanaActiva;if(!sem||sem.cerrada)return;if(sem.ordenes.length<=1){notify('⚠ Debe haber al menos un pedido');return;}if(!confirm('¿Eliminar este pedido?'))return;pushUndo();sem.ordenes=sem.ordenes.filter(o=>o.id!==ordenId);invRenderPedido();}
