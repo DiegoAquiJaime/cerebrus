@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.32';
+const APP_VERSION = '2026.06.06.33';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -6860,10 +6860,66 @@ function compareVersionStrings(a, b) {
 function _versionSeenKey(remoteVersion) {
   return 'cerebrus_version_seen_' + String(remoteVersion || '');
 }
+/** App instalada (Chrome «Instalar», Dock, etc.) — no pestaña normal del navegador. */
+function cerebrusIsInstalledApp_() {
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) return true;
+    if (window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+    if (window.matchMedia('(display-mode: window-controls-overlay)').matches) return true;
+    if (window.navigator.standalone === true) return true;
+  } catch (e) {}
+  return false;
+}
+/** App instalada desde Chrome/Chromium en Mac (no Safari ni Firefox). */
+function cerebrusIsChromeInstalledApp_() {
+  if (!cerebrusIsInstalledApp_()) return false;
+  const ua = String(navigator.userAgent || '');
+  if (/Firefox\//i.test(ua)) return false;
+  if (/Safari\//i.test(ua) && !/Chrome\//i.test(ua)) return false;
+  return /Chrome\//i.test(ua) || /Chromium\//i.test(ua) || !!(window.chrome && !window.chrome.webstore);
+}
+function cerebrusReloadAppVersion_(remoteVersion) {
+  const v = String(remoteVersion || '').trim();
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('v', v || String(Date.now()));
+    url.searchParams.set('_', String(Date.now()));
+    location.replace(url.toString());
+  } catch (e) {
+    location.href = location.pathname + '?v=' + encodeURIComponent(v || '1') + '&_=' + Date.now();
+  }
+}
+let _cerebrusPendingVersionReload = '';
+let _cerebrusPendingVersionNotified = false;
+let _cerebrusVersionFocusBound = false;
+function cerebrusScheduleVersionReload_(remoteVersion) {
+  const v = String(remoteVersion || '').trim();
+  if (!v) return;
+  if (typeof _unsaved !== 'undefined' && _unsaved) {
+    _cerebrusPendingVersionReload = v;
+    if (!_cerebrusPendingVersionNotified) {
+      _cerebrusPendingVersionNotified = true;
+      notify('🔄 Versión ' + v + ' disponible. Se actualizará sola cuando guardes (o al cerrar cambios pendientes).');
+    }
+    return;
+  }
+  _cerebrusPendingVersionReload = '';
+  _cerebrusPendingVersionNotified = false;
+  notify('🔄 Actualizando Cerebrus a v' + v + '…');
+  setTimeout(function() { cerebrusReloadAppVersion_(v); }, 400);
+}
 function startVersionChecker() {
   if (_versionCheckTimer) clearInterval(_versionCheckTimer);
   checkAppVersion(false);
-  _versionCheckTimer = setInterval(function() { checkAppVersion(false); }, 10 * 60 * 1000);
+  const intervalMs = cerebrusIsChromeInstalledApp_() ? 2 * 60 * 1000 : 10 * 60 * 1000;
+  _versionCheckTimer = setInterval(function() { checkAppVersion(false); }, intervalMs);
+  if (!_cerebrusVersionFocusBound) {
+    _cerebrusVersionFocusBound = true;
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') checkAppVersion(false);
+    });
+    window.addEventListener('focus', function() { checkAppVersion(false); });
+  }
 }
 async function checkAppVersion(forceShowUpToDate) {
   try {
@@ -6874,7 +6930,18 @@ async function checkAppVersion(forceShowUpToDate) {
     if (!remoteVersion) throw new Error('version.json sin campo version');
     const cmp = compareVersionStrings(remoteVersion, APP_VERSION);
     if (cmp <= 0) {
+      _cerebrusPendingVersionReload = '';
+      _cerebrusPendingVersionNotified = false;
       if (forceShowUpToDate) notify('✅ Ya estás en la última versión (' + APP_VERSION + ')');
+      return;
+    }
+    const chromeApp = cerebrusIsChromeInstalledApp_();
+    if (chromeApp && !forceShowUpToDate) {
+      cerebrusScheduleVersionReload_(remoteVersion);
+      return;
+    }
+    if (chromeApp && forceShowUpToDate) {
+      cerebrusScheduleVersionReload_(remoteVersion);
       return;
     }
     const seenKey = _versionSeenKey(remoteVersion);
@@ -6888,14 +6955,7 @@ async function checkAppVersion(forceShowUpToDate) {
     try { localStorage.setItem(seenKey, '1'); } catch (e) {}
     _versionPromptOpen = false;
     if (ask) {
-      try {
-        const url = new URL(location.href);
-        url.searchParams.set('v', remoteVersion);
-        url.searchParams.set('_', String(Date.now()));
-        location.replace(url.toString());
-      } catch (e) {
-        location.href = location.pathname + '?v=' + encodeURIComponent(remoteVersion) + '&_=' + Date.now();
-      }
+      cerebrusReloadAppVersion_(remoteVersion);
       return;
     }
     notify('ℹ️ Puedes actualizar cuando quieras con "🔄 Actualizar".');
@@ -27899,6 +27959,11 @@ function markSaved() {
   _unsaved = false;
   const btn = document.getElementById('btn-save-indicator');
   if (btn) btn.style.boxShadow = '';
+  if (_cerebrusPendingVersionReload && cerebrusIsChromeInstalledApp_()) {
+    const v = _cerebrusPendingVersionReload;
+    _cerebrusPendingVersionNotified = false;
+    setTimeout(function() { cerebrusScheduleVersionReload_(v); }, 600);
+  }
 }
 window.addEventListener('beforeunload', function(e) {
   if (!_unsaved) return;
