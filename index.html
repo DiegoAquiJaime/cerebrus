@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.07.1';
+const APP_VERSION = '2026.08.07.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28347,19 +28347,30 @@ async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
   }
 }
 
+function cerebrusPartitionDefs_() {
+  return [
+    { id: 'pInv', keys: servareInvKeys_() },
+    { id: 'pFac', keys: ['facturas'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
+    { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
+  ];
+}
+
+function cerebrusAllPartitionKeys_() {
+  const out = new Set();
+  cerebrusPartitionDefs_().forEach(function(def) {
+    (def.keys || []).forEach(function(k) { out.add(k); });
+  });
+  return out;
+}
+
 function getChangedPartitionIdsForSave(st) {
   try {
     if (!_cloudBaseState || typeof _cloudBaseState !== 'object') return null;
     const changedKeys = _topLevelChangedKeys(_cloudBaseState, st || {});
     const out = new Set();
     if (!changedKeys || !changedKeys.size) return out;
-    const PART_DEF = [
-      { id: 'pInv', keys: servareInvKeys_() },
-      { id: 'pFac', keys: ['facturas'] },
-      { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
-      { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
-    ];
-    PART_DEF.forEach(function(def) {
+    cerebrusPartitionDefs_().forEach(function(def) {
       if ((def.keys || []).some(function(k) { return changedKeys.has(k); })) out.add(def.id);
     });
     return out;
@@ -28368,10 +28379,45 @@ function getChangedPartitionIdsForSave(st) {
   }
 }
 
+function cerebrusPartitionIdsFromKeys_(keySet) {
+  const out = new Set();
+  if (!keySet || !keySet.size) return out;
+  cerebrusPartitionDefs_().forEach(function(def) {
+    if ((def.keys || []).some(function(k) { return keySet.has(k); })) out.add(def.id);
+  });
+  return out;
+}
+
+/**
+ * Antes de guardar: trae de la nube las claves de módulo que ESTE usuario no tocó.
+ * Evita que un guardado de facturas (u otro) reenvíe un SAC viejo y pise a Alberto/Sebas.
+ */
+async function enforceUntouchedPartitionsFromRemote_(stateToSave, localChangedKeys) {
+  if (!_cloudBaseState || cerebrusUsuarioBodega()) return stateToSave;
+  const changed = localChangedKeys instanceof Set ? localChangedKeys : new Set(localChangedKeys || []);
+  try {
+    const remote = await _fetchCloudStateRaw();
+    const merged = JSON.parse(JSON.stringify(stateToSave || {}));
+    cerebrusAllPartitionKeys_().forEach(function(k) {
+      if (changed.has(k)) return;
+      if (remote[k] !== undefined) merged[k] = remote[k];
+    });
+    return merged;
+  } catch (e) {
+    console.warn('[CEREBRUS] no se pudo refrescar módulos no tocados:', e);
+    return stateToSave;
+  }
+}
+
 // ── CLOUD SAVE ──
 async function saveToCloud(description, silent) {
   setSyncStatus('⏳ Guardando…', '');
   try {
+    // Claves que este usuario cambió vs la base ANTES del merge (no incluir cambios solo remotos).
+    const localChangedBefore = (_cloudBaseState && !cerebrusUsuarioBodega())
+      ? _topLevelChangedKeys(_cloudBaseState, state)
+      : new Set();
+
     const prep = await _prepareConcurrentSafeState();
     if (!prep.ok) {
       saveLocalRaw();
@@ -28397,6 +28443,10 @@ async function saveToCloud(description, silent) {
       }
     }
 
+    const localChangedKeys = (prep.changed && prep.changed.length)
+      ? new Set(prep.changed)
+      : localChangedBefore;
+
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
     if (servareIsEnabled_() && cerebrusUsuarioBodega()) {
       safeStateToSave = await servareHydrateFullInvBeforeSave_(safeStateToSave);
@@ -28404,13 +28454,32 @@ async function saveToCloud(description, silent) {
     }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
+    // Refrescar SAC/facturas/etc. no editados por este usuario → no pisar a Alberto/Sebas.
+    if (!cerebrusUsuarioBodega()) {
+      safeStateToSave = await enforceUntouchedPartitionsFromRemote_(safeStateToSave, localChangedKeys);
+      state = safeStateToSave;
+    }
     const stateToSave = compressStateForSave(safeStateToSave);
 
     try {
-      const parts = splitStateForCloudParts(stateToSave);
+      // Solo subir particiones que ESTE usuario tocó (Apps Script deja intactas las no enviadas).
+      var uploadPartIds = cerebrusUsuarioBodega()
+        ? null
+        : cerebrusPartitionIdsFromKeys_(localChangedKeys);
+      var parts = (uploadPartIds && uploadPartIds.size > 0)
+        ? splitStateForCloudParts(stateToSave, { includePartIds: uploadPartIds })
+        : splitStateForCloudParts(stateToSave);
+      // Si solo cambiaron claves de partición, no reenviar `main` (evita pisar núcleo).
+      if (uploadPartIds && uploadPartIds.size > 0) {
+        var coreChanged = false;
+        localChangedKeys.forEach(function(k) {
+          if (!cerebrusAllPartitionKeys_().has(k)) coreChanged = true;
+        });
+        if (!coreChanged) delete parts.main;
+      }
       var servarePInv = parts.pInv;
       var invTouched = cerebrusInvPartitionTouched_();
-      var changedParts = getChangedPartitionIdsForSave(safeStateToSave);
+      var changedParts = uploadPartIds || getChangedPartitionIdsForSave(safeStateToSave);
       var onlyInv = changedParts && changedParts.size === 1 && changedParts.has('pInv');
       var onlyNonInv = changedParts && changedParts.size > 0 && !changedParts.has('pInv');
 
@@ -28419,6 +28488,16 @@ async function saveToCloud(description, silent) {
       } else if (!invTouched) {
         delete parts.pInv;
         servarePInv = null;
+      }
+
+      // Nada que subir (solo inventario remoto ya sincronizado, etc.)
+      if (!Object.keys(parts).length) {
+        cloudVersion = cloudVersion;
+        cerebrusCommitAfterCloudSave_(safeStateToSave);
+        setSyncStatus('✓ Sin módulos locales nuevos', 'ok');
+        markSaved(); dismissConflict();
+        if (!silent) notify('☁ Nada nuevo que guardar (módulos ya al día)');
+        return;
       }
 
       // Bodega + solo inventario → no enviar SAC/facturas/etc. al Sheet Cerebrus
@@ -28459,6 +28538,7 @@ async function saveToCloud(description, silent) {
         servarePInv = null;
       }
 
+      const partNames = Object.keys(parts).join('+') || '—';
       const resPart = await fetch(API_URL, {
         method: 'POST',
         body: JSON.stringify({
@@ -28467,6 +28547,7 @@ async function saveToCloud(description, silent) {
           parts: parts,
           description: (description || 'Guardó cambios')
             + (servareIsEnabled_() ? ' (sin pInv→Servare)' : (!parts.pInv ? ' (sin pInv)' : ' (partido)'))
+            + (uploadPartIds && uploadPartIds.size ? ' [' + partNames + ']' : '')
         })
       });
       const jsonPart = await resPart.json();
@@ -28488,7 +28569,8 @@ async function saveToCloud(description, silent) {
         markSaved(); dismissConflict();
         if (!silent) {
           var skipInv = !parts.pInv && !servarePInv;
-          notify('☁ Guardado por ' + currentUser + (skipInv ? ' (inventario intacto)' : ' (partido)'));
+          notify('☁ Guardado por ' + currentUser + (skipInv ? ' (inventario intacto)' : ' (partido)')
+            + (uploadPartIds && uploadPartIds.size ? ' · módulos: ' + partNames : ''));
         }
         return;
       }
@@ -28823,8 +28905,15 @@ async function checkVersion() {
   try {
     const res  = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
     const json = await res.json();
-    if (json.ok && json.version !== cloudVersion && json.lastUser !== currentUser)
-      showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
+    if (!(json.ok && json.version !== cloudVersion && json.lastUser !== currentUser)) return;
+    showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
+    // Sin ediciones locales: traer la nube solo para que veas lo que guardó el otro.
+    if (!_unsaved) {
+      try {
+        await loadFromCloud();
+        notify('☁ Actualizado con lo que guardó ' + (json.lastUser || 'otro usuario'));
+      } catch (e) {}
+    }
   } catch(e) {}
 }
 function showConflict(user, date, keys, conflictKey) {

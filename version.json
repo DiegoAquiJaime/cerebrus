@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.07.1",
-  "notes": "Sync SAC: al actualizar desde nube, en conflictos (y en ingresos/cargas tocados por otro) gana la nube — evita que Diego/Sebas no vean lo que guardó Alberto."
+  "version": "2026.08.07.2",
+  "notes": "Sync real: al guardar solo se suben los módulos que tú editaste; lo demás se toma de la nube. Si otro guarda y no tienes cambios locales, se actualiza solo."
 }
