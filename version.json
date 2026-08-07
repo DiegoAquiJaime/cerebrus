@@ -1,4 +1,4 @@
 {
-  "version": "2026.06.06.33",
-  "notes": "App instalada en Chrome: detecta version.json y se actualiza sola al abrir o cada 2 min (espera si hay cambios sin guardar)."
+  "version": "2026.08.07.1",
+  "notes": "Sync SAC: al actualizar desde nube, en conflictos (y en ingresos/cargas tocados por otro) gana la nube — evita que Diego/Sebas no vean lo que guardó Alberto."
 }

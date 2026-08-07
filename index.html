@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.06.06.33';
+const APP_VERSION = '2026.08.07.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28775,10 +28775,24 @@ async function reloadFromCloud() {
     const localChanged  = _topLevelChangedKeys(base, local);
     const remoteChanged = _topLevelChangedKeys(base, remote);
     const conflicts = _intersectSets(localChanged, remoteChanged);
+    const conflictSet = new Set(conflicts);
+    // Claves SAC: al pedir “actualizar desde nube”, la nube gana si otro usuario las tocó.
+    // Antes lo local pisaba ingresos/cargas de Alberto/Sebas y parecía que “no sincronizaba”.
+    const sacPreferRemote = new Set([
+      'sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
+      'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota',
+      'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData',
+      'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'
+    ]);
 
-    // Rebase local sobre remoto: conserva módulos locales editados.
+    // Rebase: conserva solo módulos locales SIN conflicto. En conflicto → nube.
     const merged = JSON.parse(JSON.stringify(remote));
-    localChanged.forEach(k => { merged[k] = local[k]; });
+    const keptLocal = [];
+    localChanged.forEach(k => {
+      if (conflictSet.has(k) || (sacPreferRemote.has(k) && remoteChanged.has(k))) return;
+      merged[k] = local[k];
+      keptLocal.push(k);
+    });
 
     state = merged;
     cloudVersion = json.meta?.version || cloudVersion;
@@ -28788,13 +28802,15 @@ async function reloadFromCloud() {
     if (cerebrusUsuarioBodega()) await servareLoadInvMergeAfterCerebrus_();
     _postLoadSetup();
     // Si conservamos módulos locales, seguimos "unsaved" para que puedas guardar luego.
-    if (localChanged.size > 0) markUnsaved(); else markSaved();
+    if (keptLocal.length > 0) markUnsaved(); else markSaved();
 
     setSyncStatus('✓ Nube (combinado)', 'ok');
     if (conflicts.length) {
-      notify('⚠ Actualizado con preservación local en módulos en conflicto: ' + conflicts.slice(0, 8).join(', ') + '. Guarda cuando termines.');
+      notify('☁ Actualizado desde nube (en conflicto ganó la nube): ' + conflicts.slice(0, 8).join(', ') + '.');
+    } else if (keptLocal.length) {
+      notify('🔀 Actualizado desde nube; se conservaron tus cambios locales en: ' + keptLocal.slice(0, 8).join(', ') + '.');
     } else {
-      notify('🔀 Actualizado desde nube sin perder tus cambios locales.');
+      notify('☁ Actualizado desde nube.');
     }
   } catch (e) {
     await loadFromCloud();
