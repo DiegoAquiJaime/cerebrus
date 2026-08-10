@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.10.1';
+const APP_VERSION = '2026.08.10.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28182,6 +28182,29 @@ async function _fetchCloudStateRaw() {
   return st;
 }
 
+function cerebrusNormUser_(u) {
+  try {
+    return String(u || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+  } catch (e) {
+    return String(u || '').trim().toLowerCase();
+  }
+}
+function cerebrusSameCloudUser_(a, b) {
+  const na = cerebrusNormUser_(a);
+  const nb = cerebrusNormUser_(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  // Alias frecuentes
+  if ((na === 'sebastian' || na === 'sebas') && (nb === 'sebastian' || nb === 'sebas')) return true;
+  return false;
+}
+
+let _cloudSaveInFlight = false;
+
 async function _prepareConcurrentSafeState() {
   if (cerebrusUsuarioBodega() && servareIsEnabled_()) {
     try {
@@ -28200,9 +28223,9 @@ async function _prepareConcurrentSafeState() {
   if (String(vj.version) === String(cloudVersion)) {
     return {ok:true, stateToSave: state};
   }
-  const selfSave = vj.lastUser && currentUser && String(vj.lastUser) === String(currentUser);
+  const selfSave = cerebrusSameCloudUser_(vj.lastUser, currentUser);
   if (!_cloudBaseState) {
-    // Mi propio guardado previo avanzó la versión: adoptar y continuar (no bloquear a Alberto/Diego).
+    // Mi propio guardado previo avanzó la versión: adoptar y continuar (Diego/Sebastián/Alberto).
     if (selfSave) {
       cloudVersion = String(vj.version || cloudVersion || '0');
       _cloudBaseVersion = cloudVersion;
@@ -28334,6 +28357,8 @@ async function cerebrusBodegaKeepRemotePedidoIfUntouched_(stateToSave) {
 
 async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
   if (cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
+  // Si este usuario no tocó inventario, no gastar un getState/Servare extra (Diego/Sebastián/Alberto).
+  if (!cerebrusInvPartitionTouched_()) return stateToSave;
   try {
     const remoteFull = servareIsEnabled_()
       ? null
@@ -28344,12 +28369,6 @@ async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
     const invKeys = servareInvKeys_();
     const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
-    if (!cerebrusInvPartitionTouched_()) {
-      invKeys.forEach(function(k) {
-        if (remoteInv[k] !== undefined) merged[k] = remoteInv[k];
-      });
-      return merged;
-    }
     invKeys.forEach(function(k) {
       if (!localChanged.has(k) && remoteInv[k] !== undefined) merged[k] = remoteInv[k];
     });
@@ -28426,10 +28445,16 @@ async function enforceUntouchedPartitionsFromRemote_(stateToSave, localChangedKe
 
 // ── CLOUD SAVE ──
 async function saveToCloud(description, silent) {
+  if (_cloudSaveInFlight) {
+    if (!silent) notify('⏳ Ya hay un guardado en curso — espera un segundo');
+    setSyncStatus('⏳ Guardando…', '');
+    return;
+  }
+  _cloudSaveInFlight = true;
   setSyncStatus('⏳ Guardando…', '');
   try {
     // Claves que este usuario cambió vs la base ANTES del merge (no incluir cambios solo remotos).
-    const localChangedBefore = (_cloudBaseState && !cerebrusUsuarioBodega())
+    let localChangedBefore = (_cloudBaseState && !cerebrusUsuarioBodega())
       ? _topLevelChangedKeys(_cloudBaseState, state)
       : new Set();
 
@@ -28458,9 +28483,23 @@ async function saveToCloud(description, silent) {
       }
     }
 
-    const localChangedKeys = (prep.changed && prep.changed.length)
+    let localChangedKeys = (prep.changed && prep.changed.length)
       ? new Set(prep.changed)
       : localChangedBefore;
+
+    // Sin base confiable: comparar contra nube y subir SOLO diferencias (nunca reenviar todo).
+    if (!cerebrusUsuarioBodega() && (!_cloudBaseState || (localChangedKeys.size === 0 && _unsaved))) {
+      try {
+        const remoteNow = await _fetchCloudStateRaw();
+        if (!_cloudBaseState) {
+          try { _cloudBaseState = JSON.parse(JSON.stringify(remoteNow)); } catch (e) {}
+        }
+        const diff = _topLevelChangedKeys(remoteNow, state);
+        if (diff.size) localChangedKeys = diff;
+      } catch (e) {
+        console.warn('[CEREBRUS] no se pudo calcular diff vs nube:', e);
+      }
+    }
 
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
     if (servareIsEnabled_() && cerebrusUsuarioBodega()) {
@@ -28469,8 +28508,6 @@ async function saveToCloud(description, silent) {
     }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
-    // No refrescar toda la nube otra vez aquí: al subir solo módulos tocados,
-    // Apps Script deja intactos los demás (evita timeout/error de Alberto al guardar).
     const stateToSave = compressStateForSave(safeStateToSave);
 
     try {
@@ -28478,9 +28515,33 @@ async function saveToCloud(description, silent) {
       var uploadPartIds = cerebrusUsuarioBodega()
         ? null
         : cerebrusPartitionIdsFromKeys_(localChangedKeys);
+
+      // Admin sin cambios de módulo: no reenviar todo el SAC/facturas (eso pisaba a los demás).
+      if (!cerebrusUsuarioBodega() && uploadPartIds && uploadPartIds.size === 0) {
+        var coreOnly = false;
+        localChangedKeys.forEach(function(k) {
+          if (!cerebrusAllPartitionKeys_().has(k)) coreOnly = true;
+        });
+        if (!coreOnly) {
+          cerebrusCommitAfterCloudSave_(safeStateToSave);
+          setSyncStatus('✓ Al día', 'ok');
+          markSaved(); dismissConflict();
+          if (!silent) notify('☁ Sin cambios de módulo nuevos que subir');
+          return;
+        }
+      }
+
       var parts = (uploadPartIds && uploadPartIds.size > 0)
         ? splitStateForCloudParts(stateToSave, { includePartIds: uploadPartIds })
-        : splitStateForCloudParts(stateToSave);
+        : (cerebrusUsuarioBodega() ? splitStateForCloudParts(stateToSave) : null);
+
+      if (!parts) {
+        // Último recurso admin sin mapa de cambios: pedir actualizar, no pisar.
+        saveLocalRaw();
+        setSyncStatus('⚠ Actualiza desde nube', 'err');
+        if (!silent) notify('⚠ No pude detectar qué módulos cambiaste. Pulsa «Actualizar desde nube» y vuelve a guardar.');
+        return;
+      }
       // Si solo cambiaron claves de partición, no reenviar `main` (evita pisar núcleo).
       if (uploadPartIds && uploadPartIds.size > 0) {
         var coreChanged = false;
@@ -28504,7 +28565,6 @@ async function saveToCloud(description, silent) {
 
       // Nada que subir (solo inventario remoto ya sincronizado, etc.)
       if (!Object.keys(parts).length) {
-        cloudVersion = cloudVersion;
         cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Sin módulos locales nuevos', 'ok');
         markSaved(); dismissConflict();
@@ -28655,6 +28715,8 @@ async function saveToCloud(description, silent) {
   } catch(e) {
     saveLocalRaw(); setSyncStatus('⚠ Error al guardar', 'err');
     if (!silent) notify('⚠ Error nube — guardado local como respaldo. ' + (e.message||''));
+  } finally {
+    _cloudSaveInFlight = false;
   }
 }
 
@@ -28917,7 +28979,13 @@ async function checkVersion() {
   try {
     const res  = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
     const json = await res.json();
-    if (!(json.ok && json.version !== cloudVersion && json.lastUser !== currentUser)) return;
+    if (!(json.ok && json.version !== cloudVersion)) return;
+    // No avisar ni recargar por el propio guardado (Diego / Sebastián / Alberto).
+    if (cerebrusSameCloudUser_(json.lastUser, currentUser)) {
+      cloudVersion = String(json.version || cloudVersion);
+      _cloudBaseVersion = cloudVersion;
+      return;
+    }
     showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
     // Sin ediciones locales: traer la nube solo para que veas lo que guardó el otro.
     if (!_unsaved) {

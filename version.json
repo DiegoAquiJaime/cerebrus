@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.1",
-  "notes": "Fix guardado Alberto: no bloquear por conflicto consigo mismo (doble guardado) y quitar refresco extra lento antes de guardar."
+  "version": "2026.08.10.2",
+  "notes": "Sync óptimo Diego/Sebastián/Alberto: sin pisar módulos ajenos, sin conflicto consigo mismo, save con candado anti doble-clic y más rápido."
 }
