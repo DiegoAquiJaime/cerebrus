@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.07.2';
+const APP_VERSION = '2026.08.10.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28200,7 +28200,14 @@ async function _prepareConcurrentSafeState() {
   if (String(vj.version) === String(cloudVersion)) {
     return {ok:true, stateToSave: state};
   }
+  const selfSave = vj.lastUser && currentUser && String(vj.lastUser) === String(currentUser);
   if (!_cloudBaseState) {
+    // Mi propio guardado previo avanzó la versión: adoptar y continuar (no bloquear a Alberto/Diego).
+    if (selfSave) {
+      cloudVersion = String(vj.version || cloudVersion || '0');
+      _cloudBaseVersion = cloudVersion;
+      return {ok:true, stateToSave: state};
+    }
     return {ok:false, reason:'no_base', by:vj.lastUser||'otro usuario'};
   }
 
@@ -28213,6 +28220,14 @@ async function _prepareConcurrentSafeState() {
   const conflicts = _intersectSets(localChanged, remoteChanged);
 
   if (conflicts.length) {
+    // Conflicto consigo mismo (doble clic / auto+manual): rebasar y dejar ganar lo local.
+    if (selfSave) {
+      const merged = JSON.parse(JSON.stringify(remote));
+      localChanged.forEach(k => { merged[k] = local[k]; });
+      cloudVersion = String(vj.version || cloudVersion || '0');
+      _cloudBaseVersion = cloudVersion;
+      return {ok:true, stateToSave: merged, merged:true, by:currentUser, changed:[...localChanged]};
+    }
     return {ok:false, reason:'conflict_keys', keys:conflicts, by:vj.lastUser||'otro usuario'};
   }
 
@@ -28454,11 +28469,8 @@ async function saveToCloud(description, silent) {
     }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
-    // Refrescar SAC/facturas/etc. no editados por este usuario → no pisar a Alberto/Sebas.
-    if (!cerebrusUsuarioBodega()) {
-      safeStateToSave = await enforceUntouchedPartitionsFromRemote_(safeStateToSave, localChangedKeys);
-      state = safeStateToSave;
-    }
+    // No refrescar toda la nube otra vez aquí: al subir solo módulos tocados,
+    // Apps Script deja intactos los demás (evita timeout/error de Alberto al guardar).
     const stateToSave = compressStateForSave(safeStateToSave);
 
     try {

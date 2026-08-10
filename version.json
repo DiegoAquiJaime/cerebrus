@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.07.2",
-  "notes": "Sync real: al guardar solo se suben los módulos que tú editaste; lo demás se toma de la nube. Si otro guarda y no tienes cambios locales, se actualiza solo."
+  "version": "2026.08.10.1",
+  "notes": "Fix guardado Alberto: no bloquear por conflicto consigo mismo (doble guardado) y quitar refresco extra lento antes de guardar."
 }
