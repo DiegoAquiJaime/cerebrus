@@ -28645,14 +28645,7 @@ async function saveToCloud(description, silent) {
         if (!silent) notify('⚠ No pude detectar qué módulos cambiaste. Pulsa «Actualizar desde nube» y vuelve a guardar.');
         return;
       }
-      // Si solo cambiaron claves de partición, no reenviar `main` (evita pisar núcleo).
-      if (uploadPartIds && uploadPartIds.size > 0) {
-        var coreChanged = false;
-        localChangedKeys.forEach(function(k) {
-          if (!cerebrusAllPartitionKeys_().has(k)) coreChanged = true;
-        });
-        if (!coreChanged) delete parts.main;
-      }
+      // Apps Script exige parts.main en saveParted — no eliminarlo.
       var servarePInv = parts.pInv;
       var invTouched = cerebrusInvPartitionTouched_();
       var changedParts = uploadPartIds || getChangedPartitionIdsForSave(safeStateToSave);
