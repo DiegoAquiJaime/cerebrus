@@ -28394,7 +28394,8 @@ function splitStateForCloudParts(st, opts) {
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
-  // Seguridad: siempre enviar todas las particiones para evitar vaciados cruzados.
+  // Seguridad: por defecto todas las particiones; includePartIds filtra (admin siempre
+  // fuerza hermanos vía saveToCloud — Apps Script borra las omitidas del payload).
   const allowedParts = null;
   const includeParts = opts.includePartIds instanceof Set ? opts.includePartIds : null;
   const stripped = JSON.parse(JSON.stringify(st));

@@ -1,0 +1,87 @@
+{
+  "updated": "2026-08-10T14:16:46",
+  "fuente": "Semanadel10al16agostoSAC.pdf",
+  "semana": "R|2026-08-10|2026-08-16",
+  "nombres": [
+    "1ª Quincena (Día 15)",
+    "Turnos y Dobles",
+    "Bono Locomoción",
+    "Bono Basura",
+    "Bono Comedor",
+    "Bono Marcelo",
+    "Bono Chef",
+    "Lavado Jiménez",
+    "Javier Audiovisual",
+    "Abastible",
+    "Chilquinta (Luz / Abono)",
+    "Entel",
+    "Contadora",
+    "Mantención",
+    "SCD (Derecho de autor)",
+    "BODEGAJE",
+    "TONER",
+    "Pacto Proveedores",
+    "Supermercado",
+    "Ariztía",
+    "Brotes",
+    "Flores Comestibles",
+    "Masas",
+    "Alberto (Crédito Empresa)",
+    "Matías/Pancho (Crédito)",
+    "Tarjetas y Créditos",
+    "Retiro Personal Sebastián",
+    "Sra. Paty – Retiro Personal",
+    "Priscila – Retiro Personal",
+    "Crédito Matías a Priscila",
+    "Créditos Informales Sebas",
+    "Javier pendiente saldo"
+  ],
+  "por_categoria": {
+    "RRHH": [
+      "1ª Quincena (Día 15)",
+      "Turnos y Dobles",
+      "Bono Locomoción",
+      "Bono Comedor",
+      "Bono Marcelo",
+      "Bono Chef",
+      "Javier Audiovisual",
+      "Javier pendiente saldo"
+    ],
+    "Bono": [
+      "Bono Basura"
+    ],
+    "Proveedor": [
+      "Lavado Jiménez",
+      "Pacto Proveedores",
+      "Supermercado",
+      "Ariztía",
+      "Brotes",
+      "Flores Comestibles",
+      "Masas"
+    ],
+    "Servicio": [
+      "Abastible",
+      "Chilquinta (Luz / Abono)",
+      "Entel",
+      "Contadora",
+      "Mantención",
+      "SCD (Derecho de autor)",
+      "BODEGAJE",
+      "TONER"
+    ],
+    "Crédito": [
+      "Alberto (Crédito Empresa)",
+      "Matías/Pancho (Crédito)",
+      "Crédito Matías a Priscila",
+      "Créditos Informales Sebas"
+    ],
+    "TC": [
+      "Tarjetas y Créditos"
+    ],
+    "Retiro": [
+      "Retiro Personal Sebastián",
+      "Sra. Paty – Retiro Personal",
+      "Priscila – Retiro Personal"
+    ]
+  }
+}

@@ -1,4 +1,4 @@
 {
   "version": "2026.08.10.6",
-  "notes": "Admin saveParted: siempre pFac+pSem+pMisc+main; pInv solo si se tocó; local gana en claves cambiadas."
+  "notes": "saveParted admin: siempre reenvía pFac+pSem+pMisc+main (hermanos desde nube/base) para no borrar propinas/otros; pInv solo si se tocó. Propinas protegidas."
 }
