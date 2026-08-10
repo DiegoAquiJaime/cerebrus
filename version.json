@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.2",
-  "notes": "Sync óptimo Diego/Sebastián/Alberto: sin pisar módulos ajenos, sin conflicto consigo mismo, save con candado anti doble-clic y más rápido."
+  "version": "2026.08.10.3",
+  "notes": "Propinas: semanas lun–dom como el SAC (ej. 3–9 Ago), se puede cargar la de ayer el lunes, y al registrar marca Guardar."
 }

@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.10.2';
+const APP_VERSION = '2026.08.10.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -24914,7 +24914,62 @@ function transferirPedidoAMercaderia() {
 //  MÓDULO PROPINAS
 // ============================================================
 
-let _propSemana = 1;
+/** Período ISO lun–dom activo en Propinas (alineado con SAC). */
+let _propPeriodo = null;
+
+function propIsoRangeLabel(range) {
+  if (!range || !range.start || !range.end) return '';
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const a = typeof sacParseISODate === 'function' ? sacParseISODate(range.start) : null;
+  const b = typeof sacParseISODate === 'function' ? sacParseISODate(range.end) : null;
+  if (!a || !b) return range.start + ' – ' + range.end;
+  return a.getDate() + '–' + b.getDate() + ' ' + MESES[b.getMonth()] + ' ' + b.getFullYear();
+}
+
+function propShiftIsoRange(range, weeks) {
+  const a = sacParseISODate(range.start);
+  if (!a) return range;
+  a.setDate(a.getDate() + (weeks * 7));
+  return sacMondaySundayRangeContaining(a);
+}
+
+function propEnsurePeriodo() {
+  if (_propPeriodo && _propPeriodo.start && _propPeriodo.end) return _propPeriodo;
+  const today = new Date();
+  const cur = sacMondaySundayRangeContaining(today);
+  // Lunes (o recién empieza la semana): por defecto la semana que recién terminó,
+  // para poder cargar la propina de ayer (domingo) sin perder el período.
+  if (today.getDay() === 1) {
+    _propPeriodo = propShiftIsoRange(cur, -1);
+  } else {
+    _propPeriodo = cur;
+  }
+  return _propPeriodo;
+}
+
+function propPeriodoKey() {
+  const p = propEnsurePeriodo();
+  return 'R|' + p.start + '|' + p.end;
+}
+
+function propFechaInPeriodo(fecha, range) {
+  if (!fecha || !range) return false;
+  return String(fecha) >= String(range.start) && String(fecha) <= String(range.end);
+}
+
+function propDefaultFecha() {
+  const p = propEnsurePeriodo();
+  const today = new Date();
+  const ymd = today.toISOString().slice(0, 10);
+  // Si hoy ya es la semana nueva, sugerir el domingo de la semana seleccionada (ayer si es lunes).
+  if (ymd > p.end) return p.end;
+  if (ymd < p.start) return p.start;
+  return ymd;
+}
+
+function propMarkDirty() {
+  if (typeof markUnsaved === 'function') markUnsaved();
+}
 
 function propRender() {
   if (!state.propinas) state.propinas = [];
@@ -24924,9 +24979,21 @@ function propRender() {
   const totalProp  = state.propinas.reduce((s,p) => s + (p.estado==='pendiente'?p.monto:0), 0);
   const bancoReal  = banco - totalProp;
 
-  // Days of active week with real sales (for propina suggestion)
-  const days = vsGetWeek(_propSemana);
-  const ventaReal = days.filter(d=>d.cerrado).reduce((s,d)=>s+d.real,0);
+  const periodo = propEnsurePeriodo();
+  const cur = sacMondaySundayRangeContaining(new Date());
+  const prev = propShiftIsoRange(cur, -1);
+  const prev2 = propShiftIsoRange(cur, -2);
+  const weekOpts = [
+    { id: 'prev2', range: prev2, title: 'Hace 2 semanas' },
+    { id: 'prev', range: prev, title: 'Semana pasada' },
+    { id: 'cur', range: cur, title: 'Semana actual' },
+  ];
+  const days = (typeof vsGetWeekSac === 'function') ? vsGetWeekSac(propPeriodoKey()) : [];
+  const ventaReal = (days || []).filter(d => d && (d.cerrado || d.real > 0)).reduce((s,d)=>s+(d.real||0),0);
+  const propsSemana = state.propinas.filter(p => propFechaInPeriodo(p.fecha, periodo));
+  const fechaDefault = propDefaultFecha();
+  const todayYmd = new Date().toISOString().slice(0, 10);
+  const fechaMax = periodo.end < todayYmd ? periodo.end : todayYmd;
 
   el.innerHTML = `
   <!-- Banco con propinas descontadas -->
@@ -24953,25 +25020,29 @@ function propRender() {
     </div>` : `<div style="margin-top:10px;background:rgba(16,185,129,.15);border-radius:6px;padding:7px 12px;font-size:10px;color:rgba(255,255,255,.7);">✅ Sin propinas pendientes</div>`}
   </div>
 
-  <!-- Selector de semana -->
-  <div class="prop-semana-sel">
-    ${[1,2,3,4].map(w=>`<button class="prop-semana-btn${_propSemana===w?' active':''}" onclick="propSetSemana(${w})">Semana ${w}</button>`).join('')}
-    <span style="font-size:10px;color:#94a3b8;align-self:center;">Venta real sem. ${_propSemana}: <b>${fmt(ventaReal)}</b></span>
+  <!-- Selector de semana ISO (lun–dom), misma lógica que SAC -->
+  <div class="prop-semana-sel" style="flex-wrap:wrap;gap:8px;">
+    ${weekOpts.map(o => {
+      const sel = o.range.start === periodo.start && o.range.end === periodo.end;
+      return `<button type="button" class="prop-semana-btn${sel?' active':''}" onclick="propSetPeriodo('${o.range.start}','${o.range.end}')" title="${esc(o.title)}">${esc(o.title)} · ${esc(propIsoRangeLabel(o.range))}</button>`;
+    }).join('')}
+    <span style="font-size:10px;color:#94a3b8;align-self:center;">Venta real ${esc(propIsoRangeLabel(periodo))}: <b>${fmt(ventaReal)}</b></span>
   </div>
 
   <!-- Formulario nueva propina -->
   <div class="seb-add-form show" style="margin-bottom:14px;">
-    <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:10px;">+ Registrar propina</div>
+    <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:10px;">+ Registrar propina · semana ${esc(propIsoRangeLabel(periodo))}</div>
     <div class="seb-add-form-grid">
-      <div><label>Fecha</label><input type="date" id="prop-fecha" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div><label>Fecha</label><input type="date" id="prop-fecha" value="${fechaDefault}" min="${periodo.start}" max="${fechaMax}"></div>
       <div><label>Descripción</label><input type="text" id="prop-desc" placeholder="Ej: Propina servicio turno noche"></div>
       <div><label>Monto propina ($)</label><input type="text" id="prop-monto" inputmode="numeric" placeholder="0"></div>
       <div><label>Trabajador/es</label><input type="text" id="prop-quien" placeholder="Ej: Juan, María"></div>
     </div>
     <button class="fac-btn primary" onclick="propAgregar()" style="font-size:11px;">+ Registrar propina</button>
+    <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Puedes cargar la propina de ayer hoy: elige la <b>semana pasada</b> y la fecha del domingo.</p>
   </div>
 
-  <!-- Tabla propinas -->
+  <!-- Tabla propinas de la semana seleccionada -->
   <div class="prop-table">
     <table>
       <thead><tr>
@@ -24979,9 +25050,11 @@ function propRender() {
         <th style="text-align:right;">Monto</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>
-        ${state.propinas.length === 0
-          ? `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Sin propinas registradas</td></tr>`
-          : state.propinas.map((p,i) => `<tr>
+        ${propsSemana.length === 0
+          ? `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:20px;">Sin propinas en ${esc(propIsoRangeLabel(periodo))}. Registra arriba (fecha dentro de esa semana).</td></tr>`
+          : propsSemana.map((p) => {
+            const i = state.propinas.indexOf(p);
+            return `<tr>
           <td style="font-size:11px;color:#94a3b8;">${esc(p.fecha||'')}</td>
           <td><b>${esc(p.desc||'')}</b></td>
           <td style="font-size:11px;color:#94a3b8;">${esc(p.quien||'')}</td>
@@ -24993,7 +25066,8 @@ function propRender() {
               : `<button class="seb-btn-accion" style="color:#94a3b8;" onclick="propReabrir(${i})">↩</button>`}
             <button class="seb-btn-accion seb-btn-del" onclick="propEliminar(${i})">✕</button>
           </td>
-        </tr>`).join('')}
+        </tr>`;
+          }).join('')}
       </tbody>
     </table>
   </div>
@@ -25009,35 +25083,64 @@ function propRender() {
   </div>`;
 }
 
-function propSetSemana(w) { _propSemana = w; propRender(); }
+function propSetPeriodo(start, end) {
+  if (!start || !end) return;
+  _propPeriodo = { start: String(start), end: String(end) };
+  propRender();
+}
+/** Compat: Semana 1–4 del mes → rango de fechas del calendario. */
+function propSetSemana(w) {
+  const ranges = getCalWeekRanges();
+  const r = ranges[(w|0) - 1];
+  if (!r) return;
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const pad = n => String(n).padStart(2,'0');
+  const start = y + '-' + pad(m+1) + '-' + pad(r.start);
+  const end = y + '-' + pad(m+1) + '-' + pad(r.end);
+  propSetPeriodo(start, end);
+}
 
 function propAgregar() {
+  if (!state.propinas) state.propinas = [];
   const monto = parseInt((document.getElementById('prop-monto').value||'0').replace(/[^\d]/g,''),10)||0;
   if (!monto) { notify('⚠ Ingresa el monto de la propina'); return; }
+  const periodo = propEnsurePeriodo();
+  let fecha = (document.getElementById('prop-fecha')||{}).value || propDefaultFecha();
+  if (!propFechaInPeriodo(fecha, periodo)) {
+    notify('⚠ La fecha debe estar dentro de la semana seleccionada (' + propIsoRangeLabel(periodo) + ')');
+    return;
+  }
   pushUndo();
   state.propinas.unshift({
     id: 'p_'+Date.now(),
-    fecha: document.getElementById('prop-fecha').value,
+    fecha,
     desc:  document.getElementById('prop-desc').value||'Propina',
     quien: document.getElementById('prop-quien').value||'',
-    monto, estado: 'pendiente', semana: _propSemana
+    monto, estado: 'pendiente',
+    semanaKey: propPeriodoKey(),
+    semana: periodo.start
   });
+  propMarkDirty();
   propRender(); updateTotalDisponible();
-  notify('✅ Propina registrada — descontada del saldo bancario');
+  notify('✅ Propina registrada — descontada del saldo bancario. Recuerda Guardar.');
 }
 function propPagar(idx) {
   if (!confirm(`¿Marcar como pagada? Se eliminará del descuento al banco.`)) return;
   pushUndo(); state.propinas[idx].estado = 'pagada';
+  propMarkDirty();
   propRender(); updateTotalDisponible();
-  notify('✅ Propina marcada como pagada');
+  notify('✅ Propina marcada como pagada. Recuerda Guardar.');
 }
 function propReabrir(idx) {
   pushUndo(); state.propinas[idx].estado = 'pendiente';
+  propMarkDirty();
   propRender(); updateTotalDisponible();
 }
 function propEliminar(idx) {
   if (!confirm('¿Eliminar esta propina?')) return;
   pushUndo(); state.propinas.splice(idx,1);
+  propMarkDirty();
   propRender(); updateTotalDisponible();
 }
 
