@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.5",
-  "notes": "Propinas: rescate desde auto-respaldo + protección anti-borrado y historial de semanas."
+  "version": "2026.08.10.6",
+  "notes": "Admin saveParted: siempre pFac+pSem+pMisc+main; pInv solo si se tocó; local gana en claves cambiadas."
 }

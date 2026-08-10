@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.10.5';
+const APP_VERSION = '2026.08.10.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28549,24 +28549,67 @@ function cerebrusPartitionIdsFromKeys_(keySet) {
 }
 
 /**
- * Antes de guardar: trae de la nube las claves de módulo que ESTE usuario no tocó.
- * Evita que un guardado de facturas (u otro) reenvíe un SAC viejo y pise a Alberto/Sebas.
+ * Antes de guardar: trae de la nube (o _cloudBaseState) las claves de módulo que ESTE usuario no tocó.
+ * Evita que un guardado de SAC/facturas reenvíe hermanos vacíos/viejos y los pise en nube.
+ * Con Servare activo no toca claves de inventario (viven en Servare).
  */
 async function enforceUntouchedPartitionsFromRemote_(stateToSave, localChangedKeys) {
   if (!_cloudBaseState || cerebrusUsuarioBodega()) return stateToSave;
   const changed = localChangedKeys instanceof Set ? localChangedKeys : new Set(localChangedKeys || []);
+  let source = null;
   try {
-    const remote = await _fetchCloudStateRaw();
+    source = await _fetchCloudStateRaw();
+  } catch (e) {
+    console.warn('[CEREBRUS] no se pudo refrescar módulos no tocados, usando _cloudBaseState:', e);
+    source = _cloudBaseState;
+  }
+  if (!source) return stateToSave;
+  try {
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
+    const skipInv = servareIsEnabled_();
+    const invKeys = skipInv ? new Set(servareInvKeys_()) : null;
     cerebrusAllPartitionKeys_().forEach(function(k) {
       if (changed.has(k)) return;
-      if (remote[k] !== undefined) merged[k] = remote[k];
+      if (invKeys && invKeys.has(k)) return;
+      if (source[k] !== undefined) merged[k] = source[k];
     });
     return merged;
-  } catch (e) {
-    console.warn('[CEREBRUS] no se pudo refrescar módulos no tocados:', e);
+  } catch (e2) {
+    console.warn('[CEREBRUS] merge módulos no tocados falló:', e2);
     return stateToSave;
   }
+}
+
+/** Particiones no-inventario que un admin SIEMPRE debe reenviar (Apps Script borra las omitidas). */
+function cerebrusAdminSiblingPartIds_() {
+  return new Set(['pFac', 'pSem', 'pMisc']);
+}
+
+/**
+ * Garantiza que parts tenga pFac/pSem/pMisc serializados desde st (o base),
+ * para que un save parcial no deje hermanos fuera del payload.
+ */
+function cerebrusEnsureAdminSiblingParts_(parts, st) {
+  if (!parts || typeof parts !== 'object') return parts;
+  const src = st || {};
+  const base = (_cloudBaseState && typeof _cloudBaseState === 'object') ? _cloudBaseState : null;
+  cerebrusPartitionDefs_().forEach(function(def) {
+    if (!cerebrusAdminSiblingPartIds_().has(def.id)) return;
+    if (parts[def.id]) return;
+    const obj = {};
+    let hasAny = false;
+    (def.keys || []).forEach(function(k) {
+      if (src[k] !== undefined) {
+        obj[k] = src[k];
+        hasAny = true;
+      } else if (base && base[k] !== undefined) {
+        obj[k] = base[k];
+        hasAny = true;
+      }
+    });
+    if (hasAny) parts[def.id] = JSON.stringify(obj);
+  });
+  return parts;
 }
 
 // ── CLOUD SAVE ──
@@ -28634,6 +28677,8 @@ async function saveToCloud(description, silent) {
     }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
+    // Admin: rehidratar hermanos no tocados desde nube/base ANTES de comprimir/partir.
+    safeStateToSave = await enforceUntouchedPartitionsFromRemote_(safeStateToSave, localChangedKeys);
     const stateToSave = compressStateForSave(safeStateToSave);
 
     // Nunca subir propinas vacías si la base/nube tenía registros (evita borrado accidental).
@@ -28656,23 +28701,34 @@ async function saveToCloud(description, silent) {
     } catch (ePropGuard) {}
 
     try {
-      // Solo subir particiones que ESTE usuario tocó (Apps Script deja intactas las no enviadas).
-      var uploadPartIds = cerebrusUsuarioBodega()
+      // Qué módulos tocó el usuario (para decidir pInv y mensajes).
+      var changedPartIds = cerebrusUsuarioBodega()
         ? null
         : cerebrusPartitionIdsFromKeys_(localChangedKeys);
 
-      // Admin sin cambios de módulo: no reenviar todo el SAC/facturas (eso pisaba a los demás).
-      if (!cerebrusUsuarioBodega() && uploadPartIds && uploadPartIds.size === 0) {
-        var coreOnly = false;
-        localChangedKeys.forEach(function(k) {
-          if (!cerebrusAllPartitionKeys_().has(k)) coreOnly = true;
-        });
-        if (!coreOnly) {
-          cerebrusCommitAfterCloudSave_(safeStateToSave);
-          setSyncStatus('✓ Al día', 'ok');
-          markSaved(); dismissConflict();
-          if (!silent) notify('☁ Sin cambios de módulo nuevos que subir');
-          return;
+      // CRITICAL: saveParted en Apps Script BORRA particiones omitidas del payload.
+      // Admin siempre reenvía pFac+pSem+pMisc+main (locales tocados + remotos intactos).
+      // pInv solo si se tocó inventario (Bodega/Servare isolation).
+      var uploadPartIds = null;
+      if (!cerebrusUsuarioBodega()) {
+        if (changedPartIds && changedPartIds.size > 0) {
+          uploadPartIds = cerebrusAdminSiblingPartIds_();
+          changedPartIds.forEach(function(id) { uploadPartIds.add(id); });
+          if (!changedPartIds.has('pInv')) uploadPartIds.delete('pInv');
+        } else if (changedPartIds && changedPartIds.size === 0) {
+          var coreOnly = false;
+          localChangedKeys.forEach(function(k) {
+            if (!cerebrusAllPartitionKeys_().has(k)) coreOnly = true;
+          });
+          if (!coreOnly) {
+            cerebrusCommitAfterCloudSave_(safeStateToSave);
+            setSyncStatus('✓ Al día', 'ok');
+            markSaved(); dismissConflict();
+            if (!silent) notify('☁ Sin cambios de módulo nuevos que subir');
+            return;
+          }
+          // Solo claves de main: igual reenviar hermanos para no vaciar Part_* en nube.
+          uploadPartIds = cerebrusAdminSiblingPartIds_();
         }
       }
 
@@ -28687,10 +28743,13 @@ async function saveToCloud(description, silent) {
         if (!silent) notify('⚠ No pude detectar qué módulos cambiaste. Pulsa «Actualizar desde nube» y vuelve a guardar.');
         return;
       }
+      if (!cerebrusUsuarioBodega()) {
+        cerebrusEnsureAdminSiblingParts_(parts, stateToSave);
+      }
       // Apps Script exige parts.main en saveParted — no eliminarlo.
       var servarePInv = parts.pInv;
       var invTouched = cerebrusInvPartitionTouched_();
-      var changedParts = uploadPartIds || getChangedPartitionIdsForSave(safeStateToSave);
+      var changedParts = changedPartIds || getChangedPartitionIdsForSave(safeStateToSave);
       var onlyInv = changedParts && changedParts.size === 1 && changedParts.has('pInv');
       var onlyNonInv = changedParts && changedParts.size > 0 && !changedParts.has('pInv');
 
