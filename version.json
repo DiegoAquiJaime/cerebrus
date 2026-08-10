@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.3",
-  "notes": "Propinas: semanas lun–dom como el SAC (ej. 3–9 Ago), se puede cargar la de ayer el lunes, y al registrar marca Guardar."
+  "version": "2026.08.10.4",
+  "notes": "Propinas con semanas lun–dom (3–9 Ago) + fix guardado: siempre enviar parts.main."
 }
