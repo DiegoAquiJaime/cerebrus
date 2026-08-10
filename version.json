@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.4",
-  "notes": "Propinas con semanas lun–dom (3–9 Ago) + fix guardado: siempre enviar parts.main."
+  "version": "2026.08.10.5",
+  "notes": "Propinas: rescate desde auto-respaldo + protección anti-borrado y historial de semanas."
 }

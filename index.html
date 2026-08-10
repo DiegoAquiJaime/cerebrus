@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.10.4';
+const APP_VERSION = '2026.08.10.5';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -24988,12 +24988,31 @@ function propRender() {
     { id: 'prev', range: prev, title: 'Semana pasada' },
     { id: 'cur', range: cur, title: 'Semana actual' },
   ];
+  // Semanas extra con propinas ya cargadas (historial) — no se pierden de vista.
+  try {
+    const seen = new Set(weekOpts.map(o => o.range.start + '|' + o.range.end));
+    const extra = [];
+    (state.propinas || []).forEach(function(p) {
+      if (!p || !p.fecha) return;
+      const r = sacMondaySundayRangeContaining(sacParseISODate(p.fecha) || new Date(p.fecha + 'T12:00:00'));
+      if (!r || !r.start) return;
+      const k = r.start + '|' + r.end;
+      if (seen.has(k)) return;
+      seen.add(k);
+      extra.push(r);
+    });
+    extra.sort(function(a, b) { return String(b.start).localeCompare(String(a.start)); });
+    extra.slice(0, 8).forEach(function(r) {
+      weekOpts.unshift({ id: 'h_' + r.start, range: r, title: 'Historial' });
+    });
+  } catch (eW) {}
   const days = (typeof vsGetWeekSac === 'function') ? vsGetWeekSac(propPeriodoKey()) : [];
   const ventaReal = (days || []).filter(d => d && (d.cerrado || d.real > 0)).reduce((s,d)=>s+(d.real||0),0);
   const propsSemana = state.propinas.filter(p => propFechaInPeriodo(p.fecha, periodo));
   const fechaDefault = propDefaultFecha();
   const todayYmd = new Date().toISOString().slice(0, 10);
   const fechaMax = periodo.end < todayYmd ? periodo.end : todayYmd;
+  const nHist = (state.propinas || []).length;
 
   el.innerHTML = `
   <!-- Banco con propinas descontadas -->
@@ -25026,7 +25045,7 @@ function propRender() {
       const sel = o.range.start === periodo.start && o.range.end === periodo.end;
       return `<button type="button" class="prop-semana-btn${sel?' active':''}" onclick="propSetPeriodo('${o.range.start}','${o.range.end}')" title="${esc(o.title)}">${esc(o.title)} · ${esc(propIsoRangeLabel(o.range))}</button>`;
     }).join('')}
-    <span style="font-size:10px;color:#94a3b8;align-self:center;">Venta real ${esc(propIsoRangeLabel(periodo))}: <b>${fmt(ventaReal)}</b></span>
+    <span style="font-size:10px;color:#94a3b8;align-self:center;">Venta real ${esc(propIsoRangeLabel(periodo))}: <b>${fmt(ventaReal)}</b> · Total historial: <b>${nHist}</b></span>
   </div>
 
   <!-- Formulario nueva propina -->
@@ -25039,7 +25058,7 @@ function propRender() {
       <div><label>Trabajador/es</label><input type="text" id="prop-quien" placeholder="Ej: Juan, María"></div>
     </div>
     <button class="fac-btn primary" onclick="propAgregar()" style="font-size:11px;">+ Registrar propina</button>
-    <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Puedes cargar la propina de ayer hoy: elige la <b>semana pasada</b> y la fecha del domingo.</p>
+    <p style="font-size:10px;color:#64748b;margin:8px 0 0;">Puedes cargar la propina de ayer hoy: elige la <b>semana pasada</b> y la fecha del domingo. Las propinas ya ingresadas no se borran al cambiar de semana.</p>
   </div>
 
   <!-- Tabla propinas de la semana seleccionada -->
@@ -28175,6 +28194,10 @@ async function loadFromCloud() {
             if (localState.catInventario) state.catInventario = localState.catInventario;
             notify(`🧩 Inventario recuperado desde respaldo local (${localInvCount} productos).`);
           }
+          // Propinas / SAC: no aceptar nube vacía o incompleta si hay respaldo local más rico.
+          try { cerebrusRescueCriticalModulesFromLocal_(state, localState || localBefore); } catch (eR) {}
+        } else {
+          try { cerebrusRescueCriticalModulesFromLocal_(state, localBefore); } catch (eR2) {}
         }
       } catch(e){}
       // Decompress short keys from cloud
@@ -28613,6 +28636,25 @@ async function saveToCloud(description, silent) {
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     const stateToSave = compressStateForSave(safeStateToSave);
 
+    // Nunca subir propinas vacías si la base/nube tenía registros (evita borrado accidental).
+    try {
+      const saveProps = Array.isArray(stateToSave.propinas) ? stateToSave.propinas : [];
+      const baseProps = Array.isArray(_cloudBaseState && _cloudBaseState.propinas) ? _cloudBaseState.propinas : [];
+      if (baseProps.length > 0 && saveProps.length === 0) {
+        stateToSave.propinas = JSON.parse(JSON.stringify(baseProps));
+        if (state && Array.isArray(state.propinas) && state.propinas.length === 0) {
+          state.propinas = JSON.parse(JSON.stringify(baseProps));
+        }
+        if (!silent) notify('🛡️ Propinas protegidas: no se subió lista vacía (se conservaron ' + baseProps.length + ').');
+      } else if (baseProps.length > saveProps.length) {
+        const merged = cerebrusMergePropinasUnion_(saveProps, baseProps);
+        if (merged.length > saveProps.length) {
+          stateToSave.propinas = merged;
+          if (!silent) notify('🧩 Propinas: se unieron ' + merged.length + ' registros antes de guardar (evita pérdida).');
+        }
+      }
+    } catch (ePropGuard) {}
+
     try {
       // Solo subir particiones que ESTE usuario tocó (Apps Script deja intactas las no enviadas).
       var uploadPartIds = cerebrusUsuarioBodega()
@@ -28998,6 +29040,78 @@ function decompressVsData(s) {
   s.vsData = expanded;
 }
 
+/** Une propinas por id: nunca descarta entradas que solo están en local. */
+function cerebrusMergePropinasUnion_(cloudProps, localProps) {
+  const a = Array.isArray(cloudProps) ? cloudProps : [];
+  const b = Array.isArray(localProps) ? localProps : [];
+  if (!b.length) return a.slice();
+  if (!a.length) return b.slice();
+  const byId = new Map();
+  const noId = [];
+  function ingest(list, preferLocal) {
+    (list || []).forEach(function(p) {
+      if (!p || typeof p !== 'object') return;
+      if (!p.id) { noId.push(p); return; }
+      if (!byId.has(p.id)) { byId.set(p.id, p); return; }
+      if (!preferLocal) return;
+      const cur = byId.get(p.id);
+      // Preferir la versión local si cambió estado/monto (edición reciente sin guardar en nube).
+      if ((p.estado && p.estado !== cur.estado) || (Number(p.monto) || 0) !== (Number(cur.monto) || 0)) {
+        byId.set(p.id, p);
+      }
+    });
+  }
+  ingest(a, false);
+  ingest(b, true);
+  const out = Array.from(byId.values()).concat(noId);
+  out.sort(function(x, y) {
+    return String(y.fecha || '').localeCompare(String(x.fecha || ''));
+  });
+  return out;
+}
+
+/**
+ * Si la nube llegó vacía/incompleta (p.ej. solo main tras un save parcial),
+ * conserva módulos críticos desde localStorage / sesión previa.
+ */
+function cerebrusRescueCriticalModulesFromLocal_(cloudState, localState) {
+  if (!cloudState || !localState || typeof localState !== 'object') return;
+  const cloudProps = Array.isArray(cloudState.propinas) ? cloudState.propinas : [];
+  const localProps = Array.isArray(localState.propinas) ? localState.propinas : [];
+  if (localProps.length > 0 && (cloudProps.length === 0 || localProps.length > cloudProps.length)) {
+    const merged = cerebrusMergePropinasUnion_(cloudProps, localProps);
+    if (merged.length > cloudProps.length) {
+      cloudState.propinas = merged;
+      notify('🧩 Propinas recuperadas desde local (' + merged.length + '; nube tenía ' + cloudProps.length + ').');
+    }
+  }
+  const cloudSac = cloudState.sacCargas && typeof cloudState.sacCargas === 'object'
+    ? Object.keys(cloudState.sacCargas).length : 0;
+  const localSac = localState.sacCargas && typeof localState.sacCargas === 'object'
+    ? Object.keys(localState.sacCargas).length : 0;
+  if (localSac > 0 && cloudSac === 0) {
+    [
+      'sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
+      'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota',
+      'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData',
+      'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'
+    ].forEach(function(k) {
+      if (localState[k] !== undefined) cloudState[k] = localState[k];
+    });
+    notify('🧩 Semana Actual recuperada desde local (nube venía incompleta).');
+  }
+  const cloudFac = cloudState.facturas;
+  const localFac = localState.facturas;
+  const cloudFacN = cloudFac && typeof cloudFac === 'object'
+    ? (Array.isArray(cloudFac) ? cloudFac.length : Object.keys(cloudFac).length) : 0;
+  const localFacN = localFac && typeof localFac === 'object'
+    ? (Array.isArray(localFac) ? localFac.length : Object.keys(localFac).length) : 0;
+  if (localFacN > 0 && cloudFacN === 0) {
+    cloudState.facturas = localFac;
+    notify('🧩 Facturas recuperadas desde local (nube venía vacía).');
+  }
+}
+
 async function reloadFromCloud() {
   dismissConflict();
   _suppressAlerts = true;
@@ -29041,10 +29155,19 @@ async function reloadFromCloud() {
     const merged = JSON.parse(JSON.stringify(remote));
     const keptLocal = [];
     localChanged.forEach(k => {
+      if (k === 'propinas') return; // se une abajo, nunca se descarta
       if (conflictSet.has(k) || (sacPreferRemote.has(k) && remoteChanged.has(k))) return;
       merged[k] = local[k];
       keptLocal.push(k);
     });
+    // Propinas: unión por id (local + nube) para no perder cargas de nadie.
+    try {
+      const union = cerebrusMergePropinasUnion_(remote.propinas, local.propinas);
+      const remoteN = Array.isArray(remote.propinas) ? remote.propinas.length : 0;
+      const localN = Array.isArray(local.propinas) ? local.propinas.length : 0;
+      merged.propinas = union;
+      if (union.length > remoteN && localN > 0) keptLocal.push('propinas');
+    } catch (eProp) {}
 
     state = merged;
     cloudVersion = json.meta?.version || cloudVersion;
