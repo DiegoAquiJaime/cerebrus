@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.10.6",
-  "notes": "saveParted admin: siempre reenvía pFac+pSem+pMisc+main (hermanos desde nube/base) para no borrar propinas/otros; pInv solo si se tocó. Propinas protegidas."
+  "version": "2026.08.11.1",
+  "notes": "Timeout carga nube 180s (Apps Script lento) + proxy multi-hilo para no bloquear."
 }

@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.10.6';
+const APP_VERSION = '2026.08.11.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -28163,7 +28163,8 @@ async function loadFromCloud() {
   if (await loadFromCloudServareBodegaFast_()) return;
 
   setSyncStatus('⏳ Cargando…', '');
-  const cloudTimeoutMs = servareIsEnabled_() ? 120000 : 45000;
+  // Apps Script suele tardar 20–90s; 45s cortaba y mostraba «Sin conexión».
+  const cloudTimeoutMs = 180000;
   const ctrl = new AbortController();
   const abortT = setTimeout(() => ctrl.abort(), cloudTimeoutMs);
   try {
