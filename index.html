@@ -3525,8 +3525,8 @@ body.dark-mode .conflict-overlay{
                 <option value="pausa">Pausa (no cuenta)</option>
               </select>
               <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
-              <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()">
-              <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()">
+              <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()" onblur="formatNumericInputValue(this)">
+              <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()" onblur="formatNumericInputValue(this)">
               <button class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
             </div>
           </div>
@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.11.1';
+const APP_VERSION = '2026.08.23.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7352,9 +7352,33 @@ function formatInformeInputValue(inp) {
   const hasDec = Math.abs(n % 1) > 0.0000001;
   inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
 }
+/** Inputs de monto del SAC (KPIs, ventas, edición cargas/ingresos, gastos fijos). */
+function isSacMontoInput_(inp) {
+  if (!inp || inp.tagName !== 'INPUT') return false;
+  const id = inp.id || '';
+  if (inp.classList && inp.classList.contains('sac-sel-monto-inp')) return true;
+  if (/^sac-(banco|efectivo|caja-chica)$/.test(id)) return true;
+  if (/^sac-reserva-(ing|salida)-monto$/.test(id)) return true;
+  if (/^sac-v(est|real)(-\d+|-extra)?$/.test(id)) return true;
+  if (/^sac-merc-/.test(id)) return true;
+  if (/^se-monto-/.test(id) || /^sin-monto-/.test(id)) return true;
+  if (/^sac-fil-(min|max)$/.test(id)) return true;
+  if (inp.classList && inp.classList.contains('sac-kpi-inp')) return true;
+  return false;
+}
+function formatSacMontoInput_(inp) {
+  if (!isSacMontoInput_(inp)) return;
+  if (inp.value === '' || inp.value == null) return;
+  const allowNeg = inp.id === 'sac-banco';
+  let n = parseNumCL(inp.value, allowNeg);
+  if (!allowNeg && n < 0) n = 0;
+  const hasDec = Math.abs(n % 1) > 0.0000001;
+  inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
+}
 function formatNumericInputValue(inp) {
   formatServarePrecioInput_(inp);
   formatInformeInputValue(inp);
+  formatSacMontoInput_(inp);
 }
 function cerebrusInformeHasFocus_() {
   const ae = document.activeElement;
@@ -19954,6 +19978,25 @@ function archSacProtectedKeys_() {
     if (typeof sacDataKey === 'function') set.add(sacDataKey());
     if (typeof sacRelatedDataKeys === 'function') sacRelatedDataKeys().forEach(function(k) { set.add(k); });
   } catch (e) {}
+  // Siempre proteger semana ISO actual + pasada (nunca archivar “semana pasada”).
+  try {
+    function addIsoWeekContaining_(d) {
+      if (typeof sacMondaySundayRangeContaining !== 'function') return;
+      const b = sacMondaySundayRangeContaining(d);
+      if (!b || !b.start || !b.end) return;
+      const rk = 'R|' + b.start + '|' + b.end;
+      set.add(rk);
+      if (typeof sacRelatedKeysForKey === 'function') {
+        sacRelatedKeysForKey(rk).forEach(function(k) { set.add(k); });
+      }
+    }
+    const now = new Date();
+    now.setHours(12, 0, 0, 0);
+    addIsoWeekContaining_(now);
+    const prev = new Date(now);
+    prev.setDate(prev.getDate() - 7);
+    addIsoWeekContaining_(prev);
+  } catch (e2) {}
   return set;
 }
 
@@ -27063,14 +27106,14 @@ function sacSetCargaFilters() {
   const cat = (document.getElementById('sac-fil-cat')?.value || '').trim();
   const estado = (document.getElementById('sac-fil-est')?.value || '').trim();
   const name = (document.getElementById('sac-fil-name')?.value || '').trim().toLowerCase();
-  const minRaw = (document.getElementById('sac-fil-min')?.value || '').replace(/[^\d]/g,'');
-  const maxRaw = (document.getElementById('sac-fil-max')?.value || '').replace(/[^\d]/g,'');
+  const minRaw = (document.getElementById('sac-fil-min')?.value || '').trim();
+  const maxRaw = (document.getElementById('sac-fil-max')?.value || '').trim();
   _sacCargaFilter = {
     cat,
     estado,
     name,
-    min: minRaw ? parseInt(minRaw, 10) : null,
-    max: maxRaw ? parseInt(maxRaw, 10) : null
+    min: minRaw ? (parseNumCL(minRaw, false) || 0) : null,
+    max: maxRaw ? (parseNumCL(maxRaw, false) || 0) : null
   };
   sacRenderCargas();
 }
@@ -27377,7 +27420,12 @@ function sacIngresoRecibirParcial(id) {
   if (!it) return;
   const pend = sacIngresoPendiente(it);
   if (pend <= 0) { notify('⚠ No hay monto pendiente en este ítem'); return; }
-  const raw = prompt('¿Cuánto ingresas ahora? (falta ' + fmt(pend) + ' de ' + fmt(it.monto || 0) + ')', '');
+  const raw = prompt(
+    '¿Cuánto ingresas ahora?\n' +
+    'Pendiente: ' + fmt(pend) + ' de ' + fmt(it.monto || 0) + '\n\n' +
+    'Puedes usar puntos de miles (ej: 1.500.000)',
+    ''
+  );
   if (raw == null) return;
   const add = parseNumCL(String(raw).trim(), false);
   if (!add || add <= 0) { notify('⚠ Ingresa un monto válido'); return; }
@@ -27404,7 +27452,7 @@ function sacEditIngreso(id) {
   row.innerHTML = `
     <div style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;align-items:center;grid-column:1/-1;">
       <input class="sac-edit-inp" type="text" value="${esc(it.nombre)}" placeholder="Concepto" id="sin-nombre-${id}" style="flex:2;min-width:140px;">
-      <input class="sac-edit-inp" type="text" inputmode="numeric" value="${it.monto || ''}" placeholder="Monto $" id="sin-monto-${id}" style="width:110px;text-align:right;">
+      <input class="sac-edit-inp" type="text" inputmode="numeric" value="${it.monto ? fmtInputCL(it.monto) : ''}" placeholder="Monto $" id="sin-monto-${id}" style="width:110px;text-align:right;" onblur="formatNumericInputValue(this)">
       <input class="sac-edit-inp" type="text" value="${esc(it.nota || '')}" placeholder="Nota (opcional)" id="sin-nota-${id}" style="flex:2;min-width:120px;">
       <button type="button" onclick="sacSaveIngresoEdit('${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
       <button type="button" onclick="sacRenderIngresos()" class="fac-btn" style="font-size:10px;padding:4px 10px;">✕</button>
@@ -27719,7 +27767,10 @@ async function sacCycleEstado(id) {
 
 function sacEditMonto(id) {
   const c = sacGetCargas().find(x=>x.id===id); if(!c) return;
-  const v = prompt(`Monto real pagado para "${c.nombre}"\n(Proyectado: ${fmt(c.monto)})`, c.montoReal??c.monto);
+  const v = prompt(
+    `Monto real pagado para "${c.nombre}"\n(Proyectado: ${fmt(c.monto)})\nPuedes usar puntos: 1.500.000`,
+    c.montoReal != null ? fmtInputCL(c.montoReal) : fmtInputCL(c.monto)
+  );
   if (v === null) return;
   const real = parseNumCL((v||'0'), false)||0;
   pushUndo();
@@ -27787,7 +27838,9 @@ async function sacPagarParcial(id) {
   const v = prompt(
     `Pago parcial para "${c.nombre}"\n` +
     `Total: ${fmt(c.monto)}  |  Ya pagado: ${fmt(c.pagadoParcial||0)}  |  Pendiente: ${fmt(pendiente)}\n\n` +
-    `¿Cuánto pagaste ahora?\n(Si el monto real es mayor al pendiente, se ajustará el total)`,
+    `¿Cuánto pagaste ahora?\n` +
+    `(Puedes usar puntos: 1.500.000)\n` +
+    `(Si el monto real es mayor al pendiente, se ajustará el total)`,
     ''
   );
   if (v === null) return;
@@ -27881,8 +27934,8 @@ function sacAjustarSaldo(id) {
   const v = prompt(
     `Ajustar saldo pendiente de "${c.nombre}"\n` +
     `Saldo actual: ${fmt(pendienteActual)}  |  Pagado acumulado: ${fmt(pagado)}\n\n` +
-    'Ingresa el nuevo saldo pendiente real:',
-    String(pendienteActual)
+    'Ingresa el nuevo saldo pendiente real\n(Puedes usar puntos: 1.500.000):',
+    fmtInputCL(pendienteActual)
   );
   if (v === null) return;
   const nuevoPendiente = Math.max(0, parseNumCL((v||'0'), false) || 0);
@@ -27909,7 +27962,7 @@ function sacEditCarga(id) {
     <div colspan="5" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0;align-items:center;grid-column:1/-1;">
       <input class="sac-edit-inp" type="text" value="${esc(c.nombre)}" placeholder="Nombre" id="se-nombre-${id}" style="flex:2;min-width:140px;">
       <select class="sac-edit-inp" id="se-cat-${id}" style="flex:1;min-width:100px;">${catOpts}</select>
-      <input class="sac-edit-inp" type="text" inputmode="numeric" value="${c.monto||''}" placeholder="Monto $" id="se-monto-${id}" style="width:110px;text-align:right;">
+      <input class="sac-edit-inp" type="text" inputmode="numeric" value="${c.monto ? fmtInputCL(c.monto) : ''}" placeholder="Monto $" id="se-monto-${id}" style="width:110px;text-align:right;" onblur="formatNumericInputValue(this)">
       <input class="sac-edit-inp" type="text" value="${esc(c.resp||'')}" placeholder="Responsable" id="se-resp-${id}" style="width:110px;">
       <input class="sac-edit-inp" type="text" value="${esc(c.nota||'')}" placeholder="Nota" id="se-nota-${id}" style="flex:2;min-width:120px;">
       <button onclick="sacSaveEdit('${id}')" class="fac-btn primary" style="font-size:10px;padding:4px 10px;">💾</button>
@@ -27956,8 +28009,8 @@ function sacOpenConfigSel() {
         </label>
         <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
           <span style="font-size:9px;font-weight:700;color:#94a3b8;">Monto carga</span>
-          <input type="text" inputmode="numeric" class="sac-sel-monto-inp" value="${item.amount||0}"
-            ${alreadyIn?'disabled':''}
+          <input type="text" inputmode="numeric" class="sac-sel-monto-inp" value="${item.amount ? fmtInputCL(item.amount) : '0'}"
+            ${alreadyIn?'disabled':''} onblur="formatNumericInputValue(this)"
             style="width:92px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-weight:800;font-family:inherit;color:var(--accent2);background:var(--white);">
         </div>
       </div>`;
@@ -28019,8 +28072,8 @@ function sacImportSelected() {
     if (!item) return;
     const wrap = cb.closest('div');
     const inp = wrap ? wrap.querySelector('.sac-sel-monto-inp') : null;
-    const montoNuevo = parseInt(String(inp && inp.value != null ? inp.value : item.amount).replace(/[^\d]/g, ''), 10) || 0;
-    const montoPrev = parseInt(String(item.amount != null ? item.amount : 0).replace(/[^\d]/g, ''), 10) || 0;
+    const montoNuevo = Math.round(parseNumCL(String(inp && inp.value != null ? inp.value : item.amount), false) || 0);
+    const montoPrev = Math.round(parseNumCL(String(item.amount != null ? item.amount : 0), false) || 0);
     if (montoNuevo !== montoPrev) cambiosCfg.push({ secKey, item, montoNuevo, montoPrev });
   });
   let aplicarDefinitivo = false;
@@ -28039,8 +28092,8 @@ function sacImportSelected() {
     if (!item) return;
     const wrap = cb.closest('div');
     const inp = wrap ? wrap.querySelector('.sac-sel-monto-inp') : null;
-    const montoNuevo = parseInt(String(inp && inp.value != null ? inp.value : item.amount).replace(/[^\d]/g, ''), 10) || 0;
-    if (aplicarDefinitivo && montoNuevo !== (parseInt(String(item.amount != null ? item.amount : 0).replace(/[^\d]/g, ''), 10) || 0)) {
+    const montoNuevo = Math.round(parseNumCL(String(inp && inp.value != null ? inp.value : item.amount), false) || 0);
+    if (aplicarDefinitivo && montoNuevo !== (Math.round(parseNumCL(String(item.amount != null ? item.amount : 0), false) || 0))) {
       item.amount = montoNuevo;
     }
     const itemCarga = {
@@ -28681,6 +28734,31 @@ async function saveToCloud(description, silent) {
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     // Admin: rehidratar hermanos no tocados desde nube/base ANTES de comprimir/partir.
     safeStateToSave = await enforceUntouchedPartitionsFromRemote_(safeStateToSave, localChangedKeys);
+
+    // Freno duro: sesión mucho más vacía que la nube → no guardar (evita el wipe de hoy).
+    try {
+      const wipeGate = await cerebrusHardBlockEmptyWipeGate_(safeStateToSave);
+      if (!wipeGate.ok) {
+        saveLocalRaw();
+        setSyncStatus('🛑 Guardado bloqueado', 'err');
+        const detail = (wipeGate.risks || []).join('\n• ');
+        if (!silent) {
+          notify('🛑 Guardado bloqueado para no borrar datos en la nube. Actualiza desde nube y reintenta.\n• ' + detail, 14000);
+          try {
+            alert(
+              '🛑 Guardado bloqueado (protección anti-borrado)\n\n' +
+              'Tu sesión tiene mucho menos datos que la nube:\n• ' + detail +
+              '\n\nPulsa «Actualizar desde nube» y luego vuelve a guardar.\n' +
+              'No se subió nada a la nube.'
+            );
+          } catch (eAlert) {}
+        }
+        return;
+      }
+    } catch (eWipe) {
+      console.warn('[CEREBRUS] wipe-gate error:', eWipe);
+    }
+
     const stateToSave = compressStateForSave(safeStateToSave);
 
     // Nunca subir propinas vacías si la base/nube tenía registros (evita borrado accidental).
@@ -29101,6 +29179,75 @@ function decompressVsData(s) {
   s.vsData = expanded;
 }
 
+/** Cuenta cargas SAC en todos los períodos. */
+function cerebrusCountSacCargas_(st) {
+  var m = (st && st.sacCargas) || {};
+  var n = 0;
+  Object.keys(m).forEach(function(k) {
+    var arr = m[k];
+    if (Array.isArray(arr)) n += arr.length;
+  });
+  return n;
+}
+
+/**
+ * Detecta sesión local sospechosamente vacía vs la nube (evitar pisar propinas/informes/SAC).
+ * Devuelve lista de motivos; vacía = OK para guardar.
+ */
+function cerebrusSuspiciousEmptyWipeRisks_(local, remote) {
+  var risks = [];
+  if (!local || !remote) return risks;
+  var lp = Array.isArray(local.propinas) ? local.propinas.length : 0;
+  var rp = Array.isArray(remote.propinas) ? remote.propinas.length : 0;
+  if (rp >= 5 && lp < Math.max(2, Math.floor(rp * 0.4))) {
+    risks.push('Propinas: local ' + lp + ' vs nube ' + rp);
+  }
+  var li = Array.isArray(local.informesDiarios) ? local.informesDiarios.length : 0;
+  var ri = Array.isArray(remote.informesDiarios) ? remote.informesDiarios.length : 0;
+  if (ri >= 5 && li < Math.max(2, Math.floor(ri * 0.4))) {
+    risks.push('Informes diarios: local ' + li + ' vs nube ' + ri);
+  }
+  var lc = cerebrusCountSacCargas_(local);
+  var rc = cerebrusCountSacCargas_(remote);
+  if (rc >= 20 && lc < Math.max(5, Math.floor(rc * 0.4))) {
+    risks.push('Cargas SAC: local ' + lc + ' vs nube ' + rc);
+  }
+  try {
+    var key = (typeof sacDataKey === 'function') ? sacDataKey() : null;
+    if (key) {
+      var lwk = ((local.sacCargas || {})[key] || []).length;
+      var rwk = ((remote.sacCargas || {})[key] || []).length;
+      if (rwk >= 8 && lwk === 0) {
+        risks.push('Semana en edición vacía en local (nube tiene ' + rwk + ' cargas)');
+      }
+    }
+  } catch (e) {}
+  return risks;
+}
+
+/**
+ * Freno duro: no guardar si lo local borraría data crítica de la nube.
+ * @returns {{ok:boolean, risks:string[], remote?:object}}
+ */
+async function cerebrusHardBlockEmptyWipeGate_(stateToSave) {
+  if (cerebrusUsuarioBodega()) return { ok: true, risks: [] };
+  var remote = null;
+  try {
+    remote = await _fetchCloudStateRaw();
+  } catch (e) {
+    // Sin nube: no subir (sesión puede estar stale). Solo se guarda local.
+    var base = _cloudBaseState || {};
+    var risksOffline = cerebrusSuspiciousEmptyWipeRisks_(stateToSave || state, base);
+    var msg = 'Sin conexión o la nube no responde — actualiza desde nube antes de guardar';
+    if (risksOffline.length) {
+      return { ok: false, risks: risksOffline.concat([msg]), remote: base };
+    }
+    return { ok: false, risks: [msg], remote: base };
+  }
+  var risks = cerebrusSuspiciousEmptyWipeRisks_(stateToSave || state, remote);
+  return { ok: risks.length === 0, risks: risks, remote: remote };
+}
+
 /** Une propinas por id: nunca descarta entradas que solo están en local. */
 function cerebrusMergePropinasUnion_(cloudProps, localProps) {
   const a = Array.isArray(cloudProps) ? cloudProps : [];
@@ -29512,17 +29659,20 @@ function saveState(description, silent) {
     const sacNow = _hasSacData(state);
     const sacBase = _hasSacData(_cloudBaseState);
     if (!sacNow && sacBase) {
-      const ok = confirm(
-        '⚠ Riesgo de pérdida en Semana Actual\n\n' +
-        'Esta sesión tiene SAC vacío, pero tu base de nube sí tenía datos.\n' +
-        'Si guardas ahora, podrías sobrescribir Semana Actual.\n\n' +
-        'Aceptar = guardar de todas formas\n' +
-        'Cancelar = no guardar'
-      );
-      if (!ok) {
-        if (!silent) notify('🛑 Guardado cancelado para proteger Semana Actual');
-        return;
+      // Freno duro (ya no se puede forzar con Aceptar): hay que actualizar desde nube.
+      setSyncStatus('🛑 Guardado bloqueado', 'err');
+      if (!silent) {
+        notify('🛑 Guardado bloqueado: SAC local vacío pero la nube/base sí tenía datos. Actualiza desde nube.', 12000);
+        try {
+          alert(
+            '🛑 Guardado bloqueado\n\n' +
+            'Esta sesión tiene Semana Actual vacía, pero la nube sí tenía datos.\n' +
+            'Pulsa «Actualizar desde nube» y luego guarda.\n' +
+            'No se permite forzar el guardado (protección anti-borrado).'
+          );
+        } catch (e) {}
       }
+      return;
     }
     saveToCloud(description, silent);
   } else { saveLocalRaw(); markSaved(); if (!silent) notify('✓ Guardado localmente'); }

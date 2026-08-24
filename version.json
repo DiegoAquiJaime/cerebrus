@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.11.1",
-  "notes": "Timeout carga nube 180s (Apps Script lento) + proxy multi-hilo para no bloquear."
+  "version": "2026.08.23.1",
+  "notes": "SAC: puntos de miles al salir del campo; freno si nube offline/sesión vacía; archivado SAC >30d protege semana actual+pasada."
 }
