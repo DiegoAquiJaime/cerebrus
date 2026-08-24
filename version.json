@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.23.1",
-  "notes": "SAC: puntos de miles al salir del campo; freno si nube offline/sesión vacía; archivado SAC >30d protege semana actual+pasada."
+  "version": "2026.08.23.2",
+  "notes": "Servare: bloquea guardado si hydrate light falla, si inventario local vacía la nube, o si otro usuario avanzó la versión."
 }

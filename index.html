@@ -6842,7 +6842,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.23.1';
+const APP_VERSION = '2026.08.23.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -13396,8 +13396,14 @@ async function servareFetchInvObj_(opts) {
   return { state: st, meta: json.meta || {}, light: !!json.light };
 }
 
+/**
+ * Completa sesión light de Bodega antes de guardar.
+ * @returns {{ok:boolean, state:object, error?:string}}
+ */
 async function servareHydrateFullInvBeforeSave_(st) {
-  if (!servareIsEnabled_() || !st || !st._servareLightLoad) return st;
+  if (!servareIsEnabled_() || !st || !st._servareLightLoad) {
+    return { ok: true, state: st };
+  }
   try {
     var full = await servareFetchInvObj_({ light: false });
     var changed = _cloudBaseState ? _topLevelChangedKeys(_cloudBaseState, state) : new Set();
@@ -13410,10 +13416,123 @@ async function servareHydrateFullInvBeforeSave_(st) {
       delete state._servareLightLoad;
       state._servareMovFull = true;
     }
+    return { ok: true, state: st };
   } catch (e) {
     console.warn('[SERVARE] hydrate antes de guardar:', e);
+    return { ok: false, state: st, error: (e && e.message) ? e.message : String(e) };
   }
-  return st;
+}
+
+/** Stats de catálogo para freno anti-wipe Servare. */
+function servareInvStats_(st) {
+  var inv = (st && st.inventario) || [];
+  var n = Array.isArray(inv) ? inv.length : 0;
+  var nz = 0;
+  var sum = 0;
+  if (Array.isArray(inv)) {
+    inv.forEach(function(p) {
+      var s = Number(p && p.stock) || 0;
+      if (s > 0) nz++;
+      sum += s;
+    });
+  }
+  return { n: n, nz: nz, sum: sum };
+}
+
+/**
+ * Detecta payload local que borraría inventario/movimientos en Servare.
+ * @returns {string[]}
+ */
+function servareSuspiciousEmptyWipeRisks_(local, remote) {
+  var risks = [];
+  if (!local || !remote) return risks;
+  var L = servareInvStats_(local);
+  var R = servareInvStats_(remote);
+  if (R.n >= 50 && L.n < Math.max(10, Math.floor(R.n * 0.4))) {
+    risks.push('Inventario: local ' + L.n + ' productos vs Servare ' + R.n);
+  }
+  if (R.nz >= 30 && L.nz < Math.max(5, Math.floor(R.nz * 0.4))) {
+    risks.push('Stock>0: local ' + L.nz + ' vs Servare ' + R.nz);
+  }
+  if (R.sum >= 200 && L.sum < Math.max(20, Math.floor(R.sum * 0.3))) {
+    risks.push('Suma stock: local ' + Math.round(L.sum) + ' vs Servare ' + Math.round(R.sum));
+  }
+  var lm = Array.isArray(local.movimientos) ? local.movimientos.length : 0;
+  var rm = Array.isArray(remote.movimientos) ? remote.movimientos.length : 0;
+  if (rm >= 10 && lm === 0 && (local._servareLightLoad || local._servareMovFull === false)) {
+    risks.push('Movimientos: sesión incompleta (0) vs Servare ' + rm);
+  }
+  var lsh = Array.isArray(local.semanasHistorial) ? local.semanasHistorial.length : 0;
+  var rsh = Array.isArray(remote.semanasHistorial) ? remote.semanasHistorial.length : 0;
+  if (rsh >= 3 && lsh === 0 && (local._servareLightLoad || local._servareMovFull === false)) {
+    risks.push('Historial pedido: sesión incompleta vs Servare ' + rsh);
+  }
+  return risks;
+}
+
+/**
+ * Freno duro antes de escribir Servare.
+ * @returns {{ok:boolean, risks:string[], remote?:object}}
+ */
+async function servareHardBlockEmptyWipeGate_(stateToSave) {
+  if (!servareIsEnabled_()) return { ok: true, risks: [] };
+  try {
+    var remote = await servareFetchInvObj_({ light: false });
+    var meta = remote.meta || {};
+    var remoteVer = String(meta.version != null ? meta.version : '0');
+    var localVer = String(_servareCloudVersion || '0');
+    if (localVer !== '0' && remoteVer !== localVer && !cerebrusSameCloudUser_(meta.lastUser, currentUser)) {
+      return {
+        ok: false,
+        risks: [
+          'Servare: ' + (meta.lastUser || 'otro usuario') +
+          ' guardó inventario más reciente (v' + remoteVer + ' vs local v' + localVer + ')'
+        ],
+        remote: remote.state
+      };
+    }
+    if (remoteVer !== '0') _servareCloudVersion = remoteVer;
+    var risks = servareSuspiciousEmptyWipeRisks_(stateToSave || state, remote.state);
+    return { ok: risks.length === 0, risks: risks, remote: remote.state };
+  } catch (e) {
+    return {
+      ok: false,
+      risks: ['No se pudo revalidar Servare antes de guardar: ' + ((e && e.message) ? e.message : e)]
+    };
+  }
+}
+
+/**
+ * Optimistic lock Servare: bloquea si otro usuario avanzó la versión.
+ * @returns {{ok:boolean, reason?:string, by?:string}}
+ */
+async function servareAssertVersionWritable_() {
+  if (!servareIsEnabled_()) return { ok: true };
+  try {
+    var url = servareResolveApiUrl_();
+    if (!url) return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
+    var vr = await fetch(url + '?action=getVersion&_=' + Date.now());
+    var vj = await vr.json();
+    if (!vj.ok) return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
+    var remoteVer = String(vj.version != null ? vj.version : '0');
+    var localVer = String(_servareCloudVersion || '0');
+    if (localVer === '0') {
+      _servareCloudVersion = remoteVer;
+      return { ok: true };
+    }
+    if (remoteVer === localVer) return { ok: true };
+    if (cerebrusSameCloudUser_(vj.lastUser, currentUser)) {
+      _servareCloudVersion = remoteVer;
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      reason: 'servare_conflict',
+      by: vj.lastUser || 'otro usuario'
+    };
+  } catch (e) {
+    return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
+  }
 }
 
 async function servareLoadMovimientosIfNeeded_() {
@@ -28395,6 +28514,15 @@ async function _prepareConcurrentSafeState() {
         _cloudBaseVersion = cloudVersion;
       }
     } catch (e) {}
+    const sv = await servareAssertVersionWritable_();
+    if (!sv.ok) {
+      return {
+        ok: false,
+        reason: sv.reason || 'servare_conflict',
+        by: sv.by || 'otro usuario',
+        keys: ['inventario (Servare)']
+      };
+    }
     return { ok: true, stateToSave: state };
   }
   const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
@@ -28686,7 +28814,20 @@ async function saveToCloud(description, silent) {
     if (!prep.ok) {
       saveLocalRaw();
       setSyncStatus('⚠ Conflicto nube', 'err');
-      if (prep.reason === 'conflict_keys') {
+      if (prep.reason === 'servare_unreachable') {
+        if (!silent) {
+          notify('⚠ No se pudo contactar Servare — no se guardó inventario. Revisa red/URL y reintenta.', 12000);
+        }
+      } else if (prep.reason === 'servare_conflict') {
+        showConflict(prep.by || 'Otro usuario', 'ahora', prep.keys || ['inventario (Servare)']);
+        if (!silent) {
+          notify(
+            '⚠ Servare: ' + (prep.by || 'otro usuario') +
+            ' guardó inventario. Actualiza desde nube antes de guardar.',
+            12000
+          );
+        }
+      } else if (prep.reason === 'conflict_keys') {
         const keys = (prep.keys || []).slice(0, 8).join(', ');
         showConflict(prep.by || 'Otro usuario', 'ahora', prep.keys || []);
         if (!silent) notify('⚠ Conflicto de edición: no se guardó para evitar sobrescritura. Revisa/actualiza primero. Áreas: ' + keys);
@@ -28727,7 +28868,28 @@ async function saveToCloud(description, silent) {
 
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
     if (servareIsEnabled_() && cerebrusUsuarioBodega()) {
-      safeStateToSave = await servareHydrateFullInvBeforeSave_(safeStateToSave);
+      const hyd = await servareHydrateFullInvBeforeSave_(safeStateToSave);
+      if (!hyd.ok) {
+        saveLocalRaw();
+        setSyncStatus('🛑 Servare incompleto', 'err');
+        if (!silent) {
+          notify(
+            '🛑 Guardado bloqueado: no se pudo completar inventario desde Servare (' +
+            (hyd.error || 'error') + '). Reintenta o actualiza desde nube.',
+            12000
+          );
+          try {
+            alert(
+              '🛑 Guardado bloqueado (Servare)\n\n' +
+              'La sesión de Bodega cargó inventario en modo liviano y no se pudo completar antes de guardar.\n' +
+              'Detalle: ' + (hyd.error || 'sin detalle') + '\n\n' +
+              'No se subió nada. Reintenta cuando Servare responda.'
+            );
+          } catch (eHydAlert) {}
+        }
+        return;
+      }
+      safeStateToSave = hyd.state;
       if (prep.merged) state = safeStateToSave;
     }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
@@ -28757,6 +28919,31 @@ async function saveToCloud(description, silent) {
       }
     } catch (eWipe) {
       console.warn('[CEREBRUS] wipe-gate error:', eWipe);
+    }
+
+    // Freno Servare: no subir pInv si el catálogo local borraría stock/movimientos.
+    if (servareIsEnabled_() && (cerebrusUsuarioBodega() || cerebrusInvPartitionTouched_())) {
+      try {
+        const svGate = await servareHardBlockEmptyWipeGate_(safeStateToSave);
+        if (!svGate.ok) {
+          saveLocalRaw();
+          setSyncStatus('🛑 Servare bloqueado', 'err');
+          const detail = (svGate.risks || []).join('\n• ');
+          if (!silent) {
+            notify('🛑 Guardado a Servare bloqueado (protección inventario).\n• ' + detail, 14000);
+            try {
+              alert(
+                '🛑 Guardado bloqueado (Servare)\n\n' +
+                'Tu sesión tiene mucho menos inventario que Servare:\n• ' + detail +
+                '\n\nActualiza inventario desde nube y reintenta.\nNo se subió nada a Servare.'
+              );
+            } catch (eSvAlert) {}
+          }
+          return;
+        }
+      } catch (eSvWipe) {
+        console.warn('[SERVARE] wipe-gate error:', eSvWipe);
+      }
     }
 
     const stateToSave = compressStateForSave(safeStateToSave);
