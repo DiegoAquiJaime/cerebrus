@@ -7000,7 +7000,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.28.2';
+const APP_VERSION = '2026.08.28.3';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -30174,9 +30174,9 @@ function notify(msg, duration) {
       : raw.trim();
     var phrase;
     if (display && display !== 'Alguien') {
-      phrase = display + ', Cerebrus listo para cumplir.';
+      phrase = display + ', soy Cerebrus, listo para cuadrar todo.';
     } else {
-      phrase = 'Cerebrus listo para cumplir.';
+      phrase = 'Soy Cerebrus, listo para cuadrar todo.';
     }
     var run = function() {
       try { speechSynthesis.getVoices(); } catch (e) {}

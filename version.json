@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.28.2",
-  "notes": "SAC escritorio compacto: menú plegable, dos columnas ventas/egresos, Reserva colapsada, día de hoy resaltado en ventas."
+  "version": "2026.08.28.3",
+  "notes": "Saludo de voz al entrar: «(nombre), soy Cerebrus, listo para cuadrar todo» para Alberto, Diego, Sebas y Bodega."
 }
