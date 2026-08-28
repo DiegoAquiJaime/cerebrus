@@ -2990,8 +2990,33 @@ nav{transition:width .22s ease,min-width .22s ease;}
 .sac-cierre-fold > summary::-webkit-details-marker{display:none;}
 .sac-cierre-fold > summary::before{content:'▸';font-size:10px;color:#94a3b8;}
 .sac-cierre-fold[open] > summary::before{content:'▾';}
+.sac-cierre-fold > summary{border-bottom:none;}
 .sac-cierre-fold[open] > summary{border-bottom:1px solid var(--border);}
 body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255,.08);}
+.sac-bottom-folds{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.sac-ingresos-fold > summary,
+.sac-toolbar-fold > summary{
+  cursor:pointer;
+  list-style:none;
+  user-select:none;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.sac-ingresos-fold > summary::-webkit-details-marker,
+.sac-toolbar-fold > summary::-webkit-details-marker{display:none;}
+.sac-ingresos-fold > summary::before,
+.sac-toolbar-fold > summary::before{content:'▸';font-size:10px;color:#94a3b8;margin-right:2px;}
+.sac-ingresos-fold[open] > summary::before,
+.sac-toolbar-fold[open] > summary::before{content:'▾';}
+.sac-ingresos-fold > summary{font-size:12px;font-weight:800;padding:8px 14px;}
+.sac-toolbar-fold{border-radius:14px;border:1px solid rgba(148,163,184,.22);background:var(--white);box-shadow:0 4px 14px rgba(15,23,42,.04);}
+.sac-toolbar-fold > summary{padding:10px 14px;font-size:12px;font-weight:700;}
+.sac-toolbar-fold .sac-toolbar-summary-desc{font-size:10px;font-weight:600;color:#64748b;flex:1;min-width:0;}
+.sac-toolbar-fold .sac-toolbar-expanded{padding:0 12px 10px;border-top:1px solid var(--border);}
+.sac-toolbar-fold .sac-toolbar-actions{width:100%;justify-content:flex-end;margin-top:8px;}
+body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,255,.08);}
 
 @media (min-width: 1100px) {
   #sac > .content{padding-top:16px;padding-bottom:36px;}
@@ -3003,12 +3028,10 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
   .sac-kpi{padding:8px 10px;border-radius:12px;}
   .sac-kpi-lbl{font-size:8px;margin-bottom:3px;}
   .sac-kpi-val,.sac-kpi-inp{font-size:15px;}
-  .sac-reserva-panel{padding:6px 10px 8px;margin-bottom:8px;}
-  .sac-toolbar{padding:8px 10px;margin-bottom:8px;border-radius:12px;}
-  .sac-main{gap:12px;}
+  .sac-main{gap:12px;margin-bottom:0;}
   .sac-desk-split{
     display:grid;
-    grid-template-columns:minmax(280px,0.92fr) minmax(0,1.28fr);
+    grid-template-columns:minmax(280px,0.88fr) minmax(0,1.32fr);
     gap:12px;
     align-items:stretch;
   }
@@ -3016,7 +3039,7 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
     display:flex;
     flex-direction:column;
     min-width:0;
-    max-height:min(68vh,740px);
+    max-height:min(62vh,680px);
   }
   .sac-ventas-head{padding:8px 12px;font-size:11px;}
   .sac-v-row,.sac-v-head{padding:4px 10px;font-size:11px;gap:5px;}
@@ -3025,10 +3048,16 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
   .sac-v-total{padding:6px 10px;font-size:11px;}
   #sac-ventas-dias{max-height:none;flex:1 1 auto;overflow-y:auto;min-height:0;}
   .sac-cargas-card.sac-cargas-glass{
-    max-height:min(68vh,740px);
+    display:flex;
+    flex-direction:column;
+    max-height:min(88vh,980px);
+    min-height:min(72vh,640px);
   }
+  .sac-cargas-list-scroll{flex:1 1 auto;min-height:min(52vh,520px);}
+  .sac-bottom-folds{margin-top:10px;}
+  .sac-reserva-panel{padding:6px 10px 8px;margin-bottom:0;}
   .sac-ingresos-discreto{max-width:100%;}
-  .sac-ingresos-list-wrap{max-height:88px;}
+  .sac-ingresos-list-wrap{max-height:120px;}
 }
 
 @media (min-width: 1100px) and (max-width: 1368px) {
@@ -3522,61 +3551,6 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
         </div>
       </div>
 
-      <!-- Reserva: no entra al balance; transferencias a cajas/banco actualizan esos campos -->
-      <details class="sac-reserva-panel sac-reserva-fold" id="sac-reserva-panel">
-        <summary class="sac-reserva-title">
-          🛡️ Reserva <span class="sac-help" title="Fondo aparte que NO suma al balance estimado de la semana. Ingresa dinero aquí y luego puedes moverlo por partes a Caja principal, Caja chica, Banco u otro destino (solo registro).">?</span>
-          <span class="sac-reserva-saldo-chip" id="sac-reserva-saldo-chip">$0</span>
-        </summary>
-        <div class="sac-reserva-grid">
-          <div>
-            <div class="sac-reserva-saldo-lbl">Saldo en Reserva</div>
-            <div class="sac-reserva-saldo-val" id="sac-reserva-saldo-val">$0</div>
-          </div>
-          <div class="sac-reserva-col">
-            <div class="sac-reserva-sub">Ingreso a Reserva</div>
-            <input type="text" inputmode="decimal" id="sac-reserva-ing-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
-            <input type="text" id="sac-reserva-ing-concepto" placeholder="Concepto (opcional)">
-            <button type="button" class="fac-btn primary" style="font-size:11px;padding:8px 12px;" onclick="sacReservaIngresar()">Agregar a Reserva</button>
-          </div>
-          <div class="sac-reserva-col">
-            <div class="sac-reserva-sub">Salida desde Reserva (parcial)</div>
-            <div class="sac-reserva-salida-row">
-              <input type="text" inputmode="decimal" id="sac-reserva-salida-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
-              <input type="text" id="sac-reserva-salida-concepto" placeholder="Para qué es *">
-            </div>
-            <div class="sac-reserva-btns">
-              <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja')">→ Caja principal</button>
-              <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja_chica')">→ Caja chica</button>
-              <button type="button" class="fac-btn" onclick="sacReservaTransferir('banco')">→ Banco empresa</button>
-              <button type="button" class="fac-btn" title="Solo descuenta de Reserva (pago externo u otro destino)" onclick="sacReservaTransferir('otro')">→ Otro</button>
-            </div>
-          </div>
-        </div>
-        <div class="sac-reserva-hist">
-          <details>
-            <summary>Últimos movimientos</summary>
-            <div class="sac-reserva-hist-body"><div id="sac-reserva-movs"></div></div>
-          </details>
-        </div>
-      </details>
-
-      <div class="sac-toolbar">
-        <div>
-          <div class="sac-toolbar-lbl">📅 Período en edición <span class="sac-help" title="Ventas y cargas se guardan por período (lun–dom). Usa «Cambiar período» para otra semana. Los bloques 1–4 del mes no siempre coinciden con lun–dom.">?</span></div>
-          <div class="sac-toolbar-sub" id="sac-toolbar-desc">Cargando…</div>
-        </div>
-        <div class="sac-toolbar-actions">
-          <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()">📆 Cambiar período</button>
-          <button type="button" class="fac-btn" onclick="exportGastosReferenciaWord()" title="Word con gastos fijos (config) y cargas de todas las semanas — columna para montos nuevos">📝 Word referencia</button>
-          <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
-        </div>
-      </div>
-      <details id="sac-periodos-datos-wrap" class="sac-period-alt" style="display:none;margin:0 0 10px;">
-        <summary>Otras semanas con datos</summary>
-        <div id="sac-periodos-datos-list" class="sac-period-alt-body"></div>
-      </details>
-
       <div class="sac-main">
         <div class="sac-desk-split">
 
@@ -3685,10 +3659,13 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
           </div>
         </div>
         </div><!-- .sac-desk-split -->
+      </div>
 
-        <div class="sac-ingresos-card sac-ingresos-discreto">
-          <div class="sac-cargas-head sac-ingresos-head">
-            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></div>
+      <div class="sac-bottom-folds">
+        <details class="sac-ingresos-card sac-ingresos-discreto sac-ingresos-fold">
+          <summary>💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></summary>
+          <div class="sac-cargas-head sac-ingresos-head" style="border-top:1px solid var(--border);">
+            <div style="font-size:12px;font-weight:800;">Gestión de ingresos</div>
             <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
           </div>
           <p style="font-size:9px;color:#334155;padding:5px 12px 0;margin:0;line-height:1.4;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
@@ -3703,13 +3680,71 @@ body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255
               <div class="sac-foot-val" id="sac-ing-recib" style="color:#94a3b8;">$0</div>
             </div>
           </div>
-        </div>
-      </div>
+        </details>
 
-      <details id="sac-cierres-hist-card" class="sac-cierre-fold">
-        <summary>📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></summary>
-        <div id="sac-cierres-hist-body"></div>
-      </details>
+        <!-- Reserva: no entra al balance; transferencias a cajas/banco actualizan esos campos -->
+        <details class="sac-reserva-panel sac-reserva-fold" id="sac-reserva-panel">
+          <summary class="sac-reserva-title">
+            🛡️ Reserva <span class="sac-help" title="Fondo aparte que NO suma al balance estimado de la semana. Ingresa dinero aquí y luego puedes moverlo por partes a Caja principal, Caja chica, Banco u otro destino (solo registro).">?</span>
+            <span class="sac-reserva-saldo-chip" id="sac-reserva-saldo-chip">$0</span>
+          </summary>
+          <div class="sac-reserva-grid">
+            <div>
+              <div class="sac-reserva-saldo-lbl">Saldo en Reserva</div>
+              <div class="sac-reserva-saldo-val" id="sac-reserva-saldo-val">$0</div>
+            </div>
+            <div class="sac-reserva-col">
+              <div class="sac-reserva-sub">Ingreso a Reserva</div>
+              <input type="text" inputmode="decimal" id="sac-reserva-ing-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
+              <input type="text" id="sac-reserva-ing-concepto" placeholder="Concepto (opcional)">
+              <button type="button" class="fac-btn primary" style="font-size:11px;padding:8px 12px;" onclick="sacReservaIngresar()">Agregar a Reserva</button>
+            </div>
+            <div class="sac-reserva-col">
+              <div class="sac-reserva-sub">Salida desde Reserva (parcial)</div>
+              <div class="sac-reserva-salida-row">
+                <input type="text" inputmode="decimal" id="sac-reserva-salida-monto" placeholder="Monto" onblur="formatNumericInputValue(this)">
+                <input type="text" id="sac-reserva-salida-concepto" placeholder="Para qué es *">
+              </div>
+              <div class="sac-reserva-btns">
+                <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja')">→ Caja principal</button>
+                <button type="button" class="fac-btn" onclick="sacReservaTransferir('caja_chica')">→ Caja chica</button>
+                <button type="button" class="fac-btn" onclick="sacReservaTransferir('banco')">→ Banco empresa</button>
+                <button type="button" class="fac-btn" title="Solo descuenta de Reserva (pago externo u otro destino)" onclick="sacReservaTransferir('otro')">→ Otro</button>
+              </div>
+            </div>
+          </div>
+          <div class="sac-reserva-hist">
+            <details>
+              <summary>Últimos movimientos</summary>
+              <div class="sac-reserva-hist-body"><div id="sac-reserva-movs"></div></div>
+            </details>
+          </div>
+        </details>
+
+        <details class="sac-toolbar-fold" id="sac-periodo-fold">
+          <summary>
+            <span>📅 Período en edición</span>
+            <span class="sac-help" title="Ventas y cargas se guardan por período (lun–dom). Usa «Cambiar período» para otra semana. Los bloques 1–4 del mes no siempre coinciden con lun–dom.">?</span>
+            <span class="sac-toolbar-summary-desc" id="sac-toolbar-desc">Cargando…</span>
+          </summary>
+          <div class="sac-toolbar-expanded">
+            <div class="sac-toolbar-actions">
+              <button type="button" class="fac-btn" onclick="sacAbrirElegirSemana()">📆 Cambiar período</button>
+              <button type="button" class="fac-btn" onclick="exportGastosReferenciaWord()" title="Word con gastos fijos (config) y cargas de todas las semanas — columna para montos nuevos">📝 Word referencia</button>
+              <button type="button" class="fac-btn sac-close-btn" onclick="sacCerrarSemanaClick()">📋 Cerrar semana</button>
+            </div>
+            <details id="sac-periodos-datos-wrap" class="sac-period-alt" style="display:none;margin:10px 0 0;">
+              <summary>Otras semanas con datos</summary>
+              <div id="sac-periodos-datos-list" class="sac-period-alt-body"></div>
+            </details>
+          </div>
+        </details>
+
+        <details id="sac-cierres-hist-card" class="sac-cierre-fold">
+          <summary>📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></summary>
+          <div id="sac-cierres-hist-body"></div>
+        </details>
+      </div>
 
       <div id="sac-fin-panel-wrap" style="display:none;margin-top:4px;"></div>
 
@@ -7000,7 +7035,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.28.3';
+const APP_VERSION = '2026.08.28.4';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
