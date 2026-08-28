@@ -1579,6 +1579,15 @@ body.dark-mode .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color
 .sac-kpi-inp{width:100%;border:none;border-bottom:2px solid var(--border);padding:3px 0;font-size:18px;font-weight:900;font-family:inherit;color:var(--primary);background:transparent;outline:none;}
 .sac-kpi-inp:focus{border-color:var(--accent);}
 .sac-reserva-panel{background:linear-gradient(180deg,#fafafa 0%,#fff 40%);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 4px 14px rgba(15,23,42,.04);padding:8px 12px 10px;margin-bottom:10px;}
+.sac-reserva-fold > summary{cursor:pointer;list-style:none;user-select:none;}
+.sac-reserva-fold > summary::-webkit-details-marker{display:none;}
+.sac-reserva-fold > summary::before{content:'▸';font-size:10px;color:#94a3b8;margin-right:4px;}
+.sac-reserva-fold[open] > summary::before{content:'▾';}
+.sac-reserva-fold[open] > summary{margin-bottom:6px;}
+.sac-reserva-saldo-chip{margin-left:auto;font-size:13px;font-weight:900;color:#7c3aed;letter-spacing:-.02em;}
+.sac-v-row-today{background:rgba(249,115,22,.09);box-shadow:inset 3px 0 0 var(--accent);}
+.sac-v-row-today .sac-v-day{font-weight:800;color:var(--accent);}
+body.dark-mode .sac-v-row-today{background:rgba(255,159,10,.11);}
 .sac-reserva-title{font-size:10px;font-weight:800;color:#334155;margin-bottom:6px;display:flex;align-items:center;gap:6px;letter-spacing:.04em;text-transform:uppercase;}
 .sac-reserva-grid{display:grid;grid-template-columns:minmax(76px,100px) minmax(0,1fr) minmax(0,1fr);gap:8px 10px;align-items:start;}
 @media(max-width:900px){.sac-reserva-grid{grid-template-columns:1fr 1fr;}}
@@ -2280,7 +2289,7 @@ body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
 }
 
 /* ---- MOBILE RESPONSIVE ---- */
-.hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;color:var(--primary);font-size:20px;line-height:1;margin-right:8px;}
+.hamburger{display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;color:var(--primary);font-size:20px;line-height:1;margin-right:8px;width:36px;height:36px;flex-shrink:0;}
 .nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:250;transition:opacity .3s ease;}
 .nav-overlay.open{display:block;}
 
@@ -2707,7 +2716,7 @@ body.dark-mode textarea:focus{
 }
 
 /* iPad Pro refinado (portrait/landscape) */
-@media (min-width: 1025px) and (max-width: 1368px) {
+@media (min-width: 1025px) and (max-width: 1368px) and (hover: none) and (pointer: coarse) {
   .content { max-width: 1220px; margin: 0 auto; }
   .sac-header { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .sac-main { gap: 14px; }
@@ -2896,9 +2905,157 @@ body.dark-mode .conflict-overlay{
   -webkit-backdrop-filter:blur(10px)!important;
 }
 
+/* ============================================================
+   DESKTOP: menú colapsable + SAC compacto (solo visual)
+   ============================================================ */
+.nav-label{white-space:nowrap;}
+.nav-collapse-btn{
+  margin-top:auto;
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:auto;
+  margin-left:10px;
+  margin-right:10px;
+  margin-bottom:14px;
+  padding:8px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:rgba(0,0,0,0.03);
+  color:var(--text-muted);
+  cursor:pointer;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.02em;
+}
+.nav-collapse-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(249,115,22,0.08);}
+.nav-collapse-btn .nav-collapse-ico{font-size:16px;line-height:1;width:16px;text-align:center;}
+body.dark-mode .nav-collapse-btn{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#b0b0b5;}
+nav{transition:width .22s ease,min-width .22s ease;}
+
+@media (min-width: 961px) {
+  body.nav-collapsed nav{
+    width:68px;
+    min-width:68px;
+    overflow-x:hidden;
+  }
+  body.nav-collapsed .nav-logo,
+  body.nav-collapsed .nav-brand-admin,
+  body.nav-collapsed .nav-label,
+  body.nav-collapsed .nav-sep{
+    display:none;
+  }
+  body.nav-collapsed .nav-item{
+    justify-content:center;
+    padding:10px 8px;
+    margin:2px 8px;
+    font-size:0;
+    gap:0;
+  }
+  body.nav-collapsed nav{padding-top:10px;}
+  body.nav-collapsed .nav-item .ni{font-size:16px;width:auto;}
+  body.nav-collapsed .nav-collapse-btn{padding:8px 0;margin-left:8px;margin-right:8px;}
+  body.nav-collapsed .nav-collapse-btn .nav-label{display:none;}
+}
+
+@media (max-width: 960px) {
+  .nav-collapse-btn{display:none;}
+}
+
+.sac-desk-split{display:flex;flex-direction:column;gap:16px;width:100%;min-width:0;}
+.sac-ingresos-discreto{box-shadow:0 4px 14px rgba(15,23,42,.045);}
+.sac-ingresos-discreto .sac-cargas-head{padding:8px 14px;}
+.sac-cierre-fold{
+  margin-top:12px;
+  background:var(--white);
+  border-radius:14px;
+  border:1px solid rgba(148,163,184,.22);
+  box-shadow:0 4px 14px rgba(15,23,42,.04);
+  overflow:hidden;
+}
+.sac-cierre-fold > summary{
+  cursor:pointer;
+  padding:10px 14px;
+  font-size:12px;
+  font-weight:800;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  user-select:none;
+}
+.sac-cierre-fold > summary::-webkit-details-marker{display:none;}
+.sac-cierre-fold > summary::before{content:'▸';font-size:10px;color:#94a3b8;}
+.sac-cierre-fold[open] > summary::before{content:'▾';}
+.sac-cierre-fold[open] > summary{border-bottom:1px solid var(--border);}
+body.dark-mode .sac-cierre-fold{background:#1c1c1e;border-color:rgba(255,255,255,.08);}
+
+@media (min-width: 1100px) {
+  #sac > .content{padding-top:16px;padding-bottom:36px;}
+  .sac-header{
+    grid-template-columns:repeat(7,minmax(0,1fr));
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .sac-kpi{padding:8px 10px;border-radius:12px;}
+  .sac-kpi-lbl{font-size:8px;margin-bottom:3px;}
+  .sac-kpi-val,.sac-kpi-inp{font-size:15px;}
+  .sac-reserva-panel{padding:6px 10px 8px;margin-bottom:8px;}
+  .sac-toolbar{padding:8px 10px;margin-bottom:8px;border-radius:12px;}
+  .sac-main{gap:12px;}
+  .sac-desk-split{
+    display:grid;
+    grid-template-columns:minmax(280px,0.92fr) minmax(0,1.28fr);
+    gap:12px;
+    align-items:stretch;
+  }
+  .sac-ventas-card{
+    display:flex;
+    flex-direction:column;
+    min-width:0;
+    max-height:min(68vh,740px);
+  }
+  .sac-ventas-head{padding:8px 12px;font-size:11px;}
+  .sac-v-row,.sac-v-head{padding:4px 10px;font-size:11px;gap:5px;}
+  .sac-v-head{padding:5px 10px 3px;}
+  .sac-v-inp{padding:4px 6px;font-size:11px;}
+  .sac-v-total{padding:6px 10px;font-size:11px;}
+  #sac-ventas-dias{max-height:none;flex:1 1 auto;overflow-y:auto;min-height:0;}
+  .sac-cargas-card.sac-cargas-glass{
+    max-height:min(68vh,740px);
+  }
+  .sac-ingresos-discreto{max-width:100%;}
+  .sac-ingresos-list-wrap{max-height:88px;}
+}
+
+@media (min-width: 1100px) and (max-width: 1368px) {
+  #sac > .content{max-width:none;margin:0;}
+  .sac-header{grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+
+@media (min-width: 1440px) {
+  .sac-desk-split{grid-template-columns:minmax(320px,0.85fr) minmax(0,1.35fr);}
+}
+
+@media print {
+  .hamburger,.nav-collapse-btn{display:none!important;}
+}
+
 </style>
 </head>
 <body>
+<script>
+(function(){
+  try {
+    if (window.innerWidth > 960 && localStorage.getItem('cerebrus_nav_collapsed') !== '0') {
+      document.body.classList.add('nav-collapsed');
+    }
+  } catch (e) {}
+})();
+</script>
 
 <!-- Startup alert overlay for credits -->
 <div class="startup-alert" id="startupAlert">
@@ -2930,26 +3087,27 @@ body.dark-mode .conflict-overlay{
     <p class="nav-brand-admin">Administrado por Diego Palacios Brockhaus</p>
   </div>
   <div class="nav-sep">Vistas</div>
-  <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;"><span class="ni">⚡</span> Semana Actual</div>
-  <div class="nav-item" id="nav-informe" onclick="showTab('informe')"><span class="ni">📋</span> Informe Diario</div>
-  <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')"><span class="ni">💵</span> Propinas</div>
-  <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')"><span class="ni">🧾</span> Facturas Proveedores</div>
-  <div class="nav-item" id="nav-inventario" onclick="showTab('inventario')"><span class="ni">📦</span> Inventario</div>
-  <div class="nav-item" id="nav-creditos" onclick="showTab('creditos')"><span class="ni">💳</span> Créditos Informales</div>
-  <div class="nav-item" id="nav-sebas" onclick="showTab('sebas')"><span class="ni">🔐</span> Finanzas Sebas</div>
-  <div class="nav-item" id="nav-detalle" onclick="showTab('detalle')"><span class="ni">⚙️</span> Configuración</div>
-  <div class="nav-item" id="nav-semanas" onclick="showTab('semanas')"><span class="ni">📊</span> Proyección Mensual</div>
-  <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;"><span class="ni">📈</span> Venta Semanal</div>
-  <div class="nav-item" id="nav-historial" onclick="showTab('historial')"><span class="ni">🗓</span> Historial Meses</div>
-  <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')"><span class="ni">📊</span> Dashboard</div>
+  <div class="nav-item active" id="nav-sac" onclick="showTab('sac')" style="font-weight:800;color:var(--accent)!important;" title="Semana Actual"><span class="ni">⚡</span><span class="nav-label">Semana Actual</span></div>
+  <div class="nav-item" id="nav-informe" onclick="showTab('informe')" title="Informe Diario"><span class="ni">📋</span><span class="nav-label">Informe Diario</span></div>
+  <div class="nav-item" id="nav-propinas" onclick="showTab('propinas')" title="Propinas"><span class="ni">💵</span><span class="nav-label">Propinas</span></div>
+  <div class="nav-item" id="nav-facturas" onclick="showTab('facturas')" title="Facturas Proveedores"><span class="ni">🧾</span><span class="nav-label">Facturas Proveedores</span></div>
+  <div class="nav-item" id="nav-inventario" onclick="showTab('inventario')" title="Inventario"><span class="ni">📦</span><span class="nav-label">Inventario</span></div>
+  <div class="nav-item" id="nav-creditos" onclick="showTab('creditos')" title="Créditos Informales"><span class="ni">💳</span><span class="nav-label">Créditos Informales</span></div>
+  <div class="nav-item" id="nav-sebas" onclick="showTab('sebas')" title="Finanzas Sebas"><span class="ni">🔐</span><span class="nav-label">Finanzas Sebas</span></div>
+  <div class="nav-item" id="nav-detalle" onclick="showTab('detalle')" title="Configuración"><span class="ni">⚙️</span><span class="nav-label">Configuración</span></div>
+  <div class="nav-item" id="nav-semanas" onclick="showTab('semanas')" title="Proyección Mensual"><span class="ni">📊</span><span class="nav-label">Proyección Mensual</span></div>
+  <div class="nav-item" id="nav-venta" onclick="showTab('sac')" style="display:none;" title="Venta Semanal"><span class="ni">📈</span><span class="nav-label">Venta Semanal</span></div>
+  <div class="nav-item" id="nav-historial" onclick="showTab('historial')" title="Historial Meses"><span class="ni">🗓</span><span class="nav-label">Historial Meses</span></div>
+  <div class="nav-item" id="nav-resumen" onclick="showTab('resumen')" title="Dashboard"><span class="ni">📊</span><span class="nav-label">Dashboard</span></div>
   <div class="nav-sep">Secciones</div>
-  <div class="nav-item" onclick="goto('sec-ingresos')"><span class="ni">💰</span> Ingresos</div>
-  <div class="nav-item" onclick="goto('sec-mercaderia')" style="display:none;"><span class="ni">🛒</span> Mercadería</div>
-  <div class="nav-item" onclick="goto('sec-rrhh')"><span class="ni">👥</span> RRHH &amp; Bonos</div>
-  <div class="nav-item" onclick="goto('sec-operacion')"><span class="ni">⚡</span> Operación</div>
-  <div class="nav-item" onclick="goto('sec-pasivos')"><span class="ni">🏦</span> Pasivos</div>
-  <div class="nav-item" onclick="goto('sec-socias')"><span class="ni">🤝</span> Socias</div>
-  <div class="nav-item" onclick="goto('sec-gestion')"><span class="ni">💼</span> Gestión Sebas</div>
+  <div class="nav-item" onclick="goto('sec-ingresos')" title="Ingresos"><span class="ni">💰</span><span class="nav-label">Ingresos</span></div>
+  <div class="nav-item" onclick="goto('sec-mercaderia')" style="display:none;" title="Mercadería"><span class="ni">🛒</span><span class="nav-label">Mercadería</span></div>
+  <div class="nav-item" onclick="goto('sec-rrhh')" title="RRHH y Bonos"><span class="ni">👥</span><span class="nav-label">RRHH &amp; Bonos</span></div>
+  <div class="nav-item" onclick="goto('sec-operacion')" title="Operación"><span class="ni">⚡</span><span class="nav-label">Operación</span></div>
+  <div class="nav-item" onclick="goto('sec-pasivos')" title="Pasivos"><span class="ni">🏦</span><span class="nav-label">Pasivos</span></div>
+  <div class="nav-item" onclick="goto('sec-socias')" title="Socias"><span class="ni">🤝</span><span class="nav-label">Socias</span></div>
+  <div class="nav-item" onclick="goto('sec-gestion')" title="Gestión Sebas"><span class="ni">💼</span><span class="nav-label">Gestión Sebas</span></div>
+  <button type="button" class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCollapse()" aria-label="Ocultar menú" title="Ocultar nombres del menú"><span class="nav-collapse-ico">‹</span><span class="nav-label">Ocultar menú</span></button>
 </nav>
 
 <!-- ======= LOGIN OVERLAY ======= -->
@@ -3037,7 +3195,7 @@ body.dark-mode .conflict-overlay{
     </div>
   </div>
   <div class="topbar">
-    <button class="hamburger" onclick="toggleNav()" aria-label="Menú">☰</button>
+    <button class="hamburger" onclick="toggleNav()" aria-label="Menú" title="Mostrar u ocultar menú">☰</button>
     <h2 id="tab-title">Dashboard Resumen</h2>
     <div id="online-strip" class="online-strip" style="margin-right:6px;" title="Conectado = pestaña con Cerebrus abierta. Inactivo = sin clic/teclado hace unos minutos (puede estar en otra app)."></div>
     <div class="btn-group">
@@ -3323,11 +3481,6 @@ body.dark-mode .conflict-overlay{
   <div id="sac" class="tab-content">
     <div class="content">
 
-      <div id="sac-cierres-hist-card" style="margin-bottom:14px;background:var(--white);border-radius:14px;border:1px solid rgba(148,163,184,.22);box-shadow:0 8px 22px rgba(15,23,42,.05);overflow:hidden;">
-        <div style="padding:10px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;">📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></div>
-        <div id="sac-cierres-hist-body"></div>
-      </div>
-
       <!-- Header KPIs -->
       <div class="sac-header" id="sac-header-grid">
         <div class="sac-kpi" style="border-left:4px solid #3b82f6;">
@@ -3370,10 +3523,11 @@ body.dark-mode .conflict-overlay{
       </div>
 
       <!-- Reserva: no entra al balance; transferencias a cajas/banco actualizan esos campos -->
-      <div class="sac-reserva-panel" id="sac-reserva-panel">
-        <div class="sac-reserva-title">
+      <details class="sac-reserva-panel sac-reserva-fold" id="sac-reserva-panel">
+        <summary class="sac-reserva-title">
           🛡️ Reserva <span class="sac-help" title="Fondo aparte que NO suma al balance estimado de la semana. Ingresa dinero aquí y luego puedes moverlo por partes a Caja principal, Caja chica, Banco u otro destino (solo registro).">?</span>
-        </div>
+          <span class="sac-reserva-saldo-chip" id="sac-reserva-saldo-chip">$0</span>
+        </summary>
         <div class="sac-reserva-grid">
           <div>
             <div class="sac-reserva-saldo-lbl">Saldo en Reserva</div>
@@ -3405,7 +3559,7 @@ body.dark-mode .conflict-overlay{
             <div class="sac-reserva-hist-body"><div id="sac-reserva-movs"></div></div>
           </details>
         </div>
-      </div>
+      </details>
 
       <div class="sac-toolbar">
         <div>
@@ -3424,8 +3578,9 @@ body.dark-mode .conflict-overlay{
       </details>
 
       <div class="sac-main">
+        <div class="sac-desk-split">
 
-        <!-- VENTAS — tabla 100% estática con IDs fijos -->
+        <!-- VENTAS — estimación vs real -->
         <div class="sac-ventas-card">
           <div class="sac-ventas-head">
             📈 Ventas del período · <span id="sac-week-lbl">Sem actual</span> <span class="sac-help light" title="Una fila por cada día del rango vigente (4, 7, 8 días…). Lo que cargues queda ligado al período en edición.">?</span>
@@ -3474,28 +3629,7 @@ body.dark-mode .conflict-overlay{
           </div>
         </div>
 
-        <div class="sac-stack-gap">
-        <!-- OTROS INGRESOS (semana) — ancho completo, sobre egresos -->
-        <div class="sac-ingresos-card">
-          <div class="sac-cargas-head sac-ingresos-head">
-            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></div>
-            <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
-          </div>
-          <p style="font-size:9px;color:#334155;padding:5px 12px 0;margin:0;line-height:1.4;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
-          <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
-          <div class="sac-footer sac-footer-duo" style="border-top:1px solid var(--border);">
-            <div class="sac-foot-kpi">
-              <div class="sac-foot-lbl">Pendiente de ingresar</div>
-              <div class="sac-foot-val" id="sac-ing-pend" style="color:var(--success);">$0</div>
-            </div>
-            <div class="sac-foot-kpi">
-              <div class="sac-foot-lbl">Marcado recibido</div>
-              <div class="sac-foot-val" id="sac-ing-recib" style="color:#94a3b8;">$0</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CARGAS / EGRESOS — ancho completo -->
+        <!-- CARGAS / EGRESOS -->
         <div class="sac-cargas-card sac-cargas-glass">
           <div class="sac-cargas-sticky">
             <div class="sac-cargas-head">
@@ -3550,8 +3684,32 @@ body.dark-mode .conflict-overlay{
             </div>
           </div>
         </div>
-        </div><!-- .sac-stack-gap -->
+        </div><!-- .sac-desk-split -->
+
+        <div class="sac-ingresos-card sac-ingresos-discreto">
+          <div class="sac-cargas-head sac-ingresos-head">
+            <div style="font-size:12px;font-weight:800;">💰 Otros ingresos <span class="sac-help" title="Pon el monto total esperado; usa «Recibir parcial» si entra solo una parte (ej. 5 de 10 millones). Lo pendiente suma al balance; lo recibido no.">?</span></div>
+            <button type="button" onclick="sacAddIngresoManual()" class="sac-head-btn success">+ Ingreso</button>
+          </div>
+          <p style="font-size:9px;color:#334155;padding:5px 12px 0;margin:0;line-height:1.4;">Total esperado en cada ítem · <b>◑ Recibir parcial</b> para abonos · Falta suma al balance · Recibido = ya en caja (actualizá banco/caja).</p>
+          <div class="sac-ingresos-list-wrap"><div id="sac-ingresos-list" style="min-height:4px;"></div></div>
+          <div class="sac-footer sac-footer-duo" style="border-top:1px solid var(--border);">
+            <div class="sac-foot-kpi">
+              <div class="sac-foot-lbl">Pendiente de ingresar</div>
+              <div class="sac-foot-val" id="sac-ing-pend" style="color:var(--success);">$0</div>
+            </div>
+            <div class="sac-foot-kpi">
+              <div class="sac-foot-lbl">Marcado recibido</div>
+              <div class="sac-foot-val" id="sac-ing-recib" style="color:#94a3b8;">$0</div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <details id="sac-cierres-hist-card" class="sac-cierre-fold">
+        <summary>📋 Cierre Período Semana <span class="sac-help" title="Aquí queda guardado el último cierre realizado. Puedes abrirlo para revisar/editar o borrarlo.">?</span></summary>
+        <div id="sac-cierres-hist-body"></div>
+      </details>
 
       <div id="sac-fin-panel-wrap" style="display:none;margin-top:4px;"></div>
 
@@ -6842,7 +7000,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.23.2';
+const APP_VERSION = '2026.08.28.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 function compareVersionStrings(a, b) {
@@ -7429,13 +7587,46 @@ function cerebrusBindInformeInputs_() {
 // ============================================================
 //  NAVIGATION
 // ============================================================
+function cerebrusIsMobileNav() {
+  return window.matchMedia('(max-width: 960px)').matches;
+}
+function syncNavCollapseUi() {
+  const collapsed = document.body.classList.contains('nav-collapsed');
+  const btn = document.getElementById('nav-collapse-btn');
+  const ico = btn && btn.querySelector('.nav-collapse-ico');
+  const lab = btn && btn.querySelector('.nav-label');
+  if (btn) {
+    if (ico) ico.textContent = collapsed ? '›' : '‹';
+    if (lab) lab.textContent = collapsed ? 'Mostrar menú' : 'Ocultar menú';
+    btn.setAttribute('aria-label', collapsed ? 'Mostrar menú' : 'Ocultar menú');
+    btn.title = collapsed ? 'Mostrar nombres del menú' : 'Ocultar nombres del menú';
+  }
+  const ham = document.querySelector('.hamburger');
+  if (ham && !cerebrusIsMobileNav()) {
+    ham.setAttribute('aria-label', collapsed ? 'Mostrar menú' : 'Ocultar menú');
+    ham.title = collapsed ? 'Mostrar menú' : 'Ocultar menú';
+  }
+}
+function setNavCollapsed(collapsed) {
+  document.body.classList.toggle('nav-collapsed', !!collapsed);
+  try { localStorage.setItem('cerebrus_nav_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+  syncNavCollapseUi();
+}
+function toggleNavCollapse() {
+  setNavCollapsed(!document.body.classList.contains('nav-collapsed'));
+}
 function toggleNav() {
-  document.getElementById('mainNav').classList.toggle('open');
-  document.getElementById('navOverlay').classList.toggle('open');
+  if (cerebrusIsMobileNav()) {
+    document.getElementById('mainNav').classList.toggle('open');
+    document.getElementById('navOverlay').classList.toggle('open');
+    return;
+  }
+  toggleNavCollapse();
 }
 function closeNav() {
   document.getElementById('mainNav').classList.remove('open');
   document.getElementById('navOverlay').classList.remove('open');
+  if (!cerebrusIsMobileNav()) setNavCollapsed(true);
 }
 
 function sebasModuleAllowed() {
@@ -14640,6 +14831,7 @@ function _postLoadSetup() {
     }); });
   }
   try { if(localStorage.getItem('cerebrus_dark')==='1'){document.body.classList.add('dark-mode');document.getElementById('dark-btn').textContent='☀️';} } catch(e){}
+  try { if (typeof syncNavCollapseUi === 'function') syncNavCollapseUi(); } catch(e){}
   try { cerebrusStripCalendarioBitacoraModulo_(); } catch (e) {}
   if (!_pldBodega) {
     cerebrusDeferIfInformeBusy_(function() {
@@ -26401,8 +26593,10 @@ function sacDayMeta(i) {
     d = new Date(p.y, p.m - 1, r.start + i);
   }
   const dowNum = d.getDay();
+  const now = new Date();
+  const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
   const line = `${icons[dowNum]} ${names[dowNum]} ${d.getDate()}/${d.getMonth() + 1}`;
-  return { line, dowNum };
+  return { line, dowNum, isToday };
 }
 
 function vsGetWeekSac(key) {
@@ -26598,8 +26792,9 @@ function sacRenderVentasDias() {
   for (let i = 0; i < n; i++) {
     const meta = sacDayMeta(i);
     const estBr = meta.dowNum === 5 ? 'border-color:rgba(249,115,22,.45);' : 'border-color:rgba(249,115,22,.3);';
-    const dayStyle = meta.dowNum === 5 ? 'color:var(--danger);' : '';
-    html += `<div class="sac-v-row" id="sac-vrow-${i}">
+    const dayStyle = meta.dowNum === 5 ? 'color:var(--danger);' : (meta.isToday ? 'color:var(--accent);' : '');
+    const todayCls = meta.isToday ? ' sac-v-row-today' : '';
+    html += `<div class="sac-v-row${todayCls}" id="sac-vrow-${i}">
       <div class="sac-v-day" style="${dayStyle}">${meta.line}</div>
       <input class="sac-v-inp" id="sac-vest-${i}" type="text" inputmode="numeric" placeholder="$0"
         onchange="sacVChange(${i},'est',this.value)" onblur="sacVBlur(this)" style="${estBr}">
@@ -27184,8 +27379,11 @@ function sacReservaTransferir(dest) {
 
 function sacRenderReservaPanel() {
   sacReservaEnsure();
+  const saldoTxt = fmt(state.sacReservaSaldo || 0);
   const v = document.getElementById('sac-reserva-saldo-val');
-  if (v) v.textContent = fmt(state.sacReservaSaldo || 0);
+  if (v) v.textContent = saldoTxt;
+  const chip = document.getElementById('sac-reserva-saldo-chip');
+  if (chip) chip.textContent = saldoTxt;
   const el = document.getElementById('sac-reserva-movs');
   if (!el) return;
   const movs = (state.sacReservaMovs || []).slice(0, 25);

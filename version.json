@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.23.2",
-  "notes": "Servare: bloquea guardado si hydrate light falla, si inventario local vacía la nube, o si otro usuario avanzó la versión."
+  "version": "2026.08.28.2",
+  "notes": "SAC escritorio compacto: menú plegable, dos columnas ventas/egresos, Reserva colapsada, día de hoy resaltado en ventas."
 }
