@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.28.4",
-  "notes": "SAC: KPIs y ventas|cargas arriba; cargas más altas; ingresos, reserva, período y cierre plegables al final."
+  "version": "2026.08.28.5",
+  "notes": "Cargas SAC: filtros simplificados — solo búsqueda por nombre, pestañas por pagar/pagados y limpiar."
 }

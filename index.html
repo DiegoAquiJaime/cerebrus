@@ -3618,24 +3618,8 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
               <button type="button" class="sac-cargas-tab" id="sac-tab-pagados" onclick="sacSetCargaTab('pagados')" title="Egresos ya pagados (total o parcial completado)">Pagados</button>
             </div>
             <div class="sac-cargas-filters">
-              <select id="sac-fil-cat" class="sac-filter-sel" onchange="sacSetCargaFilters()">
-                <option value="">Todas las clases</option>
-                <option value="Crédito">Crédito</option><option value="TC">TC</option><option value="Retiro">Retiro</option>
-                <option value="Proveedor">Proveedor</option><option value="Impuesto">Impuesto</option><option value="Servicio">Servicio</option>
-                <option value="Bono">Bono</option><option value="Arriendo">Arriendo</option><option value="Compra">Compra</option>
-                <option value="RRHH">RRHH</option><option value="Otro">Otro</option>
-              </select>
-              <select id="sac-fil-est" class="sac-filter-sel" onchange="sacSetCargaFilters()">
-                <option value="">Todos los estados</option>
-                <option value="nopagado">No pagado</option>
-                <option value="parcial">Parcial</option>
-                <option value="pagado">Pagado</option>
-                <option value="pausa">Pausa (no cuenta)</option>
-              </select>
-              <input id="sac-fil-name" class="sac-filter-inp" placeholder="Nombre..." oninput="sacSetCargaFilters()">
-              <input id="sac-fil-min" class="sac-filter-inp" inputmode="numeric" placeholder="Monto mín" oninput="sacSetCargaFilters()" onblur="formatNumericInputValue(this)">
-              <input id="sac-fil-max" class="sac-filter-inp" inputmode="numeric" placeholder="Monto máx" oninput="sacSetCargaFilters()" onblur="formatNumericInputValue(this)">
-              <button class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
+              <input id="sac-fil-name" class="sac-filter-inp sac-filter-name" placeholder="Buscar por nombre..." oninput="sacSetCargaFilters()">
+              <button type="button" class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
             </div>
           </div>
           <div class="sac-cargas-list-scroll">
