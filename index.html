@@ -1712,7 +1712,9 @@ body.dark-mode .sac-res-mov{border-color:#334155;}
 .sac-ingresos-card .sac-estado-btn,.sac-cargas-card .sac-carga-row .sac-estado-btn{white-space:normal;text-align:center;line-height:1.25;padding:5px 8px;}
 .sac-carga-row:last-child{border-bottom:none;}
 .sac-carga-row:hover{background:rgba(148,163,184,.08);}
-.sac-cargas-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);background:#f8fafc;}
+.sac-cargas-filters{display:flex;gap:6px;flex-wrap:nowrap;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:#f8fafc;}
+.sac-filter-name{flex:1;min-width:0;}
+.sac-filter-clear{flex-shrink:0;font-size:10px;padding:5px 10px;}
 .sac-filter-inp,.sac-filter-sel{border:1px solid var(--border);border-radius:7px;padding:6px 8px;font-size:11px;font-family:inherit;color:var(--primary);background:var(--white);}
 .sac-filter-inp{min-width:120px;}
 .sac-filter-sel{min-width:130px;}
@@ -7019,9 +7021,10 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.08.28.4';
+const APP_VERSION = '2026.08.28.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
+const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
 function compareVersionStrings(a, b) {
   const pa = String(a || '').split('.').map(x => parseInt(x, 10) || 0);
   const pb = String(b || '').split('.').map(x => parseInt(x, 10) || 0);
@@ -7036,6 +7039,56 @@ function compareVersionStrings(a, b) {
 }
 function _versionSeenKey(remoteVersion) {
   return 'cerebrus_version_seen_' + String(remoteVersion || '');
+}
+function cerebrusVersionReloadGuardRead_() {
+  try { return JSON.parse(sessionStorage.getItem(CEREBRUS_VERSION_RELOAD_GUARD_KEY) || 'null'); } catch (e) { return null; }
+}
+function cerebrusVersionReloadGuardWrite_(remoteVersion) {
+  try {
+    sessionStorage.setItem(CEREBRUS_VERSION_RELOAD_GUARD_KEY, JSON.stringify({
+      remote: String(remoteVersion || ''),
+      app: APP_VERSION,
+      at: Date.now()
+    }));
+  } catch (e) {}
+}
+function cerebrusVersionReloadBlocked_(remoteVersion) {
+  const g = cerebrusVersionReloadGuardRead_();
+  if (!g) return false;
+  const sameTarget = g.remote === String(remoteVersion || '');
+  const stillStale = compareVersionStrings(remoteVersion, APP_VERSION) > 0;
+  const recent = (Date.now() - (g.at || 0)) < 120000;
+  return sameTarget && stillStale && recent;
+}
+function cerebrusVersionReloadWarnOnce_(remoteVersion) {
+  const k = 'cerebrus_ver_reload_warned_' + String(remoteVersion || '');
+  try {
+    if (sessionStorage.getItem(k) === '1') return;
+    sessionStorage.setItem(k, '1');
+  } catch (e) {}
+  notify('⚠ Ya intenté actualizar a v' + remoteVersion + ' pero esta copia sigue en v' + APP_VERSION + '. Cierra Cerebrus por completo y vuelve a abrirlo.');
+}
+function cerebrusRememberUserBeforeReload_() {
+  try {
+    const u = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : (localStorage.getItem('cerebrus_user') || '');
+    if (u) sessionStorage.setItem('cerebrus_reload_user', u);
+  } catch (e) {}
+}
+function cerebrusRestoreLoginAfterVersionReload_() {
+  try {
+    let u = sessionStorage.getItem('cerebrus_reload_user');
+    sessionStorage.removeItem('cerebrus_reload_user');
+    if (!u) u = localStorage.getItem('cerebrus_user') || '';
+    if (!u || typeof selectUser !== 'function') return;
+    const map = {
+      'Sebastián': ['Gerente General', '#2980b9', 'SE'],
+      'Alberto': ['Administrador', '#27ae60', 'AL'],
+      'Diego': ['Subgerente', '#e67e22', 'DP'],
+      'Bodega': ['Bodega / Inventario', '#16a085', 'BO']
+    };
+    const m = map[u];
+    if (m) selectUser(u, m[0], m[1], m[2]);
+  } catch (e) {}
 }
 /** App instalada (Chrome «Instalar», Dock, etc.) — no pestaña normal del navegador. */
 function cerebrusIsInstalledApp_() {
@@ -27439,24 +27492,14 @@ function sacCatColor(cat) {
 }
 
 function sacSetCargaFilters() {
-  const cat = (document.getElementById('sac-fil-cat')?.value || '').trim();
-  const estado = (document.getElementById('sac-fil-est')?.value || '').trim();
   const name = (document.getElementById('sac-fil-name')?.value || '').trim().toLowerCase();
-  const minRaw = (document.getElementById('sac-fil-min')?.value || '').trim();
-  const maxRaw = (document.getElementById('sac-fil-max')?.value || '').trim();
-  _sacCargaFilter = {
-    cat,
-    estado,
-    name,
-    min: minRaw ? (parseNumCL(minRaw, false) || 0) : null,
-    max: maxRaw ? (parseNumCL(maxRaw, false) || 0) : null
-  };
+  _sacCargaFilter = { cat:'', estado:'', name, min:null, max:null };
   sacRenderCargas();
 }
 
 function sacClearCargaFilters() {
-  const ids = ['sac-fil-cat','sac-fil-est','sac-fil-name','sac-fil-min','sac-fil-max'];
-  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const el = document.getElementById('sac-fil-name');
+  if (el) el.value = '';
   _sacCargaFilter = { cat:'', estado:'', name:'', min:null, max:null };
   sacRenderCargas();
 }

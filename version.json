@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.28.5",
-  "notes": "Cargas SAC: filtros simplificados — solo búsqueda por nombre, pestañas por pagar/pagados y limpiar."
+  "version": "2026.08.28.6",
+  "notes": "Fix bucle de actualización: no recargar si ya estás en la última versión; anti-loop de caché; login restaurado tras update."
 }
