@@ -2,15 +2,9 @@ name: Sync Bodega productos
 
 on:
   workflow_dispatch:
-    inputs:
-      modo:
-        description: upsert | solo_nuevos
-        default: upsert
-        required: false
   push:
     paths:
       - servare/data/productos-migrados.json
-      - servare/data/productos-migrados.csv
     branches: [main]
 
 jobs:
@@ -19,14 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync productos to Google Sheet
+      - name: Subir productos al Google Sheet
         env:
-          BODEGA_API_URL: ${{ secrets.BODEGA_API_URL }}
           BODEGA_API_TOKEN: ${{ secrets.BODEGA_API_TOKEN }}
-        run: |
-          if [ -z "$BODEGA_API_URL" ] || [ -z "$BODEGA_API_TOKEN" ]; then
-            echo "Secrets BODEGA_API_URL y BODEGA_API_TOKEN no configurados — omitiendo sync."
-            echo "Configúralos en Settings → Secrets → Actions para sync automático."
-            exit 0
-          fi
-          python3 servare/scripts/sync-productos.py --modo "${{ github.event.inputs.modo || 'upsert' }}"
+        run: python3 servare/scripts/sync-productos.py

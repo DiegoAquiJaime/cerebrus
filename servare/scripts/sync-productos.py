@@ -30,17 +30,23 @@ CHUNK = 80
 
 
 def load_secrets(path: Path | None) -> tuple[str, str]:
-    url = os.environ.get("BODEGA_API_URL", "").strip()
+    deploy_cfg = ROOT / "servare/deploy.config.json"
+    url = ""
+    if deploy_cfg.exists():
+        cfg = json.loads(deploy_cfg.read_text(encoding="utf-8"))
+        url = str(cfg.get("url") or "").strip()
     token = os.environ.get("BODEGA_API_TOKEN", "").strip()
+    url = os.environ.get("BODEGA_API_URL", url).strip()
     if path and path.exists():
         data = json.loads(path.read_text(encoding="utf-8"))
-        url = data.get("url") or url
-        token = data.get("token") or token
-    if not url or not token:
+        if data.get("url"):
+            url = str(data["url"]).strip()
+        if data.get("token"):
+            token = str(data["token"]).strip()
+    if not url or "PEGA_AQUI" in url or not token:
         raise SystemExit(
-            "Faltan credenciales. Crea servare/.secrets.local.json con:\n"
-            '  {"url":"https://script.google.com/macros/s/…/exec","token":"…"}\n'
-            "O exporta BODEGA_API_URL y BODEGA_API_TOKEN."
+            "Configura servare/deploy.config.json (url) y el secret BODEGA_API_TOKEN en GitHub,\n"
+            "o crea servare/.secrets.local.json con url + token para sync local."
         )
     return url.rstrip("/"), token
 

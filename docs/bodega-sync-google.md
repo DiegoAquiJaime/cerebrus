@@ -1,77 +1,47 @@
-# Sincronizar datos con Google Sheet (para Cursor / GitHub)
+# Sync automático Bodega → Google Sheet
 
-## Por qué no se cargó solo
+Mismo espíritu que Cerebrus: código en GitHub, un deploy en Google, push y listo.
 
-La app en GitHub Pages es solo **frontend**. El Sheet vive en **tu cuenta Google** y está protegido por el `token_api`. Sin esa URL + token, nadie (ni Cursor) puede escribir ahí.
+## Configuración única (una vez)
 
-## Solución recomendada (3 piezas)
+### 1. Apps Script
+1. Planilla `BODEGA_AQUI_JAIME` → **Extensiones → Apps Script**
+2. Pegar `servare/apps-script/Codigo.gs` → Guardar
+3. Ejecutar **`setup`** (si no lo hiciste) → autorizar
+4. **Implementar → Nueva implementación → Aplicación web** → copiar URL `/exec`
 
-```
-GitHub (productos-migrados.json)
-        │
-        ▼
-  script sync-productos.py  ──POST──►  Apps Script (productos_bulk)
-        │                                      │
-   token en secreto                            ▼
-                                        Sheet Productos
-```
-
-### 1. Una vez: actualizar Apps Script
-
-Pega el `Codigo.gs` **nuevo** (incluye `productos_bulk`) y **Implementar → Nueva versión** de la Web App.
-
-### 2. Una vez: archivo de secretos (solo en tu Mac, NO en git)
-
-Copia el ejemplo:
-
-```bash
-cp servare/.secrets.example.json servare/.secrets.local.json
-```
-
-Edita `servare/.secrets.local.json`:
+### 2. URL en el repo
+Editar `servare/deploy.config.json`:
 
 ```json
 {
-  "url": "https://script.google.com/macros/s/TU_ID/exec",
-  "token": "el_token_api_de_Config"
+  "url": "https://script.google.com/macros/s/TU_ID/exec"
 }
 ```
 
-Este archivo está en `.gitignore` — nunca sube a GitHub.
+Commit + push.
 
-### 3. Cargar productos (tú o yo en Cursor)
+### 3. Token en GitHub (secreto)
+1. Sheet → pestaña **Config** → copiar `token_api`
+2. GitHub repo → **Settings → Secrets and variables → Actions → New secret**
+3. Nombre: **`BODEGA_API_TOKEN`** → pegar el token
+
+### 4. Primera carga
+**Actions → Sync Bodega productos → Run workflow**
+
+Debe terminar en verde. La app mostrará 418 productos activos.
+
+---
+
+## A partir de ahí (automático)
+
+Cualquier cambio en `servare/data/productos-migrados.json` + **push a main** → GitHub sube los productos al Sheet solo.
+
+Cuando me pidas cambios en el chat: yo edito el JSON, hago push, y GitHub sincroniza.
+
+Para sync desde tu Mac (opcional, mismo resultado):
 
 ```bash
+# servare/.secrets.local.json solo con {"token":"..."} — url ya está en deploy.config.json
 python3 servare/scripts/sync-productos.py
 ```
-
-Yo puedo ejecutar ese comando en el chat **si existe** `servare/.secrets.local.json` en tu Mac.
-
----
-
-## Opción B — GitHub Actions (automático al hacer push)
-
-1. Repo GitHub → **Settings → Secrets and variables → Actions**
-2. Crear:
-   - `BODEGA_API_URL` = URL `/exec`
-   - `BODEGA_API_TOKEN` = `token_api`
-3. Cada push a `servare/data/productos-migrados.json` sincroniza solo.
-4. O manual: **Actions → Sync Bodega productos → Run workflow**
-
----
-
-## Flujo futuro conmigo (Cursor)
-
-1. Tú: “agrega estos 5 productos” o editamos `productos-migrados.json` en el repo.
-2. Yo: actualizo el JSON y ejecuto `sync-productos.py` (con tus secretos locales).
-3. O: commit + push → GitHub Action sincroniza si configuraste secrets.
-
-Para **proveedores mañana**: mismo patrón con `proveedores_bulk` (se puede agregar igual).
-
----
-
-## Seguridad
-
-- El `token_api` es como una contraseña de la API — no va en el repo público.
-- Quien tenga URL + token puede escribir catálogo; movimientos siguen pidiendo login PIN en la app.
-- Rotar token: cambia `token_api` en hoja Config y actualiza secretos.
