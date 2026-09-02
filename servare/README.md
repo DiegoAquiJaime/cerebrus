@@ -52,7 +52,11 @@ Cambia los PIN en la hoja **Usuarios** antes de producción.
 
 ### 5. Productos
 
-Agrega filas en la hoja **Productos**:
+**Migración lista:** 418 productos del inventario anterior en `servare/data/productos-migrados.csv` (costo 0).
+
+Ver guía paso a paso: [`data/README.md`](data/README.md)
+
+Columnas de la hoja **Productos**:
 
 | sku | nombre | categoria | unidad | tipo | costo_promedio | stock_min | requiere_lote | activo |
 |-----|--------|-----------|--------|------|----------------|-----------|---------------|--------|

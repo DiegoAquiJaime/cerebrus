@@ -438,3 +438,68 @@ function anularMovimiento_(req) {
   log_(usuario, 'ANULAR', 'Movimiento', movId, { reversa: revId, motivo: motivo });
   return json_({ ok: true, reversa_id: revId });
 }
+
+// ── Migración productos (ejecutar una vez desde el editor) ───
+
+var IMPORT_SHEET = 'ProductosImport';
+
+/**
+ * 1) En Google Sheet: Archivo → Importar → subir productos-migrados.csv
+ *    → Insertar nueva hoja → renombrar a "ProductosImport"
+ * 2) Apps Script → ejecutar migrarProductosImport
+ */
+function migrarProductosImport() {
+  var ss = ss_();
+  var imp = ss.getSheetByName(IMPORT_SHEET);
+  if (!imp) {
+    throw new Error('Crea la hoja "' + IMPORT_SHEET + '" importando servare/data/productos-migrados.csv');
+  }
+  var prodSh = ss.getSheetByName(SHEETS.PRODUCTOS);
+  if (!prodSh) throw new Error('Falta hoja Productos — ejecuta setup() primero');
+
+  var impData = imp.getDataRange().getValues();
+  if (impData.length < 2) throw new Error('ProductosImport está vacía');
+
+  var headers = impData[0].map(function(h) { return String(h).trim().toLowerCase(); });
+  var col = {};
+  headers.forEach(function(h, i) { col[h] = i; });
+  ['sku', 'nombre'].forEach(function(k) {
+    if (col[k] === undefined) throw new Error('Falta columna: ' + k);
+  });
+
+  var existing = {};
+  if (prodSh.getLastRow() > 1) {
+    var cur = prodSh.getRange(2, 1, prodSh.getLastRow() - 1, 1).getValues();
+    cur.forEach(function(r) { if (r[0]) existing[String(r[0])] = true; });
+  }
+
+  var added = 0;
+  var skipped = 0;
+  for (var r = 1; r < impData.length; r++) {
+    var row = impData[r];
+    var sku = String(row[col.sku] || '').trim();
+    var nombre = String(row[col.nombre] || '').trim();
+    if (!sku || !nombre) continue;
+    if (existing[sku]) { skipped++; continue; }
+
+    prodSh.appendRow([
+      sku,
+      nombre,
+      col.categoria !== undefined ? row[col.categoria] : '',
+      col.unidad !== undefined ? row[col.unidad] : 'UN',
+      col.tipo !== undefined ? row[col.tipo] : 'INSUMO',
+      col.costo_promedio !== undefined ? (Number(row[col.costo_promedio]) || 0) : 0,
+      col.stock_min !== undefined ? (Number(row[col.stock_min]) || 0) : 0,
+      col.requiere_lote !== undefined ? row[col.requiere_lote] : 'NO',
+      col.activo !== undefined ? row[col.activo] : 'SI'
+    ]);
+    ensureStockRow_(sku);
+    existing[sku] = true;
+    added++;
+  }
+
+  refreshStockFormulas_();
+  log_('SISTEMA', 'IMPORTAR', 'Productos', '', { added: added, skipped: skipped });
+  Logger.log('Productos importados: ' + added + ', omitidos (duplicados): ' + skipped);
+  return { ok: true, added: added, skipped: skipped };
+}
