@@ -50,6 +50,7 @@ function doPost(e) {
       case 'movimiento': return crearMovimiento_(req);
       case 'anular': return anularMovimiento_(req);
       case 'dashboard': return dashboard_(req);
+      case 'productos_bulk': return productosBulk_(req);
       default: return json_({ ok: false, error: 'Acción desconocida: ' + (req.accion || '') });
     }
   } catch (err) {
@@ -502,4 +503,75 @@ function migrarProductosImport() {
   log_('SISTEMA', 'IMPORTAR', 'Productos', '', { added: added, skipped: skipped });
   Logger.log('Productos importados: ' + added + ', omitidos (duplicados): ' + skipped);
   return { ok: true, added: added, skipped: skipped };
+}
+
+/**
+ * API: carga/actualiza productos desde JSON (GitHub, Cursor, script local).
+ * POST { accion:'productos_bulk', token, productos:[{sku,nombre,...}], modo:'upsert'|'solo_nuevos' }
+ */
+function productosBulk_(req) {
+  var items = req.productos;
+  if (!Array.isArray(items) || !items.length) {
+    return json_({ ok: false, error: 'Array productos vacío' });
+  }
+  var modo = String(req.modo || 'upsert');
+  var usuario = String(req.usuario || 'API');
+
+  var prodSh = ss_().getSheetByName(SHEETS.PRODUCTOS);
+  if (!prodSh) return json_({ ok: false, error: 'Falta hoja Productos — ejecuta setup()' });
+
+  var skuToRow = {};
+  var last = prodSh.getLastRow();
+  if (last > 1) {
+    var skus = prodSh.getRange(2, 1, last - 1, 1).getValues();
+    skus.forEach(function(r, i) {
+      if (r[0]) skuToRow[String(r[0])] = i + 2;
+    });
+  }
+
+  var added = 0;
+  var updated = 0;
+  var skipped = 0;
+  var newRows = [];
+  var newSkus = [];
+
+  items.forEach(function(p) {
+    var sku = String(p.sku || '').trim();
+    var nombre = String(p.nombre || '').trim();
+    if (!sku || !nombre) { skipped++; return; }
+
+    var row = [
+      sku,
+      nombre,
+      String(p.categoria || ''),
+      String(p.unidad || 'UN'),
+      String(p.tipo || 'INSUMO'),
+      Number(p.costo_promedio) || 0,
+      Number(p.stock_min) || 0,
+      String(p.requiere_lote || 'NO').toUpperCase() === 'SI' ? 'SI' : 'NO',
+      String(p.activo || 'SI').toUpperCase() === 'NO' ? 'NO' : 'SI'
+    ];
+
+    var existingRow = skuToRow[sku];
+    if (existingRow) {
+      if (modo === 'solo_nuevos') { skipped++; return; }
+      prodSh.getRange(existingRow, 1, existingRow, 9).setValues([row]);
+      updated++;
+    } else {
+      newRows.push(row);
+      newSkus.push(sku);
+      skuToRow[sku] = -1;
+      added++;
+    }
+  });
+
+  if (newRows.length) {
+    var start = prodSh.getLastRow() + 1;
+    prodSh.getRange(start, 1, start + newRows.length - 1, 9).setValues(newRows);
+    newSkus.forEach(function(sku) { ensureStockRow_(sku); });
+  }
+
+  refreshStockFormulas_();
+  log_(usuario, 'PRODUCTOS_BULK', 'Productos', '', { added: added, updated: updated, skipped: skipped, total: items.length });
+  return json_({ ok: true, added: added, updated: updated, skipped: skipped, total: items.length });
 }
