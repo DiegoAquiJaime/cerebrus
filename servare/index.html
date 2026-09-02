@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#059669">
+  <title>Bodega — Aquí Jaime</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex flex-col items-center justify-center p-4">
+
+  <div class="w-full max-w-sm">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-500 text-white text-2xl font-bold shadow-lg mb-4">B</div>
+      <h1 class="text-2xl font-bold text-white">Bodega Aquí Jaime</h1>
+      <p class="text-emerald-200/70 text-sm mt-1">Ingresa tu PIN</p>
+    </div>
+
+    <div id="pin-display" class="flex justify-center gap-3 mb-6">
+      <span class="w-4 h-4 rounded-full bg-white/20 pin-dot"></span>
+      <span class="w-4 h-4 rounded-full bg-white/20 pin-dot"></span>
+      <span class="w-4 h-4 rounded-full bg-white/20 pin-dot"></span>
+      <span class="w-4 h-4 rounded-full bg-white/20 pin-dot"></span>
+    </div>
+
+    <div id="pin-error" class="text-red-300 text-center text-sm mb-4 min-h-[1.25rem]"></div>
+
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <button type="button" class="pin-key" data-digit="1">1</button>
+      <button type="button" class="pin-key" data-digit="2">2</button>
+      <button type="button" class="pin-key" data-digit="3">3</button>
+      <button type="button" class="pin-key" data-digit="4">4</button>
+      <button type="button" class="pin-key" data-digit="5">5</button>
+      <button type="button" class="pin-key" data-digit="6">6</button>
+      <button type="button" class="pin-key" data-digit="7">7</button>
+      <button type="button" class="pin-key" data-digit="8">8</button>
+      <button type="button" class="pin-key" data-digit="9">9</button>
+      <button type="button" class="pin-key text-slate-400" data-action="clear">C</button>
+      <button type="button" class="pin-key" data-digit="0">0</button>
+      <button type="button" class="pin-key text-slate-400" data-action="back">⌫</button>
+    </div>
+
+    <button type="button" id="btn-config" class="w-full text-center text-emerald-300/60 text-sm hover:text-emerald-200 transition py-2">
+      ⚙ Configurar conexión
+    </button>
+  </div>
+
+  <!-- Modal config -->
+  <dialog id="dlg-config" class="rounded-2xl p-0 backdrop:bg-black/50 w-[min(100%,24rem)]">
+    <form method="dialog" class="p-6 bg-white">
+      <h2 class="text-lg font-bold text-slate-800 mb-1">Conexión</h2>
+      <p class="text-xs text-slate-500 mb-4">URL del Apps Script y token de la hoja Config.</p>
+      <label class="block text-xs font-medium text-slate-600 mb-1">URL Web App (/exec)
+        <input type="url" id="cfg-url" class="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="https://script.google.com/macros/s/…/exec">
+      </label>
+      <label class="block text-xs font-medium text-slate-600 mt-3 mb-1">Token API
+        <input type="password" id="cfg-token" class="mt-1 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Desde hoja Config → token_api">
+      </label>
+      <div class="flex gap-2 mt-5">
+        <button type="button" id="btn-test" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-medium">Probar</button>
+        <button type="submit" id="btn-save-cfg" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium">Guardar</button>
+      </div>
+      <p id="cfg-status" class="text-xs text-slate-500 mt-3 min-h-[1rem]"></p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-white text-sm opacity-0 pointer-events-none transition-opacity"></div>
+
+  <script type="module">
+    import { getConfig, saveConfig, testConnection, isConfigured } from './js/api.js';
+    import { getSession, loginWithPin } from './js/auth.js';
+    import { toast } from './js/ui.js';
+
+    if (getSession()) {
+      window.location.href = 'app.html';
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
+    let pin = '';
+    const MAX = 4;
+
+    function updateDots() {
+      document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+        dot.classList.toggle('bg-emerald-400', i < pin.length);
+        dot.classList.toggle('bg-white/20', i >= pin.length);
+      });
+    }
+
+    async function tryLogin() {
+      if (pin.length < MAX) return;
+      if (!isConfigured()) {
+        document.getElementById('pin-error').textContent = 'Configura la conexión primero';
+        document.getElementById('dlg-config').showModal();
+        pin = '';
+        updateDots();
+        return;
+      }
+      document.getElementById('pin-error').textContent = '';
+      try {
+        await loginWithPin(pin);
+        window.location.href = 'app.html';
+      } catch (e) {
+        document.getElementById('pin-error').textContent = e.message || 'PIN incorrecto';
+        pin = '';
+        updateDots();
+      }
+    }
+
+    document.querySelectorAll('.pin-key').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const d = btn.dataset.digit;
+        const action = btn.dataset.action;
+        if (d) {
+          if (pin.length < MAX) { pin += d; updateDots(); if (pin.length === MAX) tryLogin(); }
+        } else if (action === 'back') {
+          pin = pin.slice(0, -1);
+          updateDots();
+        } else if (action === 'clear') {
+          pin = '';
+          updateDots();
+          document.getElementById('pin-error').textContent = '';
+        }
+      });
+    });
+
+    const dlg = document.getElementById('dlg-config');
+    const cfg = getConfig();
+    document.getElementById('cfg-url').value = cfg.url || '';
+    document.getElementById('cfg-token').value = cfg.token || '';
+
+    document.getElementById('btn-config').addEventListener('click', () => dlg.showModal());
+
+    document.getElementById('btn-test').addEventListener('click', async () => {
+      const status = document.getElementById('cfg-status');
+      saveConfig(document.getElementById('cfg-url').value, document.getElementById('cfg-token').value);
+      status.textContent = 'Probando…';
+      try {
+        const r = await testConnection();
+        status.textContent = r.ok ? '✓ Conexión OK' : 'Error';
+        status.className = 'text-xs text-emerald-600 mt-3';
+      } catch (e) {
+        status.textContent = '✗ ' + e.message;
+        status.className = 'text-xs text-red-500 mt-3';
+      }
+    });
+
+    dlg.querySelector('form').addEventListener('submit', e => {
+      e.preventDefault();
+      saveConfig(document.getElementById('cfg-url').value, document.getElementById('cfg-token').value);
+      toast('Configuración guardada', 'ok');
+      dlg.close();
+    });
+
+    if (!isConfigured()) {
+      setTimeout(() => dlg.showModal(), 300);
+    }
+  </script>
+</body>
+</html>

@@ -6,6 +6,17 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
+<script>
+(function(){
+  try {
+    document.documentElement.classList.add('cerebrus-sin-inventario');
+    if (String(localStorage.getItem('cerebrus_user')||'').toLowerCase() === 'bodega') {
+      localStorage.removeItem('cerebrus_user');
+      location.replace('servare/index.html');
+    }
+  } catch(e){}
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -1316,7 +1327,17 @@ body.dark-mode .fac-venc-banner{background:#2d1a1a;border-color:#7f1d1d;}
 /* Finanzas Sebas: solo Diego y Sebastián (clase user-sebas-ok en login) */
 body:not(.user-sebas-ok) #nav-sebas{display:none!important;}
 
-/* ── BODEGA: solo ve Inventario y sus submódulos ── */
+/* ── BODEGA: app aparte en /servare/ (ya no entra a Cerebrus) ── */
+html.cerebrus-sin-inventario #nav-inventario,
+html.cerebrus-sin-inventario #inventario,
+html.cerebrus-sin-inventario #aiInvModal,
+html.cerebrus-sin-inventario .cerebrus-inv-only,
+body.cerebrus-sin-inventario #nav-inventario,
+body.cerebrus-sin-inventario #inventario,
+body.cerebrus-sin-inventario #aiInvModal,
+body.cerebrus-sin-inventario .cerebrus-inv-only { display:none!important; }
+
+/* Legacy user-bodega (por si queda sesión antigua) */
 body.user-bodega #nav-resumen,
 body.user-bodega #nav-sac,
 body.user-bodega #nav-semanas,
@@ -3165,10 +3186,10 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <div class="login-avatar av-diego">DP</div>
           <div><div class="login-user-name">Diego</div><div class="login-user-role">Subgerente</div></div>
         </button>
-        <button class="login-user-btn login-user-bodega" onclick="selectUser('Bodega','Bodega / Inventario','#16a085','BO')">
+        <a href="servare/index.html" class="login-user-btn login-user-bodega" style="text-decoration:none;color:inherit;">
           <div class="login-avatar av-bodega">BO</div>
-          <div><div class="login-user-name">Bodega</div><div class="login-user-role">Bodega / Inventario</div></div>
-        </button>
+          <div><div class="login-user-name">Bodega</div><div class="login-user-role">App Bodega Aquí Jaime →</div></div>
+        </a>
       </div>
     </div>
 
@@ -4903,6 +4924,14 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
         </div>
       </div>
 
+      <div id="bodega-app-link" style="margin-bottom:14px;background:linear-gradient(135deg,#ecfdf5,#f0fdfa);border:1px solid #99f6e4;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:11px;font-weight:800;color:#047857;letter-spacing:.04em;text-transform:uppercase;">Bodega Aquí Jaime</div>
+          <div style="font-size:12px;color:#065f46;margin-top:2px;">App nueva de movimientos y stock — mismo GitHub Pages, carpeta <code style="font-size:10px;">/servare/</code></div>
+        </div>
+        <a href="servare/index.html" target="_blank" rel="noopener" class="fac-btn primary" style="font-size:11px;padding:8px 14px;text-decoration:none;white-space:nowrap;">Abrir bodega →</a>
+      </div>
+
       <!-- Sub-tabs: Inventario / Pedido Semana / Historial consumo -->
       <div class="inv-subtabs" style="display:flex;gap:0;margin-bottom:20px;background:var(--white);border-radius:var(--radius-sm);box-shadow:var(--shadow);overflow:hidden;">
         <button class="inv-subtab active" id="ist-inventario" onclick="invSubTab('inventario')">📦 Inventario</button>
@@ -5599,7 +5628,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <input type="checkbox" id="arch-fac" checked> <span>🧾 Facturas pagadas (más de <select id="arch-fac-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option><option value="24">24</option></select> semanas)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-fac-count">0</span>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+          <label class="cerebrus-inv-only" style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
             <input type="checkbox" id="arch-mov" checked> <span>🔄 Movimientos de inventario (más de <select id="arch-mov-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select> semanas)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-mov-count">0</span>
           </label>
@@ -5615,7 +5644,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <input type="checkbox" id="arch-fsem"> <span>📋 Facturas a pagar en semana (ya pagadas)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-fsem-count">0</span>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">
+          <label class="cerebrus-inv-only" style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#fff7ed;border-radius:8px;border:1px solid #fed7aa;">
             <input type="checkbox" id="arch-pedhist"> <span>📦 Pedidos semanales cerrados (conservar últimas <select id="arch-pedhist-keep" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="6">6</option><option value="8" selected>8</option><option value="12">12</option></select> semanas en la app)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-pedhist-count">0</span>
           </label>
@@ -5627,6 +5656,12 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <button onclick="archExecute()" class="fac-btn danger" style="font-size:11px;">🗑 Archivar seleccionados</button>
         </div>
         <div id="arch-preview" style="margin-top:12px;display:none;"></div>
+
+        <div style="margin-top:18px;padding-top:16px;border-top:1px dashed #059669;">
+          <div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Bodega Aquí Jaime (app aparte)</div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Inventario, movimientos y stock ya no están en Cerebrus. Mismo GitHub Pages, carpeta <code style="font-size:10px;">/servare/</code></div>
+          <a href="servare/index.html" target="_blank" rel="noopener" class="fac-btn primary" style="font-size:11px;text-decoration:none;display:inline-block;">📦 Abrir app Bodega →</a>
+        </div>
 
         <!-- Paso 1 Supabase: prueba en paralelo (no reemplaza Google Sheets) -->
         <div style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--border);">
@@ -5655,23 +5690,6 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <div id="supa-status" style="font-size:11px;color:#64748b;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:36px;">Sin configurar. Guía: <code style="font-size:10px;">docs/supabase-paso-1.md</code></div>
         </div>
 
-        <!-- Servare: inventario en otro Google Sheet -->
-        <div style="margin-top:18px;padding-top:16px;border-top:1px dashed #16a085;">
-          <div style="font-size:10px;font-weight:700;color:#16a085;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Servare — inventario en otro Sheet</div>
-          <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Mismo modelo que Cerebrus (Apps Script + Sheet). Al activar, <b>pInv</b> no se guarda en el Sheet de Cerebrus. Guía: <code style="font-size:10px;">docs/servare-google-sheet.md</code></div>
-          <label style="font-size:10px;color:#94a3b8;display:block;margin-bottom:8px;">URL Web App Servare (/exec)
-            <input type="url" id="servare-url" placeholder="https://script.google.com/macros/s/…/exec" style="display:block;width:100%;margin-top:4px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-family:inherit;">
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:10px;cursor:pointer;">
-            <input type="checkbox" id="servare-enabled"> <span>Usar Servare para inventario (desacoplado del Sheet Cerebrus)</span>
-          </label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-            <button type="button" onclick="servareSaveCfgFromUI_()" class="fac-btn" style="font-size:10px;">💾 Guardar config</button>
-            <button type="button" onclick="servareTestConnection_()" class="fac-btn" style="font-size:10px;">🔌 Probar Servare</button>
-            <button type="button" onclick="servareMigrateFromCerebrus_()" class="fac-btn" style="font-size:10px;">📦 Migrar inventario desde Cerebrus</button>
-          </div>
-          <div id="servare-status" style="font-size:11px;color:#64748b;background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:8px 10px;min-height:36px;">Servare desactivado — inventario sigue en el Sheet de Cerebrus.</div>
-        </div>
       </div>
 
       <!-- 1. INGRESOS -->
@@ -7080,11 +7098,14 @@ function cerebrusRestoreLoginAfterVersionReload_() {
     sessionStorage.removeItem('cerebrus_reload_user');
     if (!u) u = localStorage.getItem('cerebrus_user') || '';
     if (!u || typeof selectUser !== 'function') return;
+    if (CEREBRUS_BODEGA_EN_SERVARE && String(u).toLowerCase() === 'bodega') {
+      window.location.href = cerebrusBodegaAppUrl_();
+      return;
+    }
     const map = {
       'Sebastián': ['Gerente General', '#2980b9', 'SE'],
       'Alberto': ['Administrador', '#27ae60', 'AL'],
-      'Diego': ['Subgerente', '#e67e22', 'DP'],
-      'Bodega': ['Bodega / Inventario', '#16a085', 'BO']
+      'Diego': ['Subgerente', '#e67e22', 'DP']
     };
     const m = map[u];
     if (m) selectUser(u, m[0], m[1], m[2]);
@@ -7110,6 +7131,15 @@ function cerebrusIsChromeInstalledApp_() {
 }
 function cerebrusReloadAppVersion_(remoteVersion) {
   const v = String(remoteVersion || '').trim();
+  if (!v || compareVersionStrings(v, APP_VERSION) <= 0) return;
+  if (cerebrusVersionReloadBlocked_(v)) {
+    cerebrusVersionReloadWarnOnce_(v);
+    _cerebrusPendingVersionReload = '';
+    _cerebrusPendingVersionNotified = false;
+    return;
+  }
+  cerebrusVersionReloadGuardWrite_(v);
+  cerebrusRememberUserBeforeReload_();
   try {
     const url = new URL(location.href);
     url.searchParams.set('v', v || String(Date.now()));
@@ -7124,7 +7154,17 @@ let _cerebrusPendingVersionNotified = false;
 let _cerebrusVersionFocusBound = false;
 function cerebrusScheduleVersionReload_(remoteVersion) {
   const v = String(remoteVersion || '').trim();
-  if (!v) return;
+  if (!v || compareVersionStrings(v, APP_VERSION) <= 0) {
+    _cerebrusPendingVersionReload = '';
+    _cerebrusPendingVersionNotified = false;
+    return;
+  }
+  if (cerebrusVersionReloadBlocked_(v)) {
+    _cerebrusPendingVersionReload = '';
+    _cerebrusPendingVersionNotified = false;
+    cerebrusVersionReloadWarnOnce_(v);
+    return;
+  }
   if (typeof _unsaved !== 'undefined' && _unsaved) {
     _cerebrusPendingVersionReload = v;
     if (!_cerebrusPendingVersionNotified) {
@@ -7162,15 +7202,23 @@ async function checkAppVersion(forceShowUpToDate) {
     if (cmp <= 0) {
       _cerebrusPendingVersionReload = '';
       _cerebrusPendingVersionNotified = false;
+      try { sessionStorage.removeItem(CEREBRUS_VERSION_RELOAD_GUARD_KEY); } catch (e) {}
+      try { localStorage.setItem(_versionSeenKey(remoteVersion), '1'); } catch (e) {}
       if (forceShowUpToDate) notify('✅ Ya estás en la última versión (' + APP_VERSION + ')');
       return;
     }
-    const chromeApp = cerebrusIsChromeInstalledApp_();
-    if (chromeApp && !forceShowUpToDate) {
-      cerebrusScheduleVersionReload_(remoteVersion);
+    if (cerebrusVersionReloadBlocked_(remoteVersion)) {
+      _cerebrusPendingVersionReload = '';
+      _cerebrusPendingVersionNotified = false;
+      if (forceShowUpToDate) cerebrusVersionReloadWarnOnce_(remoteVersion);
       return;
     }
+    const chromeApp = cerebrusIsChromeInstalledApp_();
     if (chromeApp && forceShowUpToDate) {
+      notify('⚠ Hay v' + remoteVersion + ' en el servidor, pero esta copia sigue en v' + APP_VERSION + '. Cierra Cerebrus por completo y ábrelo de nuevo.');
+      return;
+    }
+    if (chromeApp && !forceShowUpToDate) {
       cerebrusScheduleVersionReload_(remoteVersion);
       return;
     }
@@ -7557,8 +7605,8 @@ function fmt(v) {
   const hasDec = Math.abs(n % 1) > 0.0000001;
   return '$' + fmtCL(n, 0, hasDec ? 2 : 0);
 }
-/** Formato miles CL — solo precios de pedido Inventario/Servare (clase inv-precio-inp). */
-function formatServarePrecioInput_(inp) {
+/** Formato miles CL — precios de pedido inventario (clase inv-precio-inp). */
+function formatInvPrecioInput_(inp) {
   if (!inp || !inp.classList || !inp.classList.contains('inv-precio-inp')) return;
   if (inp.value === '' || inp.value == null) return;
   const n = parseNumCL(inp.value, false);
@@ -7606,7 +7654,7 @@ function formatSacMontoInput_(inp) {
   inp.value = fmtCL(n, 0, hasDec ? 2 : 0);
 }
 function formatNumericInputValue(inp) {
-  formatServarePrecioInput_(inp);
+  formatInvPrecioInput_(inp);
   formatInformeInputValue(inp);
   formatSacMontoInput_(inp);
 }
@@ -7724,9 +7772,14 @@ function cerebrusOnlinePeersForConcurrency_(others) {
 }
 
 function showTab(tabId) {
-  // Bodega: solo inventario
-  if (cerebrusUsuarioBodega() && tabId !== 'inventario') {
-    tabId = 'inventario';
+  if (CEREBRUS_BODEGA_EN_SERVARE && tabId === 'inventario') {
+    notify('📦 Inventario y bodega están en la app Servare (enlace en Configuración).');
+    tabId = 'resumen';
+  }
+  // Bodega ya no usa Cerebrus
+  if (cerebrusUsuarioBodega()) {
+    window.location.href = cerebrusBodegaAppUrl_();
+    return;
   }
   if (tabId === 'sebas' && !sebasModuleAllowed()) {
     tabId = 'resumen';
@@ -7759,7 +7812,6 @@ function showTab(tabId) {
       setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, 600);
     } else {
       invRender();
-      servareLoadInvForAdminIfNeeded_();
     }
   }
   if (tabId==='propinas')   propRender();
@@ -13571,64 +13623,41 @@ const API_URL = (function () {
 const MAKE_URL = 'https://hook.us2.make.com/lfq0dsk6ev96nimep97ynj9apmluf224';
 const IS_CLOUD = APPS_SCRIPT_EXEC !== '__APPS_SCRIPT_URL__' && String(APPS_SCRIPT_EXEC).startsWith('https://');
 
-/** Sheet propio inventario/bodega — pegar URL /exec tras publicar servare-apps-script.js */
-const SERVARE_APPS_SCRIPT_EXEC = 'https://script.google.com/macros/s/AKfycbxJ5ebrClmEMDCtpdz_j_i-RgTqnzMNdCmO__ULl5FFnrnGSHJV9U80IcahV3-OVPSt9w/exec';
-var SERVARE_CFG_KEY = 'cerebrusServareCfg';
-var _servareCloudVersion = '0';
+/** Inventario y bodega viven en servare/ — Cerebrus no carga ni guarda pInv */
+const CEREBRUS_BODEGA_EN_SERVARE = true;
 
-function servareGetCfg_() {
-  var bakedUrl = (SERVARE_APPS_SCRIPT_EXEC && String(SERVARE_APPS_SCRIPT_EXEC).startsWith('https://'))
-    ? String(SERVARE_APPS_SCRIPT_EXEC).replace(/\/$/, '') : '';
-  try {
-    var raw = localStorage.getItem(SERVARE_CFG_KEY);
-    if (!raw) return { url: bakedUrl, enabled: !!bakedUrl };
-    var o = JSON.parse(raw);
-    return {
-      url: String(o.url || bakedUrl || '').replace(/\/$/, ''),
-      enabled: o.enabled !== undefined ? !!o.enabled : !!bakedUrl
-    };
-  } catch (e) { return { url: bakedUrl, enabled: !!bakedUrl }; }
+function cerebrusBodegaAppUrl_() {
+  return 'servare/index.html';
 }
 
-function servareResolveApiUrl_() {
-  try {
-    var q = new URLSearchParams(window.location.search || '');
-    if (q.get('servare')) return String(q.get('servare')).replace(/\/$/, '');
-  } catch (e) {}
-  var cfg = servareGetCfg_();
-  if (cfg.url) return cfg.url;
-  if (SERVARE_APPS_SCRIPT_EXEC && String(SERVARE_APPS_SCRIPT_EXEC).startsWith('https://')) return SERVARE_APPS_SCRIPT_EXEC;
-  return '';
+function cerebrusStripInvFromState_(st) {
+  if (!CEREBRUS_BODEGA_EN_SERVARE || !st) return;
+  cerebrusInvKeys_().forEach(function(k) { delete st[k]; });
 }
 
-function servareIsEnabled_() {
-  var url = servareResolveApiUrl_();
-  var cfg = servareGetCfg_();
-  return cfg.enabled && !!url && url.indexOf('script.google.com') !== -1;
-}
-
-function servareInvKeys_() {
+function cerebrusInvKeys_() {
   return ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'];
 }
 
-function servareApplyInvObj_(target, invObj) {
+function cerebrusApplyInvObj_(target, invObj) {
   if (!target || !invObj) return;
-  servareInvKeys_().forEach(function(k) {
+  cerebrusInvKeys_().forEach(function(k) {
     if (invObj[k] !== undefined) target[k] = invObj[k];
   });
 }
 
 /** ¿Este usuario editó inventario/bodega en esta sesión? (vs _cloudBaseState) */
 function cerebrusInvPartitionTouched_() {
+  if (CEREBRUS_BODEGA_EN_SERVARE) return false;
   if (cerebrusUsuarioBodega()) return true;
   if (!_cloudBaseState) return false;
   var changed = _topLevelChangedKeys(_cloudBaseState, state);
-  return servareInvKeys_().some(function(k) { return changed.has(k); });
+  return cerebrusInvKeys_().some(function(k) { return changed.has(k); });
 }
 
 /** Tras guardado en nube: inventario alineado + snapshot completo en _cloudBaseState. */
 function cerebrusCommitAfterCloudSave_(savedSnapshot) {
-  if (savedSnapshot) servareApplyInvObj_(state, savedSnapshot);
+  if (savedSnapshot) cerebrusApplyInvObj_(state, savedSnapshot);
   if (cerebrusUsuarioBodega()) cerebrusSetCloudBaseDeferred_(state);
   else {
     try { _cloudBaseState = JSON.parse(JSON.stringify(state)); } catch (e) { _cloudBaseState = null; }
@@ -13638,234 +13667,6 @@ function cerebrusCommitAfterCloudSave_(savedSnapshot) {
 function cerebrusIsLegacyPartedError_(msg) {
   msg = String(msg || '');
   return msg.indexOf('no reconocida') >= 0 || msg.indexOf('No reconocida') >= 0;
-}
-
-async function servareFetchInvObj_(opts) {
-  opts = opts || {};
-  var url = servareResolveApiUrl_();
-  if (!url) throw new Error('Servare sin URL');
-  var light = opts.light !== false && (opts.light === true || cerebrusUsuarioBodega());
-  var res = await fetch(url + '?action=getState' + (light ? '&light=1' : '') + '&_=' + Date.now());
-  var json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'Servare getState');
-  var st = (json.data && json.data.state) ? json.data.state : {};
-  if (json.light) {
-    st._servareLightLoad = true;
-  } else {
-    st._servareMovFull = true;
-    delete st._servareLightLoad;
-  }
-  if (json.meta && json.meta.version != null) _servareCloudVersion = String(json.meta.version);
-  return { state: st, meta: json.meta || {}, light: !!json.light };
-}
-
-/**
- * Completa sesión light de Bodega antes de guardar.
- * @returns {{ok:boolean, state:object, error?:string}}
- */
-async function servareHydrateFullInvBeforeSave_(st) {
-  if (!servareIsEnabled_() || !st || !st._servareLightLoad) {
-    return { ok: true, state: st };
-  }
-  try {
-    var full = await servareFetchInvObj_({ light: false });
-    var changed = _cloudBaseState ? _topLevelChangedKeys(_cloudBaseState, state) : new Set();
-    servareInvKeys_().forEach(function(k) {
-      if (!changed.has(k) && full.state[k] !== undefined) st[k] = full.state[k];
-    });
-    delete st._servareLightLoad;
-    st._servareMovFull = true;
-    if (state && state !== st) {
-      delete state._servareLightLoad;
-      state._servareMovFull = true;
-    }
-    return { ok: true, state: st };
-  } catch (e) {
-    console.warn('[SERVARE] hydrate antes de guardar:', e);
-    return { ok: false, state: st, error: (e && e.message) ? e.message : String(e) };
-  }
-}
-
-/** Stats de catálogo para freno anti-wipe Servare. */
-function servareInvStats_(st) {
-  var inv = (st && st.inventario) || [];
-  var n = Array.isArray(inv) ? inv.length : 0;
-  var nz = 0;
-  var sum = 0;
-  if (Array.isArray(inv)) {
-    inv.forEach(function(p) {
-      var s = Number(p && p.stock) || 0;
-      if (s > 0) nz++;
-      sum += s;
-    });
-  }
-  return { n: n, nz: nz, sum: sum };
-}
-
-/**
- * Detecta payload local que borraría inventario/movimientos en Servare.
- * @returns {string[]}
- */
-function servareSuspiciousEmptyWipeRisks_(local, remote) {
-  var risks = [];
-  if (!local || !remote) return risks;
-  var L = servareInvStats_(local);
-  var R = servareInvStats_(remote);
-  if (R.n >= 50 && L.n < Math.max(10, Math.floor(R.n * 0.4))) {
-    risks.push('Inventario: local ' + L.n + ' productos vs Servare ' + R.n);
-  }
-  if (R.nz >= 30 && L.nz < Math.max(5, Math.floor(R.nz * 0.4))) {
-    risks.push('Stock>0: local ' + L.nz + ' vs Servare ' + R.nz);
-  }
-  if (R.sum >= 200 && L.sum < Math.max(20, Math.floor(R.sum * 0.3))) {
-    risks.push('Suma stock: local ' + Math.round(L.sum) + ' vs Servare ' + Math.round(R.sum));
-  }
-  var lm = Array.isArray(local.movimientos) ? local.movimientos.length : 0;
-  var rm = Array.isArray(remote.movimientos) ? remote.movimientos.length : 0;
-  if (rm >= 10 && lm === 0 && (local._servareLightLoad || local._servareMovFull === false)) {
-    risks.push('Movimientos: sesión incompleta (0) vs Servare ' + rm);
-  }
-  var lsh = Array.isArray(local.semanasHistorial) ? local.semanasHistorial.length : 0;
-  var rsh = Array.isArray(remote.semanasHistorial) ? remote.semanasHistorial.length : 0;
-  if (rsh >= 3 && lsh === 0 && (local._servareLightLoad || local._servareMovFull === false)) {
-    risks.push('Historial pedido: sesión incompleta vs Servare ' + rsh);
-  }
-  return risks;
-}
-
-/**
- * Freno duro antes de escribir Servare.
- * @returns {{ok:boolean, risks:string[], remote?:object}}
- */
-async function servareHardBlockEmptyWipeGate_(stateToSave) {
-  if (!servareIsEnabled_()) return { ok: true, risks: [] };
-  try {
-    var remote = await servareFetchInvObj_({ light: false });
-    var meta = remote.meta || {};
-    var remoteVer = String(meta.version != null ? meta.version : '0');
-    var localVer = String(_servareCloudVersion || '0');
-    if (localVer !== '0' && remoteVer !== localVer && !cerebrusSameCloudUser_(meta.lastUser, currentUser)) {
-      return {
-        ok: false,
-        risks: [
-          'Servare: ' + (meta.lastUser || 'otro usuario') +
-          ' guardó inventario más reciente (v' + remoteVer + ' vs local v' + localVer + ')'
-        ],
-        remote: remote.state
-      };
-    }
-    if (remoteVer !== '0') _servareCloudVersion = remoteVer;
-    var risks = servareSuspiciousEmptyWipeRisks_(stateToSave || state, remote.state);
-    return { ok: risks.length === 0, risks: risks, remote: remote.state };
-  } catch (e) {
-    return {
-      ok: false,
-      risks: ['No se pudo revalidar Servare antes de guardar: ' + ((e && e.message) ? e.message : e)]
-    };
-  }
-}
-
-/**
- * Optimistic lock Servare: bloquea si otro usuario avanzó la versión.
- * @returns {{ok:boolean, reason?:string, by?:string}}
- */
-async function servareAssertVersionWritable_() {
-  if (!servareIsEnabled_()) return { ok: true };
-  try {
-    var url = servareResolveApiUrl_();
-    if (!url) return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
-    var vr = await fetch(url + '?action=getVersion&_=' + Date.now());
-    var vj = await vr.json();
-    if (!vj.ok) return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
-    var remoteVer = String(vj.version != null ? vj.version : '0');
-    var localVer = String(_servareCloudVersion || '0');
-    if (localVer === '0') {
-      _servareCloudVersion = remoteVer;
-      return { ok: true };
-    }
-    if (remoteVer === localVer) return { ok: true };
-    if (cerebrusSameCloudUser_(vj.lastUser, currentUser)) {
-      _servareCloudVersion = remoteVer;
-      return { ok: true };
-    }
-    return {
-      ok: false,
-      reason: 'servare_conflict',
-      by: vj.lastUser || 'otro usuario'
-    };
-  } catch (e) {
-    return { ok: false, reason: 'servare_unreachable', by: 'Servare' };
-  }
-}
-
-async function servareLoadMovimientosIfNeeded_() {
-  if (!servareIsEnabled_() || state._servareMovFull) return;
-  setSyncStatus('⏳ Cargando movimientos…', '');
-  try {
-    var full = await servareFetchInvObj_({ light: false });
-    ['movimientos', 'movimientosAudit', 'movimientosArchivo', 'semanasHistorial'].forEach(function(k) {
-      if (full.state[k] !== undefined) state[k] = full.state[k];
-    });
-    state._servareMovFull = true;
-    setSyncStatus('✓ Inventario', 'ok');
-  } catch (e) {
-    notify('⚠ No se pudieron cargar movimientos: ' + (e.message || e));
-  }
-}
-
-async function servareMergeInvIntoState_(st, opts) {
-  if (!servareIsEnabled_() || !st) return st;
-  var remote = await servareFetchInvObj_(opts || {});
-  servareApplyInvObj_(st, remote.state);
-  if (remote.light) {
-    st._servareLightLoad = true;
-    st._servareMovFull = false;
-  } else {
-    st._servareMovFull = true;
-    delete st._servareLightLoad;
-  }
-  return st;
-}
-
-async function servareSaveInvPart_(pInvPayload, description) {
-  if (!pInvPayload) return { ok: false };
-  var url = servareResolveApiUrl_();
-  if (!url) throw new Error('Servare sin URL');
-  var res = await fetch(url, {
-    method: 'POST',
-    body: JSON.stringify({
-      action: 'saveParted',
-      user: currentUser,
-      parts: { pInv: pInvPayload },
-      description: description || 'Inventario (Servare)'
-    })
-  });
-  var json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'Servare saveParted');
-  if (json.version != null) _servareCloudVersion = String(json.version);
-  return json;
-}
-
-async function servareLoadInvMergeAfterCerebrus_(opts) {
-  opts = opts || {};
-  if (!servareIsEnabled_()) return;
-  if (!cerebrusUsuarioBodega() && state._servareInvMerged) return;
-  try {
-    if (!opts.silent) setSyncStatus('⏳ Cargando inventario (Servare)…', '');
-    await servareMergeInvIntoState_(state, cerebrusUsuarioBodega() ? { light: true } : { light: false });
-    if (_cloudBaseState) servareApplyInvObj_(_cloudBaseState, state);
-    if (!cerebrusUsuarioBodega()) state._servareInvMerged = true;
-  } catch (e) {
-    console.warn('[SERVARE] carga inventario:', e);
-    if (!opts.silent) notify('⚠ Servare: no se pudo cargar inventario (' + (e.message || e) + ')');
-  }
-}
-
-function servareLoadInvForAdminIfNeeded_() {
-  if (!servareIsEnabled_() || cerebrusUsuarioBodega() || state._servareInvMerged) return;
-  servareLoadInvMergeAfterCerebrus_().then(function() {
-    try { invRender(); } catch (e) {}
-  });
 }
 
 let currentUser     = '';
@@ -13975,6 +13776,10 @@ async function submitPassword() {
     _loginAttempts = 0;
     currentUser    = _pendingUser;
     _pendingUser   = '';
+    if (CEREBRUS_BODEGA_EN_SERVARE && cerebrusUsuarioBodega()) {
+      window.location.href = cerebrusBodegaAppUrl_();
+      return;
+    }
     _finishLogin();
   } else {
     _loginAttempts++;
@@ -14814,6 +14619,12 @@ function invClearAllPreciosOneShot_() {
 
 function _postLoadSetup() {
   const _pldBodega = cerebrusUsuarioBodega();
+  if (CEREBRUS_BODEGA_EN_SERVARE && _pldBodega) {
+    window.location.href = cerebrusBodegaAppUrl_();
+    return;
+  }
+  if (CEREBRUS_BODEGA_EN_SERVARE) cerebrusStripInvFromState_(state);
+  try { document.body.classList.add('cerebrus-sin-inventario'); } catch (e) {}
   if (!state.creditos)    state.creditos    = makeDefaultCreditos();
   if (!_pldBodega) applyOfficialCreditosCloudSyncIfNeeded();
   if (!state.facturas)    state.facturas    = makeDefaultFacturas();
@@ -14861,8 +14672,10 @@ function _postLoadSetup() {
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
+  var clearedPrecios = 0;
+  if (!CEREBRUS_BODEGA_EN_SERVARE) {
   invMigrateCategoryNames_();
-  const clearedPrecios = _pldBodega ? 0 : invClearAllPreciosOneShot_();
+  clearedPrecios = _pldBodega ? 0 : invClearAllPreciosOneShot_();
   if (!_pldBodega) {
     try {
       const rescued = invRescuePreciosDesdePedidosHistorial_({ onlyEmpty: true, silent: true });
@@ -14894,6 +14707,7 @@ function _postLoadSetup() {
   };
   if (_pldBodega) setTimeout(invFamSync, 50);
   else invFamSync();
+  }
   if (!_pldBodega) {
     SECTION_KEYS.forEach(k => { (state[k]||[]).forEach(i => {
       if (i.day===undefined) i.day=0;
@@ -14918,9 +14732,7 @@ function _postLoadSetup() {
   // Primera carga: respetar pestaña elegida mientras bajaba la nube (p. ej. Informe Diario)
   if (!_sessionNavInitDone) {
     _sessionNavInitDone = true;
-    if (cerebrusUsuarioBodega()) {
-      showTab('inventario');
-    } else if (_userPickedTabBeforeCloud && _activeTabId) {
+    if (_userPickedTabBeforeCloud && _activeTabId) {
       cerebrusSyncTabUiIfNeeded_(_activeTabId);
     } else if (_activeTabId && _activeTabId !== 'sac' && _activeTabId !== 'resumen') {
       cerebrusSyncTabUiIfNeeded_(_activeTabId);
@@ -14928,7 +14740,7 @@ function _postLoadSetup() {
       showTab('sac');
     }
   } else {
-    cerebrusSyncTabUiIfNeeded_(cerebrusUsuarioBodega() ? 'inventario' : (_activeTabId || 'sac'));
+    cerebrusSyncTabUiIfNeeded_(_activeTabId || 'sac');
   }
   setTimeout(() => {
     if (!_pldBodega) {
@@ -14947,7 +14759,7 @@ function _postLoadSetup() {
     if (typeof cerebrusClockStart === 'function') cerebrusClockStart();
   }, _pldBodega ? 200 : 800);
   if (!_pldBodega) infInit();
-  if (!_pldBodega) {
+  if (!_pldBodega && !CEREBRUS_BODEGA_EN_SERVARE) {
     setTimeout(function() {
       try { invAutoImportPedidoSem04May2026IfNeeded(); } catch (e) {}
     }, 1200);
@@ -15843,12 +15655,6 @@ function invRenderBodegaLite_() {
   else if (sub === 'pedido' && _invPedidoPanelVisible_()) invRenderPedido();
   else if (sub === 'consumo') invRenderConsumo();
   else if (sub === 'movimientos') {
-    if (servareIsEnabled_() && !state._servareMovFull) {
-      servareLoadMovimientosIfNeeded_().then(function() {
-        movRender(); movRenderDashSemanal();
-      });
-      return;
-    }
     movRender(); movRenderDashSemanal();
   }
   setTimeout(function() { try { invCheckKpis(); } catch (e) {} }, cerebrusUsuarioBodega() ? 600 : 120);
@@ -16444,13 +16250,6 @@ function invSubTab(panel) {
   if (panel==='pedido')       invRenderPedido();
   if (panel==='consumo')      invRenderConsumo();
   if (panel==='movimientos') {
-    if (servareIsEnabled_() && !state._servareMovFull) {
-      servareLoadMovimientosIfNeeded_().then(function() {
-        movRender(); movRenderDashSemanal();
-        if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick();
-      });
-      return;
-    }
     movRender(); movRenderDashSemanal();
     if (typeof invInformeProdRenderPick === 'function') invInformeProdRenderPick();
   }
@@ -20668,7 +20467,6 @@ function archRenderStats() {
   archRenderBreakdown();
 
   if (typeof supaRenderPanel_ === 'function') supaRenderPanel_();
-  if (typeof servareRenderPanel_ === 'function') servareRenderPanel_();
 
   if (window._archPedhistMode == null) window._archPedhistMode = 'keep';
   if (window._archFacMode == null) window._archFacMode = 'weeks';
@@ -21213,89 +21011,6 @@ async function supaProbeCompare_() {
   }
 }
 
-// ── SERVARE (inventario en Google Sheet aparte) ──
-function servareRenderPanel_() {
-  var cfg = servareGetCfg_();
-  var urlEl = document.getElementById('servare-url');
-  var enEl = document.getElementById('servare-enabled');
-  var stEl = document.getElementById('servare-status');
-  if (urlEl && !urlEl.value && cfg.url) urlEl.value = cfg.url;
-  if (enEl) enEl.checked = !!cfg.enabled;
-  if (stEl) {
-    if (servareIsEnabled_()) {
-      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Servare activo</span> · inventario en Sheet aparte · v' + (_servareCloudVersion || '0');
-    } else if (cfg.url) {
-      stEl.textContent = 'URL guardada pero desactivado — inventario sigue en Sheet Cerebrus.';
-    } else {
-      stEl.textContent = 'Servare desactivado — inventario sigue en el Sheet de Cerebrus.';
-    }
-  }
-}
-
-function servareSaveCfgFromUI_() {
-  var url = (document.getElementById('servare-url')?.value || '').trim().replace(/\/$/, '');
-  var enabled = !!document.getElementById('servare-enabled')?.checked;
-  if (enabled && (!url || url.indexOf('script.google.com') === -1)) {
-    notify('⚠ Para activar Servare necesitas la URL /exec de Apps Script');
-    return;
-  }
-  localStorage.setItem(SERVARE_CFG_KEY, JSON.stringify({ url: url, enabled: enabled }));
-  notify(enabled ? '✓ Servare activado' : '✓ Config Servare guardada (desactivado)');
-  servareRenderPanel_();
-}
-
-async function servareTestConnection_() {
-  var stEl = document.getElementById('servare-status');
-  servareSaveCfgFromUI_();
-  if (stEl) stEl.textContent = 'Probando Servare…';
-  try {
-    var url = servareResolveApiUrl_();
-    if (!url) throw new Error('Falta URL Servare');
-    var res = await fetch(url + '?action=ping&_=' + Date.now());
-    var ping = await res.json();
-    var inv = await servareFetchInvObj_();
-    var bytes = 0;
-    try { bytes = JSON.stringify(inv.state || {}).length; } catch (e2) {}
-    if (stEl) {
-      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Servare conectado</span> · '
-        + (ping.service || 'ok') + ' · inventario remoto ~' + (bytes / 1024).toFixed(1) + ' KB · v' + (_servareCloudVersion || '0');
-    }
-    notify('✓ Servare OK');
-  } catch (e) {
-    if (stEl) stEl.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
-    notify('⚠ ' + (e.message || e));
-  }
-}
-
-async function servareMigrateFromCerebrus_() {
-  var stEl = document.getElementById('servare-status');
-  servareSaveCfgFromUI_();
-  var url = servareResolveApiUrl_();
-  if (!url) { notify('⚠ Pegá la URL Servare primero'); return; }
-  if (!confirm('¿Copiar inventario actual (partición pInv) desde el Sheet de Cerebrus hacia Servare?\n\nNo borra nada en Cerebrus.')) return;
-  if (stEl) stEl.textContent = 'Migrando inventario…';
-  try {
-    var res = await fetch(API_URL + '?action=getState&_=' + Date.now());
-    var json = await res.json();
-    if (!json.ok || !json.data) throw new Error('No se pudo leer Cerebrus');
-    var parsed = json.data;
-    if (typeof parsed === 'string') parsed = JSON.parse(parsed);
-    var cerebrusState = parsed.state || {};
-    decompressVsData(cerebrusState);
-    var compressed = compressStateForSave(cerebrusState);
-    var parts = splitStateForCloudParts(compressed);
-    if (!parts.pInv) throw new Error('Cerebrus no tiene partición pInv');
-    await servareSaveInvPart_(parts.pInv, 'Migración desde Sheet Cerebrus');
-    if (stEl) {
-      stEl.innerHTML = '<span style="color:var(--success);font-weight:700;">✓ Migrado</span> · '
-        + (parts.pInv.length / 1024).toFixed(1) + ' KB en Servare. Activá «Usar Servare» y guardá config.';
-    }
-    notify('✓ Inventario copiado a Servare (' + (parts.pInv.length / 1024).toFixed(1) + ' KB)');
-  } catch (e) {
-    if (stEl) stEl.innerHTML = '<span style="color:var(--danger);">✗ ' + (e.message || e) + '</span>';
-    notify('⚠ ' + (e.message || e));
-  }
-}
 
 function cerebrusStripCalendarioBitacoraModulo_() {
   if (!state) return;
@@ -22509,7 +22224,7 @@ function aiInvShowPreview(rows) {
       <td style="padding:5px 8px;">${flag} <input class="ai-inp-sm" style="width:130px;" value="${esc(r.nombre||'')}" oninput="_aiInvRows[${i}].nombre=this.value"></td>
       <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm" style="width:72px;text-align:right;" inputmode="decimal" value="${esc(cerebrusFormatQtyForInput(r.stock))}" oninput="(function(el,idx){var n=cerebrusParseQuantity(el.value);_aiInvRows[idx].stock=isNaN(n)?0:n})(this,${i})" onblur="this.value=cerebrusFormatQtyForInput(_aiInvRows[${i}].stock)"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:45px;" value="${esc(r.unidad||'')}" oninput="_aiInvRows[${i}].unidad=this.value" placeholder="kg/u"></td>
-      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm inv-precio-inp" style="width:65px;text-align:right;" inputmode="decimal" value="${fmtInputCL(r.precio||0)}" oninput="_aiInvRows[${i}].precio=Math.round(parseNumCL(this.value,false)||0)" onblur="formatServarePrecioInput_(this)" placeholder="$"></td>
+      <td style="padding:5px 8px;text-align:right;"><input class="ai-inp-sm inv-precio-inp" style="width:65px;text-align:right;" inputmode="decimal" value="${fmtInputCL(r.precio||0)}" oninput="_aiInvRows[${i}].precio=Math.round(parseNumCL(this.value,false)||0)" onblur="formatInvPrecioInput_(this)" placeholder="$"></td>
       <td style="padding:5px 8px;"><input class="ai-inp-sm" style="width:80px;" value="${esc(r.categoria||'')}" oninput="_aiInvRows[${i}].categoria=this.value" placeholder="Cat."></td>
       <td style="padding:5px 8px;">${statusBadge}</td>
       <td style="padding:5px 8px;"><button onclick="aiInvRemoveRow(${i})" style="background:none;border:none;cursor:pointer;color:#cbd5e1;font-size:12px;">✕</button></td>
@@ -28513,10 +28228,17 @@ function markSaved() {
   _unsaved = false;
   const btn = document.getElementById('btn-save-indicator');
   if (btn) btn.style.boxShadow = '';
-  if (_cerebrusPendingVersionReload && cerebrusIsChromeInstalledApp_()) {
+  if (_cerebrusPendingVersionReload) {
     const v = _cerebrusPendingVersionReload;
-    _cerebrusPendingVersionNotified = false;
-    setTimeout(function() { cerebrusScheduleVersionReload_(v); }, 600);
+    if (compareVersionStrings(v, APP_VERSION) <= 0 || cerebrusVersionReloadBlocked_(v)) {
+      _cerebrusPendingVersionReload = '';
+      _cerebrusPendingVersionNotified = false;
+      return;
+    }
+    if (cerebrusIsChromeInstalledApp_()) {
+      _cerebrusPendingVersionNotified = false;
+      setTimeout(function() { cerebrusScheduleVersionReload_(v); }, 600);
+    }
   }
 }
 window.addEventListener('beforeunload', function(e) {
@@ -28562,38 +28284,7 @@ function startAutoSave() {
 }
 
 // ── CLOUD LOAD ──
-/** Bodega + Servare: solo baja inventario (~5 MB), no todo SAC/facturas de Cerebrus. */
-async function loadFromCloudServareBodegaFast_() {
-  if (!servareIsEnabled_() || !cerebrusUsuarioBodega()) return false;
-  setSyncStatus('⏳ Cargando inventario…', '');
-  try {
-    state = makeDefaultState();
-    _nid = 200;
-    await servareMergeInvIntoState_(state, { light: true });
-    state._servareMovFull = false;
-    try {
-      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
-      const vj = await vr.json();
-      if (vj.ok) {
-        cloudVersion = String(vj.version || '0');
-        _cloudBaseVersion = cloudVersion;
-      }
-    } catch (e) {}
-    try { cerebrusSetCloudBaseDeferred_(state); } catch (e) { _cloudBaseState = null; }
-    dismissConflict();
-    setSyncStatus('✓ Inventario', 'ok');
-    setTimeout(function() { _postLoadSetup(); }, 0);
-    return true;
-  } catch (e) {
-    console.warn('[SERVARE] carga rápida Bodega:', e);
-    notify('⚠ Servare: ' + (e.message || e) + ' — reintentando carga completa…');
-    return false;
-  }
-}
-
 async function loadFromCloud() {
-  if (await loadFromCloudServareBodegaFast_()) return;
-
   setSyncStatus('⏳ Cargando…', '');
   // Apps Script suele tardar 20–90s; 45s cortaba y mostraba «Sin conexión».
   const cloudTimeoutMs = 180000;
@@ -28613,7 +28304,9 @@ async function loadFromCloud() {
       const localBefore = state || {};
       state = incomingState;
       _nid  = parsed.nid  || 200;
-      // Safety net: si nube viene sin inventario, intenta rescatar inventario local previo.
+      if (CEREBRUS_BODEGA_EN_SERVARE) {
+        cerebrusStripInvFromState_(state);
+      } else {
       try {
         const rawLocal = localStorage.getItem('jaime_v23');
         if (rawLocal) {
@@ -28627,14 +28320,17 @@ async function loadFromCloud() {
             if (localState.catInventario) state.catInventario = localState.catInventario;
             notify(`🧩 Inventario recuperado desde respaldo local (${localInvCount} productos).`);
           }
-          // Propinas / SAC: no aceptar nube vacía o incompleta si hay respaldo local más rico.
-          try { cerebrusRescueCriticalModulesFromLocal_(state, localState || localBefore); } catch (eR) {}
-        } else {
-          try { cerebrusRescueCriticalModulesFromLocal_(state, localBefore); } catch (eR2) {}
         }
       } catch(e){}
-      // Decompress short keys from cloud
+      }
+      try {
+        const rawLocal2 = localStorage.getItem('jaime_v23');
+        const localParsed2 = rawLocal2 ? JSON.parse(rawLocal2) : null;
+        const localState2 = localParsed2 && localParsed2.state ? localParsed2.state : null;
+        cerebrusRescueCriticalModulesFromLocal_(state, localState2 || localBefore);
+      } catch (eR) {}
       decompressVsData(state);
+      if (!CEREBRUS_BODEGA_EN_SERVARE) {
       // Guardado de seguridad anti-pisado de inventario (caso concurrencia):
       // Si Bodega tiene inventario local con stock y la nube viene mucho más vacía,
       // conserva el inventario local para evitar borrados accidentales.
@@ -28680,6 +28376,8 @@ async function loadFromCloud() {
             invBuildPrecioMapDesdeTodosLosPedidos_(localBefore), 'rescate-local-nube', { onlyEmpty: true });
         }
       } catch (e) {}
+      }
+      if (CEREBRUS_BODEGA_EN_SERVARE) cerebrusStripInvFromState_(state);
       cloudVersion = json.meta?.version || '0';
       _cloudBaseVersion = cloudVersion;
       try { cerebrusSetCloudBaseDeferred_(state); } catch(e) { _cloudBaseState = null; }
@@ -28697,7 +28395,6 @@ async function loadFromCloud() {
   } finally {
     clearTimeout(abortT);
   }
-  if (cerebrusUsuarioBodega()) await servareLoadInvMergeAfterCerebrus_();
   _postLoadSetup();
 }
 
@@ -28730,14 +28427,6 @@ async function _fetchCloudStateRaw() {
   }
   const st = parsed.state || {};
   decompressVsData(st);
-  if (servareIsEnabled_()) {
-    try {
-      var invRemote = await servareFetchInvObj_();
-      servareApplyInvObj_(st, invRemote.state);
-    } catch (e) {
-      console.warn('[SERVARE] _fetchCloudStateRaw:', e);
-    }
-  }
   return st;
 }
 
@@ -28765,26 +28454,6 @@ function cerebrusSameCloudUser_(a, b) {
 let _cloudSaveInFlight = false;
 
 async function _prepareConcurrentSafeState() {
-  if (cerebrusUsuarioBodega() && servareIsEnabled_()) {
-    try {
-      const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
-      const vj = await vr.json();
-      if (vj.ok) {
-        cloudVersion = String(vj.version || cloudVersion || '0');
-        _cloudBaseVersion = cloudVersion;
-      }
-    } catch (e) {}
-    const sv = await servareAssertVersionWritable_();
-    if (!sv.ok) {
-      return {
-        ok: false,
-        reason: sv.reason || 'servare_conflict',
-        by: sv.by || 'otro usuario',
-        keys: ['inventario (Servare)']
-      };
-    }
-    return { ok: true, stateToSave: state };
-  }
   const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
   const vj = await vr.json();
   if (!vj.ok) return {ok:true, stateToSave: state};
@@ -28883,7 +28552,6 @@ function splitStateForCloudParts(st, opts) {
  */
 async function enforceBodegaIsolationOnSave_(stateToSave) {
   if (!cerebrusUsuarioBodega()) return stateToSave;
-  if (servareIsEnabled_()) return stateToSave;
   try {
     const remote = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
@@ -28909,9 +28577,6 @@ async function cerebrusBodegaKeepRemotePedidoIfUntouched_(stateToSave) {
   var pedidoKeys = ['semanaActiva', 'semanasHistorial'];
   var changed = _topLevelChangedKeys(_cloudBaseState, state);
   if (pedidoKeys.some(function(k) { return changed.has(k); })) return stateToSave;
-  if (servareIsEnabled_() && state._servareLightLoad) {
-    return stateToSave;
-  }
   try {
     var remote = await _fetchCloudStateRaw();
     var merged = JSON.parse(JSON.stringify(stateToSave || {}));
@@ -28925,18 +28590,14 @@ async function cerebrusBodegaKeepRemotePedidoIfUntouched_(stateToSave) {
 }
 
 async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
+  if (CEREBRUS_BODEGA_EN_SERVARE) return stateToSave;
   if (cerebrusUsuarioBodega() || !_cloudBaseState) return stateToSave;
-  // Si este usuario no tocó inventario, no gastar un getState/Servare extra (Diego/Sebastián/Alberto).
+  // Si este usuario no tocó inventario, no gastar un getState extra (Diego/Sebastián/Alberto).
   if (!cerebrusInvPartitionTouched_()) return stateToSave;
   try {
-    const remoteFull = servareIsEnabled_()
-      ? null
-      : await _fetchCloudStateRaw();
-    const remoteInv = servareIsEnabled_()
-      ? (await servareFetchInvObj_()).state
-      : remoteFull;
+    const remoteInv = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
-    const invKeys = servareInvKeys_();
+    const invKeys = cerebrusInvKeys_();
     const localChanged = _topLevelChangedKeys(_cloudBaseState, state);
     invKeys.forEach(function(k) {
       if (!localChanged.has(k) && remoteInv[k] !== undefined) merged[k] = remoteInv[k];
@@ -28952,7 +28613,7 @@ async function enforceInventarioFreshFromRemoteOnSave_(stateToSave) {
 
 function cerebrusPartitionDefs_() {
   return [
-    { id: 'pInv', keys: servareInvKeys_() },
+    { id: 'pInv', keys: cerebrusInvKeys_() },
     { id: 'pFac', keys: ['facturas'] },
     { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
@@ -28994,7 +28655,7 @@ function cerebrusPartitionIdsFromKeys_(keySet) {
 /**
  * Antes de guardar: trae de la nube (o _cloudBaseState) las claves de módulo que ESTE usuario no tocó.
  * Evita que un guardado de SAC/facturas reenvíe hermanos vacíos/viejos y los pise en nube.
- * Con Servare activo no toca claves de inventario (viven en Servare).
+ * Preserva claves de módulos que este usuario no tocó.
  */
 async function enforceUntouchedPartitionsFromRemote_(stateToSave, localChangedKeys) {
   if (!_cloudBaseState || cerebrusUsuarioBodega()) return stateToSave;
@@ -29009,11 +28670,8 @@ async function enforceUntouchedPartitionsFromRemote_(stateToSave, localChangedKe
   if (!source) return stateToSave;
   try {
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
-    const skipInv = servareIsEnabled_();
-    const invKeys = skipInv ? new Set(servareInvKeys_()) : null;
     cerebrusAllPartitionKeys_().forEach(function(k) {
       if (changed.has(k)) return;
-      if (invKeys && invKeys.has(k)) return;
       if (source[k] !== undefined) merged[k] = source[k];
     });
     return merged;
@@ -29074,20 +28732,7 @@ async function saveToCloud(description, silent) {
     if (!prep.ok) {
       saveLocalRaw();
       setSyncStatus('⚠ Conflicto nube', 'err');
-      if (prep.reason === 'servare_unreachable') {
-        if (!silent) {
-          notify('⚠ No se pudo contactar Servare — no se guardó inventario. Revisa red/URL y reintenta.', 12000);
-        }
-      } else if (prep.reason === 'servare_conflict') {
-        showConflict(prep.by || 'Otro usuario', 'ahora', prep.keys || ['inventario (Servare)']);
-        if (!silent) {
-          notify(
-            '⚠ Servare: ' + (prep.by || 'otro usuario') +
-            ' guardó inventario. Actualiza desde nube antes de guardar.',
-            12000
-          );
-        }
-      } else if (prep.reason === 'conflict_keys') {
+      if (prep.reason === 'conflict_keys') {
         const keys = (prep.keys || []).slice(0, 8).join(', ');
         showConflict(prep.by || 'Otro usuario', 'ahora', prep.keys || []);
         if (!silent) notify('⚠ Conflicto de edición: no se guardó para evitar sobrescritura. Revisa/actualiza primero. Áreas: ' + keys);
@@ -29127,31 +28772,6 @@ async function saveToCloud(description, silent) {
     }
 
     let safeStateToSave = await enforceBodegaIsolationOnSave_(prep.stateToSave);
-    if (servareIsEnabled_() && cerebrusUsuarioBodega()) {
-      const hyd = await servareHydrateFullInvBeforeSave_(safeStateToSave);
-      if (!hyd.ok) {
-        saveLocalRaw();
-        setSyncStatus('🛑 Servare incompleto', 'err');
-        if (!silent) {
-          notify(
-            '🛑 Guardado bloqueado: no se pudo completar inventario desde Servare (' +
-            (hyd.error || 'error') + '). Reintenta o actualiza desde nube.',
-            12000
-          );
-          try {
-            alert(
-              '🛑 Guardado bloqueado (Servare)\n\n' +
-              'La sesión de Bodega cargó inventario en modo liviano y no se pudo completar antes de guardar.\n' +
-              'Detalle: ' + (hyd.error || 'sin detalle') + '\n\n' +
-              'No se subió nada. Reintenta cuando Servare responda.'
-            );
-          } catch (eHydAlert) {}
-        }
-        return;
-      }
-      safeStateToSave = hyd.state;
-      if (prep.merged) state = safeStateToSave;
-    }
     safeStateToSave = await cerebrusBodegaKeepRemotePedidoIfUntouched_(safeStateToSave);
     safeStateToSave = await enforceInventarioFreshFromRemoteOnSave_(safeStateToSave);
     // Admin: rehidratar hermanos no tocados desde nube/base ANTES de comprimir/partir.
@@ -29181,32 +28801,9 @@ async function saveToCloud(description, silent) {
       console.warn('[CEREBRUS] wipe-gate error:', eWipe);
     }
 
-    // Freno Servare: no subir pInv si el catálogo local borraría stock/movimientos.
-    if (servareIsEnabled_() && (cerebrusUsuarioBodega() || cerebrusInvPartitionTouched_())) {
-      try {
-        const svGate = await servareHardBlockEmptyWipeGate_(safeStateToSave);
-        if (!svGate.ok) {
-          saveLocalRaw();
-          setSyncStatus('🛑 Servare bloqueado', 'err');
-          const detail = (svGate.risks || []).join('\n• ');
-          if (!silent) {
-            notify('🛑 Guardado a Servare bloqueado (protección inventario).\n• ' + detail, 14000);
-            try {
-              alert(
-                '🛑 Guardado bloqueado (Servare)\n\n' +
-                'Tu sesión tiene mucho menos inventario que Servare:\n• ' + detail +
-                '\n\nActualiza inventario desde nube y reintenta.\nNo se subió nada a Servare.'
-              );
-            } catch (eSvAlert) {}
-          }
-          return;
-        }
-      } catch (eSvWipe) {
-        console.warn('[SERVARE] wipe-gate error:', eSvWipe);
-      }
-    }
 
     const stateToSave = compressStateForSave(safeStateToSave);
+    if (CEREBRUS_BODEGA_EN_SERVARE) cerebrusStripInvFromState_(stateToSave);
 
     // Nunca subir propinas vacías si la base/nube tenía registros (evita borrado accidental).
     try {
@@ -29235,7 +28832,7 @@ async function saveToCloud(description, silent) {
 
       // CRITICAL: saveParted en Apps Script BORRA particiones omitidas del payload.
       // Admin siempre reenvía pFac+pSem+pMisc+main (locales tocados + remotos intactos).
-      // pInv solo si se tocó inventario (Bodega/Servare isolation).
+      // pInv solo si se tocó inventario (aislamiento Bodega).
       var uploadPartIds = null;
       if (!cerebrusUsuarioBodega()) {
         if (changedPartIds && changedPartIds.size > 0) {
@@ -29274,17 +28871,15 @@ async function saveToCloud(description, silent) {
         cerebrusEnsureAdminSiblingParts_(parts, stateToSave);
       }
       // Apps Script exige parts.main en saveParted — no eliminarlo.
-      var servarePInv = parts.pInv;
+      var savedPInv = parts.pInv;
       var invTouched = cerebrusInvPartitionTouched_();
       var changedParts = changedPartIds || getChangedPartitionIdsForSave(safeStateToSave);
       var onlyInv = changedParts && changedParts.size === 1 && changedParts.has('pInv');
       var onlyNonInv = changedParts && changedParts.size > 0 && !changedParts.has('pInv');
 
-      if (servareIsEnabled_()) {
+      if (!invTouched || CEREBRUS_BODEGA_EN_SERVARE) {
         delete parts.pInv;
-      } else if (!invTouched) {
-        delete parts.pInv;
-        servarePInv = null;
+        savedPInv = null;
       }
 
       // Nada que subir (solo inventario remoto ya sincronizado, etc.)
@@ -29296,8 +28891,8 @@ async function saveToCloud(description, silent) {
         return;
       }
 
-      // Bodega + solo inventario → no enviar SAC/facturas/etc. al Sheet Cerebrus
-      if (cerebrusUsuarioBodega() && onlyInv && !servareIsEnabled_() && parts.pInv) {
+      // Bodega + solo inventario → no enviar SAC/facturas/etc. al Sheet Cerebrus (deshabilitado: bodega en Servare)
+      if (!CEREBRUS_BODEGA_EN_SERVARE && cerebrusUsuarioBodega() && onlyInv && parts.pInv) {
         const resBodega = await fetch(API_URL, {
           method: 'POST',
           body: JSON.stringify({
@@ -29318,20 +28913,11 @@ async function saveToCloud(description, silent) {
         return;
       }
 
-      // Bodega → Servare (solo inventario)
-      if (servareIsEnabled_() && cerebrusUsuarioBodega() && servarePInv) {
-        await servareSaveInvPart_(servarePInv, description || 'Inventario Bodega');
-        cerebrusCommitAfterCloudSave_(safeStateToSave);
-        setSyncStatus('✓ Inventario en Servare', 'ok');
-        markSaved(); dismissConflict();
-        if (!silent) notify('☁ Inventario guardado en Servare por ' + currentUser);
-        return;
-      }
 
       // Admin (Sebas, etc.) sin tocar inventario → no enviar pInv (evita pisar Bodega)
       if (!cerebrusUsuarioBodega() && onlyNonInv) {
         delete parts.pInv;
-        servarePInv = null;
+        savedPInv = null;
       }
 
       const partNames = Object.keys(parts).join('+') || '—';
@@ -29342,29 +28928,19 @@ async function saveToCloud(description, silent) {
           user: currentUser,
           parts: parts,
           description: (description || 'Guardó cambios')
-            + (servareIsEnabled_() ? ' (sin pInv→Servare)' : (!parts.pInv ? ' (sin pInv)' : ' (partido)'))
+ + (!parts.pInv ? ' (sin pInv)' : ' (partido)')
             + (uploadPartIds && uploadPartIds.size ? ' [' + partNames + ']' : '')
         })
       });
       const jsonPart = await resPart.json();
       if (jsonPart.ok) {
-        if (servareIsEnabled_() && servarePInv && invTouched) {
-          try {
-            await servareSaveInvPart_(servarePInv, description || 'Inventario');
-          } catch (se) {
-            setSyncStatus('⚠ Cerebrus OK · Servare falló', 'err');
-            markUnsaved();
-            if (!silent) notify('⚠ Cerebrus guardado, pero Servare falló: ' + (se.message || se));
-            return;
-          }
-        }
         cloudVersion = jsonPart.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
         cerebrusCommitAfterCloudSave_(safeStateToSave);
         setSyncStatus('✓ Guardado en nube (partido)', 'ok');
         markSaved(); dismissConflict();
         if (!silent) {
-          var skipInv = !parts.pInv && !servarePInv;
+          var skipInv = !parts.pInv;
           notify('☁ Guardado por ' + currentUser + (skipInv ? ' (inventario intacto)' : ' (partido)')
             + (uploadPartIds && uploadPartIds.size ? ' · módulos: ' + partNames : ''));
         }
@@ -29390,7 +28966,7 @@ async function saveToCloud(description, silent) {
       stateForClassic = JSON.parse(JSON.stringify(stateToSave));
       try {
         var remClassic = await _fetchCloudStateRaw();
-        servareInvKeys_().forEach(function(k) {
+        cerebrusInvKeys_().forEach(function(k) {
           if (remClassic[k] !== undefined) stateForClassic[k] = remClassic[k];
         });
       } catch (e) {}
@@ -29829,8 +29405,7 @@ async function reloadFromCloud() {
     _cloudBaseVersion = cloudVersion;
     try { cerebrusSetCloudBaseDeferred_(state); } catch (e) { _cloudBaseState = null; }
 
-    if (cerebrusUsuarioBodega()) await servareLoadInvMergeAfterCerebrus_();
-    _postLoadSetup();
+      _postLoadSetup();
     // Si conservamos módulos locales, seguimos "unsaved" para que puedas guardar luego.
     if (keptLocal.length > 0) markUnsaved(); else markSaved();
 
@@ -29873,7 +29448,7 @@ async function checkVersion() {
 function showConflict(user, date, keys, conflictKey) {
   var keysArr = Array.isArray(keys) ? keys : [];
   if (cerebrusUsuarioBodega()) {
-    var invKeys = servareInvKeys_();
+    var invKeys = cerebrusInvKeys_();
     var touchesInv = keysArr.some(function(k) { return invKeys.indexOf(k) >= 0; });
     if (!touchesInv) return;
   }
@@ -30991,6 +30566,7 @@ window.onload = function() {
   try { if (localStorage.getItem('cerebrus_dark')==='1') { document.body.classList.add('dark-mode'); document.getElementById('dark-btn').textContent='☀️'; } } catch(e){}
   // Show login overlay — _finishLogin() handles the rest
   state = makeDefaultState(); // minimal init so app doesn't crash before login
+  setTimeout(function() { cerebrusRestoreLoginAfterVersionReload_(); }, 60);
 };
 </script>
 

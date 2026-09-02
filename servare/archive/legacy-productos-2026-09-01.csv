@@ -1,0 +1,419 @@
+id_legacy,nombre,categoria,familia,subfamilia,unidad,stock_legacy,minimo,proveedor
+inv_bdn3_off_98,1865 CARMENERE,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,12,6,CCU
+inv_1776796675368,ACEITE DE ALTA FRITURA,Abarrotes,DSC. SPA,Sin subfamilia,L,60,20,MAR AZUL
+inv_bdn3_off_222,ACEITE DE OLIVA,Abarrotes,Patagonia Fruit Spa,Sin subfamilia,lt,18,10,Patagonia Fruit Spa
+inv_bdn3_off_145,ACEITE MARAVILLA,Abarrotes,ICB,Sin subfamilia,LT,0,12,ICB
+inv_bdn3_off_176,ACEITUNAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1,1,LA CHACRA
+inv_bdn3_off_368,ACEITUNAS VERDES (BAR),Frutas y Verduras,SUPERMERCADO,Sin subfamilia,unidad,0,1,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_72,AGUA BIDON SIN GAS 6 LT,Aguas y Bebidas,CCU,Sin subfamilia,unidad,43,4,CCU
+inv_bdn3_off_70,AGUA MINERAL CON GAS,Aguas y Bebidas,CCU,Sin subfamilia,unidad,40,5,CCU
+inv_bdn3_off_71,AGUA MINERAL SIN GAS,Aguas y Bebidas,CCU,Sin subfamilia,unidad,112,5,CCU
+inv_bdn3_off_224,AGUA PURIFICADA BIDON 20 LT,Aguas y Bebidas,PATAGONIA ICE,Sin subfamilia,unidad,7,5,PATAGONIA ICE
+inv_1776917246063,AJI CACHO CABRA,Abarrotes,EL TRIGAL,Sin subfamilia,kg,0,1,EL TRIGAL
+inv_bdn3_off_339,AJI COLOR,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,0.5,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_177,AJI VERDE,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,3,1,LA CHACRA
+inv_bdn3_off_178,AJO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,20,20,LA CHACRA
+inv_bdn3_off_0,ALBACORA,Pescados y Mariscos,MARISCOS Y PESCADOS,Sin subfamilia,kg,0,,
+inv_bdn3_off_179,ALBAHACA,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,13,2,LA CHACRA
+inv_bdn3_off_257,ALBUMINA,Abarrotes,VINOTECA,Sin subfamilia,kg,3,2,VINOTECA
+inv_bdn3_off_147,ALCAPARRAS,Abarrotes,ICB,Sin subfamilia,unidad,0,2,ICB
+inv_bdn3_off_248,ALCOHOL,Aseo,VIRGINIA,Sin subfamilia,lt,2,5,VIRGINIA
+inv_bdn3_off_50,ALCOHOL GEL,Aseo,ASEO TORRES,Sin subfamilia,lt,0,5,ASEO TORRES
+inv_bdn3_off_1,ALMEJAS,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,17,10,
+inv_bdn3_off_180,ALMENDRAS LAMINADAS O ENTERAS,Abarrotes,LA CHACRA,Sin subfamilia,kg,1.1,1,LA CHACRA
+inv_bdn3_off_123,ALUSA PLAST,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,1,1,ENVASES EUROPACK
+inv_bdn3_off_117,AMARETTO CASA,DESTILADOS Y LICORES,DON CARLOS SAAVEDRA,Sin subfamilia,unidad,2,10,DON CARLOS SAAVEDRA
+inv_bdn3_off_260,AMARETTO DISARONNO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,3,4,VINOTECA
+inv_bdn3_off_258,AMARGO ANGOSTURA,Abarrotes,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_51,AMONIO CUATERNARIO,Aseo,ASEO TORRES,Sin subfamilia,lt,3,5,ASEO TORRES
+inv_bdn3_off_305,APALTAGUA CARMENERE,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,6,1,VINOTECA
+inv_bdn3_off_259,APEROL,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,6,6,VINOTECA
+inv_bdn3_off_181,APIO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,2,1,LA CHACRA
+inv_bdn3_off_182,ARÁNDANOS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0,1,LA CHACRA
+inv_bdn3_off_261,ARAUCANO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_1777138612581,AROMATIZANTE LIQUIDO,Aseo,EL TRIGAL,Sin subfamilia,L,1,0,
+inv_bdn3_off_148,ARROZ ARBORIO,Abarrotes,ICB,Sin subfamilia,kg,2,4,ICB
+inv_bdn3_off_340,ARROZ BASMATI,Abarrotes,SUPERMERCADO,Sin subfamilia,kg,2,2,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_149,ARROZ G1,Abarrotes,ICB,Sin subfamilia,kg,7,10,ICB
+inv_bdn3_off_150,ARVEJAS CONGELADAS,CONGELADOS,ICB,Sin subfamilia,kg,1,2,ICB
+inv_bdn3_off_85,AUSTRAL CALAFATE,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,48,1,CCU
+inv_bdn3_off_86,AUSTRAL LAGER,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,68,1,CCU
+inv_bdn3_off_152,AZÚCAR FLOR,Abarrotes,ICB,Sin subfamilia,kg,1,2,ICB
+inv_bdn3_off_151,AZÚCAR GRANULADA,Abarrotes,ICB,Sin subfamilia,kg,16,10,ICB
+inv_bdn3_off_153,AZÚCAR RUBIA,Abarrotes,ICB,Sin subfamilia,kg,1,2,ICB
+inv_bdn3_off_341,AZÚCAR SACHET,Abarrotes,EL TRIGAL,Sin subfamilia,porción,0,100,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_262,BAILEYS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_183,BERROS,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,0,2,LA CHACRA
+inv_bdn3_off_73,BILZ,Aguas y Bebidas,CCU,Sin subfamilia,unidad,0,4,CCU
+inv_bdn3_off_122,BIOETANOL,Aseo,ECOHOGAR,Sin subfamilia,lt,40,5,ECOHOGAR
+inv_bdn3_off_118,BITTER ROSARD CLASICO,DESTILADOS Y LICORES,DON CARLOS SAAVEDRA,Sin subfamilia,unidad,1,10,DON CARLOS SAAVEDRA
+inv_bdn3_off_52,BOLSA ASEO 50X70,Aseo,ASEO TORRES,Sin subfamilia,unidad,10,10,ASEO TORRES
+inv_bdn3_off_54,BOLSA ASEO 90X120,Aseo,ASEO TORRES,Sin subfamilia,unidad,40,10,ASEO TORRES
+inv_bdn3_off_55,BOLSA PREPICADO 20X30,Aseo,ASEO TORRES,Sin subfamilia,unidad,0,1,ASEO TORRES
+inv_bdn3_off_56,BOLSA PREPICADO 35X50,Aseo,ASEO TORRES,Sin subfamilia,unidad,1,1,ASEO TORRES
+inv_bdn3_off_326,BOLSAS PARA LLEVAR,Aseo,EL TRIGAL,Sin subfamilia,unidad,0,50,ASEO Y OTROS
+inv_bdn3_off_124,BOMBILLAS,Aseo,ENVASES EUROPACK,Sin subfamilia,caja,1,1,ENVASES EUROPACK
+inv_bdn3_off_249,BRIOMIL DESENGRASANTE,Aseo,VIRGINIA,Sin subfamilia,lt,7.5,5,VIRGINIA
+inv_1778250394674,BRÓCOLI,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,0,1,LA CHACRA
+inv_bdn3_off_369,BROTES,Frutas y Verduras,BROTES,Sin subfamilia,unidad,4,9,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_370,BULGUR,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,0,1,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_327,C10,Aseo,EL TRIGAL,Sin subfamilia,unidad,2,4,ASEO Y OTROS
+inv_bdn3_off_328,C20,Aseo,EL TRIGAL,Sin subfamilia,unidad,3,4,ASEO Y OTROS
+inv_1778877332463,CACAO EN POLVO,Abarrotes,EL TRIGAL,Sin subfamilia,kg,0,0.5,EL TRIGAL
+inv_bdn3_off_263,CACHAZA,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,2,VINOTECA
+inv_bdn3_off_154,CAFÉ EN SACHET,Abarrotes,ICB,Sin subfamilia,unidad,0,90,ICB
+inv_bdn3_off_245,CAFÉ GRANO,Abarrotes,SEGAFREDO,Sin subfamilia,kg,5,1,SEGAFREDO
+inv_bdn3_off_332,CAFÉ PERSONAL,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,2,2,"CAFÉ, TÉ E INFUSIONES"
+inv_bdn3_off_2,CALAMAR,Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,10,10,
+inv_bdn3_off_3,CALDOSO Y SOPA MARINA,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,53,20,
+inv_bdn3_off_5,CAMARÓN EC.. UATORIANO PORCIONADO,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,70,10,
+inv_bdn3_off_4,CAMARÓN EC.... UATORIANO KILO,Pescados y Mariscos,GLOBAL FROZEN,Sin subfamilia,kg,42,10,
+inv_bdn3_off_6,CAMARÓN NACIONAL KILO,Pescados y Mariscos,GLOBAL FROZEN,Sin subfamilia,kg,29,10,
+inv_bdn3_off_7,CAMARÓN NACIONAL PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,40,10,
+inv_bdn3_off_264,CAMPARI,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_74,CANADA DRY,Aguas y Bebidas,CCU,Sin subfamilia,unidad,98,4,CCU
+inv_bdn3_off_75,CANADA DRY CERO,Aguas y Bebidas,CCU,Sin subfamilia,unidad,138,4,CCU
+inv_bdn3_off_343,CANELA MOLIDA,Abarrotes,EL TRIGAL,Sin subfamilia,porción,0.4,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_344,CANELA PALO,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,0,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_8,CARNE DE CENTOLLA,Pescados y Mariscos,MARISCOS Y PESCADOS,Sin subfamilia,kg,2,2,
+inv_bdn3_off_9,CARNE DE CENTOLLA PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,13,2,
+inv_bdn3_off_10,CARNE DE JAIBA,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,3,10,
+inv_bdn3_off_11,CARNE DE JAIBA PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,10,
+inv_bdn3_off_134,CARNE MOLIDA,Carnes y Aves,FRIGOSORNO,Sin subfamilia,kg,5.6,5,FRIGOSORNO
+inv_bdn3_off_308,CASAS D. B. PEQUENAS PRODUCCIONES,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,4,VINOTECA
+inv_bdn3_off_307,CASAS DEL BOSQUES CHARDONNAY,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,6,1,VINOTECA
+inv_bdn3_off_306,CASAS DEL BOSQUES S. BLANC,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,12,1,VINOTECA
+inv_bdn3_off_12,CEBICHE DE 150,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,23,10,
+inv_bdn3_off_13,CEBICHE DE 200,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,10,
+inv_bdn3_off_185,CEBOLLA BLANCA,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,75.75,15,LA CHACRA
+inv_bdn3_off_186,CEBOLLA MORADA,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,31.65,15,LA CHACRA
+inv_bdn3_off_184,CEBOLLÍN,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,1,1,LA CHACRA
+inv_bdn3_off_329,CERA VITRIFICANTE,Aseo,EL TRIGAL,Sin subfamilia,lt,1,2,ASEO Y OTROS
+inv_bdn3_off_225,CHAMPAGNE MOET CHANDON,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,1,3,PREMIUM BRANDS
+inv_1777321561531,CHAMPAGNE TATTINGER,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,0,1,PREMIUM BRANDS
+inv_bdn3_off_371,CHAMPINONES,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,1,1,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_227,CHATEU LOS BOLDOS CARMENERE,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,0,10,PREMIUM BRANDS
+inv_bdn3_off_226,CHATEU LOS BOLDOS S. BLANC,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,0,10,PREMIUM BRANDS
+inv_bdn3_off_156,CHOCLO CONGELADO,CONGELADOS,ICB,Sin subfamilia,kg,2.5,4,ICB
+inv_bdn3_off_345,CHOCOLATE VOLCAN,Abarrotes,EL TRIGAL,Sin subfamilia,kg,1.4,3,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_14,CHOLGAS,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,0,10,
+inv_bdn3_off_15,CHORITOS,Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,10,10,
+inv_1777313046744,CHORITOS LIMPIOS,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,1,,PRODUCCION
+inv_bdn3_off_382,CHORIZOS,Carnes y Aves,SUPERMERCADO,Sin subfamilia,kg,1,2,OTROS
+inv_bdn3_off_16,CHORO MALTON,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,12,10,
+inv_bdn3_off_187,CIBOULETTE,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,6,5,LA CHACRA
+inv_1777734639802,CIF BANOS,Aseo,SUPERMERCADO,Sin subfamilia,LT,1,1,EL TRIGAL
+inv_bdn3_off_188,CILANTRO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,5,10,LA CHACRA
+inv_bdn3_off_346,CLAVO DE OLOR,Abarrotes,EL TRIGAL,Sin subfamilia,kg,0.4,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_58,CLORO,Aseo,ASEO TORRES,Sin subfamilia,lt,8,5,ASEO TORRES
+inv_bdn3_off_189,COCHAYUYO ENTERO,Pescados y Mariscos,LA CHACRA,Sin subfamilia,unidad,0,4,LA CHACRA
+inv_bdn3_off_190,COCHAYUYO PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,42,40,LA CHACRA
+inv_bdn3_off_125,COFIAS BLANCAS,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,120,100,ENVASES EUROPACK
+inv_bdn3_off_269,COINTREAU,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_bdn3_off_267,CONAC 3 PALOS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,6,3,VINOTECA
+inv_bdn3_off_268,CONAC HENNESSEY,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_bdn3_off_155,CONCENTRADO TOMATE,Abarrotes,ICB,Sin subfamilia,kg,0,3,ICB
+inv_bdn3_off_17,CONGRIO CALDILLO,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,6,6,
+inv_1777408268806,CONGRIO CALUGAS,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,2.8,0,PRODUCCION
+inv_bdn3_off_18,CONGRIO FILETE (PLANCHA),Pescados y Mariscos,PRODUCCION,Sin subfamilia,unidad,0,15,
+inv_bdn3_off_19,CONGRIO FRESCO,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,53.5,15,
+inv_bdn3_off_20,CONGRIO HGT,Pescados y Mariscos,EBISU,Sin subfamilia,kg,0,20,
+inv_bdn3_off_21,CONGRIO MEDALLON (FRITO),Pescados y Mariscos,PRODUCCION,Sin subfamilia,unidad,0,20,
+inv_bdn3_off_310,CORRALILLO PINOT,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,6,VINOTECA
+inv_bdn3_off_309,CORRALILLO S. BLANC,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,8,6,VINOTECA
+inv_bdn3_off_22,CORVINA,Pescados y Mariscos,MARISCOS Y PESCADOS,Sin subfamilia,unidad,0,30,
+inv_bdn3_off_374,CREMA CHANTILLI,Lácteos,SUPERMERCADO,Sin subfamilia,unidad,1,2,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_266,CREMA DE CASSIS MITJANS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,2,VINOTECA
+inv_bdn3_off_67,CREMA DE LECHE,Lácteos,COLUN,Sin subfamilia,unidad,9,2,COLUN
+inv_bdn3_off_347,CREMA DE MARISCOS,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,32,20,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_87,CRISTAL,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,112,1,CCU
+inv_bdn3_off_88,CRISTAL CERO,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,108,1,CCU
+inv_1779461389390,DESODORANTE AMBIENTAL,Aseo,SUPERMERCADO,Sin subfamilia,unidad,2,0,SUPERMERCADO
+inv_1779546836373,DIENTE DE DRAGON,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0,0,LA CHACRA SPA
+inv_bdn3_off_270,DRAMBUI,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_348,ENDULZANTE LIQUIDO,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,0,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_349,ENDULZANTE SACHET,Abarrotes,EL TRIGAL,Sin subfamilia,porción,0,100,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_1779459168946,ERIZOS,Pescados y Mariscos,GOURMAR,Sin subfamilia,kg,0,0,GOURMAR
+inv_bdn3_off_250,ESCOBILLONES,Aseo,VIRGINIA,Sin subfamilia,unidad,0,2,VIRGINIA
+inv_bdn3_off_191,ESPINACA,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,0,10,LA CHACRA
+inv_bdn3_off_272,FERNET BRANCA,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_157,FIDEOS,Abarrotes,ICB,Sin subfamilia,kg,3.2,5,ICB
+inv_1779635554548,FILETE DESPUNTE,Carnes y Aves,PRODUCCION,Sin subfamilia,kg,0,0,
+inv_bdn3_off_135,FILETE ENTERO,Carnes y Aves,FRIGOSORNO,Sin subfamilia,kg,7.14,0,FRIGOSORNO
+inv_bdn3_off_136,FILETE X 300 G,Carnes y Aves,PRODUCCION,Sin subfamilia,unidad,0,25,FRIGOSORNO
+inv_1777407832312,POLLO FILETITOS,Carnes y Aves,PRODUCCION,Sin subfamilia,kg,1.9,0,PRODUCCION
+inv_bdn3_off_372,FLORES COMESTIBLES,Frutas y Verduras,FLORES,Sin subfamilia,unidad,4,6,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_271,FRANGELICO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_192,FRUTILLAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1,1,LA CHACRA
+inv_1779563548954,GAS BUTANO,Aseo,SUPERMERCADO,Sin subfamilia,unidad,3,3,SUPERMERCADO
+inv_bdn3_off_274,GIN BEEFEATER,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_275,GIN TANQUERAY,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_273,GRANADINA,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,2,VINOTECA
+inv_bdn3_off_128,GUANTES L,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,2,1,ENVASES EUROPACK
+inv_bdn3_off_127,GUANTES M,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,0,1,ENVASES EUROPACK
+inv_bdn3_off_126,GUANTES S,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,2,1,ENVASES EUROPACK
+inv_bdn3_off_158,HARINA SIN POLVO,Panadería,EL TRIGAL,Sin subfamilia,kg,21.6,20,ICB
+inv_bdn3_off_89,HEINEKEN,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,102,1,CCU
+inv_bdn3_off_142,HELADO CHOCOLATE,HELADOS Y HIELO,FRUTATTO,Sin subfamilia,unidad,1,2,FRUTATTO
+inv_bdn3_off_143,HELADO FRUTOS ROJOS,HELADOS Y HIELO,FRUTATTO,Sin subfamilia,unidad,1,2,FRUTATTO
+inv_bdn3_off_144,HELADO VAINILLA,HELADOS Y HIELO,FRUTATTO,Sin subfamilia,unidad,2,5,FRUTATTO
+inv_bdn3_off_223,HIELO,HELADOS Y HIELO,PATAGONIA ICE,Sin subfamilia,bolsa,108,90,PATAGONIA ICE
+inv_bdn3_off_137,HUESOS,Carnes y Aves,FRIGOSORNO,Sin subfamilia,kg,0,10,FRIGOSORNO
+inv_bdn3_off_64,HUEVOS BLANCOS,Huevos,BENBO,Sin subfamilia,bandeja,6,6,BENBO
+inv_bdn3_off_65,HUEVOS COLOR,Huevos,BENBO,Sin subfamilia,bandeja,7,6,BENBO
+inv_bdn3_off_333,INFUSIÓN BIENESTAR,Abarrotes,DEL HUERTO,Sin subfamilia,unidad,0,1,"CAFÉ, TÉ E INFUSIONES"
+inv_1776917622233,INFUSIÓN RELAJANTE,Abarrotes,DEL HUERTO,Sin subfamilia,kg,0,1,DEL HUERTO
+inv_bdn3_off_129,JABON DESINFECTANTE COCINA,Aseo,ENVASES EUROPACK,Sin subfamilia,lt,1.5,5,ENVASES EUROPACK
+inv_bdn3_off_276,JAGERMEISTER,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_351,JALEA SIN SABOR,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,4,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_277,JAMESON,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_1777138665395,JAMON ARTESANAL,Carnes y Aves,SUPERMERCADO,Sin subfamilia,kg,1.06,0,SUPERMERCADO
+inv_bdn3_off_193,JENGIBRE,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,11,1,LA CHACRA
+inv_bdn3_off_278,JEREZ TIO PEPE,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_279,JEREZ ZALAMERO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,4,1,VINOTECA
+inv_1776917189996,JUGO DE NARANJA,PULPAS Y JUGOS,SUPERMERCADO,Sin subfamilia,LT,0,1,SUPERMERCADO
+inv_bdn3_off_352,JUGO DE TOMATE,PULPAS Y JUGOS,SUPERMERCADO,Sin subfamilia,unidad,1,4,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_1779460993857,JUREL EN CONSERVA,Abarrotes,ICB,Sin subfamilia,unidad,2,0,ICB FOOD SERVICE SPA
+inv_bdn3_off_76,KEM PIÑA,Aguas y Bebidas,CCU,Sin subfamilia,unidad,42,4,CCU
+inv_bdn3_off_350,KETCHUP,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,2,2,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_90,KUNSTMANN LAGER,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,56,1,CCU
+inv_bdn3_off_91,KUNSTMANN MIEL,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,0,1,CCU
+inv_bdn3_off_92,KUNSTMANN SIN ALCOHOL,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,72,1,CCU
+inv_bdn3_off_93,KUNSTMANN SIN FILTRAR,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,0,1,CCU
+inv_bdn3_off_94,KUNSTMANN TOROBAYO,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,78,2,CCU
+inv_bdn3_off_24,LANGOSTINOS,Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,0,2,
+inv_1778094134415,LANGOSTINOS PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,unidad,0,0,PRODUCCION
+inv_bdn3_off_353,LAUREL,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,0.3,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_251,LAVALOZA,Aseo,VIRGINIA,Sin subfamilia,lt,14,15,VIRGINIA
+inv_bdn3_off_375,LECHE DE ALMENDRAS (PRI),Lácteos,SUPERMERCADO,Sin subfamilia,unidad,0,1,LÁCTEOS Y DERIVADOS
+inv_1777848334875,LECHE DESCREMADA O SIN LACTOSA,Lácteos,SUPERMERCADO,Sin subfamilia,unidad,2,0,
+inv_bdn3_off_66,LECHE ENTERA,Lácteos,COLUN,Sin subfamilia,unidad,16,5,COLUN
+inv_bdn3_off_159,LECHE EVAPORADA,Abarrotes,ICB,Sin subfamilia,unidad,3,5,ICB
+inv_bdn3_off_376,LECHE PROTEINA (SEBAS),Lácteos,SUPERMERCADO,Sin subfamilia,unidad,18,6,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_194,LECHUGA ESCAROLA PERSONAL,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,2,2,LA CHACRA
+inv_bdn3_off_196,LECHUGA ROBLE HIDROPONICA,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,38,3,LA CHACRA
+inv_bdn3_off_160,LENTEJAS,Abarrotes,ICB,Sin subfamilia,kg,2,2,ICB
+inv_bdn3_off_99,LEYDA RESERVA CHARDONNAY,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,5,,CCU
+inv_1777217197205,LEYDA RESERVA MERLOT,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,12,,COMERCIAL CCU S.A.
+inv_bdn3_off_100,LEYDA RESERVA PINOT,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,12,6,CCU
+inv_bdn3_off_101,LEYDA RESERVA S. BLANC,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,7,6,CCU
+inv_bdn3_off_281,LICOR CACAO MITJANS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,2,VINOTECA
+inv_bdn3_off_282,LICOR CAFÉ MITJANS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,2,VINOTECA
+inv_bdn3_off_280,LICOR DE ANIS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,1,VINOTECA
+inv_bdn3_off_119,LICOR DE MANZANILLA CASA,DESTILADOS Y LICORES,DON CARLOS SAAVEDRA,Sin subfamilia,unidad,4,1,DON CARLOS SAAVEDRA
+inv_bdn3_off_120,LICOR DE MENTA CASA,DESTILADOS Y LICORES,DON CARLOS SAAVEDRA,Sin subfamilia,unidad,1,10,DON CARLOS SAAVEDRA
+inv_bdn3_off_77,LIMÓN SODA,Aguas y Bebidas,CCU,Sin subfamilia,unidad,48,4,CCU
+inv_bdn3_off_197,LIMÓN SUTIL,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,18,10,LA CHACRA
+inv_bdn3_off_373,LIMONES JUGO,Frutas y Verduras,KATHERINE LIMONES,Sin subfamilia,malla,4,6,"FRUTAS, VERDURAS Y HIERBAS"
+inv_bdn3_off_25,LOCOS FRASCOS,Pescados y Mariscos,K. SHARIFF,Sin subfamilia,unidad,2,12,
+inv_bdn3_off_26,LOCOS FRESCOS ENTRADA GALLINA,Pescados y Mariscos,PRODUCCION,Sin subfamilia,docena,0,0,GALLINA
+inv_bdn3_off_27,LOCOS PARA PICAR (SALSA),Pescados y Mariscos,K. SHARIFF,Sin subfamilia,unidad,4,4,GALLINA
+inv_bdn3_off_138,LOMO LISO ENTERO,Carnes y Aves,FRIGOSORNO,Sin subfamilia,kg,4.18,0,FRIGOSORNO
+inv_bdn3_off_139,LOMO LISO PORCIÓN,Carnes y Aves,PRODUCCION,Sin subfamilia,unidad,0,15,FRIGOSORNO
+inv_bdn3_off_252,LUSTRA MUEBLES,Aseo,VIRGINIA,Sin subfamilia,lt,2,5,VIRGINIA
+inv_bdn3_off_28,MACHAS 1/2 CONCHA,Pescados y Mariscos,K. SHARIFF,Sin subfamilia,bandeja,62,100,
+inv_bdn3_off_30,MACHAS LENGUA,Pescados y Mariscos,K. SHARIFF,Sin subfamilia,kg,10,50,K. SHARIFF
+inv_bdn3_off_161,MAICENA,Abarrotes,ICB,Sin subfamilia,kg,1,3,ICB
+inv_bdn3_off_68,MANJAR,Lácteos,COLUN,Sin subfamilia,kg,3,6,COLUN
+inv_bdn3_off_69,MANTEQUILLA,Lácteos,COLUN,Sin subfamilia,kg,3.75,2,COLUN
+inv_bdn3_off_198,MANZANAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,KG,3,2,LA CHACRA
+inv_bdn3_off_283,MARTINI BIANCO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,2,VINOTECA
+inv_bdn3_off_284,MARTINI DRY,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,2,VINOTECA
+inv_bdn3_off_285,MARTINI ROSSO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,2,VINOTECA
+inv_bdn3_off_113,MASAS DE 13 CM,Panadería,CHEF RUBEN DI SOUZA,Sin subfamilia,unidad,440,8,CHEF RUBEN MASAS
+inv_bdn3_off_162,MAYONESA (2K),Abarrotes,ICB,Sin subfamilia,unidad,4,12,ICB
+inv_bdn3_off_199,MENTA FRESCA,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1.1,0.5,LA CHACRA
+inv_bdn3_off_286,MENTA MARIE BRIZARD,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_bdn3_off_354,MERQUÉN,Abarrotes,EL TRIGAL,Sin subfamilia,kg,0.5,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_355,MIEL,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_200,MIX VERDE MIZUNA,Frutas y Verduras,LA CHACRA,Sin subfamilia,porción,3,2,LA CHACRA
+inv_bdn3_off_330,MONDADIENTES,Aseo,SUPERMERCADO,Sin subfamilia,unidad,2,2,ASEO Y OTROS
+inv_bdn3_off_234,MONTE OUTER LIMITS S. BLANC,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,18,12,PREMIUM BRANDS
+inv_bdn3_off_230,MONTES ALPHA CABERNET,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,8,6,PREMIUM BRANDS
+inv_bdn3_off_231,MONTES ALPHA CARMENERE,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,18,6,PREMIUM BRANDS
+inv_bdn3_off_232,MONTES ALPHA CHARDONNAY,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,12,6,PREMIUM BRANDS
+inv_bdn3_off_233,MONTES ALPHA MERLOT,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,7,6,PREMIUM BRANDS
+inv_bdn3_off_229,MONTES CLASSIC SERIES CHARDONNAY,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,12,6,PREMIUM BRANDS
+inv_bdn3_off_228,MONTES CLASSIC SERIES S. BLANC,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,12,6,PREMIUM BRANDS
+inv_bdn3_off_235,MONTGRAS ANTU CABERNET,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,6,6,PREMIUM BRANDS
+inv_bdn3_off_236,MONTGRAS ANTU CARMENERE,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,6,6,PREMIUM BRANDS
+inv_bdn3_off_238,MONTGRAS DAY ONE CHARDONNAY,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,0,6,PREMIUM BRANDS
+inv_bdn3_off_237,MONTGRAS DAY ONE S. BLANC,VINOS Y ESPUMANTES,PREMIUM BRANDS,Sin subfamilia,unidad,7,6,PREMIUM BRANDS
+inv_bdn3_off_356,MOSTAZA,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,2,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_357,MOSTAZA ANTIGUA,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_358,MOSTAZA DIJON,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_201,NARANJAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,2.5,2,LA CHACRA
+inv_bdn3_off_31,NAVAJUELAS,Pescados y Mariscos,EBISU,Sin subfamilia,kg,2,50,
+inv_bdn3_off_359,NUEZ MOSCADA,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,6,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_78,ORANGE CRUSH,Aguas y Bebidas,CCU,Sin subfamilia,unidad,72,4,CCU
+inv_bdn3_off_32,OSTIÓN A GRANEL BOLSA,Pescados y Mariscos,EBISU,Sin subfamilia,kg,0,1,
+inv_bdn3_off_33,OSTIÓN CONCHA,Pescados y Mariscos,K. SHARIFF,Sin subfamilia,bandeja,15,40,
+inv_bdn3_off_60,PAD ROJO,Aseo,ASEO TORRES,Sin subfamilia,unidad,1,2,ASEO TORRES
+inv_bdn3_off_253,PALA,Aseo,VIRGINIA,Sin subfamilia,unidad,0,2,VIRGINIA
+inv_bdn3_off_140,PALANCA ENTERA,Carnes y Aves,FRIGOSORNO,Sin subfamilia,kg,4.92,0,FRIGOSORNO
+inv_bdn3_off_141,PALANCA PORCIÓN,Carnes y Aves,PRODUCCION,Sin subfamilia,unidad,0,10,FRIGOSORNO
+inv_bdn3_off_163,PALMITOS ENTEROS 800 G SUPERMERCADO,Abarrotes,ICB,Sin subfamilia,unidad,7,12,ICB
+inv_bdn3_off_202,PALTA FIRME,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,9,1,LA CHACRA
+inv_bdn3_off_246,PAN CLIENTES,Panadería,SEVEN SPA,Sin subfamilia,kg,0,0,SEVEN SPA
+inv_bdn3_off_247,PAN RALLADO,Panadería,SEVEN SPA,Sin subfamilia,kg,3.8,0,SEVEN SPA
+inv_bdn3_off_164,PANKO BLANCO,Panadería,ICB,Sin subfamilia,kg,5,10,ICB
+inv_bdn3_off_255,PANOS SPONGI,Aseo,VIRGINIA,Sin subfamilia,unidad,0,3,VIRGINIA
+inv_bdn3_off_59,PANOS AMARILLO,Aseo,ASEO TORRES,Sin subfamilia,unidad,5,1,ASEO TORRES
+inv_bdn3_off_79,PAP,Aguas y Bebidas,CCU,Sin subfamilia,unidad,42,4,CCU
+inv_bdn3_off_203,PAPAS CAMOTE,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1,1,LA CHACRA
+inv_bdn3_off_204,PAPAS CON PIEL,Frutas y Verduras,LA CHACRA,Sin subfamilia,KG,68.5,3,LA CHACRA
+inv_bdn3_off_165,PAPAS FRITAS,CONGELADOS,ICB,Sin subfamilia,bolsa,10,30,ICB
+inv_bdn3_off_116,PAPAYAS,Abarrotes,DSC. SPA,Sin subfamilia,unidad,2,4,DSC. SPA
+inv_bdn3_off_130,PAPEL ALUMINIO,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,0,1,ENVASES EUROPACK
+inv_bdn3_off_61,PAPEL HIGIENICO,Aseo,ASEO TORRES,Sin subfamilia,unidad,6,4,ASEO TORRES
+inv_bdn3_off_114,PASTA DE HUEVO,Panadería,CHEF RUBEN DI SOUZA,Sin subfamilia,porción,0,200,CHEF RUBEN DI SOUZA
+inv_bdn3_off_166,PASTELERA DE CHOCLO,CONGELADOS,ICB,Sin subfamilia,kg,0,2,ICB
+inv_bdn3_off_175,PASTILLAS HORNO,Aseo,IMAE,Sin subfamilia,unidad,0,,IMAE
+inv_bdn3_off_47,PECHUGA DE PAVO,Carnes y Aves,ARIZTIA,Sin subfamilia,kg,0,,ARIZTIA
+inv_bdn3_off_48,PECHUGA DE POLLO,Carnes y Aves,ARIZTIA,Sin subfamilia,unidad,25,2,ARIZTIA
+inv_bdn3_off_34,PEJERREY,Pescados y Mariscos,MARISCOS Y PESCADOS,Sin subfamilia,unidad,0,,
+inv_bdn3_off_205,PEPINO ENSALADA,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,7,10,LA CHACRA
+inv_bdn3_off_80,PEPSI,Aguas y Bebidas,CCU,Sin subfamilia,unidad,285,4,CCU
+inv_bdn3_off_81,PEPSI ZERO,Aguas y Bebidas,CCU,Sin subfamilia,unidad,504,5,CCU
+inv_bdn3_off_206,PEREJIL,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,6,10,LA CHACRA
+inv_bdn3_off_207,PICKLES,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0,10,LA CHACRA
+inv_bdn3_off_208,PIMENTÓN AMARILLO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,9,10,LA CHACRA
+inv_bdn3_off_209,PIMENTÓN ROJO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,11,10,LA CHACRA
+inv_bdn3_off_210,PIMENTÓN VERDE,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,8,10,LA CHACRA
+inv_bdn3_off_360,PIMIENTA ENTERA,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,0,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_361,PIMIENTA MOLIDA,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,0,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_1777993450778,PINO MARISCOS (EMPANADAS),Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,0,2,PRODUCCION
+inv_bdn3_off_35,PINZAS DE JAIBA,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,0,1,
+inv_bdn3_off_287,PISCO ALTO DEL CARMEN 35,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,4,3,VINOTECA
+inv_bdn3_off_288,PISCO ALTO DEL CARMEN 40,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,2,3,VINOTECA
+inv_bdn3_off_289,PISCO BARSOL,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,4,2,VINOTECA
+inv_bdn3_off_239,PISCO BOU BARROETA MARIAS,DESTILADOS Y LICORES,PREMIUM BRANDS,Sin subfamilia,unidad,1,2,PREMIUM BRANDS
+inv_bdn3_off_121,PISCO CAMPANARIO 40,DESTILADOS Y LICORES,DON CARLOS SAAVEDRA,Sin subfamilia,unidad,125,7,DON CARLOS SAAVEDRA
+inv_bdn3_off_110,PISCO MISTRAL 35,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,1,1,CCU
+inv_bdn3_off_111,PISCO MISTRAL 40,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,1,1,CCU
+inv_bdn3_off_112,PISCO MISTRAL NOBEL,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,0,1,CCU
+inv_bdn3_off_290,PISCO TABERNERO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,2,VINOTECA
+inv_bdn3_off_211,PLÁTANOS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1,1,LA CHACRA
+inv_bdn3_off_167,POROTOS,Abarrotes,ICB,Sin subfamilia,kg,0,2,ICB
+inv_bdn3_off_212,PUERRO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,8,4,LA CHACRA
+inv_bdn3_off_44,PULPA FRUTILLA,PULPAS Y JUGOS,AGROLMUE,Sin subfamilia,unidad,6,10,AGROLMUE
+inv_bdn3_off_45,PULPA MANGO,PULPAS Y JUGOS,AGROLMUE,Sin subfamilia,unidad,13,10,AGROLMUE
+inv_bdn3_off_46,PULPA PIÑA,PULPAS Y JUGOS,AGROLMUE,Sin subfamilia,unidad,10,10,AGROLMUE
+inv_bdn3_off_36,PULPO,Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,1.8,2,
+inv_1777907729694,PULPO PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,0,PRODUCCION
+inv_bdn3_off_168,QUESO CREMA,Lácteos,ICB,Sin subfamilia,kg,1.26,1.3,ICB
+inv_bdn3_off_242,QUESO DE CABRA,Lácteos,QUESOS  JUAN ARDILES,Sin subfamilia,kg,2.12,2,QUESOS  JUAN ARDILES
+inv_bdn3_off_377,QUESO EMMENTAL,Lácteos,SUPERMERCADO,Sin subfamilia,unidad,0,1,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_240,QUESO LAMINADO,Lácteos,QUESOS  JUAN ARDILES,Sin subfamilia,kg,0,1,QUESOS  JUAN ARDILES
+inv_bdn3_off_241,QUESO MANTECOSO,Lácteos,QUESOS  JUAN ARDILES,Sin subfamilia,kg,1.66,8,QUESOS  JUAN ARDILES
+inv_bdn3_off_378,QUESO MOZARELLA,Lácteos,SUPERMERCADO,Sin subfamilia,kg,0,2,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_243,QUESO PARMESANOOOOOOOOO REGGIANITO,Lácteos,QUESOS  JUAN ARDILES,Sin subfamilia,kg,4.13,2,QUESOS  JUAN ARDILES
+inv_bdn3_off_244,QUESO RALLADO X 2 K,Lácteos,PRODUCCION,Sin subfamilia,kg,2,10,QUESOS  JUAN ARDILES
+inv_bdn3_off_169,QUINOA BLANCA,Abarrotes,ICB,Sin subfamilia,kg,0.2,1,ICB
+inv_bdn3_off_171,QUINOA NEGRA,Abarrotes,ICB,Sin subfamilia,kg,0.2,1,ICB
+inv_bdn3_off_170,QUINOA ROJA,Abarrotes,ICB,Sin subfamilia,kg,0.2,1,ICB
+inv_bdn3_off_105,RAMAZZOTTI,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,23,6,CCU
+inv_bdn3_off_37,REINETA ENTERA,Pescados y Mariscos,AGROMAR,Sin subfamilia,kg,32.6,20,
+inv_bdn3_off_38,REINETA FILETE,Pescados y Mariscos,PRODUCCION,Sin subfamilia,unidad,0,20,
+inv_1777139739896,ROLLOS TERMICOS,Aseo,EL TRIGAL,Sin subfamilia,UN,6,0,EL TRIGAL
+inv_bdn3_off_292,RON BLANCO BARCELO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,4,6,VINOTECA
+inv_bdn3_off_106,RON HABANA CLUB 3 ANOS BLANCO,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,3,3,CCU
+inv_bdn3_off_107,RON HABANA CLUB 7 ANOS,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,0,1,CCU
+inv_bdn3_off_108,RON HABANA CLUB RESERVA,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,0,2,CCU
+inv_bdn3_off_109,RON HABANA CLUB RESERVA ESPECIAL,DESTILADOS Y LICORES,CCU,Sin subfamilia,unidad,0,2,CCU
+inv_bdn3_off_213,RUCULA,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,2,2,LA CHACRA
+inv_bdn3_off_172,SAL,Abarrotes,ICB,Sin subfamilia,kg,6,10,ICB
+inv_1777139209524,VIENESAS,Carnes y Aves,SUPERMERCADO,Sin subfamilia,kg,0,0,SUPERMERCADO
+inv_1777661035029,SALMÓN ENTERO (AL VACIO),Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,18.18,0,GLOBAL FROZEN
+inv_bdn3_off_40,SALMÓN FILETE PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,35,
+inv_bdn3_off_39,SALMÓN FRESCO ENTERO,Pescados y Mariscos,LOGISTICA COSTERA,Sin subfamilia,kg,0,15,
+inv_1777128712578,SALMÓN PERLITAS Y RAVIOLES,Pescados y Mariscos,PRODUCCION,Sin subfamilia,UN,10,0,
+inv_bdn3_off_362,SALSA DE OSTRAS,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,2,2,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_1777734399923,SALSA DE SOYA,Abarrotes,SUPERMERCADO,Sin subfamilia,kg,1,0,SUPERMERCADO
+inv_bdn3_off_363,SALSA INGLESA,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_1779462800757,SEMILLAS DE ZAPALLO,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0,0,LA CHACRA SPA
+inv_bdn3_off_331,SERVILLETAS BLANCAS,Aseo,SUPERMERCADO,Sin subfamilia,unidad,4,4,ASEO Y OTROS
+inv_bdn3_off_131,SERVILLETAS NEGRAS,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,29,25,ENVASES EUROPACK
+inv_bdn3_off_364,SÉSAMO,Abarrotes,EL TRIGAL,Sin subfamilia,kg,0.62,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_82,SEVEN UP,Aguas y Bebidas,CCU,Sin subfamilia,unidad,65,4,CCU
+inv_bdn3_off_95,SOL,BEBIDAS ALCOHOLICAS,CCU,Sin subfamilia,unidad,107,1,CCU
+inv_bdn3_off_323,STA EMA RESERVA SIRAH,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,1,4,VINOTECA
+inv_bdn3_off_311,STA. EMA CABERNET RESERVA 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,6,VINOTECA
+inv_bdn3_off_312,STA. EMA CATALINA 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,2,6,VINOTECA
+inv_1777905984458,STA. EMA GRAN RESERVA CABERNET,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,0,VINOTECA
+inv_1777217331237,STA. EMA GRAN RESERVA MERLOT,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,,COMERCIAL CCU S.A.
+inv_bdn3_off_318,STA. EMA TERROIR CABERNET 1/2,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,0,12,VINOTECA
+inv_bdn3_off_317,STA. EMA TERROIR CABERNET 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,6,6,VINOTECA
+inv_bdn3_off_320,STA. EMA TERROIR CARMENERE 1/2,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,18,12,VINOTECA
+inv_bdn3_off_319,STA. EMA TERROIR CARMENERE 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,16,6,VINOTECA
+inv_bdn3_off_316,STA. EMA TERROIR CHARDONNAY 1/2,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,17,12,VINOTECA
+inv_bdn3_off_315,STA. EMA TERROIR CHARDONNAY 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,3,6,VINOTECA
+inv_bdn3_off_322,STA. EMA TERROIR MERLOT 1/2,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,16,12,VINOTECA
+inv_bdn3_off_321,STA. EMA TERROIR MERLOT 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,5,6,VINOTECA
+inv_bdn3_off_314,STA. EMA TERROIR S. BLANC 1/2,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,13,12,VINOTECA
+inv_bdn3_off_313,STA. EMA TERROIR S. BLANC 3/4,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,12,6,VINOTECA
+inv_bdn3_off_42,SURTIDO DE MARISCOS,Pescados y Mariscos,MAR AZUL,Sin subfamilia,kg,0,5,
+inv_bdn3_off_365,TABASCO,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_102,TARAPACA GRAN RESERVA CABERNET ETIQUETA NEGRA,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,14,6,CCU
+inv_bdn3_off_103,TARAPACA GRAN RESERVA CARMENERE,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,15,6,CCU
+inv_bdn3_off_104,TARAPACA GRAN RESERVA MERLOT,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,15,4,CCU
+inv_bdn3_off_335,TÉ CHAI,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,0,1,"CAFÉ, TÉ E INFUSIONES"
+inv_bdn3_off_336,TÉ MANZANILLA,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"CAFÉ, TÉ E INFUSIONES"
+inv_bdn3_off_337,TÉ NEGRO,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"CAFÉ, TÉ E INFUSIONES"
+inv_bdn3_off_338,TÉ VERDE,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"CAFÉ, TÉ E INFUSIONES"
+inv_bdn3_off_294,TEQUILA OLMECA,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,3,2,VINOTECA
+inv_bdn3_off_132,TOALLA DE PAPEL CORRIENTE,Aseo,ENVASES EUROPACK,Sin subfamilia,unidad,6,5,ENVASES EUROPACK
+inv_bdn3_off_62,TOALLA DE PAPEL DISPENSADOR,Aseo,EL TRIGAL,Sin subfamilia,unidad,2,4,ASEO TORRES
+inv_1777139762993,TOALLAS DE CLORO,Aseo,SUPERMERCADO,Sin subfamilia,UN,0,0,SUPERMERCADO
+inv_bdn3_off_383,TOCINO,Carnes y Aves,SUPERMERCADO,Sin subfamilia,unidad,5,6,OTROS
+inv_bdn3_off_216,TOMATE CAJA,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,19,2,LA CHACRA
+inv_bdn3_off_214,TOMATE CHERRY AMARILLO,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0,1,LA CHACRA
+inv_bdn3_off_215,TOMATE CHERRY ROJO,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,2,1,LA CHACRA
+inv_bdn3_off_217,TOMATE DESHIDRATADO,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0.5,1,LA CHACRA
+inv_bdn3_off_83,TONICA,Aguas y Bebidas,CCU,Sin subfamilia,unidad,102,4,CCU
+inv_bdn3_off_84,TONICA ZERO,Aguas y Bebidas,CCU,Sin subfamilia,unidad,48,4,CCU
+inv_1779550560670,TORTILLAS BURRERAS,Panadería,SUPERMERCADO,Sin subfamilia,PACK,4,3,SUPERMERCADO
+inv_bdn3_off_63,TRAPEROS,Aseo,ASEO TORRES,Sin subfamilia,unidad,2,4,ASEO TORRES
+inv_bdn3_off_293,TRIPLE SEC MITJANS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,2,VINOTECA
+inv_bdn3_off_43,TRUCHA,Pescados y Mariscos,VICUÑA,Sin subfamilia,kg,29.66,25,
+inv_bdn3_off_49,TRUTRO DE POLLO,Carnes y Aves,ARIZTIA,Sin subfamilia,unidad,28,1,ARIZTIA
+inv_bdn3_off_218,UVAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,1,1,LA CHACRA
+inv_bdn3_off_366,VAINILLA LIQUIDA,Abarrotes,SUPERMERCADO,Sin subfamilia,unidad,1,1,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_367,VAINILLA VAINAS,Abarrotes,EL TRIGAL,Sin subfamilia,unidad,4,6,"ABARROTES, CONDIMENTOS, ESPECIAS Y SALSAS"
+inv_bdn3_off_97,VINA MAR BRUT 1/2,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,44,1,CCU
+inv_bdn3_off_96,VINA MAR BRUT 3/4,VINOS Y ESPUMANTES,CCU,Sin subfamilia,unidad,36,2,CCU
+inv_bdn3_off_173,VINAGRE BALSAMICO,Abarrotes,ICB,Sin subfamilia,lt,0,10,ICB
+inv_bdn3_off_174,VINAGRE BLANCO O MANZANA,Abarrotes,ICB,Sin subfamilia,lt,3.75,5,ICB
+inv_bdn3_off_324,VINO BLANCO BIDON,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,1,2,VINOTECA
+inv_bdn3_off_265,VINO DULCE CENTENARIO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,3,3,VINOTECA
+inv_bdn3_off_325,VINO TINTO BIDON,VINOS Y ESPUMANTES,VINOTECA,Sin subfamilia,unidad,2,1,VINOTECA
+inv_bdn3_off_133,VIRUTILLAS PARRILLA,Aseo,VIRGINIA,Sin subfamilia,unidad,4,10,ENVASES EUROPACK
+inv_bdn3_off_295,VODKA ABSOLUT,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_296,VODKA GREY GOOSE,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_297,VODKA STOLISCHNAYA,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_298,WHISKEY 100 PIPERS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_bdn3_off_299,WHISKEY CHIVAS REGAL 12 ANOS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,12,1,VINOTECA
+inv_bdn3_off_300,WHISKEY CHIVAS REGAL 18 ANOS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,12,1,VINOTECA
+inv_bdn3_off_301,WHISKEY JACK DANIELS,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_303,WHISKEY JHONNY W. NEGRO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,1,1,VINOTECA
+inv_bdn3_off_302,WHISKEY JHONNY W. ROJO,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,3,1,VINOTECA
+inv_bdn3_off_304,WHISKEY JHONNY W. VERDE,DESTILADOS Y LICORES,VINOTECA,Sin subfamilia,unidad,0,1,VINOTECA
+inv_bdn3_off_256,YODOMIX,Aseo,VIRGINIA,Sin subfamilia,lt,2,5,VIRGINIA
+inv_bdn3_off_381,YOGUR KEFIR ( PRI),Lácteos,SUPERMERCADO,Sin subfamilia,unidad,3,4,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_380,YOGUR NATURAL,Lácteos,SUPERMERCADO,Sin subfamilia,unidad,4,4,LÁCTEOS Y DERIVADOS
+inv_bdn3_off_219,ZANAHORIAS,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,6.1,1,LA CHACRA
+inv_bdn3_off_221,ZAPALLO CAMOTE,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,7,1,LA CHACRA
+inv_bdn3_off_220,ZAPALLO ITALIANO,Frutas y Verduras,LA CHACRA,Sin subfamilia,unidad,16,20,LA CHACRA
+inv_1779821959068,POLVOS DE HORNEAR,Abarrotes,SUPERMERCADO,Sin subfamilia,kg,0,0,SUPERMERCADO
+inv_1779824110187,TRUCHA PORCIÓN,Pescados y Mariscos,PRODUCCION,Sin subfamilia,unidad,0,0,PRODUCCION
+inv_1779914353218,SALMÓN DESPUNTE,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,1.39,0,produccion
+inv_1780167512678,MASA PIZZA,Panadería,Sin familia,Sin subfamilia,unidad,0,0,
+inv_1780344945491,BASE PARA CHUPE,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,12,0,PRODUCCION
+inv_1780421924437,FILETE PARA NINO,Carnes y Aves,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1780421959479,LOMO PARA NINO,Carnes y Aves,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1780421998254,SALMÓN PARA NINO,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1780422028206,REINETA NUGGETS,Pescados y Mariscos,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1780422062771,POLLO NUGGETS,Carnes y Aves,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1780422390199,PALANCA PARA NINOS,Carnes y Aves,PRODUCCION,Sin subfamilia,porción,0,0,
+inv_1781188501511,NUEZ ENTERA,Frutas y Verduras,LA CHACRA,Sin subfamilia,kg,0.2,0,LA CHACRA SPA
+inv_1781894672786,MAQUILA PESCADOS,Pescados y Mariscos,PRODUCCION,Sin subfamilia,kg,73.5,0,PRODUCCION

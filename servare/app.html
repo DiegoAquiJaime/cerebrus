@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#059669">
+  <title>Bodega — Aquí Jaime</title>
+  <link rel="manifest" href="manifest.json">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen bg-slate-100 flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-emerald-600 text-white px-4 py-3 flex items-center justify-between shadow-md sticky top-0 z-40">
+    <div>
+      <div class="font-bold text-lg leading-tight">Bodega</div>
+      <div class="text-emerald-100 text-xs" id="user-label">—</div>
+    </div>
+    <button type="button" id="btn-logout" class="text-emerald-100 hover:text-white text-sm px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition">Salir</button>
+  </header>
+
+  <!-- Nav -->
+  <nav class="bg-white border-b border-slate-200 flex sticky top-[52px] z-30">
+    <button type="button" data-tab="dashboard" class="nav-tab active flex-1 py-3 text-sm font-medium text-slate-500 border-b-2 border-transparent">Inicio</button>
+    <button type="button" data-tab="movimiento" class="nav-tab flex-1 py-3 text-sm font-medium text-slate-500 border-b-2 border-transparent">Movimiento</button>
+  </nav>
+
+  <main class="flex-1 overflow-auto p-4 max-w-lg mx-auto w-full">
+
+    <!-- Dashboard -->
+    <section id="tab-dashboard">
+      <div id="dash-content" class="text-slate-500 text-sm">Cargando…</div>
+    </section>
+
+    <!-- Movimiento rápido -->
+    <section id="tab-movimiento" class="hidden">
+      <form id="mov-form" class="space-y-4">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tipo</label>
+          <select id="mov-tipo" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white"></select>
+          <div class="flex gap-4 mt-3 text-sm">
+            <div><span class="text-slate-400">Origen:</span> <strong id="mov-origen" class="text-slate-700">—</strong></div>
+            <div><span class="text-slate-400">Destino:</span> <strong id="mov-destino" class="text-slate-700">—</strong></div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div class="p-3 border-b border-slate-100">
+            <input type="search" id="mov-buscar" placeholder="Buscar producto…" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm" autocomplete="off">
+          </div>
+          <input type="hidden" id="mov-sku">
+          <div id="mov-producto-nombre" class="px-4 py-2 bg-emerald-50 text-emerald-800 text-sm font-medium min-h-[2.5rem] flex items-center">Selecciona un producto</div>
+          <div id="mov-productos" class="max-h-48 overflow-y-auto"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Cantidad</label>
+            <input type="number" id="mov-cantidad" step="any" min="0" inputmode="decimal" class="w-full border border-slate-200 rounded-xl px-3 py-3 text-xl font-bold text-center" placeholder="0">
+            <p id="mov-stock-hint" class="text-xs text-slate-400 mt-1 text-center"></p>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Nota (opcional)</label>
+            <input type="text" id="mov-nota" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Ej: turno mañana">
+          </div>
+        </div>
+
+        <button type="submit" id="mov-submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-2xl shadow-lg shadow-emerald-600/20 transition active:scale-[0.98]">
+          Confirmar movimiento
+        </button>
+      </form>
+    </section>
+  </main>
+
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl text-white text-sm opacity-0 pointer-events-none transition-opacity"></div>
+
+  <script type="module">
+    import { requireAuth, clearSession } from './js/auth.js';
+    import { initDashboard } from './js/dashboard.js';
+    import { initMovimientos } from './js/movimientos.js';
+    import { isConfigured } from './js/api.js';
+
+    const usuario = requireAuth();
+    if (!usuario) throw new Error('no auth');
+
+    if (!isConfigured()) {
+      window.location.href = 'index.html';
+    }
+
+    document.getElementById('user-label').textContent = usuario.nombre + ' · ' + usuario.rol;
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      clearSession();
+      window.location.href = 'index.html';
+    });
+
+    // Tabs
+    const tabs = document.querySelectorAll('.nav-tab');
+    const sections = {
+      dashboard: document.getElementById('tab-dashboard'),
+      movimiento: document.getElementById('tab-movimiento')
+    };
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const id = tab.dataset.tab;
+        tabs.forEach(t => t.classList.toggle('active', t === tab));
+        Object.entries(sections).forEach(([k, el]) => el.classList.toggle('hidden', k !== id));
+      });
+    });
+
+    // Init
+    Promise.all([initDashboard(), initMovimientos()]).catch(err => {
+      document.getElementById('dash-content').innerHTML = `<p class="text-red-500">${err.message}</p>`;
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

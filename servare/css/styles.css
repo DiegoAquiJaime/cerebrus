@@ -1,0 +1,42 @@
+/* Bodega Aquí Jaime — complementos Tailwind */
+
+:root {
+  --brand: #059669;
+  --brand-dark: #047857;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.pin-key {
+  min-height: 4rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-radius: 1rem;
+  background: white;
+  border: 2px solid #e2e8f0;
+  transition: all 0.15s;
+  user-select: none;
+}
+.pin-key:active {
+  transform: scale(0.96);
+  background: #ecfdf5;
+  border-color: var(--brand);
+}
+
+.nav-tab.active {
+  color: var(--brand);
+  border-bottom: 2px solid var(--brand);
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (display-mode: standalone) {
+  body { padding-top: env(safe-area-inset-top); }
+}
