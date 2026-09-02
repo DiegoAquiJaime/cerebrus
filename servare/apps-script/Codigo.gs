@@ -48,6 +48,7 @@ function doPost(e) {
       case 'catalogos': return catalogos_();
       case 'stock': return stock_(req);
       case 'movimiento': return crearMovimiento_(req);
+      case 'movimientos_list': return movimientosList_(req);
       case 'anular': return anularMovimiento_(req);
       case 'dashboard': return dashboard_(req);
       case 'productos_bulk': return productosBulk_(req);
@@ -215,6 +216,36 @@ function columnToLetter_(col) {
   return letter;
 }
 
+function fechaToIso_(v) {
+  if (!v) return '';
+  if (v instanceof Date) return v.toISOString();
+  var d = new Date(v);
+  return isNaN(d.getTime()) ? String(v) : d.toISOString();
+}
+
+function parseFechaHora_(req) {
+  var now = new Date();
+  if (!req.fecha_hora) return now;
+  var d = new Date(req.fecha_hora);
+  if (isNaN(d.getTime())) throw new Error('Fecha u hora inválida');
+  if (d.getTime() > now.getTime() + 120000) {
+    throw new Error('No se puede registrar un movimiento a futuro');
+  }
+  var limite = new Date(now.getTime());
+  limite.setFullYear(limite.getFullYear() - 1);
+  if (d.getTime() < limite.getTime()) {
+    throw new Error('La fecha no puede ser anterior a un año');
+  }
+  return d;
+}
+
+function usuarioLabel_(req) {
+  var nombre = String(req.usuario || '').trim();
+  var id = String(req.usuario_id || '').trim();
+  if (nombre && id) return nombre + ' (' + id + ')';
+  return nombre || id || '—';
+}
+
 // ── Lecturas ─────────────────────────────────────────────────
 
 function readTable_(sheetName) {
@@ -348,8 +379,11 @@ function crearMovimiento_(req) {
   var ccDestino = String(req.cc_destino || '').trim();
   var sku = String(req.sku || '').trim();
   var cantidad = Number(req.cantidad);
-  var usuario = String(req.usuario || '').trim();
+  var usuario = usuarioLabel_(req);
   var nota = String(req.nota || '').trim();
+  var docRef = String(req.doc_ref || '').trim();
+  var lote = String(req.lote || '').trim();
+  var fechaHora = parseFechaHora_(req);
 
   if (!tipo || !sku || !cantidad || cantidad <= 0) {
     return json_({ ok: false, error: 'Datos incompletos' });
@@ -364,9 +398,12 @@ function crearMovimiento_(req) {
     if (productos[i].sku === sku) { prod = productos[i]; break; }
   }
   if (!prod) return json_({ ok: false, error: 'SKU no encontrado: ' + sku });
+  if (String(prod.activo).toUpperCase() === 'NO') {
+    return json_({ ok: false, error: 'Producto inactivo: ' + sku });
+  }
 
-  var permitirNeg = String(getConfig_('permitir_stock_negativo')).toUpperCase() === 'SI';
-  if (ccOrigen && ccMantieneStock_(ccOrigen) && !permitirNeg) {
+  // Stock negativo nunca permitido
+  if (ccOrigen && ccMantieneStock_(ccOrigen)) {
     var disp = getStockSkuCc_(sku, ccOrigen);
     if (disp < cantidad) {
       return json_({ ok: false, error: 'Stock insuficiente en ' + ccOrigen + ': ' + disp + ' < ' + cantidad });
@@ -377,15 +414,79 @@ function crearMovimiento_(req) {
   var id = nextMovId_();
   var sh = ss_().getSheetByName(SHEETS.MOVIMIENTOS);
   sh.appendRow([
-    id, new Date(), tipo, ccOrigen, ccDestino, sku, cantidad,
-    costoUnit, cantidad * costoUnit, usuario, req.doc_ref || '', req.lote || '', nota,
+    id, fechaHora, tipo, ccOrigen, ccDestino, sku, cantidad,
+    costoUnit, cantidad * costoUnit, usuario, docRef, lote, nota,
     req.op_id || '', '', 'VIGENTE'
   ]);
 
   ensureStockRow_(sku);
-  log_(usuario, 'CREAR', 'Movimiento', id, { tipo: tipo, sku: sku, cantidad: cantidad });
+  log_(usuario, 'CREAR', 'Movimiento', id, {
+    tipo: tipo, sku: sku, cantidad: cantidad, fecha_hora: fechaToIso_(fechaHora)
+  });
 
   return json_({ ok: true, id: id });
+}
+
+/**
+ * API: listar movimientos vigentes (historial).
+ * POST { accion:'movimientos_list', desde:'yyyy-MM-dd', hasta:'yyyy-MM-dd', sku?, limite? }
+ */
+function movimientosList_(req) {
+  var limite = Math.min(Math.max(Number(req.limite) || 50, 1), 200);
+  var desde = req.desde ? String(req.desde).slice(0, 10) : '';
+  var hasta = req.hasta ? String(req.hasta).slice(0, 10) : '';
+  var skuFilter = String(req.sku || '').trim();
+  var tz = Session.getScriptTimeZone();
+
+  var prods = readTable_(SHEETS.PRODUCTOS);
+  var prodMap = {};
+  prods.forEach(function(p) { prodMap[p.sku] = p.nombre; });
+
+  var movs = readTable_(SHEETS.MOVIMIENTOS).filter(function(m) {
+    return String(m.estado) === 'VIGENTE';
+  });
+
+  if (skuFilter) {
+    movs = movs.filter(function(m) { return String(m.sku) === skuFilter; });
+  }
+
+  if (desde || hasta) {
+    movs = movs.filter(function(m) {
+      var fh = m.fecha_hora instanceof Date ? m.fecha_hora : new Date(m.fecha_hora);
+      if (isNaN(fh.getTime())) return false;
+      var day = Utilities.formatDate(fh, tz, 'yyyy-MM-dd');
+      if (desde && day < desde) return false;
+      if (hasta && day > hasta) return false;
+      return true;
+    });
+  }
+
+  movs.sort(function(a, b) {
+    var da = a.fecha_hora instanceof Date ? a.fecha_hora : new Date(a.fecha_hora);
+    var db = b.fecha_hora instanceof Date ? b.fecha_hora : new Date(b.fecha_hora);
+    return db.getTime() - da.getTime();
+  });
+
+  movs = movs.slice(0, limite);
+
+  var out = movs.map(function(m) {
+    return {
+      id: m.id,
+      fecha_hora: fechaToIso_(m.fecha_hora),
+      tipo: m.tipo,
+      cc_origen: m.cc_origen,
+      cc_destino: m.cc_destino,
+      sku: m.sku,
+      nombre: prodMap[m.sku] || m.sku,
+      cantidad: Number(m.cantidad) || 0,
+      usuario: m.usuario,
+      doc_ref: m.doc_ref || '',
+      lote: m.lote || '',
+      nota: m.nota || ''
+    };
+  });
+
+  return json_({ ok: true, movimientos: out, total: out.length });
 }
 
 function ensureStockRow_(sku) {
@@ -555,7 +656,7 @@ function productosBulk_(req) {
     var existingRow = skuToRow[sku];
     if (existingRow) {
       if (modo === 'solo_nuevos') { skipped++; return; }
-      prodSh.getRange(existingRow, 1, existingRow, 9).setValues([row]);
+      prodSh.getRange(existingRow, 1, 1, 9).setValues([row]);
       updated++;
     } else {
       newRows.push(row);
@@ -567,7 +668,7 @@ function productosBulk_(req) {
 
   if (newRows.length) {
     var start = prodSh.getLastRow() + 1;
-    prodSh.getRange(start, 1, start + newRows.length - 1, 9).setValues(newRows);
+    prodSh.getRange(start, 1, newRows.length, 9).setValues(newRows);
     newSkus.forEach(function(sku) { ensureStockRow_(sku); });
   }
 

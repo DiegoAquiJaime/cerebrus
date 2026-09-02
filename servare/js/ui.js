@@ -24,6 +24,33 @@ export function fmtFecha(d) {
   return `${dd}-${mm}-${yyyy} ${hh}:${mi}`;
 }
 
+export function todayInputDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function nowInputTime() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+export function daysAgoInputDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function labelTipo(id) {
+  const t = TIPOS_MOV.find(x => x.id === id);
+  return t ? t.label : (id || '—');
+}
+
 export function toast(msg, type = 'info') {
   const el = document.getElementById('toast');
   if (!el) return;

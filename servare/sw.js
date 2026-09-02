@@ -1,5 +1,9 @@
-const CACHE = 'bodega-v1';
-const ASSETS = ['./', './index.html', './app.html', './css/styles.css', './manifest.json'];
+const CACHE = 'bodega-v2';
+const ASSETS = [
+  './', './index.html', './app.html', './css/styles.css', './manifest.json',
+  './js/api.js', './js/auth.js', './js/ui.js', './js/dashboard.js',
+  './js/movimientos.js', './js/historial.js'
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
