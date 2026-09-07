@@ -1571,24 +1571,45 @@ body.dark-mode .inf-btn-prev{background:#334155;color:#f8fafc;}
 .inf-img-actions .ok{background:var(--accent);border-color:var(--accent);color:#fff;}
 .inf-wa-modal{position:fixed;inset:0;background:rgba(0,0,0,.56);z-index:1602;display:none;align-items:center;justify-content:center;padding:20px;}
 .inf-wa-modal.open{display:flex;}
-.inf-wa-card{width:min(760px,96vw);max-height:92vh;background:var(--white);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;}
-.inf-wa-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);}
-.inf-wa-title{font-size:12px;font-weight:800;color:var(--primary);}
+.inf-wa-card{width:min(520px,96vw);max-height:92vh;background:var(--white);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;}
+.inf-wa-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#ecfdf5,#fff);}
+.inf-wa-title{font-size:14px;font-weight:800;color:var(--primary);letter-spacing:-.02em;}
+.inf-wa-sub{font-size:11px;color:#64748b;margin-top:4px;font-weight:600;}
 .inf-wa-close{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;line-height:1;}
-.inf-wa-body{padding:12px;background:#f8fafc;overflow:auto;}
-.inf-wa-pre{white-space:pre-wrap;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;line-height:1.55;color:var(--primary);}
-.inf-wa-actions{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border);}
-.inf-wa-actions button{flex:1;border-radius:8px;padding:10px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--primary);}
+.inf-wa-body{padding:14px;background:#e5ddd5;overflow:auto;}
+.inf-wa-pre{
+  white-space:pre-wrap;background:#dcf8c6;border:none;border-radius:12px 12px 4px 12px;
+  padding:12px 14px;font-size:13px;line-height:1.55;color:#111b21;
+  box-shadow:0 1px 2px rgba(0,0,0,.08);font-family:inherit;max-width:100%;
+}
+.inf-wa-actions{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border);background:var(--white);}
+.inf-wa-actions button{flex:1;border-radius:10px;padding:11px;border:1px solid var(--border);background:var(--white);cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--primary);}
 .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color:#fff;}
+.inf-wa-inline{
+  display:none;margin:0 0 12px;border-radius:16px;border:1px solid rgba(37,211,102,.28);
+  background:linear-gradient(180deg,#ecfdf5,rgba(255,255,255,.9));overflow:hidden;
+  box-shadow:0 6px 18px rgba(37,211,102,.1);
+}
+.inf-wa-inline.open{display:block;}
+.inf-wa-inline-head{padding:10px 14px;font-size:12px;font-weight:800;color:#166534;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.inf-wa-inline-body{padding:0 12px 12px;}
+.inf-wa-inline .inf-wa-pre{background:#dcf8c6;max-height:280px;overflow:auto;}
 body.dark-mode .inf-img-card{background:#111827;}
 body.dark-mode .inf-img-body{background:#0f172a;}
 body.dark-mode .inf-img-actions button{background:#1f2937;border-color:#334155;color:#f8fafc;}
 body.dark-mode .inf-img-actions .ok{background:var(--accent);border-color:var(--accent);}
 body.dark-mode .inf-wa-card{background:#111827;}
-body.dark-mode .inf-wa-body{background:#0f172a;}
-body.dark-mode .inf-wa-pre{background:#111827;border-color:#334155;color:#f8fafc;}
+body.dark-mode .inf-wa-head{background:linear-gradient(180deg,#14532d,#111827);border-color:#334155;}
+body.dark-mode .inf-wa-title{color:#ecfdf5;}
+body.dark-mode .inf-wa-sub{color:#86efac;}
+body.dark-mode .inf-wa-body{background:#0b141a;}
+body.dark-mode .inf-wa-pre{background:#005c4b;color:#e9edef;}
+body.dark-mode .inf-wa-actions{background:#111827;border-color:#334155;}
 body.dark-mode .inf-wa-actions button{background:#1f2937;border-color:#334155;color:#f8fafc;}
 body.dark-mode .inf-wa-actions .ok{background:#25D366;border-color:#25D366;color:#fff;}
+body.dark-mode .inf-wa-inline{background:linear-gradient(180deg,#14532d,#111827);border-color:#166534;}
+body.dark-mode .inf-wa-inline-head{color:#bbf7d0;}
+body.dark-mode .inf-wa-inline .inf-wa-pre{background:#005c4b;color:#e9edef;}
 
 /* ---- SEMANA ACTUAL (SAC) — estilos unificados Cerebrus ---- */
 #sac{
@@ -5710,6 +5731,17 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           </div>
         </div>
 
+        <!-- Preview texto WhatsApp (al generar/guardar) -->
+        <div class="inf-wa-inline" id="inf-wa-inline">
+          <div class="inf-wa-inline-head">
+            <span>✓ Guardado · Vista WhatsApp</span>
+            <button type="button" class="fac-btn" style="font-size:10px;padding:4px 10px;" onclick="infCopiarTexto(false)">💬 Copiar</button>
+          </div>
+          <div class="inf-wa-inline-body">
+            <pre class="inf-wa-pre" id="inf-wa-inline-pre"></pre>
+          </div>
+        </div>
+
         <!-- Share buttons -->
         <div class="inf-share-btns has-preview" id="inf-share-btns">
           <button class="inf-btn-prev" id="inf-btn-prev" onclick="infOpenImagePreview()">👁 Vista imagen</button>
@@ -5779,17 +5811,20 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
 
   <!-- Modal preview texto WhatsApp -->
   <div class="inf-wa-modal" id="inf-wa-modal" onclick="infCloseWhatsappPreview(event)">
-    <div class="inf-wa-card">
+    <div class="inf-wa-card" onclick="event.stopPropagation()">
       <div class="inf-wa-head">
-        <div class="inf-wa-title">Vista previa texto WhatsApp</div>
-        <button class="inf-wa-close" onclick="infCloseWhatsappPreview()">×</button>
+        <div>
+          <div class="inf-wa-title" id="inf-wa-title">Vista previa texto WhatsApp</div>
+          <div class="inf-wa-sub" id="inf-wa-sub">Revisa el mensaje antes de copiarlo</div>
+        </div>
+        <button type="button" class="inf-wa-close" onclick="infCloseWhatsappPreview()" aria-label="Cerrar">×</button>
       </div>
       <div class="inf-wa-body">
-        <div class="inf-wa-pre" id="inf-wa-preview">Genera el informe para ver el texto.</div>
+        <pre class="inf-wa-pre" id="inf-wa-preview">Genera el informe para ver el texto.</pre>
       </div>
       <div class="inf-wa-actions">
-        <button onclick="infCloseWhatsappPreview()">Cerrar</button>
-        <button class="ok" onclick="infCopiarTextoDesdePreview()">Copiar texto</button>
+        <button type="button" onclick="infCloseWhatsappPreview()">Ahora no</button>
+        <button type="button" class="ok" id="inf-wa-copy-btn" onclick="infCopiarTextoDesdePreview()">Copiar para WhatsApp</button>
       </div>
     </div>
   </div>
@@ -7288,7 +7323,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.06.7';
+const APP_VERSION = '2026.09.06.8';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -22725,7 +22760,8 @@ function infCalcLive() {
 function infGuardarEnState() {
   if (!state.informesDiarios) state.informesDiarios = [];
   const d = _infData;
-  if (!d) return;
+  if (!d) return false;
+  if (typeof pushUndo === 'function') pushUndo();
   const propina = parseNumCL(document.getElementById('inf-propina')?.value, false)||0;
   // Check if already exists for this date
   const existIdx = state.informesDiarios.findIndex(i => i.fecha === d.fecha);
@@ -22747,6 +22783,10 @@ function infGuardarEnState() {
   if (state.informesDiarios.length > 60) state.informesDiarios = state.informesDiarios.slice(-60);
   markUnsaved();
   infRenderHistorial();
+  if (typeof saveState === 'function') {
+    saveState('Informe diario ' + (d.fecha || ''), true);
+  }
+  return true;
 }
 
 // Render historial of saved informes
@@ -22991,13 +23031,40 @@ function infBuildWhatsappText() {
   return t;
 }
 
-function infOpenWhatsappPreview() {
+function infFillWhatsappPreviews() {
+  const t = infBuildWhatsappText();
+  const pre = document.getElementById('inf-wa-preview');
+  if (pre) pre.textContent = t || 'Sin datos.';
+  const inline = document.getElementById('inf-wa-inline');
+  const inlinePre = document.getElementById('inf-wa-inline-pre');
+  if (inlinePre) inlinePre.textContent = t || '';
+  if (inline) inline.classList.toggle('open', !!t);
+  return t;
+}
+
+function infOpenWhatsappPreview(opts) {
   if (!_infData) { notify('⚠ Genera el informe primero'); return; }
   const modal = document.getElementById('inf-wa-modal');
   const pre = document.getElementById('inf-wa-preview');
   if (!modal || !pre) return;
-  pre.textContent = infBuildWhatsappText();
+  const text = infFillWhatsappPreviews();
+  const title = document.getElementById('inf-wa-title');
+  const sub = document.getElementById('inf-wa-sub');
+  const afterSave = !!(opts && opts.afterSave);
+  if (title) title.textContent = afterSave ? '✓ Informe guardado' : 'Vista previa texto WhatsApp';
+  if (sub) sub.textContent = afterSave
+    ? 'Así se verá el mensaje. ¿Lo copias para WhatsApp?'
+    : 'Revisa el mensaje antes de copiarlo';
   modal.classList.add('open');
+
+  if (afterSave) {
+    setTimeout(function() {
+      const ask = confirm('✓ Informe generado y guardado.\n\n¿Copiar el texto para WhatsApp ahora?');
+      if (ask) infCopiarTexto(true);
+      else if (typeof notify === 'function') notify('Informe listo — puedes copiarlo cuando quieras');
+      if (_infData) infOfferSacAdjustAfterInforme(_infData);
+    }, 120);
+  }
 }
 
 function infCloseWhatsappPreview(e) {
@@ -23012,11 +23079,30 @@ function infCopiarTextoDesdePreview() {
 
 function infGenerar() {
   const d = infRecolectar();
+  const propRaw = String(document.getElementById('inf-propina')?.value || '').trim();
+  const propinaVacia = !propRaw || !(d.propina > 0);
+  if (propinaVacia) {
+    const seguir = confirm(
+      '⚠ No hay monto de propina ingresado.\n\n' +
+      'El informe se guardará sin propina del día.\n\n' +
+      '¿Continuar de todas formas?\n' +
+      '(Cancelar = volver a ingresar la propina)'
+    );
+    if (!seguir) {
+      const propEl = document.getElementById('inf-propina');
+      if (propEl) {
+        propEl.focus();
+        propEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      notify('Ingresa la propina del día y vuelve a generar');
+      return;
+    }
+  }
   const totalEgresos = d.totalCar + d.propina;
   _infData = d;
   const fechaStr = infFechaLegible(d.fecha);
 
-  // Preview
+  // Preview visual
   set('inf-prev-fecha',    fechaStr);
   set('inf-pk-banco',      infFmt(d.banco));
   set('inf-pk-venta',      infFmt(d.venta));
@@ -23060,15 +23146,22 @@ function infGenerar() {
   document.getElementById('inf-btn-txt').classList.remove('copied');
   document.getElementById('inf-btn-txt').textContent = '💬 Copiar WhatsApp';
 
-  setTimeout(() => document.getElementById('inf-preview').scrollIntoView({behavior:'smooth',block:'start'}), 120);
-  setTimeout(() => infOpenImagePreview(), 180);
+  infFillWhatsappPreviews();
+  const saved = infGuardarEnState();
+  if (saved) notify('✓ Informe generado y guardado');
+  else notify('⚠ No se pudo guardar el informe');
 
-  // #5: Auto-save to state for persistence
-  infGuardarEnState();
-  infOfferSacAdjustAfterInforme(d);
+  setTimeout(function() {
+    const inline = document.getElementById('inf-wa-inline');
+    if (inline) inline.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }, 80);
+
+  // Flujo automático: preview WhatsApp + preguntar si copiar (SAC adjust después)
+  setTimeout(function() {
+    infOpenWhatsappPreview({ afterSave: true });
+  }, 160);
 }
 
-/** Solo Sebastián: tras generar informe, voz + opción de pasar Banco/Caja (o caja manual) a Semana Actual. */
 function infApplyBancoCajaToSac(d) {
   pushUndo();
   if (!state.cajaEmpresa) state.cajaEmpresa = {};
@@ -23172,6 +23265,8 @@ function infReset() {
   document.getElementById('inf-preview').style.display    = 'none';
   document.getElementById('inf-share-btns').style.display = 'none';
   document.getElementById('inf-reset-btn').style.display  = 'none';
+  const waInline = document.getElementById('inf-wa-inline');
+  if (waInline) waInline.classList.remove('open');
   _infData = null;
   infInit();
 }
@@ -26151,7 +26246,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.06.7"></script>
+<script src="js/sac.js?v=2026.09.06.8"></script>
 <script>
 
 // ── UNSAVED CHANGES ──

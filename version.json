@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.06.7",
-  "notes": "Cargas: nombres más grandes, botones chicos, modo Ampliar. Propinas e Informe diario modernizados."
+  "version": "2026.09.06.8",
+  "notes": "Informe diario: al generar confirma guardado, muestra preview WhatsApp y ofrece copiar al OK."
 }
