@@ -1599,7 +1599,7 @@ function sacRenderIngresos() {
   if (!list) return;
   const arr = sacGetIngresos();
   if (!arr.length) {
-    list.innerHTML = '<div style="padding:8px 10px;text-align:center;color:#94a3b8;font-size:10px;font-style:italic;">Sin ítems · <b>+ Ingreso</b></div>';
+    list.innerHTML = '<div style="padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic;">Sin ítems · <b>+ Ingreso</b></div>';
     sacCalcIngresosTotals();
     return;
   }
@@ -1611,25 +1611,34 @@ function sacRenderIngresos() {
     let badgeTxt = 'Pendiente';
     let badgeBg = 'rgba(16,185,129,.22)';
     let badgeCol = 'var(--success)';
-    if (esFullRec) { badgeTxt = 'Recibido'; badgeBg = 'rgba(148,163,184,.2)'; badgeCol = '#94a3b8'; }
-    else if (esParcial) { badgeTxt = 'Parcial'; badgeBg = 'rgba(245,158,11,.18)'; badgeCol = 'var(--warning)'; }
+    let statusCls = 'nopagado';
+    if (esFullRec) {
+      badgeTxt = 'Recibido'; badgeBg = 'rgba(148,163,184,.2)'; badgeCol = '#94a3b8'; statusCls = 'pagado';
+    } else if (esParcial) {
+      badgeTxt = 'Parcial'; badgeBg = 'rgba(245,158,11,.18)'; badgeCol = 'var(--warning)'; statusCls = 'parcial';
+    }
     return `<div class="sac-carga-row ingreso${esFullRec ? ' ingreso-recibido' : ''}" id="sac-ir-${it.id}">
       <div><span class="sac-cat-badge" style="background:${badgeBg};color:${badgeCol};">${badgeTxt}</span></div>
       <div>
         <div class="sac-nombre">${esc(it.nombre || '(sin nombre)')}</div>
-        ${it.nota ? `<div style="font-size:9px;color:#94a3b8;font-style:italic;">${esc(it.nota)}</div>` : ''}
+        ${it.nota ? `<div class="sac-row-meta">${esc(it.nota)}</div>` : ''}
       </div>
-      <div style="text-align:right;min-width:128px;">
+      <div class="sac-row-amount">
         <div class="sac-monto" style="color:${esFullRec ? '#94a3b8' : 'var(--success)'};">Total ${fmt(it.monto || 0)}</div>
-        ${(it.monto || 0) > 0 ? `<div style="font-size:9px;color:#94a3b8;">Recib. ${fmt(recA)} · Falta ${fmt(pend)}</div>` : ''}
+        ${(it.monto || 0) > 0 ? `<div class="sac-row-meta">Recib. ${fmt(recA)} · Falta ${fmt(pend)}</div>` : ''}
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        ${pend > 0.5 ? `<button type="button" class="sac-estado-btn parcial" onclick="sacIngresoRecibirParcial('${it.id}')" title="Registrar solo una parte del monto total">◑ Recibir parcial</button>` : ''}
-        <button type="button" class="sac-estado-btn ${esFullRec ? 'pagado' : 'nopagado'}" onclick="sacCycleIngresoEstado('${it.id}')">${esFullRec ? '✓ Todo recibido' : '○ Marcar todo'}</button>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
-        <button type="button" onclick="sacDelIngreso('${it.id}')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;">✕</button>
-        <button type="button" onclick="sacEditIngreso('${it.id}')" style="font-size:9px;background:none;border:none;color:#94a3b8;cursor:pointer;font-family:inherit;">✏ Editar</button>
+      <div class="sac-row-actions">
+        <span class="sac-status ${statusCls}">${esFullRec ? '✓ Todo recibido' : esParcial ? '⚠ Parcial' : '○ Pendiente'}</span>
+        ${pend > 0.5 ? `<button type="button" class="sac-recv-primary" onclick="sacIngresoRecibirParcial('${it.id}')" title="Registrar solo una parte del monto total">Registrar ingreso</button>` : ''}
+        ${!esFullRec ? `<button type="button" class="sac-estado-btn ${statusCls}" onclick="sacCycleIngresoEstado('${it.id}')">○ Marcar todo</button>` : `<button type="button" class="sac-estado-btn pagado" onclick="sacCycleIngresoEstado('${it.id}')">↩ Marcar pendiente</button>`}
+        <details class="sac-actions-menu">
+          <summary>Más</summary>
+          <div class="sac-actions-panel">
+            ${pend > 0.5 ? `<button type="button" onclick="sacIngresoRecibirParcial('${it.id}')">◑ Recibir parcial</button>` : ''}
+            <button type="button" onclick="sacEditIngreso('${it.id}')">✏ Editar</button>
+            <button type="button" class="sac-action-del" onclick="sacDelIngreso('${it.id}')">Eliminar</button>
+          </div>
+        </details>
       </div>
     </div>`;
   }).join('');

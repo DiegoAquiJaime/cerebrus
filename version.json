@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.06.3",
-  "notes": "SAC: refit óptico Cerebrus (mismo layout). Fix deshacer pagado conserva abonos."
+  "version": "2026.09.06.4",
+  "notes": "SAC: CSS aplanado Cerebrus; ingresos con botones grandes como cargas."
 }
