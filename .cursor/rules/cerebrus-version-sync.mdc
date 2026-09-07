@@ -1,6 +1,6 @@
 ---
 description: Al publicar versión de Cerebrus, APP_VERSION y version.json deben ir siempre iguales.
-globs: index.html
+globs: index.html, version.json, js/sac.js
 alwaysApply: false
 ---
 
@@ -10,8 +10,15 @@ Al cambiar la versión visible o el aviso de actualización:
 
 1. **`index.html`**: constante `APP_VERSION` (buscar `const APP_VERSION`).
 2. **`version.json`**: campo `"version"` con **el mismo string** que `APP_VERSION`.
-3. Opcional: actualizar `"notes"` en `version.json` con el resumen de cambios.
+3. **`index.html`**: el `src` de SAC debe llevar el mismo query: `js/sac.js?v=APP_VERSION`.
+4. Opcional: actualizar `"notes"` en `version.json` con el resumen de cambios.
 
 El cliente compara `version.json` (fetch remoto) con `APP_VERSION` en `checkAppVersion`. Si el número en `version.json` es mayor que `APP_VERSION`, el usuario ve el diálogo de actualización en bucle.
 
-**Checklist antes de commit/push:** ambos archivos llevan el mismo identificador de versión (ej. `2026.04.01.3`).
+**Checklist antes de commit/push:** ambos archivos (y el `?v=` de `js/sac.js`) llevan el mismo identificador (ej. `2026.09.06.1`).
+
+# Dónde vive SAC
+
+- Motor: `js/sac.js` (funciones globales, no ES module).
+- HTML de la pestaña: `index.html` (`id="sac"`).
+- No reescribir facturas ni `servare/`. Al guardar, `saveParted` debe seguir mandando `pFac` intacto.

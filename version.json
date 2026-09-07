@@ -1,4 +1,4 @@
 {
-  "version": "2026.08.28.6",
-  "notes": "Fix bucle de actualización: no recargar si ya estás en la última versión; anti-loop de caché; login restaurado tras update."
+  "version": "2026.09.06.3",
+  "notes": "SAC: refit óptico Cerebrus (mismo layout). Fix deshacer pagado conserva abonos."
 }
