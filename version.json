@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.06.5",
-  "notes": "SAC: Pagar TODO en todas las pendientes; botones más chicos. Refit óptico Propinas e Informe diario."
+  "version": "2026.09.06.6",
+  "notes": "Estado de carga solo indicador; Pagar TODO más chico. Acciones de deshacer en Más."
 }

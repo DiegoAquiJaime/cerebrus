@@ -1471,13 +1471,15 @@ function sacRenderCargas() {
       <div class="sac-row-actions">
         ${c.estado === 'pausa'
           ? `<button type="button" class="sac-estado-btn pausa" onclick="sacTogglePausa('${c.id}')">⏸ PAUSA · Reactivar</button>`
-          : `<button type="button" class="sac-estado-btn ${esCls}" onclick="sacCycleEstado('${c.id}')">${esTxt}</button>
+          : `<span class="sac-status ${esCls}" title="Solo indicador — usa Registrar pago o Pagar TODO">${esTxt}</span>
              ${!c._esPago && c.estado !== 'pagado' ? `<button type="button" class="sac-pay-primary" onclick="sacPagarParcial('${c.id}')">Registrar pago</button>` : ''}
              ${!c._esPago && puedePagarTodo ? `<button type="button" class="sac-pay-all" onclick="sacPagarTodoSaldo('${c.id}')">✓ Pagar TODO (${fmt(pendienteParcial)})</button>` : ''}`}
         <details class="sac-actions-menu">
           <summary>Más</summary>
           <div class="sac-actions-panel">
-            ${c.estado !== 'pausa' && !c._esPago ? `
+            ${c.estado === 'pagado' && !c._esPago ? `
+             <button type="button" onclick="sacCycleEstado('${c.id}')">↩ Deshacer pagado</button>` : ''}
+            ${c.estado !== 'pausa' && c.estado !== 'pagado' && !c._esPago ? `
              <button type="button" onclick="sacPagarParcial('${c.id}')">◑ Pago parcial</button>
              <button type="button" onclick="sacAjustarSaldo('${c.id}')">✏ Ajustar saldo</button>
              <button type="button" onclick="sacTogglePausa('${c.id}')">⏸ Pausar</button>` : ''}
@@ -1628,13 +1630,14 @@ function sacRenderIngresos() {
         ${(it.monto || 0) > 0 ? `<div class="sac-row-meta">Recib. ${fmt(recA)} · Falta ${fmt(pend)}</div>` : ''}
       </div>
       <div class="sac-row-actions">
-        <span class="sac-status ${statusCls}">${esFullRec ? '✓ Todo recibido' : esParcial ? '⚠ Parcial' : '○ Pendiente'}</span>
+        <span class="sac-status ${statusCls}" title="Solo indicador — usa Registrar ingreso">${esFullRec ? '✓ Todo recibido' : esParcial ? '⚠ Parcial' : '○ Pendiente'}</span>
         ${pend > 0.5 ? `<button type="button" class="sac-recv-primary" onclick="sacIngresoRecibirParcial('${it.id}')" title="Registrar solo una parte del monto total">Registrar ingreso</button>` : ''}
-        ${!esFullRec ? `<button type="button" class="sac-estado-btn ${statusCls}" onclick="sacCycleIngresoEstado('${it.id}')">○ Marcar todo</button>` : `<button type="button" class="sac-estado-btn pagado" onclick="sacCycleIngresoEstado('${it.id}')">↩ Marcar pendiente</button>`}
         <details class="sac-actions-menu">
           <summary>Más</summary>
           <div class="sac-actions-panel">
-            ${pend > 0.5 ? `<button type="button" onclick="sacIngresoRecibirParcial('${it.id}')">◑ Recibir parcial</button>` : ''}
+            ${pend > 0.5 ? `<button type="button" onclick="sacIngresoRecibirParcial('${it.id}')">◑ Recibir parcial</button>
+            <button type="button" onclick="sacCycleIngresoEstado('${it.id}')">✓ Marcar todo recibido</button>` : ''}
+            ${esFullRec ? `<button type="button" onclick="sacCycleIngresoEstado('${it.id}')">↩ Marcar pendiente</button>` : ''}
             <button type="button" onclick="sacEditIngreso('${it.id}')">✏ Editar</button>
             <button type="button" class="sac-action-del" onclick="sacDelIngreso('${it.id}')">Eliminar</button>
           </div>

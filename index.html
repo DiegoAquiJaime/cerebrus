@@ -1765,7 +1765,8 @@ body.dark-mode .sac-res-mov{border-color:rgba(255,255,255,.08);}
 .sac-pay-primary{background:linear-gradient(135deg,var(--accent),#fb923c);}
 .sac-recv-primary{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 3px 10px rgba(16,185,129,.22);}
 .sac-pay-primary:hover,.sac-recv-primary:hover{filter:brightness(1.05);}
-.sac-pay-all{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--success);padding:5px 8px;border-radius:7px;font:800 8px inherit;cursor:pointer;}
+.sac-pay-all{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--success);padding:3px 6px;border-radius:6px;font:800 7px inherit;cursor:pointer;line-height:1.2;min-height:0;}
+.sac-pay-primary,.sac-recv-primary,.sac-pay-all,.sac-actions-menu>summary{min-height:0;}
 .sac-actions-menu{position:relative;}
 .sac-actions-menu>summary{
   cursor:pointer;list-style:none;border:1px solid var(--sac-line);border-radius:7px;padding:5px 8px;
@@ -2909,6 +2910,9 @@ body.dark-mode textarea:focus{
   .nav-item { min-height: 44px; display: flex; align-items: center; justify-content: center; flex-direction: column; }
   .btn, .fac-btn, button { min-height: 36px; }
   .sac-estado-btn { min-height: 32px; min-width: 70px; }
+  /* SAC row actions: keep compact (avoid touch min-height blow-up) */
+  .sac-pay-primary, .sac-recv-primary, .sac-pay-all, .sac-actions-menu>summary, .sac-actions-panel>button { min-height: 0; }
+  .sac-pay-all { font-size: 7px; padding: 3px 6px; }
   input[type="text"], input[type="number"], input[type="date"], select { min-height: 38px; font-size: 16px !important; } /* 16px prevents iOS zoom */
   .inv-cat-btn { min-height: 36px; padding: 6px 14px; }
 }
@@ -7281,7 +7285,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.06.5';
+const APP_VERSION = '2026.09.06.6';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -26136,7 +26140,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.06.5"></script>
+<script src="js/sac.js?v=2026.09.06.6"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
