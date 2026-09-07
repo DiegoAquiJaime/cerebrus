@@ -1363,6 +1363,27 @@ function sacSetCargaTab(tab) {
   _sacCargaTab = tab === 'pagados' ? 'pagados' : 'activos';
   sacRenderCargas();
 }
+
+/** Pantalla completa de cargas: más espacio para revisar/pagar sin scrollear toda la SAC. */
+function sacToggleCargasFocus(force) {
+  const on = force === true ? true : force === false ? false : !document.body.classList.contains('sac-cargas-focus');
+  document.body.classList.toggle('sac-cargas-focus', on);
+  const btn = document.getElementById('sac-cargas-focus-btn');
+  if (btn) {
+    btn.textContent = on ? '↙ Volver' : '⛶ Ampliar';
+    btn.title = on ? 'Salir de pantalla completa' : 'Abrir cargas a pantalla completa';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  const back = document.getElementById('sac-cargas-focus-back');
+  if (back) back.hidden = !on;
+  if (on) {
+    const card = document.querySelector('.sac-cargas-card');
+    if (card) card.scrollTop = 0;
+    const list = document.querySelector('.sac-cargas-list-scroll');
+    if (list) list.focus?.();
+  }
+}
+
 function sacCatColor(cat) {
   for (const [k,v] of Object.entries(SAC_CAT_COLORS)) if ((cat||'').toLowerCase().includes(k.toLowerCase())) return v;
   return '#94a3b8';
@@ -1473,7 +1494,7 @@ function sacRenderCargas() {
           ? `<button type="button" class="sac-estado-btn pausa" onclick="sacTogglePausa('${c.id}')">⏸ PAUSA · Reactivar</button>`
           : `<span class="sac-status ${esCls}" title="Solo indicador — usa Registrar pago o Pagar TODO">${esTxt}</span>
              ${!c._esPago && c.estado !== 'pagado' ? `<button type="button" class="sac-pay-primary" onclick="sacPagarParcial('${c.id}')">Registrar pago</button>` : ''}
-             ${!c._esPago && puedePagarTodo ? `<button type="button" class="sac-pay-all" onclick="sacPagarTodoSaldo('${c.id}')">✓ Pagar TODO (${fmt(pendienteParcial)})</button>` : ''}`}
+             ${!c._esPago && puedePagarTodo ? `<button type="button" class="sac-pay-all" onclick="sacPagarTodoSaldo('${c.id}')" title="Pagar saldo pendiente: ${fmt(pendienteParcial)}">✓ Pagar todo <span class="sac-pay-all-amt">${fmt(pendienteParcial)}</span></button>` : ''}`}
         <details class="sac-actions-menu">
           <summary>Más</summary>
           <div class="sac-actions-panel">

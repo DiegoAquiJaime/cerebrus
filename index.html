@@ -1744,33 +1744,38 @@ body.dark-mode .sac-res-mov{border-color:rgba(255,255,255,.08);}
 .sac-head-btn.success:hover{filter:brightness(1.05);}
 
 .sac-carga-row{
-  display:grid;grid-template-columns:auto minmax(0,1fr) minmax(110px,1fr) minmax(150px,auto);
-  gap:10px 14px;align-items:start;padding:12px 14px;border-bottom:1px solid var(--sac-line);font-size:12px;
+  display:grid;grid-template-columns:auto minmax(0,1.4fr) minmax(100px,.7fr) minmax(112px,auto);
+  gap:10px 12px;align-items:center;padding:14px 14px;border-bottom:1px solid var(--sac-line);font-size:12px;
 }
-.sac-cargas-card .sac-carga-row,.sac-ingresos-card .sac-carga-row{grid-template-columns:auto minmax(0,1fr) minmax(110px,1fr) minmax(150px,auto);}
+.sac-cargas-card .sac-carga-row,.sac-ingresos-card .sac-carga-row{grid-template-columns:auto minmax(0,1.4fr) minmax(100px,.7fr) minmax(112px,auto);}
 .sac-carga-row:last-child{border-bottom:none;}
 .sac-carga-row:hover{background:rgba(249,115,22,.035);}
 .sac-row-amount{text-align:right;min-width:0;}
 .sac-row-meta{font-size:11px;color:var(--sac-muted);line-height:1.4;margin-top:2px;}
-.sac-row-actions{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:118px;}
-.sac-status{display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;padding:4px 7px;border-radius:6px;background:var(--sac-soft);color:var(--sac-muted);text-align:center;}
+.sac-row-actions{display:flex;flex-direction:column;gap:3px;align-items:stretch;min-width:0;max-width:128px;justify-self:end;}
+.sac-status{display:inline-flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;padding:3px 6px;border-radius:6px;background:var(--sac-soft);color:var(--sac-muted);text-align:center;line-height:1.2;}
 .sac-status.nopagado{background:rgba(239,68,68,.1);color:var(--danger);}
 .sac-status.pagado{background:rgba(16,185,129,.12);color:var(--success);}
 .sac-status.parcial{background:rgba(245,158,11,.14);color:#b45309;}
 .sac-status.pausa{background:rgba(99,102,241,.12);color:#6366f1;}
 .sac-pay-primary,.sac-recv-primary{
-  border:none;color:#fff;padding:6px 8px;border-radius:8px;font:800 9px inherit;cursor:pointer;
-  box-shadow:0 2px 8px rgba(249,115,22,.18);
+  border:none;color:#fff;padding:4px 7px;border-radius:6px;font:700 8px/1.2 inherit;cursor:pointer;
+  box-shadow:0 1px 4px rgba(249,115,22,.14);
 }
 .sac-pay-primary{background:linear-gradient(135deg,var(--accent),#fb923c);}
-.sac-recv-primary{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 3px 10px rgba(16,185,129,.22);}
+.sac-recv-primary{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 1px 4px rgba(16,185,129,.18);}
 .sac-pay-primary:hover,.sac-recv-primary:hover{filter:brightness(1.05);}
-.sac-pay-all{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:var(--success);padding:3px 6px;border-radius:6px;font:800 7px inherit;cursor:pointer;line-height:1.2;min-height:0;}
+.sac-pay-all{
+  background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);color:var(--success);
+  padding:3px 6px;border-radius:6px;font:700 8px/1.15 inherit;cursor:pointer;min-height:0;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+}
+.sac-pay-all-amt{font-size:7px;font-weight:600;opacity:.85;letter-spacing:-.01em;}
 .sac-pay-primary,.sac-recv-primary,.sac-pay-all,.sac-actions-menu>summary{min-height:0;}
 .sac-actions-menu{position:relative;}
 .sac-actions-menu>summary{
-  cursor:pointer;list-style:none;border:1px solid var(--sac-line);border-radius:7px;padding:5px 8px;
-  font-size:9px;font-weight:700;color:var(--sac-muted);background:var(--white);text-align:center;
+  cursor:pointer;list-style:none;border:1px solid var(--sac-line);border-radius:6px;padding:3px 6px;
+  font-size:8px;font-weight:700;color:var(--sac-muted);background:var(--white);text-align:center;
 }
 .sac-actions-menu>summary::-webkit-details-marker{display:none;}
 .sac-actions-menu[open]>summary{background:var(--sac-soft);color:var(--primary);}
@@ -1794,7 +1799,7 @@ body.dark-mode .sac-res-mov{border-color:rgba(255,255,255,.08);}
 .sac-filter-inp{min-width:120px;}
 .sac-carga-row.pagado{opacity:.7;}
 .sac-carga-row.pagado .sac-nombre{text-decoration:line-through;}
-.sac-nombre{font-weight:700;font-size:13px;letter-spacing:-.015em;}
+.sac-nombre{font-weight:800;font-size:15px;letter-spacing:-.02em;line-height:1.25;color:var(--sac-ink);}
 .sac-cat-badge{font-size:9px;font-weight:700;padding:3px 7px;border-radius:6px;white-space:nowrap;}
 .sac-estado-btn{font-size:8px;font-weight:700;padding:4px 8px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;white-space:normal;text-align:center;line-height:1.25;transition:.15s;}
 .sac-estado-btn.nopagado{background:rgba(239,68,68,.1);color:var(--danger);}
@@ -1802,7 +1807,33 @@ body.dark-mode .sac-res-mov{border-color:rgba(255,255,255,.08);}
 .sac-estado-btn.parcial{background:rgba(245,158,11,.12);color:#b45309;}
 .sac-estado-btn.pausa{background:rgba(99,102,241,.14);color:#6366f1;}
 .sac-carga-row.pausa{background:rgba(99,102,241,.05);}
-.sac-monto{font-weight:800;font-size:14px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.sac-monto{font-weight:800;font-size:15px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+
+/* Modo foco: cargas a pantalla completa */
+.sac-cargas-focus-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;background:linear-gradient(135deg,#1d1d1f,#2c2c2e 60%,#3a220f);
+  color:#f5f5f7;border-bottom:1px solid rgba(255,255,255,.08);
+}
+.sac-cargas-focus-bar[hidden]{display:none!important;}
+.sac-cargas-back-btn{
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;
+  border-radius:9px;padding:8px 14px;font:700 12px inherit;cursor:pointer;
+}
+.sac-cargas-back-btn:hover{background:rgba(249,115,22,.25);border-color:rgba(249,115,22,.5);}
+.sac-cargas-focus-hint{font-size:11px;color:rgba(245,245,247,.55);}
+body.sac-cargas-focus{overflow:hidden;}
+body.sac-cargas-focus .sac-cargas-card.sac-cargas-glass{
+  position:fixed;inset:0;z-index:1500;max-height:none;min-height:100dvh;width:100%;
+  border-radius:0;border:none;margin:0;box-shadow:none;
+  background:var(--bg,#f6f7f9);
+}
+body.sac-cargas-focus .sac-cargas-list-scroll{flex:1 1 auto;min-height:0;max-height:none;}
+body.sac-cargas-focus .sac-nombre{font-size:16px;}
+body.sac-cargas-focus .sac-carga-row{padding:16px 18px;}
+body.sac-cargas-focus #sac-cargas-focus-btn{background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.4);color:var(--accent);}
+body.dark-mode.sac-cargas-focus .sac-cargas-card.sac-cargas-glass{background:#0f172a;}
+body.dark-mode .sac-cargas-focus-bar{background:linear-gradient(135deg,#111827,#1e293b 55%,#3a220f);}
 .sac-cargas-card > .sac-footer{flex-shrink:0;}
 .sac-footer{background:var(--sac-soft);border-top:1px solid var(--sac-line);padding:12px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
 .sac-footer-duo{grid-template-columns:1fr 1fr;}
@@ -2346,88 +2377,130 @@ body.dark-mode .fac-menu-list{background:#1c1c1e;border-color:rgba(255,255,255,.
 body.dark-mode .fac-menu-item:hover{background:rgba(255,255,255,.06);}
 
 /* ---- PRINT STYLES ---- */
-/* ---- PROPINAS + INFORME: refit óptico Cerebrus (mismo layout) ---- */
+/* ---- PROPINAS + INFORME: modernización Cerebrus ---- */
 #propinas,#informe{
   --pi-ink:var(--primary);
   --pi-muted:var(--text-muted);
   --pi-line:rgba(15,23,42,.08);
-  --pi-soft:rgba(15,23,42,.035);
+  --pi-soft:rgba(15,23,42,.04);
+  --pi-card:var(--white);
 }
-#propinas .prop-wrap{max-width:680px;}
+#propinas > .content,#informe > .content{
+  background:
+    radial-gradient(1200px 420px at 8% -10%, rgba(249,115,22,.08), transparent 55%),
+    radial-gradient(900px 380px at 100% 0%, rgba(251,146,60,.05), transparent 50%),
+    var(--bg, #f4f5f7);
+  min-height:100%;
+}
+.pi-page-head{
+  max-width:760px;margin:0 auto 18px;padding:4px 2px 2px;
+}
+.pi-page-kicker{
+  font-size:10px;font-weight:750;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;
+}
+.pi-page-title{
+  font-size:28px;font-weight:850;letter-spacing:-.035em;line-height:1.1;color:var(--pi-ink);margin:0 0 6px;
+}
+.pi-page-sub{font-size:13px;color:var(--pi-muted);margin:0;line-height:1.45;max-width:42em;}
+
+#propinas .prop-wrap{max-width:760px;}
+#propinas .prop-semana-sel{margin:0 0 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
 #propinas .prop-semana-btn{
-  border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;
-  border:1px solid var(--pi-line);box-shadow:0 1px 4px rgba(15,23,42,.03);
+  border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700;
+  border:1px solid var(--pi-line);background:var(--pi-card);box-shadow:0 1px 4px rgba(15,23,42,.03);
+  color:var(--pi-ink);cursor:pointer;font-family:inherit;transition:.15s;
 }
+#propinas .prop-semana-btn:hover{border-color:rgba(249,115,22,.35);color:var(--accent);}
 #propinas .prop-semana-btn.active{
-  background:linear-gradient(135deg,var(--accent),#fb923c);border-color:transparent;
-  box-shadow:0 4px 12px rgba(249,115,22,.25);
+  background:linear-gradient(135deg,var(--accent),#fb923c);border-color:transparent;color:#fff;
+  box-shadow:0 6px 16px rgba(249,115,22,.28);
 }
 #propinas .prop-banco-card{
-  background:linear-gradient(145deg,#1d1d1f 0%,#2c2c2e 55%,#3a220f 140%);
-  border-radius:18px;padding:18px 20px;box-shadow:0 8px 24px rgba(249,115,22,.14);
+  background:linear-gradient(145deg,#1d1d1f 0%,#2c2c2e 52%,#3a220f 140%);
+  border-radius:20px;padding:20px 22px;box-shadow:0 12px 32px rgba(249,115,22,.16);margin-bottom:16px;
+  border:1px solid rgba(255,255,255,.06);
 }
-#propinas .prop-banco-lbl{font-size:10px;letter-spacing:.06em;color:rgba(245,245,247,.62);}
-#propinas .prop-banco-val{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;}
+#propinas .prop-banco-lbl{font-size:10px;letter-spacing:.06em;color:rgba(245,245,247,.62);text-transform:uppercase;font-weight:700;}
+#propinas .prop-banco-val{font-size:28px;font-weight:850;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:#f5f5f7;}
 #propinas .prop-banco-sub{font-size:11px;color:rgba(245,245,247,.45);}
-#propinas .prop-table,#propinas .prop-total-bar{
-  border-radius:16px;border:1px solid var(--pi-line);box-shadow:0 4px 16px rgba(15,23,42,.05);
+#propinas .prop-form-card,#propinas .prop-table,#propinas .prop-total-bar{
+  border-radius:18px;border:1px solid var(--pi-line);box-shadow:0 6px 20px rgba(15,23,42,.05);
+  background:var(--pi-card);overflow:hidden;
 }
+#propinas .prop-form-card{padding:16px 18px;margin-bottom:14px;}
+#propinas .prop-form-title{font-size:13px;font-weight:800;color:var(--accent);margin:0 0 12px;letter-spacing:-.01em;}
 #propinas .prop-table th{
-  background:var(--pi-soft);color:var(--pi-muted);font-size:10px;letter-spacing:.05em;padding:10px 14px;
+  background:var(--pi-soft);color:var(--pi-muted);font-size:10px;letter-spacing:.06em;padding:12px 14px;text-transform:uppercase;
 }
-#propinas .prop-table td{padding:11px 14px;border-bottom:1px solid var(--pi-line);font-size:13px;}
+#propinas .prop-table td{padding:13px 14px;border-bottom:1px solid var(--pi-line);font-size:14px;}
+#propinas .prop-table tr:hover td{background:rgba(249,115,22,.03);}
 #propinas .prop-inp{
-  border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;min-width:8rem;
+  border-radius:10px;padding:9px 11px;font-size:14px;font-weight:700;min-width:8rem;
   font-variant-numeric:tabular-nums;border:1px solid var(--pi-line);background:var(--pi-soft);
 }
-#propinas .prop-inp:focus{background:var(--white);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
-#propinas .prop-estado{font-size:10px;padding:4px 8px;border-radius:8px;}
-#propinas .prop-total-bar{padding:16px 18px;}
-body.dark-mode #propinas{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);}
-body.dark-mode #propinas .prop-table,body.dark-mode #propinas .prop-total-bar{background:rgba(30,41,59,.55);border-color:var(--pi-line);}
+#propinas .prop-inp:focus{background:var(--white);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);outline:none;}
+#propinas .prop-estado{font-size:10px;padding:5px 9px;border-radius:999px;font-weight:750;}
+#propinas .prop-total-bar{padding:18px 20px;margin-top:14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+#propinas .seb-add-form.show{
+  border-radius:18px;border:1px solid var(--pi-line);box-shadow:0 6px 20px rgba(15,23,42,.05);
+  background:var(--pi-card);padding:16px 18px;margin-bottom:14px;
+}
+body.dark-mode #propinas{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);--pi-card:rgba(30,41,59,.72);}
+body.dark-mode #propinas > .content{background:radial-gradient(1000px 400px at 10% -8%,rgba(249,115,22,.12),transparent 50%),#0b1220;}
+body.dark-mode #propinas .prop-table,body.dark-mode #propinas .prop-total-bar,body.dark-mode #propinas .seb-add-form.show{background:var(--pi-card);border-color:var(--pi-line);}
 body.dark-mode #propinas .prop-table th{background:rgba(255,255,255,.04);}
 body.dark-mode #propinas .prop-inp{background:rgba(255,255,255,.06);color:#e2e8f0;border-color:var(--pi-line);}
+body.dark-mode #propinas .prop-semana-btn{background:rgba(255,255,255,.04);color:#e2e8f0;}
 
-#informe .inf-wrap{max-width:560px;}
+#informe .inf-wrap{max-width:640px;}
 #informe .inf-block{
-  border-radius:16px;border:1px solid var(--pi-line);padding:18px 20px;margin-bottom:14px;
-  box-shadow:0 4px 16px rgba(15,23,42,.045);background:var(--white);
+  border-radius:18px;border:1px solid var(--pi-line);padding:18px 20px;margin-bottom:14px;
+  box-shadow:0 6px 20px rgba(15,23,42,.05);background:var(--pi-card);
 }
 #informe .inf-block-title{
-  font-size:11px;letter-spacing:.08em;color:var(--pi-muted);font-weight:750;margin-bottom:14px;
+  font-size:11px;letter-spacing:.1em;color:var(--pi-muted);font-weight:800;margin-bottom:14px;text-transform:uppercase;
 }
-#informe .inf-field label{font-size:11px;color:var(--pi-muted);font-weight:650;}
+#informe .inf-field label{font-size:11px;color:var(--pi-muted);font-weight:700;}
 #informe .inf-field input,#informe .inf-field textarea,#informe .inf-item-row input{
-  border-radius:10px;padding:10px 12px;font-size:13px;border:1px solid var(--pi-line);background:var(--pi-soft);
+  border-radius:11px;padding:11px 13px;font-size:14px;border:1px solid var(--pi-line);background:var(--pi-soft);
 }
 #informe .inf-field input:focus,#informe .inf-field textarea:focus,#informe .inf-item-row input:focus{
   background:var(--white);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);
 }
 #informe .inf-add-btn{
-  border-radius:10px;padding:10px;font-size:12px;border:1.5px dashed rgba(249,115,22,.35);color:var(--accent);
+  border-radius:11px;padding:11px;font-size:12px;font-weight:700;
+  border:1.5px dashed rgba(249,115,22,.4);color:var(--accent);background:rgba(249,115,22,.03);
 }
-#informe .inf-add-btn:hover{background:rgba(249,115,22,.05);border-color:var(--accent);}
+#informe .inf-add-btn:hover{background:rgba(249,115,22,.08);border-color:var(--accent);}
 #informe .inf-gen-btn{
-  border-radius:12px;padding:14px;font-size:14px;font-weight:800;
-  background:linear-gradient(135deg,var(--accent),#fb923c);box-shadow:0 6px 18px rgba(249,115,22,.28);
+  border-radius:14px;padding:15px;font-size:15px;font-weight:850;letter-spacing:-.01em;
+  background:linear-gradient(135deg,var(--accent),#fb923c);box-shadow:0 8px 22px rgba(249,115,22,.3);
 }
-#informe .inf-btn-wa,#informe .inf-btn-txt,#informe .inf-btn-prev{border-radius:10px;padding:12px;font-size:12px;font-weight:700;}
-#informe .inf-preview{border-radius:16px;border:1px solid var(--pi-line);box-shadow:0 6px 20px rgba(15,23,42,.06);}
+#informe .inf-btn-wa,#informe .inf-btn-txt,#informe .inf-btn-prev{border-radius:11px;padding:12px;font-size:12px;font-weight:750;}
+#informe .inf-preview{border-radius:18px;border:1px solid var(--pi-line);box-shadow:0 8px 24px rgba(15,23,42,.07);}
 #informe .inf-prev-head{
-  background:linear-gradient(145deg,#1d1d1f,#2c2c2e 60%,#3a220f);border-bottom:none;padding:16px 18px;
+  background:linear-gradient(145deg,#1d1d1f,#2c2c2e 60%,#3a220f);border-bottom:none;padding:18px 20px;
 }
-#informe .inf-prev-kpi .kv{font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
-#informe .inf-saldo-num{font-size:1.75rem;font-weight:800;letter-spacing:-.03em;}
-#informe .inf-block[style*="border:2px solid var(--accent)"]{
-  background:linear-gradient(180deg,rgba(249,115,22,.05),rgba(249,115,22,.02))!important;
-  border-color:rgba(249,115,22,.35)!important;
+#informe .inf-prev-kpi .kv{font-size:16px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;font-weight:800;}
+#informe .inf-saldo-num{font-size:1.85rem;font-weight:850;letter-spacing:-.03em;}
+#informe .inf-live-card{
+  border:1.5px solid rgba(249,115,22,.35)!important;
+  background:linear-gradient(180deg,rgba(249,115,22,.07),rgba(249,115,22,.02))!important;
+  box-shadow:0 8px 24px rgba(249,115,22,.1);
 }
-body.dark-mode #informe{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);}
-body.dark-mode #informe .inf-block,body.dark-mode #informe .inf-preview{background:rgba(30,41,59,.55);border-color:var(--pi-line);}
+#informe .inf-live-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:10px;}
+#informe .inf-live-kpi{text-align:center;padding:8px 6px;border-radius:12px;background:rgba(255,255,255,.55);}
+#informe .inf-live-kpi .lbl{font-size:9px;color:var(--pi-muted);font-weight:750;text-transform:uppercase;letter-spacing:.06em;}
+#informe .inf-live-kpi .val{font-size:18px;font-weight:850;letter-spacing:-.02em;margin-top:4px;}
+body.dark-mode #informe{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);--pi-card:rgba(30,41,59,.72);}
+body.dark-mode #informe > .content{background:radial-gradient(1000px 400px at 10% -8%,rgba(249,115,22,.12),transparent 50%),#0b1220;}
+body.dark-mode #informe .inf-block,body.dark-mode #informe .inf-preview{background:var(--pi-card);border-color:var(--pi-line);}
 body.dark-mode #informe .inf-field input,body.dark-mode #informe .inf-field textarea,body.dark-mode #informe .inf-item-row input{
   background:rgba(255,255,255,.05);color:#e2e8f0;border-color:var(--pi-line);
 }
 body.dark-mode #informe .inf-prev-head{background:linear-gradient(145deg,#1c1c1e,#2c2c2e 50%,#3d250f);}
+body.dark-mode #informe .inf-live-kpi{background:rgba(255,255,255,.04);}
+body.dark-mode .pi-page-title{color:#f5f5f7;}
 
 
 @media print {
@@ -2912,7 +2985,8 @@ body.dark-mode textarea:focus{
   .sac-estado-btn { min-height: 32px; min-width: 70px; }
   /* SAC row actions: keep compact (avoid touch min-height blow-up) */
   .sac-pay-primary, .sac-recv-primary, .sac-pay-all, .sac-actions-menu>summary, .sac-actions-panel>button { min-height: 0; }
-  .sac-pay-all { font-size: 7px; padding: 3px 6px; }
+  .sac-pay-all { font-size: 8px; padding: 3px 6px; }
+  .sac-nombre { font-size: 15px; }
   input[type="text"], input[type="number"], input[type="date"], select { min-height: 38px; font-size: 16px !important; } /* 16px prevents iOS zoom */
   .inv-cat-btn { min-height: 36px; padding: 6px 14px; }
 }
@@ -3253,90 +3327,6 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
 @media (min-width: 1440px) {
   .sac-desk-split{grid-template-columns:minmax(320px,0.85fr) minmax(0,1.35fr);}
 }
-
-/* ---- PROPINAS + INFORME: refit óptico Cerebrus (mismo layout) ---- */
-#propinas,#informe{
-  --pi-ink:var(--primary);
-  --pi-muted:var(--text-muted);
-  --pi-line:rgba(15,23,42,.08);
-  --pi-soft:rgba(15,23,42,.035);
-}
-#propinas .prop-wrap{max-width:680px;}
-#propinas .prop-semana-btn{
-  border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;
-  border:1px solid var(--pi-line);box-shadow:0 1px 4px rgba(15,23,42,.03);
-}
-#propinas .prop-semana-btn.active{
-  background:linear-gradient(135deg,var(--accent),#fb923c);border-color:transparent;
-  box-shadow:0 4px 12px rgba(249,115,22,.25);
-}
-#propinas .prop-banco-card{
-  background:linear-gradient(145deg,#1d1d1f 0%,#2c2c2e 55%,#3a220f 140%);
-  border-radius:18px;padding:18px 20px;box-shadow:0 8px 24px rgba(249,115,22,.14);
-}
-#propinas .prop-banco-lbl{font-size:10px;letter-spacing:.06em;color:rgba(245,245,247,.62);}
-#propinas .prop-banco-val{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;}
-#propinas .prop-banco-sub{font-size:11px;color:rgba(245,245,247,.45);}
-#propinas .prop-table,#propinas .prop-total-bar{
-  border-radius:16px;border:1px solid var(--pi-line);box-shadow:0 4px 16px rgba(15,23,42,.05);
-}
-#propinas .prop-table th{
-  background:var(--pi-soft);color:var(--pi-muted);font-size:10px;letter-spacing:.05em;padding:10px 14px;
-}
-#propinas .prop-table td{padding:11px 14px;border-bottom:1px solid var(--pi-line);font-size:13px;}
-#propinas .prop-inp{
-  border-radius:8px;padding:8px 10px;font-size:13px;font-weight:700;min-width:8rem;
-  font-variant-numeric:tabular-nums;border:1px solid var(--pi-line);background:var(--pi-soft);
-}
-#propinas .prop-inp:focus{background:var(--white);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);}
-#propinas .prop-estado{font-size:10px;padding:4px 8px;border-radius:8px;}
-#propinas .prop-total-bar{padding:16px 18px;}
-body.dark-mode #propinas{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);}
-body.dark-mode #propinas .prop-table,body.dark-mode #propinas .prop-total-bar{background:rgba(30,41,59,.55);border-color:var(--pi-line);}
-body.dark-mode #propinas .prop-table th{background:rgba(255,255,255,.04);}
-body.dark-mode #propinas .prop-inp{background:rgba(255,255,255,.06);color:#e2e8f0;border-color:var(--pi-line);}
-
-#informe .inf-wrap{max-width:560px;}
-#informe .inf-block{
-  border-radius:16px;border:1px solid var(--pi-line);padding:18px 20px;margin-bottom:14px;
-  box-shadow:0 4px 16px rgba(15,23,42,.045);background:var(--white);
-}
-#informe .inf-block-title{
-  font-size:11px;letter-spacing:.08em;color:var(--pi-muted);font-weight:750;margin-bottom:14px;
-}
-#informe .inf-field label{font-size:11px;color:var(--pi-muted);font-weight:650;}
-#informe .inf-field input,#informe .inf-field textarea,#informe .inf-item-row input{
-  border-radius:10px;padding:10px 12px;font-size:13px;border:1px solid var(--pi-line);background:var(--pi-soft);
-}
-#informe .inf-field input:focus,#informe .inf-field textarea:focus,#informe .inf-item-row input:focus{
-  background:var(--white);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring);
-}
-#informe .inf-add-btn{
-  border-radius:10px;padding:10px;font-size:12px;border:1.5px dashed rgba(249,115,22,.35);color:var(--accent);
-}
-#informe .inf-add-btn:hover{background:rgba(249,115,22,.05);border-color:var(--accent);}
-#informe .inf-gen-btn{
-  border-radius:12px;padding:14px;font-size:14px;font-weight:800;
-  background:linear-gradient(135deg,var(--accent),#fb923c);box-shadow:0 6px 18px rgba(249,115,22,.28);
-}
-#informe .inf-btn-wa,#informe .inf-btn-txt,#informe .inf-btn-prev{border-radius:10px;padding:12px;font-size:12px;font-weight:700;}
-#informe .inf-preview{border-radius:16px;border:1px solid var(--pi-line);box-shadow:0 6px 20px rgba(15,23,42,.06);}
-#informe .inf-prev-head{
-  background:linear-gradient(145deg,#1d1d1f,#2c2c2e 60%,#3a220f);border-bottom:none;padding:16px 18px;
-}
-#informe .inf-prev-kpi .kv{font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
-#informe .inf-saldo-num{font-size:1.75rem;font-weight:800;letter-spacing:-.03em;}
-#informe .inf-block[style*="border:2px solid var(--accent)"]{
-  background:linear-gradient(180deg,rgba(249,115,22,.05),rgba(249,115,22,.02))!important;
-  border-color:rgba(249,115,22,.35)!important;
-}
-body.dark-mode #informe{--pi-line:rgba(255,255,255,.1);--pi-soft:rgba(255,255,255,.05);}
-body.dark-mode #informe .inf-block,body.dark-mode #informe .inf-preview{background:rgba(30,41,59,.55);border-color:var(--pi-line);}
-body.dark-mode #informe .inf-field input,body.dark-mode #informe .inf-field textarea,body.dark-mode #informe .inf-item-row input{
-  background:rgba(255,255,255,.05);color:#e2e8f0;border-color:var(--pi-line);
-}
-body.dark-mode #informe .inf-prev-head{background:linear-gradient(145deg,#1c1c1e,#2c2c2e 50%,#3d250f);}
-
 
 @media print {
   .hamburger,.nav-collapse-btn{display:none!important;}
@@ -3897,9 +3887,14 @@ body.dark-mode #informe .inf-prev-head{background:linear-gradient(145deg,#1c1c1e
             <div class="sac-cargas-head">
               <div style="font-size:13px;font-weight:800;letter-spacing:-.02em;">📤 Cargas de la semana <span class="sac-help light" title="Gastos del período. No pagado / parcial / pagado afectan por pagar y balance. PAUSA: el monto queda anotado pero no cuenta en por pagar ni en el balance hasta reactivar.">?</span></div>
               <div style="display:flex;gap:7px;flex-wrap:wrap;">
+                <button type="button" id="sac-cargas-focus-btn" onclick="sacToggleCargasFocus()" class="sac-head-btn ghost" title="Abrir cargas a pantalla completa" aria-pressed="false">⛶ Ampliar</button>
                 <button onclick="sacOpenConfigSel()" class="sac-head-btn ghost">☑ Gastos fijos</button>
                 <button onclick="sacAddCargaManual()" class="sac-head-btn accent">+ Agregar</button>
               </div>
+            </div>
+            <div id="sac-cargas-focus-back" class="sac-cargas-focus-bar" hidden>
+              <button type="button" class="sac-cargas-back-btn" onclick="sacToggleCargasFocus(false)">← Volver a Semana Actual</button>
+              <span class="sac-cargas-focus-hint">Modo foco · Esc para salir</span>
             </div>
             <div class="sac-cargas-tabs" role="tablist" aria-label="Vista egresos semana">
               <button type="button" class="sac-cargas-tab sel" id="sac-tab-activos" onclick="sacSetCargaTab('activos')" title="Solo pendientes de pago, parciales y en pausa">Por pagar · Pausa</button>
@@ -5607,6 +5602,11 @@ body.dark-mode #informe .inf-prev-head{background:linear-gradient(145deg,#1c1c1e
   <!-- ======= TAB INFORME DIARIO ======= -->
   <div id="informe" class="tab-content">
     <div class="content">
+      <div class="pi-page-head">
+        <div class="pi-page-kicker">Cerebrus · Cierre</div>
+        <h2 class="pi-page-title">Informe diario</h2>
+        <p class="pi-page-sub">Arma el balance del día, genera el informe y compártelo.</p>
+      </div>
       <div class="inf-wrap">
 
         <!-- Informes guardados -->
@@ -5626,20 +5626,20 @@ body.dark-mode #informe .inf-prev-head{background:linear-gradient(145deg,#1c1c1e
         </div>
 
         <!-- Balance en tiempo real -->
-        <div class="inf-block" style="border:2px solid var(--accent);background:rgba(249,115,22,.03);">
+        <div class="inf-block inf-live-card">
           <div class="inf-block-title" style="color:var(--accent);">📊 Balance en tiempo real</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px;">
-            <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Base Banco + Ingresos</div>
-              <div style="font-size:18px;font-weight:800;color:var(--success);" id="inf-live-entrada">$0</div>
+          <div class="inf-live-grid">
+            <div class="inf-live-kpi">
+              <div class="lbl">Base Banco + Ingresos</div>
+              <div class="val" style="color:var(--success);" id="inf-live-entrada">$0</div>
             </div>
-            <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Egresos + Propina</div>
-              <div style="font-size:18px;font-weight:800;color:var(--danger);" id="inf-live-cargas">$0</div>
+            <div class="inf-live-kpi">
+              <div class="lbl">Egresos + Propina</div>
+              <div class="val" style="color:var(--danger);" id="inf-live-cargas">$0</div>
             </div>
-            <div style="text-align:center;">
-              <div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Saldo proyectado</div>
-              <div style="font-size:18px;font-weight:800;" id="inf-live-saldo" style="color:var(--success);">$0</div>
+            <div class="inf-live-kpi">
+              <div class="lbl">Saldo proyectado</div>
+              <div class="val" id="inf-live-saldo" style="color:var(--success);">$0</div>
             </div>
           </div>
           <div style="height:6px;background:#f1f5f9;border-radius:3px;overflow:hidden;">
@@ -6922,6 +6922,9 @@ function undo() {
 
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey||e.metaKey) && e.key==='z') { e.preventDefault(); undo(); }
+  if (e.key === 'Escape' && document.body.classList.contains('sac-cargas-focus') && typeof sacToggleCargasFocus === 'function') {
+    sacToggleCargasFocus(false);
+  }
 });
 
 // ============================================================
@@ -7285,7 +7288,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.06.6';
+const APP_VERSION = '2026.09.06.7';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -25402,6 +25405,11 @@ function propRender() {
   const nHist = (state.propinas || []).length;
 
   el.innerHTML = `
+  <div class="pi-page-head">
+    <div class="pi-page-kicker">Cerebrus · Equipo</div>
+    <h2 class="pi-page-title">Propinas</h2>
+    <p class="pi-page-sub">Registra, paga y controla el saldo real del banco descontando propinas pendientes.</p>
+  </div>
   <!-- Banco con propinas descontadas -->
   <div class="prop-banco-card">
     <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.4);margin-bottom:12px;">🏦 Cuenta Bancaria — Saldo Real</div>
@@ -25436,8 +25444,8 @@ function propRender() {
   </div>
 
   <!-- Formulario nueva propina -->
-  <div class="seb-add-form show" style="margin-bottom:14px;">
-    <div style="font-size:11px;font-weight:700;color:var(--accent2);margin-bottom:10px;">+ Registrar propina · semana ${esc(propIsoRangeLabel(periodo))}</div>
+  <div class="seb-add-form show prop-form-card" style="margin-bottom:14px;">
+    <div class="prop-form-title">+ Registrar propina · semana ${esc(propIsoRangeLabel(periodo))}</div>
     <div class="seb-add-form-grid">
       <div><label>Fecha</label><input type="date" id="prop-fecha" value="${fechaDefault}" min="${periodo.start}" max="${fechaMax}"></div>
       <div><label>Descripción</label><input type="text" id="prop-desc" placeholder="Ej: Propina servicio turno noche"></div>
@@ -26140,7 +26148,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.06.6"></script>
+<script src="js/sac.js?v=2026.09.06.7"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
