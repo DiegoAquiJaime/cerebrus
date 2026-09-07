@@ -1440,7 +1440,7 @@ function sacRenderCargas() {
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : c.estado === 'pausa' ? '⏸ Pausa' : '○ No pagado';
     const pagadoParcial = c.pagadoParcial || 0;
     const pendienteParcial = Math.max(0, (c.monto || 0) - pagadoParcial);
-    const puedePagarTodo = !c._esPago && c.estado !== 'pagado' && c.estado !== 'pausa' && pendienteParcial > 0 && (c.estado === 'parcial' || pagadoParcial > 0);
+    const puedePagarTodo = !c._esPago && c.estado !== 'pagado' && c.estado !== 'pausa' && pendienteParcial > 0;
     const montoEf = c._esPago ? c.monto :
                     c.estado === 'parcial' && pagadoParcial > 0 ? pendienteParcial :
                     c.montoReal != null ? c.montoReal : c.monto;
