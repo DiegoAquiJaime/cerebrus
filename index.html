@@ -8040,6 +8040,9 @@ function showTab(tabId) {
   const _prevTabId = _activeTabId;
   _activeTabId = tabId;
   closeNav();
+  if (_prevTabId === 'sac' && tabId !== 'sac' && typeof sacToggleCargasFocus === 'function') {
+    sacToggleCargasFocus(false);
+  }
   ['resumen','sac','semanas','venta','historial','creditos','facturas','inventario','propinas','sebas','informe','detalle'].forEach(t => {
     const el = document.getElementById(t);
     if (el) el.classList.toggle('active', t===tabId);
