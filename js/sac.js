@@ -884,6 +884,12 @@ function sacBaseCargas(cargas) {
   return (cargas || []).filter(c => !c._esPago);
 }
 
+/** Filas "✓ Pago saldo — X" duplican la carga original ya marcada pagado. */
+function sacCargaEsPagoSaldoDup(c) {
+  if (!c || !c._esPago) return false;
+  return /pago saldo/i.test(String(c.nombre || ''));
+}
+
 function sacCargaPagadoAcum(c) {
   if (c.estado === 'pausa') return 0;
   if (c.estado === 'pagado') return c.monto || 0;
@@ -1421,6 +1427,7 @@ function sacRenderCargas() {
 
   const sortedCargas = [...cargas].sort((a, b) => sacCargaSortTs(b) - sacCargaSortTs(a));
   const filteredCargas = sortedCargas.filter(c => {
+    if (sacCargaEsPagoSaldoDup(c)) return false;
     const catOk = !_sacCargaFilter.cat || (c.cat || '').toLowerCase().includes(_sacCargaFilter.cat.toLowerCase());
     const estOk = !_sacCargaFilter.estado || (c.estado || 'nopagado') === _sacCargaFilter.estado;
     const nameOk = !_sacCargaFilter.name || (c.nombre || '').toLowerCase().includes(_sacCargaFilter.name);
@@ -2132,25 +2139,11 @@ async function sacPagarTodoSaldo(id) {
   });
   if (bankOpt.cancel) return;
   pushUndo();
-  const cargas = sacGetCargas();
   sacRememberPagadoAntesDeSaldar(c);
   c.pagadoParcial = (c.pagadoParcial || 0) + pendiente;
   c.estado = 'pagado';
   c.montoReal = c.monto;
   sacCargaLogPush(c, 'pagar_todo', { monto: pendiente });
-  const pago = {
-    id: 'sc_pago_' + Date.now(),
-    nombre: `✓ Pago saldo — ${c.nombre}`,
-    cat: c.cat,
-    monto: pendiente,
-    montoReal: pendiente,
-    estado: 'pagado',
-    resp: c.resp || '',
-    nota: `Saldo completo ${fmt(pendiente)}`,
-    _esPago: true
-  };
-  sacTouchCarga(pago);
-  cargas.push(pago);
   if (bankOpt.descontar && pendiente > 0) sacDescontarBancoPorEgreso_(pendiente, c.nombre);
   sacTouchCarga(c);
   sacRenderCargas();

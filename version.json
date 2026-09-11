@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.06.8",
-  "notes": "Informe diario: al generar confirma guardado, preview WhatsApp + copiar; avisa si falta propina."
+  "version": "2026.09.11.1",
+  "notes": "Guardado: reintenta lecturas a Google cuando Apps Script responde 404/HTML; no aborta por un fallo puntual."
 }

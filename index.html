@@ -7323,7 +7323,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.06.8';
+const APP_VERSION = '2026.09.11.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -26246,7 +26246,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.06.8"></script>
+<script src="js/sac.js?v=2026.09.11.1"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
@@ -26318,17 +26318,79 @@ function startAutoSave() {
   }, 5 * 60 * 1000); // cada 5 minutos
 }
 
+// Apps Script a veces responde 404 HTML (interstitial de Google) en GET.
+// Reintentar; no parsear HTML como JSON (eso abortaba el Guardar).
+function cerebrusCloudLooksLikeHtml_(text) {
+  const s = String(text || '').trim().slice(0, 180).toLowerCase();
+  return !s ? false : (s.charAt(0) === '<' || s.indexOf('<!doctype') === 0 || s.indexOf('<html') >= 0);
+}
+function cerebrusCloudIsTransientErr_(err) {
+  const msg = String((err && err.message) || err || '');
+  const name = String((err && err.name) || '');
+  if (name === 'AbortError') return true;
+  return /HTTP 404|HTTP 429|HTTP 502|HTTP 503|HTTP 504|HTML de Google|no JSON|Failed to fetch|NetworkError|timeout|aborted|Unexpected token/i.test(msg);
+}
+function cerebrusCloudSleep_(ms) {
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+}
+async function cerebrusCloudFetchJson_(opts) {
+  opts = opts || {};
+  const method = String(opts.method || 'GET').toUpperCase();
+  const action = String(opts.action || '');
+  const attempts = Math.max(1, Number(opts.attempts) || 3);
+  const timeoutMs = Number(opts.timeoutMs) || (method === 'POST' ? 120000 : 25000);
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    const ctrl = new AbortController();
+    const abortT = setTimeout(function() { try { ctrl.abort(); } catch (eAb) {} }, timeoutMs);
+    try {
+      const url = method === 'GET'
+        ? (API_URL + '?action=' + encodeURIComponent(action) + '&_=' + Date.now())
+        : API_URL;
+      const fetchOpts = { method: method, signal: ctrl.signal };
+      if (method === 'POST') {
+        fetchOpts.body = (typeof opts.body === 'string') ? opts.body : JSON.stringify(opts.body || {});
+      }
+      const res = await fetch(url, fetchOpts);
+      const text = await res.text();
+      if (cerebrusCloudLooksLikeHtml_(text)) {
+        throw new Error(res.ok ? 'HTML de Google' : ('HTTP ' + res.status + ' HTML de Google'));
+      }
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      try {
+        return JSON.parse(text);
+      } catch (pe) {
+        throw new Error('Respuesta no JSON de la nube');
+      }
+    } catch (e) {
+      lastErr = e;
+      console.warn('[CEREBRUS] nube ' + (action || method) + ' intento ' + (i + 1) + '/' + attempts + ':', (e && e.message) || e);
+      if (!cerebrusCloudIsTransientErr_(e) || i === attempts - 1) break;
+      await cerebrusCloudSleep_(900 * (i + 1));
+    } finally {
+      clearTimeout(abortT);
+    }
+  }
+  throw lastErr || new Error('Nube no responde');
+}
+
+let _cloudStateRawCache = { at: 0, st: null, inflight: null };
+function cerebrusParseCloudStatePayload_(json) {
+  if (!json || !json.ok || !json.data) throw new Error((json && json.error) || 'No se pudo leer estado nube actual');
+  let parsed = json.data;
+  if (typeof json.data === 'string') {
+    try { parsed = JSON.parse(json.data); } catch (e) { parsed = json.data; }
+  }
+  const st = (parsed && parsed.state) ? parsed.state : (parsed || {});
+  decompressVsData(st);
+  return { state: st, parsed: parsed, json: json };
+}
+
 // ── CLOUD LOAD ──
 async function loadFromCloud() {
   setSyncStatus('⏳ Cargando…', '');
-  // Apps Script suele tardar 20–90s; 45s cortaba y mostraba «Sin conexión».
-  const cloudTimeoutMs = 180000;
-  const ctrl = new AbortController();
-  const abortT = setTimeout(() => ctrl.abort(), cloudTimeoutMs);
   try {
-    const res  = await fetch(API_URL + '?action=getState&_=' + Date.now(), { signal: ctrl.signal });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
+    const json = await cerebrusCloudFetchJson_({ action: 'getState', timeoutMs: 60000, attempts: 3 });
     if (json.ok && json.data) {
       // Handle chunked data: if data comes as string, parse it
       let parsed = json.data;
@@ -26424,11 +26486,9 @@ async function loadFromCloud() {
     }
   } catch(e) {
     if (!loadLocalRaw()) state = makeDefaultState();
-    const isAbort = e && (e.name === 'AbortError' || String(e.message||'').indexOf('aborted') >= 0);
+    const isAbort = e && (e.name === 'AbortError' || /aborted|timeout|agotado/i.test(String(e.message||'')));
     setSyncStatus(isAbort ? '⚠ Tiempo agotado (nube)' : '⚠ Sin conexión', 'err');
     notify(isAbort ? '⚠ La nube tardó demasiado en responder — usando datos locales si hay.' : '⚠ Sin conexión — usando datos locales');
-  } finally {
-    clearTimeout(abortT);
   }
   _postLoadSetup();
 }
@@ -26453,16 +26513,24 @@ function _intersectSets(a, b) {
 }
 
 async function _fetchCloudStateRaw() {
-  const res = await fetch(API_URL + '?action=getState&_=' + Date.now());
-  const json = await res.json();
-  if (!json.ok || !json.data) throw new Error('No se pudo leer estado nube actual');
-  let parsed = json.data;
-  if (typeof json.data === 'string') {
-    try { parsed = JSON.parse(json.data); } catch(e) { parsed = json.data; }
+  const now = Date.now();
+  if (_cloudStateRawCache.st && (now - _cloudStateRawCache.at) < 8000) {
+    try { return JSON.parse(JSON.stringify(_cloudStateRawCache.st)); } catch (e) { return _cloudStateRawCache.st; }
   }
-  const st = parsed.state || {};
-  decompressVsData(st);
-  return st;
+  if (_cloudStateRawCache.inflight) return _cloudStateRawCache.inflight;
+  const p = (async function() {
+    const json = await cerebrusCloudFetchJson_({ action: 'getState', timeoutMs: 35000, attempts: 3 });
+    const pack = cerebrusParseCloudStatePayload_(json);
+    _cloudStateRawCache.at = Date.now();
+    _cloudStateRawCache.st = pack.state;
+    try { return JSON.parse(JSON.stringify(pack.state)); } catch (e) { return pack.state; }
+  })();
+  _cloudStateRawCache.inflight = p;
+  try {
+    return await p;
+  } finally {
+    if (_cloudStateRawCache.inflight === p) _cloudStateRawCache.inflight = null;
+  }
 }
 
 function cerebrusNormUser_(u) {
@@ -26489,9 +26557,14 @@ function cerebrusSameCloudUser_(a, b) {
 let _cloudSaveInFlight = false;
 
 async function _prepareConcurrentSafeState() {
-  const vr = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
-  const vj = await vr.json();
-  if (!vj.ok) return {ok:true, stateToSave: state};
+  let vj;
+  try {
+    vj = await cerebrusCloudFetchJson_({ action: 'getVersion', timeoutMs: 20000, attempts: 3 });
+  } catch (eVer) {
+    console.warn('[CEREBRUS] getVersion inestable, guardo con base local:', eVer);
+    return {ok:true, stateToSave: state};
+  }
+  if (!vj || !vj.ok) return {ok:true, stateToSave: state};
   if (String(vj.version) === String(cloudVersion)) {
     return {ok:true, stateToSave: state};
   }
@@ -26928,16 +27001,18 @@ async function saveToCloud(description, silent) {
 
       // Bodega + solo inventario → no enviar SAC/facturas/etc. al Sheet Cerebrus (deshabilitado: bodega en Servare)
       if (!CEREBRUS_BODEGA_EN_SERVARE && cerebrusUsuarioBodega() && onlyInv && parts.pInv) {
-        const resBodega = await fetch(API_URL, {
+        const jsonBodega = await cerebrusCloudFetchJson_({
           method: 'POST',
-          body: JSON.stringify({
+          action: 'saveParted',
+          timeoutMs: 120000,
+          attempts: 2,
+          body: {
             action: 'saveParted',
             user: currentUser,
             parts: { pInv: parts.pInv },
             description: (description || 'Inventario Bodega') + ' (solo pInv)'
-          })
+          }
         });
-        const jsonBodega = await resBodega.json();
         if (!jsonBodega.ok) throw new Error(jsonBodega.error || 'saveParted pInv');
         cloudVersion = jsonBodega.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
@@ -26956,18 +27031,20 @@ async function saveToCloud(description, silent) {
       }
 
       const partNames = Object.keys(parts).join('+') || '—';
-      const resPart = await fetch(API_URL, {
+      const jsonPart = await cerebrusCloudFetchJson_({
         method: 'POST',
-        body: JSON.stringify({
+        action: 'saveParted',
+        timeoutMs: 120000,
+        attempts: 2,
+        body: {
           action: 'saveParted',
           user: currentUser,
           parts: parts,
           description: (description || 'Guardó cambios')
  + (!parts.pInv ? ' (sin pInv)' : ' (partido)')
             + (uploadPartIds && uploadPartIds.size ? ' [' + partNames + ']' : '')
-        })
+        }
       });
-      const jsonPart = await resPart.json();
       if (jsonPart.ok) {
         cloudVersion = jsonPart.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
@@ -27013,8 +27090,7 @@ async function saveToCloud(description, silent) {
     if (dataStr.length <= CHUNK_SIZE) {
       // Single-cell save (standard)
       const payload = JSON.stringify({ action:'save', user:currentUser, data:JSON.parse(dataStr), description: description||'Guardó cambios', chunks:1 });
-      const res  = await fetch(API_URL, { method:'POST', body: payload });
-      const json = await res.json();
+      const json = await cerebrusCloudFetchJson_({ method:'POST', action:'save', timeoutMs: 90000, attempts: 2, body: payload });
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
@@ -27036,8 +27112,7 @@ async function saveToCloud(description, silent) {
         description: description || 'Guardó cambios (chunked)'
       });
 
-      const res  = await fetch(API_URL, { method:'POST', body: payload });
-      const json = await res.json();
+      const json = await cerebrusCloudFetchJson_({ method:'POST', action:'saveChunked', timeoutMs: 120000, attempts: 2, body: payload });
       if (json.ok) {
         cloudVersion = json.version || cloudVersion;
         _cloudBaseVersion = cloudVersion;
@@ -27293,12 +27368,16 @@ async function cerebrusHardBlockEmptyWipeGate_(stateToSave) {
   try {
     remote = await _fetchCloudStateRaw();
   } catch (e) {
-    // Sin nube: no subir (sesión puede estar stale). Solo se guarda local.
     var base = _cloudBaseState || {};
     var risksOffline = cerebrusSuspiciousEmptyWipeRisks_(stateToSave || state, base);
     var msg = 'Sin conexión o la nube no responde — actualiza desde nube antes de guardar';
     if (risksOffline.length) {
       return { ok: false, risks: risksOffline.concat([msg]), remote: base };
+    }
+    // Sesión coherente vs base: un 404 puntual no debe bloquear el guardado.
+    if (_cloudBaseState) {
+      console.warn('[CEREBRUS] wipe-gate: nube inestable, comparé contra base local');
+      return { ok: true, risks: [], remote: base };
     }
     return { ok: false, risks: [msg], remote: base };
   }
@@ -27390,9 +27469,7 @@ async function reloadFromCloud() {
 
   setSyncStatus('⏳ Actualizando (merge seguro)…', '');
   try {
-    const res = await fetch(API_URL + '?action=getState&_=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
+    const json = await cerebrusCloudFetchJson_({ action: 'getState', timeoutMs: 60000, attempts: 3 });
     if (!(json.ok && json.data)) { await loadFromCloud(); return; }
 
     let parsed = json.data;
@@ -27461,8 +27538,7 @@ async function reloadFromCloud() {
 async function checkVersion() {
   if (!IS_CLOUD || !currentUser || cerebrusUsuarioBodega()) return;
   try {
-    const res  = await fetch(API_URL + '?action=getVersion&_=' + Date.now());
-    const json = await res.json();
+    const json = await cerebrusCloudFetchJson_({ action: 'getVersion', timeoutMs: 15000, attempts: 2 });
     if (!(json.ok && json.version !== cloudVersion)) return;
     // No avisar ni recargar por el propio guardado (Diego / Sebastián / Alberto).
     if (cerebrusSameCloudUser_(json.lastUser, currentUser)) {
@@ -27545,8 +27621,7 @@ async function sendHeartbeat() {
         activityAgeSec: Math.floor((Date.now() - _lastUserActivityAt) / 1000)
       })
     });
-    const res  = await fetch(API_URL + '?action=getOnline&_=' + Date.now());
-    const json = await res.json();
+    const json = await cerebrusCloudFetchJson_({ action: 'getOnline', timeoutMs: 15000, attempts: 2 });
     if (json.ok) renderOnlineUsers(json.data);
   } catch(e) {}
 }
@@ -27627,8 +27702,7 @@ async function loadLog() {
   if (!IS_CLOUD) { body.innerHTML='<div class="log-empty">Registro disponible solo en modo nube ☁</div>'; return; }
   body.innerHTML = '<div class="log-empty">Cargando…</div>';
   try {
-    const res  = await fetch(API_URL+'?action=getLog&_='+Date.now());
-    const json = await res.json();
+    const json = await cerebrusCloudFetchJson_({ action: 'getLog', timeoutMs: 25000, attempts: 2 });
     if (!json.ok||!json.data.length) { body.innerHTML='<div class="log-empty">Sin actividad registrada</div>'; return; }
     body.innerHTML = json.data.map(r=>`
       <div class="log-item">
