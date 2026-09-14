@@ -912,6 +912,36 @@ function sacCargaPendienteAcum(c) {
   return c.monto || 0;
 }
 
+function sacCargaAbonadoNum(c) {
+  const n = Number(c && c.pagadoParcial);
+  return n > 0 ? n : 0;
+}
+
+function sacCargaPendienteNum(c) {
+  return Math.max(0, (Number(c && c.monto) || 0) - sacCargaAbonadoNum(c));
+}
+
+/** Monto grande en la fila: con abonos, el pendiente (también en pausa). */
+function sacCargaMontoEf(c) {
+  if (!c) return 0;
+  if (c._esPago) return c.monto || 0;
+  if (c.estado === 'pagado') return c.monto || 0;
+  if (sacCargaAbonadoNum(c) > 0) return sacCargaPendienteNum(c);
+  if (c.estado === 'parcial') return sacCargaPendienteNum(c);
+  return c.montoReal != null ? c.montoReal : (c.monto || 0);
+}
+
+/** Al reactivar: si hay abono, siempre parcial/pagado aunque se haya perdido el estado previo. */
+function sacEstadoAntesDePausa_(c) {
+  const abonado = sacCargaAbonadoNum(c);
+  const monto = Number(c && c.monto) || 0;
+  if (abonado > 0 && monto > 0 && abonado >= monto) return 'pagado';
+  if (abonado > 0 && abonado < monto) return 'parcial';
+  const stored = c.pausaPrevEstado || c._pausaPrevEstado;
+  if (stored === 'parcial' || stored === 'pagado' || stored === 'nopagado') return stored;
+  return 'nopagado';
+}
+
 /** Antes de marcar como pagado: guarda cuánto ya estaba abonado, para poder revertir. */
 function sacRememberPagadoAntesDeSaldar(c) {
   if (!c || c.estado === 'pagado') return;
@@ -1466,19 +1496,19 @@ function sacRenderCargas() {
     const col     = sacCatColor(c.cat);
     const esCls   = c.estado === 'pagado' ? 'pagado' : c.estado === 'parcial' ? 'parcial' : c.estado === 'pausa' ? 'pausa' : 'nopagado';
     const esTxt   = c.estado === 'pagado' ? '✓ Pagado' : c.estado === 'parcial' ? '⚠ Debe resto' : c.estado === 'pausa' ? '⏸ Pausa' : '○ No pagado';
-    const pagadoParcial = c.pagadoParcial || 0;
-    const pendienteParcial = Math.max(0, (c.monto || 0) - pagadoParcial);
+    const pagadoParcial = sacCargaAbonadoNum(c);
+    const pendienteParcial = sacCargaPendienteNum(c);
     const puedePagarTodo = !c._esPago && c.estado !== 'pagado' && c.estado !== 'pausa' && pendienteParcial > 0;
-    const montoEf = c._esPago ? c.monto :
-                    c.estado === 'parcial' && pagadoParcial > 0 ? pendienteParcial :
-                    c.montoReal != null ? c.montoReal : c.monto;
+    const montoEf = sacCargaMontoEf(c);
     const diffTxt = c._esPago ? `<div style="font-size:9px;color:var(--success);">✓ Abono registrado</div>` :
-                    c.estado === 'parcial' && pagadoParcial > 0
+                    pagadoParcial > 0 && c.estado !== 'pagado'
                       ? `<div style="font-size:9px;color:var(--accent2);">Abonado: ${fmt(pagadoParcial)}</div>`
                       : c.montoReal != null && c.montoReal !== c.monto
       ? `<div style="font-size:9px;${c.montoReal>c.monto?'color:var(--danger)':'color:var(--success)'};">${c.montoReal>c.monto?'+':''}${fmt(Math.abs(c.montoReal-c.monto))}</div>`
       : '';
-    const pausaNote = c.estado === 'pausa' ? `<div style="font-size:9px;color:#6366f1;font-weight:700;">No suma a por pagar / balance</div>` : '';
+    const pausaNote = c.estado === 'pausa'
+      ? `<div style="font-size:9px;color:#6366f1;font-weight:700;">Pausa · se congela ${fmt(pendienteParcial)} (no suma a por pagar)</div>`
+      : '';
 
     return `<div class="sac-carga-row ${c.estado==='pagado'?'pagado':''}${c.estado==='pausa'?' pausa':''}" id="sac-cr-${c.id}">
       <div>
@@ -2002,20 +2032,37 @@ function sacDelCarga(id) {
 function sacTogglePausa(id) {
   const c = sacGetCargas().find(x => x.id === id);
   if (!c || c._esPago) return;
+  const abonado = sacCargaAbonadoNum(c);
+  const pendiente = sacCargaPendienteNum(c);
   if (c.estado !== 'pausa') {
-    if (!confirm('¿Poner esta carga en PAUSA?\n\n• El monto seguirá anotado.\n• NO se sumará a «Por pagar» ni al balance estimado hasta que reactives.\n\n¿Continuar?')) return;
+    const prevEstado = (c.estado === 'parcial' || c.estado === 'pagado' || c.estado === 'nopagado')
+      ? c.estado
+      : (abonado > 0 ? 'parcial' : 'nopagado');
+    const msgPausa = abonado > 0
+      ? ('¿Poner esta carga en PAUSA?\n\n'
+        + '• Se congela el saldo pendiente: ' + fmt(pendiente) + '\n'
+        + '• Ya abonado: ' + fmt(abonado) + ' (se conserva)\n'
+        + '• NO suma a «Por pagar» ni al balance hasta que reactives.\n\n¿Continuar?')
+      : '¿Poner esta carga en PAUSA?\n\n• El monto seguirá anotado.\n• NO se sumará a «Por pagar» ni al balance estimado hasta que reactives.\n\n¿Continuar?';
+    if (!confirm(msgPausa)) return;
     pushUndo();
-    c._pausaPrevEstado = (c.estado === 'parcial' || c.estado === 'pagado' || c.estado === 'nopagado') ? c.estado : 'nopagado';
+    c._pausaPrevEstado = prevEstado;
+    c.pausaPrevEstado = prevEstado;
     c.estado = 'pausa';
-    sacCargaLogPush(c, 'pausa', {});
+    sacCargaLogPush(c, 'pausa', { monto: pendiente, abonado: abonado });
   } else {
-    const prev = c._pausaPrevEstado || 'nopagado';
+    const prev = sacEstadoAntesDePausa_(c);
     const lab = { nopagado: 'No pagado (pendiente de pago)', parcial: 'Parcial', pagado: 'Pagado' }[prev] || 'No pagado';
-    if (!confirm('¿Quitar PAUSA?\n\nVolverá a: ' + lab + '.\nVolverá a contar en por pagar y en el balance según ese estado.\n\n¿Continuar?')) return;
+    const msgOut = prev === 'parcial' && abonado > 0
+      ? ('¿Quitar PAUSA?\n\nVolverá a: ' + lab + '.\nPendiente: ' + fmt(pendiente) + ' · Ya abonado: ' + fmt(abonado) + '.\nVuelve a contar en por pagar solo el pendiente.\n\n¿Continuar?')
+      : ('¿Quitar PAUSA?\n\nVolverá a: ' + lab + '.\nVolverá a contar en por pagar y en el balance según ese estado.\n\n¿Continuar?');
+    if (!confirm(msgOut)) return;
     pushUndo();
     c.estado = prev;
+    if (prev === 'parcial' && !(c.pagadoParcial > 0) && abonado > 0) c.pagadoParcial = abonado;
     delete c._pausaPrevEstado;
-    sacCargaLogPush(c, 'reactivar', { detalle: lab });
+    delete c.pausaPrevEstado;
+    sacCargaLogPush(c, 'reactivar', { detalle: lab, monto: pendiente });
   }
   sacTouchCarga(c);
   sacRenderCargas();

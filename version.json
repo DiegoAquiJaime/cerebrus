@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.11.1",
-  "notes": "Guardado: reintenta lecturas a Google cuando Apps Script responde 404/HTML; no aborta por un fallo puntual."
+  "version": "2026.09.14.1",
+  "notes": "SAC pausa: al reactivar se conserva el saldo pendiente (no vuelve el monto original ya abonado)."
 }
