@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.02.1",
-  "notes": "Borrar una carga del SAC pide motivo y queda registrado. SAC, propinas e informes de más de 4 semanas se archivan; los créditos no."
+  "version": "2026.10.02.2",
+  "notes": "Ajustar saldo de una carga muestra el monto nuevo, no la cifra anterior."
 }

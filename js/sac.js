@@ -928,7 +928,7 @@ function sacCargaMontoEf(c) {
   if (c.estado === 'pagado') return c.monto || 0;
   if (sacCargaAbonadoNum(c) > 0) return sacCargaPendienteNum(c);
   if (c.estado === 'parcial') return sacCargaPendienteNum(c);
-  return c.montoReal != null ? c.montoReal : (c.monto || 0);
+  return c.monto || 0;
 }
 
 /** Al reactivar: si hay abono, siempre parcial/pagado aunque se haya perdido el estado previo. */
@@ -1504,9 +1504,7 @@ function sacRenderCargas() {
     const diffTxt = c._esPago ? `<div style="font-size:9px;color:var(--success);">✓ Abono registrado</div>` :
                     pagadoParcial > 0 && c.estado !== 'pagado'
                       ? `<div style="font-size:9px;color:var(--accent2);">Abonado: ${fmt(pagadoParcial)}</div>`
-                      : c.montoReal != null && c.montoReal !== c.monto
-      ? `<div style="font-size:9px;${c.montoReal>c.monto?'color:var(--danger)':'color:var(--success)'};">${c.montoReal>c.monto?'+':''}${fmt(Math.abs(c.montoReal-c.monto))}</div>`
-      : '';
+                      : '';
     const pausaNote = c.estado === 'pausa'
       ? `<div style="font-size:9px;color:#6366f1;font-weight:700;">Pausa · se congela ${fmt(pendienteParcial)} (no suma a por pagar)</div>`
       : '';
@@ -2374,6 +2372,7 @@ function sacAjustarSaldo(id) {
 
   pushUndo();
   c.monto = pagado + nuevoPendiente;
+  c.montoReal = c.monto;
   const nextEst = nuevoPendiente <= 0 ? 'pagado' : (pagado > 0 ? 'parcial' : 'nopagado');
   if (nextEst === 'pagado' && c.estado !== 'pagado') sacRememberPagadoAntesDeSaldar(c);
   c.estado = nextEst;
