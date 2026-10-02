@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="cerebrus-version" content="2026.09.28.1">
+<meta name="cerebrus-version" content="2026.10.02.1">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <script>
 (function(){
@@ -18,7 +18,7 @@
     }
   } catch(e){}
   // Si el navegador abrió una copia vieja de esta página, recargar la versión publicada.
-  var bootVer = '2026.09.28.1';
+  var bootVer = '2026.10.02.1';
   var guardKey = 'cerebrus_boot_reload';
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r) {
     return r.json();
@@ -3967,6 +3967,11 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             </div>
           </div>
         </div>
+        <details id="sac-borrados-fold" style="margin:10px 0 0;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;">
+          <summary style="cursor:pointer;font-size:12px;font-weight:800;">🗑 Registro de borrados <span id="sac-borrados-count" style="font-weight:700;color:#94a3b8;"></span></summary>
+          <p style="font-size:10px;color:#64748b;margin:8px 0;">Cada eliminación pide un motivo y guarda usuario, fecha y hora.</p>
+          <div id="sac-borrados-list" style="font-size:11px;max-height:220px;overflow:auto;"></div>
+        </details>
         </div><!-- .sac-desk-split -->
       </div>
 
@@ -5921,7 +5926,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <button type="button" onclick="archPresetInv1Mes_()" class="fac-btn" style="font-size:10px;">📦 Inventario semanal &gt;1 mes</button>
           <button type="button" onclick="archPresetFac2Meses_()" class="fac-btn" style="font-size:10px;">🧾 Facturas pagadas &gt;2 meses</button>
           <button type="button" onclick="archPresetPed3Semanas_()" class="fac-btn" style="font-size:10px;">📦 Pedidos &gt;3 semanas</button>
-          <button type="button" onclick="archPresetSac1Mes_()" class="fac-btn" style="font-size:10px;">⚡ SAC cerradas &gt;1 mes</button>
+          <button type="button" onclick="archPresetSac1Mes_()" class="fac-btn" style="font-size:10px;">⚡ SAC &gt;4 semanas</button>
           <button type="button" onclick="archPresetRecomendado_()" class="fac-btn" style="font-size:10px;background:#fff7ed;border-color:#fed7aa;color:#c2410c;">⚡ Recomendado (ambos)</button>
         </div>
         <div id="arch-preset-hint" style="display:none;font-size:10px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:6px 10px;margin-bottom:10px;"></div>
@@ -5935,11 +5940,15 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-mov-count">0</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
-            <input type="checkbox" id="arch-inf" checked> <span>📋 Informes diarios (más de <select id="arch-inf-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4">4</option><option value="8" selected>8</option><option value="12">12</option></select> semanas)</span>
+            <input type="checkbox" id="arch-inf" checked> <span>📋 Informes diarios (más de <select id="arch-inf-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4" selected>4</option><option value="8">8</option><option value="12">12</option></select> semanas)</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-inf-count">0</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
-            <input type="checkbox" id="arch-sac"> <span>⚡ SAC: semanas cerradas &gt;1 mes (PDF + JSON, libera memoria)</span>
+            <input type="checkbox" id="arch-prop" checked> <span>💵 Propinas (más de <select id="arch-prop-weeks" style="border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;font-family:inherit;"><option value="4" selected>4</option><option value="8">8</option><option value="12">12</option></select> semanas)</span>
+            <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-prop-count">0</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
+            <input type="checkbox" id="arch-sac"> <span>⚡ SAC: semanas terminadas hace más de 4 semanas (PDF + JSON). Los créditos no se archivan.</span>
             <span style="margin-left:auto;font-weight:700;color:var(--danger);" id="arch-sac-count">0</span>
           </label>
           <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:8px 12px;background:#f8fafc;border-radius:8px;border:1px solid var(--border);">
@@ -7344,7 +7353,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.28.1';
+const APP_VERSION = '2026.10.02.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -14958,6 +14967,7 @@ function _postLoadSetup() {
   if (typeof state.sacCajaChicaNota !== 'string') state.sacCajaChicaNota = '';
   if (typeof state.sacReservaSaldo !== 'number' || isNaN(state.sacReservaSaldo)) state.sacReservaSaldo = 0;
   if (!Array.isArray(state.sacReservaMovs)) state.sacReservaMovs = [];
+  if (!Array.isArray(state.sacBorrados)) state.sacBorrados = [];
   if (!state.sacMerc)                   state.sacMerc                   = {mode:'monto', val:0};
   if (!state.vsData)                    state.vsData                    = {};
   if (!state.vsExtraData)               state.vsExtraData               = {};
@@ -20277,6 +20287,7 @@ function archPresetInv1Mes_() {
   set('arch-fac', false);
   set('arch-mov', false);
   set('arch-inf', false);
+  set('arch-prop', false);
   set('arch-sac', false);
   set('arch-fsem', false);
   archSetPresetHint_('Criterio: inventarios semanales cerrados con fecha de cierre anterior a 30 días.');
@@ -20293,6 +20304,7 @@ function archPresetFac2Meses_() {
   set('arch-pedhist', false);
   set('arch-mov', false);
   set('arch-inf', false);
+  set('arch-prop', false);
   set('arch-sac', false);
   set('arch-fsem', false);
   archSetPresetHint_('Criterio: facturas pagadas (inactivas) con emisión o vencimiento anterior a 60 días.');
@@ -20310,6 +20322,7 @@ function archPresetRecomendado_() {
   set('arch-fac', true);
   set('arch-mov', false);
   set('arch-inf', false);
+  set('arch-prop', false);
   set('arch-sac', false);
   set('arch-fsem', false);
   archSetPresetHint_('Criterio recomendado: inventario semanal >1 mes + facturas pagadas >2 meses.');
@@ -20326,6 +20339,7 @@ function archPresetPed3Semanas_() {
   set('arch-fac', false);
   set('arch-mov', false);
   set('arch-inf', false);
+  set('arch-prop', false);
   set('arch-sac', false);
   set('arch-fsem', false);
   archSetPresetHint_('Criterio: semanas de inventario/pedido cerradas con más de 21 días (3 semanas).');
@@ -20341,11 +20355,12 @@ function archPresetSac1Mes_() {
   set('arch-fac', false);
   set('arch-mov', false);
   set('arch-inf', false);
+  set('arch-prop', false);
   set('arch-pedhist', false);
   set('arch-fsem', false);
   const n = archCountOldSacCargas();
   const sample = archSacLabelsForGroups_(archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS)).slice(0, 3).join(', ');
-  archSetPresetHint_('Criterio: semanas SAC ya terminadas (fin de período >30 días). Se genera PDF + JSON y se borran de la nube.' + (sample ? ' Ej.: ' + sample + (n > 3 ? '…' : '') : ''));
+  archSetPresetHint_('Criterio: semanas SAC ya terminadas hace más de 4 semanas (28 días). Se genera PDF + JSON y se borran de la nube. Los créditos no se tocan.' + (sample ? ' Ej.: ' + sample + (n > 3 ? '…' : '') : ''));
   archUpdateCounts();
   archCalcPreview();
 }
@@ -20401,10 +20416,28 @@ function archCountOldMovimientos(weeks) {
   }).length;
 }
 
+function archRecordWhen_(rawFecha, ts) {
+  const d = archParseDate(rawFecha);
+  if (d && !isNaN(d.getTime())) return d;
+  if (ts) {
+    const t = new Date(ts);
+    if (!isNaN(t.getTime())) return t;
+  }
+  return null;
+}
+
 function archCountOldInformes(weeks) {
   const cutoff = archWeeksAgo(weeks);
   return (state.informesDiarios||[]).filter(inf => {
-    const d = inf.ts ? new Date(inf.ts) : archParseDate(inf.fecha);
+    const d = archRecordWhen_(inf.fecha, inf.ts);
+    return d && d < cutoff;
+  }).length;
+}
+
+function archCountOldPropinas(weeks) {
+  const cutoff = archWeeksAgo(weeks);
+  return (state.propinas||[]).filter(p => {
+    const d = archRecordWhen_(p.fecha, p.ts);
     return d && d < cutoff;
   }).length;
 }
@@ -20413,7 +20446,7 @@ function archCountOldSacCargas() {
   return archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS).length;
 }
 
-var ARCH_SAC_ARCHIVE_DAYS = 30;
+var ARCH_SAC_ARCHIVE_DAYS = 28;
 
 function sacKeyPeriodBoundsYMD(key) {
   if (!key) return null;
@@ -20764,7 +20797,7 @@ function archRenderStats() {
   archUpdateCounts();
 
   // Attach listeners to week selectors (once)
-  ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks','arch-pedhist-keep'].forEach(id => {
+  ['arch-fac-weeks','arch-mov-weeks','arch-inf-weeks','arch-prop-weeks','arch-pedhist-keep'].forEach(id => {
     const el = document.getElementById(id);
     if (el && !el._archBound) {
       el._archBound = true;
@@ -20780,7 +20813,8 @@ function archRenderStats() {
 
 function archUpdateCounts() {
   const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
-  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'4');
+  const propWeeks = parseInt(document.getElementById('arch-prop-weeks')?.value||'4');
   const facFilter = archGetFacFilter_();
   const pedFilter = archGetPedFilter_();
 
@@ -20788,6 +20822,7 @@ function archUpdateCounts() {
   set2('arch-fac-count',  archCountFacturasForFilter_(facFilter));
   set2('arch-mov-count',  archCountOldMovimientos(movWeeks));
   set2('arch-inf-count',  archCountOldInformes(infWeeks));
+  set2('arch-prop-count', archCountOldPropinas(propWeeks));
   set2('arch-sac-count',  archCountOldSacCargas());
   set2('arch-fsem-count', archCountOldFacSemana());
   set2('arch-pedhist-count', archCountPedidoForFilter_(pedFilter));
@@ -20803,11 +20838,14 @@ function archCalcPreview() {
   const doFac  = document.getElementById('arch-fac')?.checked;
   const doMov  = document.getElementById('arch-mov')?.checked;
   const doInf  = document.getElementById('arch-inf')?.checked;
+  const doProp = document.getElementById('arch-prop')?.checked;
   const doSac  = document.getElementById('arch-sac')?.checked;
   const doFsem = document.getElementById('arch-fsem')?.checked;
   const doPed  = document.getElementById('arch-pedhist')?.checked;
   const facFilter = archGetFacFilter_();
   const pedFilter = archGetPedFilter_();
+  const propWeeks = parseInt(document.getElementById('arch-prop-weeks')?.value||'4');
+  const propN = doProp ? archCountOldPropinas(propWeeks) : 0;
   const facN  = doFac  ? archCountFacturasForFilter_(facFilter) : 0;
   const pedN  = doPed  ? archCountPedidoForFilter_(pedFilter) : 0;
 
@@ -20819,10 +20857,11 @@ function archCalcPreview() {
   }
   if (doMov  && movN)  { total+=movN;  lines.push(`🔄 ${movN} movimientos`); }
   if (doInf  && infN)  { total+=infN;  lines.push(`📋 ${infN} informes diarios`); }
+  if (doProp && propN) { total+=propN; lines.push(`💵 ${propN} propinas`); }
   if (doSac  && sacN)  {
     total += sacN;
     const sacLbl = archSacLabelsForGroups_(archSacGroupsToArchive_(ARCH_SAC_ARCHIVE_DAYS)).slice(0, 4).join(', ');
-    lines.push(`⚡ ${sacN} semana(s) SAC cerrada(s) >1 mes` + (sacLbl ? ': ' + sacLbl + (sacN > 4 ? '…' : '') : ''));
+    lines.push(`⚡ ${sacN} semana(s) SAC de más de 4 semanas` + (sacLbl ? ': ' + sacLbl + (sacN > 4 ? '…' : '') : ''));
   }
   if (doFsem && fsemN) { total+=fsemN; lines.push(`📋 ${fsemN} facturas semanales pagadas`); }
   if (doPed && pedN) {
@@ -20877,12 +20916,14 @@ async function archExecute() {
   const doFac  = document.getElementById('arch-fac')?.checked;
   const doMov  = document.getElementById('arch-mov')?.checked;
   const doInf  = document.getElementById('arch-inf')?.checked;
+  const doProp = document.getElementById('arch-prop')?.checked;
   const doSac  = document.getElementById('arch-sac')?.checked;
   const doFsem = document.getElementById('arch-fsem')?.checked;
   const doPed  = document.getElementById('arch-pedhist')?.checked;
 
   const movWeeks = parseInt(document.getElementById('arch-mov-weeks')?.value||'8');
-  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'8');
+  const infWeeks = parseInt(document.getElementById('arch-inf-weeks')?.value||'4');
+  const propWeeks = parseInt(document.getElementById('arch-prop-weeks')?.value||'4');
   const facFilter = archGetFacFilter_();
   const pedFilter = archGetPedFilter_();
 
@@ -20894,15 +20935,18 @@ async function archExecute() {
   const facN  = doFac  ? archCountFacturasForFilter_(facFilter) : 0;
   const movN  = doMov  ? archCountOldMovimientos(movWeeks) : 0;
   const infN  = doInf  ? archCountOldInformes(infWeeks) : 0;
+  const propN = doProp ? archCountOldPropinas(propWeeks) : 0;
   const sacN  = doSac  ? archCountOldSacCargas() : 0;
   const fsemN = doFsem ? archCountOldFacSemana() : 0;
   const pedN  = doPed  ? archCountPedidoForFilter_(pedFilter) : 0;
-  const totalPlan = facN + movN + infN + sacN + fsemN + pedN;
+  const totalPlan = facN + movN + infN + propN + sacN + fsemN + pedN;
 
   if (!totalPlan) { notify('✓ Nada que archivar'); return; }
   const pedWarn = pedN ? '\n\nPedido: se descargará un JSON con las semanas eliminadas antes de borrarlas.' : '';
-  const sacWarn = sacN ? '\n\nSAC: se descargará JSON y se abrirá un PDF con ' + sacN + ' semana(s) cerrada(s) (>1 mes) antes de borrarlas de la nube.' : '';
-  if (!confirm(`¿Archivar ${totalPlan} registros/semanas?\n\nEsto es irreversible salvo el JSON de respaldo.${pedWarn}${sacWarn}\n\n¿Continuar?`)) return;
+  const sacWarn = sacN ? '\n\nSAC: se descargará JSON y se abrirá un PDF con ' + sacN + ' semana(s) de más de 4 semanas antes de borrarlas de la nube. Los créditos no se archivan.' : '';
+  const propWarn = propN ? '\n\nPropinas: se descarga JSON de las que tienen más de ' + propWeeks + ' semanas.' : '';
+  const infWarn = infN ? '\n\nInformes: se descarga JSON de los que tienen más de ' + infWeeks + ' semanas.' : '';
+  if (!confirm(`¿Archivar ${totalPlan} registros/semanas?\n\nEsto es irreversible salvo el JSON de respaldo.${pedWarn}${sacWarn}${propWarn}${infWarn}\n\n¿Continuar?`)) return;
 
   pushUndo();
 
@@ -20933,15 +20977,41 @@ async function archExecute() {
     totalRemoved += before - state.movimientos.length;
   }
 
-  // 3. Informes diarios antiguos
+  // 3. Informes diarios antiguos (por fecha del informe, no por la última edición)
   if (doInf && infN > 0) {
     const cutoff = archWeeksAgo(infWeeks);
     const before = (state.informesDiarios||[]).length;
+    const removed = [];
     state.informesDiarios = (state.informesDiarios||[]).filter(inf => {
-      const d = inf.ts ? new Date(inf.ts) : archParseDate(inf.fecha);
-      return !(d && d < cutoff);
+      const d = archRecordWhen_(inf.fecha, inf.ts);
+      if (d && d < cutoff) { removed.push(inf); return false; }
+      return true;
     });
+    if (removed.length && typeof _backupBlobDownload === 'function') {
+      _backupBlobDownload('informes-archivados-' + _backupDateTag() + '.json', {
+        meta: { type: 'informes_diarios_archivados', date: new Date().toISOString(), weeks: infWeeks, count: removed.length },
+        informesDiarios: removed
+      });
+    }
     totalRemoved += before - state.informesDiarios.length;
+  }
+
+  if (doProp && propN > 0) {
+    const cutoff = archWeeksAgo(propWeeks);
+    const before = (state.propinas||[]).length;
+    const removed = [];
+    state.propinas = (state.propinas||[]).filter(p => {
+      const d = archRecordWhen_(p.fecha, p.ts);
+      if (d && d < cutoff) { removed.push(p); return false; }
+      return true;
+    });
+    if (removed.length && typeof _backupBlobDownload === 'function') {
+      _backupBlobDownload('propinas-archivadas-' + _backupDateTag() + '.json', {
+        meta: { type: 'propinas_archivadas', date: new Date().toISOString(), weeks: propWeeks, count: removed.length },
+        propinas: removed
+      });
+    }
+    totalRemoved += before - state.propinas.length;
   }
 
   // 4. SAC: semanas cerradas >1 mes (PDF + JSON, luego borrar de nube)
@@ -21016,7 +21086,7 @@ async function archExecute() {
 function archDiagnostic() {
   const parts = {};
   const keys = ['facturas','creditos','inventario','movimientos','movimientosArchivo','propinas','informesDiarios',
-    'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
+    'sacCargas','sacBorrados','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
     'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos','sebasFinanzas',
     'catInventario','unidadesInventario','preciosProveedor','mercaderiaSemanasSimple',
     'semanaActiva','semanasHistorial','provDocumentos'];
@@ -26248,7 +26318,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.28.1"></script>
+<script src="js/sac.js?v=2026.10.02.1"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
@@ -26613,7 +26683,7 @@ function splitStateForCloudParts(st, opts) {
   const PART_DEF = [
     { id: 'pInv', keys: ['inventario', 'preciosProveedor', 'semanaActiva', 'semanasHistorial', 'catInventario', 'unidadesInventario', 'movimientos', 'movimientosAudit', 'movimientosArchivo', 'invFamilias', 'invBodegaN3Applied', 'inventorySnapshotId', 'inventorySnapshotDate', 'inventorySnapshotSource'] },
     { id: 'pFac', keys: ['facturas'] },
-    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacBorrados', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
   // Seguridad: por defecto todas las particiones; includePartIds filtra (admin siempre
@@ -26667,7 +26737,7 @@ async function enforceBodegaIsolationOnSave_(stateToSave) {
     const remote = await _fetchCloudStateRaw();
     const merged = JSON.parse(JSON.stringify(stateToSave || {}));
     const keepRemoteKeys = [
-      'sacCargas','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
+      'sacCargas','sacBorrados','sacIngresos','sacCierresHistorial','sacPeriodoTrabajo','sacSemanaTrabajo','sacFinanciamientoRegistro',
       'sacEfectivo','sacCajaChica','sacCajaChicaNota','sacReservaSaldo','sacReservaMovs','sacMerc',
       'pagosSemanales','vsData','vsExtraData','facSemana','facSemHoySel','facSemHoyMeta','facSemHistorialPagos',
       'mercaderiaSemanasSimple','facturas','propinas','informesDiarios','sebasFinanzas','creditos',
@@ -26726,7 +26796,7 @@ function cerebrusPartitionDefs_() {
   return [
     { id: 'pInv', keys: cerebrusInvKeys_() },
     { id: 'pFac', keys: ['facturas'] },
-    { id: 'pSem', keys: ['sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
+    { id: 'pSem', keys: ['sacCargas', 'sacBorrados', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo', 'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota', 'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData', 'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'] },
     { id: 'pMisc', keys: ['propinas', 'informesDiarios', 'sebasFinanzas', 'creditos'] }
   ];
 }
@@ -27436,7 +27506,7 @@ function cerebrusRescueCriticalModulesFromLocal_(cloudState, localState) {
     ? Object.keys(localState.sacCargas).length : 0;
   if (localSac > 0 && cloudSac === 0) {
     [
-      'sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
+      'sacCargas', 'sacBorrados', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
       'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota',
       'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData',
       'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'
@@ -27488,7 +27558,7 @@ async function reloadFromCloud() {
     // Claves SAC: al pedir “actualizar desde nube”, la nube gana si otro usuario las tocó.
     // Antes lo local pisaba ingresos/cargas de Alberto/Sebas y parecía que “no sincronizaba”.
     const sacPreferRemote = new Set([
-      'sacCargas', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
+      'sacCargas', 'sacBorrados', 'sacIngresos', 'sacCierresHistorial', 'sacPeriodoTrabajo', 'sacSemanaTrabajo',
       'sacFinanciamientoRegistro', 'sacEfectivo', 'sacCajaChica', 'sacCajaChicaNota',
       'sacReservaSaldo', 'sacReservaMovs', 'sacMerc', 'pagosSemanales', 'vsData', 'vsExtraData',
       'facSemana', 'facSemHoySel', 'facSemHoyMeta', 'facSemHistorialPagos', 'mercaderiaSemanasSimple'

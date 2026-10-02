@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.28.1",
-  "notes": "Al abrir o volver a la pestaña se carga la nube completa, sin mezclar la copia vieja del navegador."
+  "version": "2026.10.02.1",
+  "notes": "Borrar una carga del SAC pide motivo y queda registrado. SAC, propinas e informes de más de 4 semanas se archivan; los créditos no."
 }

@@ -1439,6 +1439,7 @@ function sacClearCargaFilters() {
 }
 
 function sacRenderCargas() {
+  try { sacRenderBorrados(); } catch (e) {}
   const list = document.getElementById('sac-cargas-list'); if (!list) return;
   const tabA = document.getElementById('sac-tab-activos');
   const tabP = document.getElementById('sac-tab-pagados');
@@ -2022,11 +2023,64 @@ function sacDelCarga(id) {
   const cargas = sacGetCargas(k);
   const c = cargas.find(x => x.id === id);
   if (!c) return;
-  if (!confirm(`¿Eliminar "${c.nombre}" (${fmt(c.monto)})?`)) return;
+  const motivo = prompt(
+    '¿Por qué se elimina "' + (c.nombre || 'esta carga') + '" (' + fmt(c.monto) + ')?\n\n'
+    + 'El motivo queda registrado con tu usuario, la fecha y la hora.'
+  );
+  if (motivo == null) return;
+  const why = String(motivo).trim();
+  if (!why) {
+    notify('⚠ Hay que escribir el motivo para eliminar la carga.');
+    return;
+  }
   pushUndo();
+  sacRegistrarBorrado_(c, k, why);
   state.sacCargas[k] = cargas.filter(x => x.id !== id);
   sacRenderCargas();
   sacCalcBalance();
+  if (typeof markUnsaved === 'function') markUnsaved();
+  notify('🗑 Carga eliminada. Quedó en el registro de borrados.');
+}
+
+function sacRegistrarBorrado_(c, periodKey, motivo) {
+  if (!Array.isArray(state.sacBorrados)) state.sacBorrados = [];
+  const now = new Date();
+  state.sacBorrados.push({
+    id: 'sb_' + Date.now(),
+    ts: now.getTime(),
+    fecha: now.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    hora: now.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' }),
+    usuario: (typeof currentUser !== 'undefined' && currentUser) ? currentUser : '?',
+    motivo: motivo,
+    periodKey: periodKey || '',
+    cargaId: c.id || '',
+    nombre: c.nombre || '',
+    cat: c.cat || '',
+    monto: Number(c.monto) || 0,
+    estado: c.estado || ''
+  });
+  if (state.sacBorrados.length > 300) state.sacBorrados = state.sacBorrados.slice(-300);
+}
+
+function sacRenderBorrados() {
+  const list = document.getElementById('sac-borrados-list');
+  const count = document.getElementById('sac-borrados-count');
+  const rows = Array.isArray(state.sacBorrados) ? state.sacBorrados.slice().reverse() : [];
+  if (count) count.textContent = rows.length ? '(' + rows.length + ')' : '';
+  if (!list) return;
+  if (!rows.length) {
+    list.innerHTML = '<div style="color:#94a3b8;padding:6px 0;">Todavía no hay borrados registrados.</div>';
+    return;
+  }
+  list.innerHTML = rows.slice(0, 80).map(function(r) {
+    return '<div style="padding:6px 0;border-bottom:1px solid var(--border);line-height:1.35;">'
+      + '<b>' + esc(r.fecha || '') + (r.hora ? ' ' + esc(r.hora) : '') + '</b>'
+      + ' · ' + esc(r.usuario || '?')
+      + ' · ' + esc(r.nombre || 'sin nombre')
+      + ' · ' + fmt(r.monto || 0)
+      + '<div style="color:#64748b;">Motivo: ' + esc(r.motivo || '') + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 function sacTogglePausa(id) {
