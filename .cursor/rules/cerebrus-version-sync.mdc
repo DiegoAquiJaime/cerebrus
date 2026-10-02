@@ -11,9 +11,10 @@ Al cambiar la versión visible o el aviso de actualización:
 1. **`index.html`**: constante `APP_VERSION` (buscar `const APP_VERSION`).
 2. **`version.json`**: campo `"version"` con **el mismo string** que `APP_VERSION`.
 3. **`index.html`**: el `src` de SAC debe llevar el mismo query: `js/sac.js?v=APP_VERSION`.
-4. Opcional: actualizar `"notes"` en `version.json` con el resumen de cambios.
+4. **`index.html`**: `meta name="cerebrus-version"` y la variable `bootVer` del script del `<head>` con el mismo string.
+5. Opcional: actualizar `"notes"` en `version.json` con el resumen de cambios.
 
-El cliente compara `version.json` (fetch remoto) con `APP_VERSION` en `checkAppVersion`. Si el número en `version.json` es mayor que `APP_VERSION`, el usuario ve el diálogo de actualización en bucle.
+El cliente compara `version.json` (fetch remoto) con `APP_VERSION`. Si el número publicado es mayor, la página se recarga sola.
 
 **Checklist antes de commit/push:** ambos archivos (y el `?v=` de `js/sac.js`) llevan el mismo identificador (ej. `2026.09.06.1`).
 

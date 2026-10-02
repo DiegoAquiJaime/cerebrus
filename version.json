@@ -1,4 +1,4 @@
 {
-  "version": "2026.09.14.1",
-  "notes": "SAC pausa: al reactivar se conserva el saldo pendiente (no vuelve el monto original ya abonado)."
+  "version": "2026.09.28.1",
+  "notes": "Al abrir o volver a la pestaña se carga la nube completa, sin mezclar la copia vieja del navegador."
 }

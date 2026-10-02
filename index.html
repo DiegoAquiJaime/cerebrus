@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
+<meta name="cerebrus-version" content="2026.09.28.1">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <script>
 (function(){
@@ -13,8 +14,28 @@
     if (String(localStorage.getItem('cerebrus_user')||'').toLowerCase() === 'bodega') {
       localStorage.removeItem('cerebrus_user');
       location.replace('servare/index.html');
+      return;
     }
   } catch(e){}
+  // Si el navegador abrió una copia vieja de esta página, recargar la versión publicada.
+  var bootVer = '2026.09.28.1';
+  var guardKey = 'cerebrus_boot_reload';
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r) {
+    return r.json();
+  }).then(function(data) {
+    var remote = String(data && data.version || '').trim();
+    if (!remote || remote === bootVer) return;
+    var guard = '';
+    try { guard = sessionStorage.getItem(guardKey) || ''; } catch (e) {}
+    var parts = guard.split('|');
+    if (parts[0] === remote && (Date.now() - (parseInt(parts[1], 10) || 0)) < 120000) return;
+    try { sessionStorage.setItem(guardKey, remote + '|' + Date.now()); } catch (e) {}
+    try { sessionStorage.setItem('cerebrus_reload_user', localStorage.getItem('cerebrus_user') || ''); } catch (e) {}
+    var url = new URL(location.href);
+    url.searchParams.set('v', remote);
+    url.searchParams.set('_', String(Date.now()));
+    location.replace(url.toString());
+  }).catch(function(){});
 })();
 </script>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -7323,7 +7344,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.09.14.1';
+const APP_VERSION = '2026.09.28.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -7497,30 +7518,11 @@ async function checkAppVersion(forceShowUpToDate) {
       if (forceShowUpToDate) cerebrusVersionReloadWarnOnce_(remoteVersion);
       return;
     }
-    const chromeApp = cerebrusIsChromeInstalledApp_();
-    if (chromeApp && forceShowUpToDate) {
+    if (forceShowUpToDate && cerebrusIsChromeInstalledApp_()) {
       notify('⚠ Hay v' + remoteVersion + ' en el servidor, pero esta copia sigue en v' + APP_VERSION + '. Cierra Cerebrus por completo y ábrelo de nuevo.');
       return;
     }
-    if (chromeApp && !forceShowUpToDate) {
-      cerebrusScheduleVersionReload_(remoteVersion);
-      return;
-    }
-    const seenKey = _versionSeenKey(remoteVersion);
-    let alreadySeen = false;
-    try { alreadySeen = localStorage.getItem(seenKey) === '1'; } catch (e) {}
-    if (!forceShowUpToDate && (alreadySeen || _versionPromptOpen)) return;
-    _versionPromptOpen = true;
-    try { if (typeof cerebrusTtsNewVersionAvailable === 'function') cerebrusTtsNewVersionAvailable(remoteVersion); } catch (e) {}
-    const notes = data.notes ? ('\n\nCambios: ' + String(data.notes)) : '';
-    const ask = confirm('🆕 Nueva versión disponible: ' + remoteVersion + '\nTu versión: ' + APP_VERSION + notes + '\n\n¿Quieres actualizar ahora?');
-    try { localStorage.setItem(seenKey, '1'); } catch (e) {}
-    _versionPromptOpen = false;
-    if (ask) {
-      cerebrusReloadAppVersion_(remoteVersion);
-      return;
-    }
-    notify('ℹ️ Puedes actualizar cuando quieras con "🔄 Actualizar".');
+    cerebrusScheduleVersionReload_(remoteVersion);
   } catch (err) {
     if (forceShowUpToDate) notify('⚠ No pude verificar versión en este momento.');
   }
@@ -26246,7 +26248,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.09.14.1"></script>
+<script src="js/sac.js?v=2026.09.28.1"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
@@ -26481,6 +26483,7 @@ async function loadFromCloud() {
       if (json.meta?.lastUser && json.meta.lastUser !== currentUser)
         notify('📥 Datos de ' + json.meta.lastUser + ' · ' + json.meta.lastDate);
       setSyncStatus('✓ Nube', 'ok');
+      try { saveLocalRaw(); } catch (eLoc) {}
     } else {
       state = makeDefaultState(); setSyncStatus('⚠ Sin datos', 'err');
     }
@@ -27423,12 +27426,9 @@ function cerebrusRescueCriticalModulesFromLocal_(cloudState, localState) {
   if (!cloudState || !localState || typeof localState !== 'object') return;
   const cloudProps = Array.isArray(cloudState.propinas) ? cloudState.propinas : [];
   const localProps = Array.isArray(localState.propinas) ? localState.propinas : [];
-  if (localProps.length > 0 && (cloudProps.length === 0 || localProps.length > cloudProps.length)) {
-    const merged = cerebrusMergePropinasUnion_(cloudProps, localProps);
-    if (merged.length > cloudProps.length) {
-      cloudState.propinas = merged;
-      notify('🧩 Propinas recuperadas desde local (' + merged.length + '; nube tenía ' + cloudProps.length + ').');
-    }
+  if (localProps.length > 0 && cloudProps.length === 0) {
+    cloudState.propinas = localProps.slice();
+    notify('🧩 Propinas recuperadas desde local (la nube venía vacía).');
   }
   const cloudSac = cloudState.sacCargas && typeof cloudState.sacCargas === 'object'
     ? Object.keys(cloudState.sacCargas).length : 0;
@@ -27540,10 +27540,17 @@ async function checkVersion() {
   try {
     const json = await cerebrusCloudFetchJson_({ action: 'getVersion', timeoutMs: 15000, attempts: 2 });
     if (!(json.ok && json.version !== cloudVersion)) return;
-    // No avisar ni recargar por el propio guardado (Diego / Sebastián / Alberto).
+    // Misma persona en otra pestaña o en otro computador: esta copia está vieja.
+    // Solo se ignora si esta pestaña ya tiene esa versión (acaba de guardar).
     if (cerebrusSameCloudUser_(json.lastUser, currentUser)) {
-      cloudVersion = String(json.version || cloudVersion);
-      _cloudBaseVersion = cloudVersion;
+      if (!_unsaved) {
+        try {
+          await loadFromCloud();
+          notify('☁ Actualizado con el último guardado (' + (json.lastDate || 'nube') + ').');
+        } catch (eSame) {}
+      } else {
+        showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
+      }
       return;
     }
     showConflict(json.lastUser, json.lastDate, [], String(json.version || ''));
@@ -28670,6 +28677,15 @@ function importJSON() {
 // ============================================================
 //  INIT
 // ============================================================
+window.addEventListener('pageshow', function(ev) {
+  if (!ev.persisted) return;
+  if (typeof IS_CLOUD === 'undefined' || !IS_CLOUD || !currentUser || cerebrusUsuarioBodega()) return;
+  if (typeof _unsaved !== 'undefined' && _unsaved) {
+    notify('⚠ Esta pestaña volvió con datos viejos y hay cambios sin guardar. Actualizá desde la nube antes de guardar.', 8000);
+    return;
+  }
+  loadFromCloud();
+});
 window.onload = function() {
   // Dark mode early (before login)
   try { if (localStorage.getItem('cerebrus_dark')==='1') { document.body.classList.add('dark-mode'); document.getElementById('dark-btn').textContent='☀️'; } } catch(e){}
