@@ -2555,3 +2555,119 @@ function sacImportSelected() {
   else if (cambiosCfg.length) msg += ' · Montos solo en esta semana (preset sin cambiar)';
   notify(msg);
 }
+
+function sacInformeCargaFila_(c) {
+  const es = c.estado || 'nopagado';
+  const abonado = sacCargaAbonadoNum(c);
+  const pendiente = sacCargaPendienteNum(c);
+  const total = Number(c.monto) || 0;
+  let detalle = 'No pagado';
+  let monto = es === 'pagado' ? total : (pendiente || total);
+  if (es === 'pagado') {
+    detalle = 'Pagada';
+    monto = total;
+  } else if (es === 'pausa') {
+    detalle = abonado > 0
+      ? 'En pausa · abonado ' + fmt(abonado) + ' · se congela ' + fmt(pendiente)
+      : 'En pausa · no suma a por pagar';
+    monto = pendiente || total;
+  } else if (es === 'parcial' || abonado > 0) {
+    detalle = 'Pago parcial · abonado ' + fmt(abonado) + ' de ' + fmt(total);
+    monto = pendiente;
+  }
+  const extra = [c.resp ? 'Responsable: ' + c.resp : '', c.nota || ''].filter(Boolean).join(' · ');
+  return {
+    nombre: c.nombre || 'Sin nombre',
+    cat: c.cat || 'Otro',
+    detalle,
+    extra,
+    monto
+  };
+}
+
+/** Informe imprimible de la semana en edición. modo: porpagar | pausa | pagado | todos */
+function sacInformeCargasPDF(modo) {
+  const wanted = modo === 'pausa' || modo === 'pagado' || modo === 'porpagar' ? modo : 'todos';
+  const cargas = sacBaseCargas(sacGetCargas()).filter(c => !sacCargaEsPagoSaldoDup(c));
+  const buckets = { porpagar: [], pausa: [], pagado: [] };
+  cargas.forEach(c => {
+    const es = c.estado || 'nopagado';
+    if (es === 'pausa') buckets.pausa.push(c);
+    else if (es === 'pagado') buckets.pagado.push(c);
+    else buckets.porpagar.push(c);
+  });
+  const defs = {
+    porpagar: { titulo: 'Por pagar', nota: 'Pendientes y pagos parciales. El monto es lo que falta.' },
+    pausa: { titulo: 'En pausa', nota: 'Congeladas. Estos montos no entran en por pagar.' },
+    pagado: { titulo: 'Ya pagadas', nota: 'Cargas saldadas de esta semana.' }
+  };
+  const keys = wanted === 'todos' ? ['porpagar', 'pausa', 'pagado'] : [wanted];
+  const periodo = (typeof sacPeriodLabel === 'function' ? sacPeriodLabel() : '') || 'Semana';
+  const cuando = new Date().toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+  const quien = (typeof currentUser === 'string' && currentUser) ? currentUser : '';
+
+  const secciones = keys.map(key => {
+    const items = buckets[key].slice().sort((a, b) =>
+      String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { sensitivity: 'base' })
+    );
+    const filas = items.map(sacInformeCargaFila_);
+    const suma = filas.reduce((s, f) => s + (Number(f.monto) || 0), 0);
+    const body = filas.length
+      ? filas.map((f, i) => `<tr>
+          <td class="n">${i + 1}</td>
+          <td><div class="nom">${esc(f.nombre)}</div>${f.extra ? `<div class="extra">${esc(f.extra)}</div>` : ''}</td>
+          <td>${esc(f.cat)}</td>
+          <td class="det">${esc(f.detalle)}</td>
+          <td class="mon">${fmt(f.monto)}</td>
+        </tr>`).join('')
+      : `<tr><td colspan="5" class="vacio">No hay cargas en esta lista.</td></tr>`;
+    return `<section>
+      <h2>${esc(defs[key].titulo)}</h2>
+      <p class="nota">${esc(defs[key].nota)}</p>
+      <table>
+        <thead><tr><th>#</th><th>Carga</th><th>Categoría</th><th>Detalle</th><th class="mon">Monto</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td colspan="4">Total ${esc(defs[key].titulo.toLowerCase())} · ${filas.length} carga${filas.length === 1 ? '' : 's'}</td><td class="mon">${fmt(suma)}</td></tr></tfoot>
+      </table>
+    </section>`;
+  }).join('');
+
+  const titulo = wanted === 'todos'
+    ? 'Informe de cargas'
+    : 'Informe · ' + defs[wanted].titulo;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SAC — ${esc(titulo)} — ${esc(periodo)}</title>
+<style>
+  @page { size: letter; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #111; margin: 0; padding: 18px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 13px; margin: 18px 0 2px; border-bottom: 2px solid #111; padding-bottom: 3px; }
+  .sub, .nota { font-size: 11px; color: #444; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+  th, td { border-bottom: 1px solid #ddd; padding: 5px 6px; font-size: 11px; text-align: left; vertical-align: top; }
+  th { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+  td.n { width: 28px; color: #666; }
+  td.mon, th.mon { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .nom { font-weight: 700; }
+  .extra { font-size: 10px; color: #555; margin-top: 2px; }
+  .det { color: #333; }
+  tfoot td { font-weight: 800; border-top: 2px solid #111; border-bottom: none; padding-top: 7px; }
+  .vacio { color: #777; font-style: italic; }
+  .foot { margin-top: 16px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 8px; }
+  @media print { body { padding: 0; } section { break-inside: avoid; } tr { break-inside: avoid; } }
+</style></head><body>
+  <h1>Aquí Jaime · SAC</h1>
+  <p class="sub">${esc(titulo)} · ${esc(periodo)}${quien ? ' · ' + esc(quien) : ''}<br>Emitido ${esc(cuando)}</p>
+  ${secciones}
+  <p class="foot">Lista de la semana en edición. Por pagar no incluye las pausas ni lo ya pagado.</p>
+  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) {
+    notify('⚠ El navegador bloqueó la ventana del informe. Permite ventanas emergentes y vuelve a intentar.');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}

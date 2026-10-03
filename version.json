@@ -1,4 +1,4 @@
 {
-  "version": "2026.10.02.2",
-  "notes": "Ajustar saldo de una carga muestra el monto nuevo, no la cifra anterior."
+  "version": "2026.10.03.1",
+  "notes": "En cargas se puede imprimir un informe PDF de por pagar, pausas y ya pagadas."
 }

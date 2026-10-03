@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="cerebrus-version" content="2026.10.02.2">
+<meta name="cerebrus-version" content="2026.10.03.1">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <script>
 (function(){
@@ -18,7 +18,7 @@
     }
   } catch(e){}
   // Si el navegador abrió una copia vieja de esta página, recargar la versión publicada.
-  var bootVer = '2026.10.02.2';
+  var bootVer = '2026.10.03.1';
   var guardKey = 'cerebrus_boot_reload';
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r) {
     return r.json();
@@ -1833,7 +1833,10 @@ body.dark-mode .sac-res-mov{border-color:rgba(255,255,255,.08);}
   border-radius:16px;border:1px solid var(--sac-line);background:var(--white);
   box-shadow:0 2px 10px rgba(15,23,42,.04);margin-bottom:14px;overflow:hidden;
 }
-.sac-cargas-filters{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;padding:4px 14px 12px;border-bottom:1px solid var(--sac-line);background:transparent;}
+.sac-cargas-filters{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;padding:4px 14px 8px;border-bottom:none;background:transparent;}
+.sac-cargas-pdfbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:0 14px 12px;border-bottom:1px solid var(--sac-line);}
+.sac-cargas-pdfbar-lbl{font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#94a3b8;margin-right:2px;}
+body.dark-mode .sac-cargas-pdfbar{border-color:rgba(255,255,255,.08);}
 .sac-filter-name{flex:1;min-width:0;}
 .sac-filter-clear{flex-shrink:0;font-size:11px;padding:7px 10px;}
 .sac-filter-inp,.sac-filter-sel{border:1px solid transparent;border-radius:10px;padding:8px 11px;font-size:12px;font-family:inherit;color:var(--primary);background:var(--sac-soft);}
@@ -3945,6 +3948,13 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <div class="sac-cargas-filters">
               <input id="sac-fil-name" class="sac-filter-inp sac-filter-name" placeholder="Buscar por nombre..." oninput="sacSetCargaFilters()">
               <button type="button" class="fac-btn sac-filter-clear" onclick="sacClearCargaFilters()">Limpiar</button>
+            </div>
+            <div class="sac-cargas-pdfbar" aria-label="Informes PDF de cargas">
+              <span class="sac-cargas-pdfbar-lbl">Informe</span>
+              <button type="button" class="sac-head-btn ghost" onclick="sacInformeCargasPDF('porpagar')" title="Lista imprimible de lo que falta por pagar">PDF por pagar</button>
+              <button type="button" class="sac-head-btn ghost" onclick="sacInformeCargasPDF('pausa')" title="Lista imprimible de cargas en pausa">PDF pausas</button>
+              <button type="button" class="sac-head-btn ghost" onclick="sacInformeCargasPDF('pagado')" title="Lista imprimible de cargas ya pagadas">PDF pagadas</button>
+              <button type="button" class="sac-head-btn ghost" onclick="sacInformeCargasPDF('todos')" title="Un PDF con por pagar, pausas y pagadas">PDF las tres</button>
             </div>
           </div>
           <div class="sac-cargas-list-scroll">
@@ -7353,7 +7363,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.10.02.2';
+const APP_VERSION = '2026.10.03.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -26318,7 +26328,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.10.02.2"></script>
+<script src="js/sac.js?v=2026.10.03.1"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
