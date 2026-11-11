@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="cerebrus-version" content="2026.10.03.1">
+<meta name="cerebrus-version" content="2026.11.11.1">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <script>
 (function(){
@@ -18,7 +18,7 @@
     }
   } catch(e){}
   // Si el navegador abrió una copia vieja de esta página, recargar la versión publicada.
-  var bootVer = '2026.10.03.1';
+  var bootVer = '2026.11.11.1';
   var guardKey = 'cerebrus_boot_reload';
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r) {
     return r.json();
@@ -809,12 +809,14 @@ body.dark-mode .nc-btn{background:#1e293b;}
 .login-user-btn.login-user-alberto{border-left:3px solid #27ae60;}
 .login-user-btn.login-user-diego{border-left:3px solid #e67e22;}
 .login-user-btn.login-user-bodega{border-left:3px solid #16a085;}
+.login-user-btn.login-user-priscila{border-left:3px solid #8e44ad;}
 .login-user-btn:active{transform:scale(0.98);}
 .login-avatar{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;box-shadow:0 4px 12px rgba(15,23,42,0.15);}
 .login-avatar.av-sebas{background:linear-gradient(145deg,#5dade2,#2980b9);}
 .login-avatar.av-alberto{background:linear-gradient(145deg,#58d68d,#27ae60);}
 .login-avatar.av-diego{background:linear-gradient(145deg,#f5b041,#e67e22);}
 .login-avatar.av-bodega{background:linear-gradient(145deg,#48c9b0,#16a085);}
+.login-avatar.av-priscila{background:linear-gradient(145deg,#bb8fce,#8e44ad);}
 .login-user-name{font-size:14px;font-weight:600;color:#0f172a;letter-spacing:-.01em;}
 .login-user-role{font-size:11px;color:#64748b;font-weight:500;}
 /* Better readability in both modes */
@@ -3467,6 +3469,10 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <div class="login-avatar av-diego">DP</div>
           <div><div class="login-user-name">Diego</div><div class="login-user-role">Subgerente</div></div>
         </button>
+        <button class="login-user-btn login-user-priscila" onclick="selectUser('Priscila','Socia','#8e44ad','PR')">
+          <div class="login-avatar av-priscila">PR</div>
+          <div><div class="login-user-name">Priscila</div><div class="login-user-role">Socia</div></div>
+        </button>
         <a href="servare/index.html" class="login-user-btn login-user-bodega" style="text-decoration:none;color:inherit;">
           <div class="login-avatar av-bodega">BO</div>
           <div><div class="login-user-name">Bodega</div><div class="login-user-role">App Bodega Aquí Jaime →</div></div>
@@ -4432,6 +4438,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <option value="Diego">Diego</option>
           <option value="Sebastián">Sebastián</option>
           <option value="Alberto">Alberto</option>
+          <option value="Priscila">Priscila</option>
           <option value="Otro">Otro</option>
         </select>
         <div style="font-size:10px;color:#9aacb8;margin-bottom:12px;" id="cred-modal-hint"></div>
@@ -7363,7 +7370,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.10.03.1';
+const APP_VERSION = '2026.11.11.1';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -7429,7 +7436,8 @@ function cerebrusRestoreLoginAfterVersionReload_() {
     const map = {
       'Sebastián': ['Gerente General', '#2980b9', 'SE'],
       'Alberto': ['Administrador', '#27ae60', 'AL'],
-      'Diego': ['Subgerente', '#e67e22', 'DP']
+      'Diego': ['Subgerente', '#e67e22', 'DP'],
+      'Priscila': ['Socia', '#8e44ad', 'PR']
     };
     const m = map[u];
     if (m) selectUser(u, m[0], m[1], m[2]);
@@ -9481,7 +9489,7 @@ function openCredModal(credId) {
   const pu = document.getElementById('cred-modal-user');
   if (pu) {
     const by = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : 'Diego';
-    const allowed = ['Diego','Sebastián','Alberto'];
+    const allowed = ['Diego','Sebastián','Alberto','Priscila'];
     pu.value = allowed.includes(by) ? by : 'Otro';
   }
   set('cred-modal-hint', 'Cuota estándar: ' + fmt(cuotaV) + '. Puedes cambiar el monto si el pago es distinto.');
@@ -14010,7 +14018,7 @@ let _loginAttempts  = 0;
 let _pendingUser    = '';
 const MAX_ATTEMPTS  = 5;
 
-const USER_COLORS = {'Sebastián':'#2980b9','Alberto':'#27ae60','Diego':'#e67e22','Bodega':'#16a085'};
+const USER_COLORS = {'Sebastián':'#2980b9','Alberto':'#27ae60','Diego':'#e67e22','Priscila':'#8e44ad','Bodega':'#16a085'};
 function userColor(u)    { return USER_COLORS[u] || '#8e44ad'; }
 function userInitials(u) { return (u||'?').slice(0,2).toUpperCase(); }
 
@@ -26328,7 +26336,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.10.03.1"></script>
+<script src="js/sac.js?v=2026.11.11.1"></script>
 <script>
 
 // ── UNSAVED CHANGES ──
@@ -28038,6 +28046,7 @@ function notify(msg, duration) {
     if (/sebast|sebas/i.test(s)) return 'Sebas';
     if (/alberto/i.test(low)) return 'Alberto';
     if (/diego/i.test(low)) return 'Diego';
+    if (/priscila/i.test(low)) return 'Priscila';
     if (/bodega/i.test(low)) return 'Bodega';
     var w = s.split(/\s+/)[0];
     return w || s;
