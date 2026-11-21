@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
-<meta name="cerebrus-version" content="2026.11.11.1">
+<meta name="cerebrus-version" content="2026.11.13.2">
 <title>CEREBRUS — Gastronomy Suite · Aquí Jaime</title>
 <script>
 (function(){
@@ -18,7 +18,7 @@
     }
   } catch(e){}
   // Si el navegador abrió una copia vieja de esta página, recargar la versión publicada.
-  var bootVer = '2026.11.11.1';
+  var bootVer = '2026.11.13.2';
   var guardKey = 'cerebrus_boot_reload';
   fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function(r) {
     return r.json();
@@ -506,6 +506,8 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 #creditos .cred-table th:first-child,#creditos .cred-table td:first-child{text-align:left;width:19%;min-width:108px;}
 #creditos .cred-table th:nth-child(n+2):not(.cred-th-actions),#creditos .cred-table td:nth-child(n+2):not(.cred-actions-cell){text-align:right;}
 #creditos .cred-table th.cred-th-actions,#creditos .cred-table td.cred-actions-cell{text-align:right;width:22%;min-width:118px;}
+#creditos .cred-cell-credito{cursor:pointer;}
+#creditos .cred-cell-credito:hover .cred-nro{text-decoration:underline;}
 #creditos .cred-cell-credito .cred-nro{display:block;line-height:1.2;}
 #creditos .cred-cell-credito .cred-acr-short{display:block;font-size:10px;font-weight:600;color:#64748b;margin-top:2px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 #creditos .cred-bar-track{min-width:36px;}
@@ -531,6 +533,7 @@ body.dark-mode .cred-alert-banner{background:#242b3d;}
 .cred-nro{font-weight:700;font-family:'Courier New',monospace;font-size:11px;}
 .cred-nro.alberto{color:#2980b9;}
 .cred-nro.pancho{color:#8e44ad;}
+.cred-nro.matias{color:#0f766e;}
 .cred-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;}
 .cred-badge.active{background:#fef9f0;color:var(--accent);}
 .cred-badge.paid{background:#eafaf1;color:var(--success);}
@@ -4348,6 +4351,11 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
           <div class="cred-kpi-val" id="cred-total-m" style="color:#8e44ad;">$0</div>
           <div class="cred-kpi-sub" id="cred-cuotas-m">0 cuotas pendientes</div>
         </div>
+        <div class="cred-kpi" style="border-left-color:#0f766e;">
+          <div class="cred-kpi-label">🟢 Matías — deuda activa</div>
+          <div class="cred-kpi-val" id="cred-total-mat" style="color:#0f766e;">$0</div>
+          <div class="cred-kpi-sub" id="cred-cuotas-mat">0 cuotas pendientes</div>
+        </div>
         <div class="cred-kpi" style="border-left-color:var(--danger);">
           <div class="cred-kpi-label">📊 Total deuda activa</div>
           <div class="cred-kpi-val" id="cred-total-all" style="color:var(--danger);">$0</div>
@@ -4365,6 +4373,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
         <button class="cred-filter-btn active" id="crf-todos"   onclick="credFilter('todos')">Todos</button>
         <button class="cred-filter-btn"        id="crf-alberto" onclick="credFilter('alberto')">🔵 Alberto</button>
         <button class="cred-filter-btn"        id="crf-pancho"  onclick="credFilter('pancho')" title="Schele / Pancho">🟣 Pancho</button>
+        <button class="cred-filter-btn"        id="crf-matias"  onclick="credFilter('matias')">🟢 Matías</button>
         <button class="cred-filter-btn"        id="crf-activos" onclick="credFilter('activos')">Activos</button>
         <button class="cred-filter-btn"        id="crf-pagados" onclick="credFilter('pagados')">Pagados</button>
         <button class="cred-filter-btn" onclick="credOpenPagosReport()">📄 Informe pagos</button>
@@ -4381,6 +4390,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <select id="cn-otorgado" onchange="toggleOtroAcreedor(this)">
               <option value="alberto">Alberto</option>
               <option value="pancho">Schele/Pancho</option>
+              <option value="matias">Matías</option>
               <option value="otro">Otro…</option>
             </select>
             <input type="text" id="cn-otorgado-custom" placeholder="Nombre del acreedor" style="display:none;margin-top:6px;width:100%;border:1px solid var(--border);border-radius:5px;padding:7px 10px;font-family:inherit;font-size:12px;color:var(--primary);background:transparent;">
@@ -4396,7 +4406,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
         </div>
       </div>
 
-      <p class="cred-table-scroll-hint">Desliza <strong>horizontalmente</strong> sobre la tabla blanca si no entran todas las columnas (también con trackpad o ratón sobre la tarjeta).</p>
+      <p class="cred-table-scroll-hint">Desliza <strong>horizontalmente</strong> sobre la tabla si no entran todas las columnas. La columna Cuotas muestra <strong>restantes / base</strong>. Haz clic en el número o en <strong>Ficha</strong> para ver cómo se armó el crédito y editarlo.</p>
       <!-- Tabla de créditos -->
       <div class="cred-table-wrap">
         <table class="cred-table">
@@ -4406,7 +4416,7 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
             <th>V. pagar</th>
             <th>Pagado</th>
             <th>Saldo</th>
-            <th>Cuotas</th>
+            <th title="Cuotas restantes / cuotas base">Cuotas</th>
             <th>%</th>
             <th>Emisión</th>
             <th>Últ. pago</th>
@@ -4445,6 +4455,41 @@ body.dark-mode .sac-toolbar-fold{background:#1c1c1e;border-color:rgba(255,255,25
         <div class="cred-modal-footer">
           <button class="cred-modal-cancel" onclick="closeCredModalBtn()">Cancelar</button>
           <button class="cred-modal-ok" onclick="confirmCredPago()">✓ Confirmar pago</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ficha del crédito: ver cómo se armó y editar la base -->
+  <div class="cred-modal-overlay" id="credFichaModal" onclick="closeCredFichaBg(event)">
+    <div class="cred-modal" style="width:680px;max-width:96vw;">
+      <div class="cred-modal-head">
+        <h3 id="cred-ficha-title">Ficha</h3>
+        <button type="button" onclick="closeCredFicha()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#9aacb8;">✕</button>
+      </div>
+      <div class="cred-modal-body" style="max-height:82vh;overflow:auto;">
+        <p style="font-size:11px;color:#64748b;margin:0 0 10px;">La <strong>base</strong> es el N° de cuotas. Cada cuota vale valor a pagar ÷ esa base. En la tabla, el primer número son las que faltan.</p>
+        <div class="cred-modal-info" id="cred-ficha-info"></div>
+        <div class="cred-nuevo-grid">
+          <div><label>Otorgado por</label>
+            <select id="cf-otorgado" onchange="credFichaToggleOtro(this)">
+              <option value="alberto">Alberto</option>
+              <option value="pancho">Schele/Pancho</option>
+              <option value="matias">Matías</option>
+              <option value="otro">Otro…</option>
+            </select>
+            <input type="text" id="cf-otorgado-custom" placeholder="Nombre del acreedor" style="display:none;margin-top:6px;">
+          </div>
+          <div><label>Fecha emisión</label><input type="date" id="cf-fecha"></div>
+          <div><label>Valor otorgado</label><input type="text" inputmode="numeric" id="cf-valor"></div>
+          <div><label>Valor a pagar</label><input type="text" inputmode="numeric" id="cf-total" oninput="credFichaPreview()"></div>
+          <div><label>N° cuotas (base)</label><input type="text" inputmode="numeric" id="cf-cuotas" oninput="credFichaPreview()"></div>
+          <div style="display:flex;align-items:flex-end;"><div id="cf-preview" style="font-size:11px;font-weight:700;color:#334155;padding-bottom:8px;"></div></div>
+        </div>
+        <div id="cred-ficha-hist"></div>
+        <div class="cred-modal-footer" style="margin-top:12px;">
+          <button type="button" class="cred-modal-cancel" onclick="closeCredFicha()">Cerrar</button>
+          <button type="button" class="cred-modal-ok" onclick="saveCredFicha()">Guardar ficha</button>
         </div>
       </div>
     </div>
@@ -7370,7 +7415,7 @@ let _lastConflictInfo = { user:'', date:'', keys:[] };
 let _lastConflictVoiceKey = '';
 let _hasOtherOnlineUsers = false;
 let _hasSacConcurrencyPeers = false;
-const APP_VERSION = '2026.11.11.1';
+const APP_VERSION = '2026.11.13.2';
 let _versionCheckTimer = null;
 let _versionPromptOpen = false;
 const CEREBRUS_VERSION_RELOAD_GUARD_KEY = 'cerebrus_ver_reload_guard';
@@ -9281,6 +9326,7 @@ let _credFilter = 'todos';
 let _credModal  = null;
 let _credSaving = false;
 let _credHistOpen = null;
+let _credFicha = null;
 let _credPagosReportRows = [];
 
 function credSaldo(c)   { return Math.max(0, (c.valorPagar||0) - (c.totalPagado||0)); }
@@ -9356,14 +9402,18 @@ function calcCredKpis() {
   const pagados = state.creditos.filter(c =>  credPaid(c));
   const totA = activos.filter(c=>c.otorgado==='alberto').reduce((s,c)=>s+credSaldo(c),0);
   const totM = activos.filter(c=>c.otorgado==='pancho' ).reduce((s,c)=>s+credSaldo(c),0);
+  const totMat = activos.filter(c=>c.otorgado==='matias').reduce((s,c)=>s+credSaldo(c),0);
   const cuotasA = activos.filter(c=>c.otorgado==='alberto').reduce((s,c)=>s+(c.cuotasRest||0),0);
   const cuotasM = activos.filter(c=>c.otorgado==='pancho' ).reduce((s,c)=>s+(c.cuotasRest||0),0);
+  const cuotasMat = activos.filter(c=>c.otorgado==='matias').reduce((s,c)=>s+(c.cuotasRest||0),0);
   const cuotaSem = activos.reduce((s,c)=>s+credCuotaVal(c),0);
   set('cred-total-a',    fmt(totA));
   set('cred-cuotas-a',   cuotasA + ' cuotas pendientes');
   set('cred-total-m',    fmt(totM));
   set('cred-cuotas-m',   cuotasM + ' cuotas pendientes');
-  set('cred-total-all',  fmt(totA+totM));
+  set('cred-total-mat',  fmt(totMat));
+  set('cred-cuotas-mat', cuotasMat + ' cuotas pendientes');
+  set('cred-total-all',  fmt(totA+totM+totMat));
   set('cred-cuota-semana','Cuota semanal total: ' + fmt(cuotaSem));
   set('cred-count-active', activos.length + ' activos');
   set('cred-count-paid',   pagados.length + ' pagado' + (pagados.length!==1?'s':''));
@@ -9371,7 +9421,7 @@ function calcCredKpis() {
 
 function credFilter(f) {
   _credFilter = f;
-  ['todos','alberto','pancho','activos','pagados'].forEach(k => {
+  ['todos','alberto','pancho','matias','activos','pagados'].forEach(k => {
     const b = document.getElementById('crf-'+k);
     if (b) b.classList.toggle('active', k===f);
   });
@@ -9381,6 +9431,7 @@ function credFilter(f) {
 function credVisible(c) {
   if (_credFilter==='alberto') return c.otorgado==='alberto';
   if (_credFilter==='pancho' ) return c.otorgado==='pancho';
+  if (_credFilter==='matias' ) return c.otorgado==='matias';
   if (_credFilter==='activos') return !credPaid(c);
   if (_credFilter==='pagados') return  credPaid(c);
   return true;
@@ -9401,7 +9452,7 @@ function renderCreditos() {
     const paid    = credPaid(c);
     const progPct = Math.min(100, Math.round((c.totalPagado||0) / (c.valorPagar||1) * 100));
     const barColor= paid ? 'var(--success)' : progPct >= 75 ? 'var(--accent)' : '#2980b9';
-    const nroClass= c.otorgado==='alberto' ? 'alberto' : c.otorgado==='pancho' ? 'pancho' : '';
+    const nroClass= c.otorgado==='alberto' ? 'alberto' : c.otorgado==='pancho' ? 'pancho' : c.otorgado==='matias' ? 'matias' : '';
     const acrTitle = credAcreedorLabel(c);
     const badge   = paid
       ? '<span class="cred-badge paid">✓ Pagado</span>'
@@ -9410,6 +9461,7 @@ function renderCreditos() {
         : `<span class="cred-badge active">${c.cuotasRest||0} cuotas</span>`;
     const lastPago = credLastPago(c);
     const regTxt = credPagoRegistroTxt(lastPago);
+    const fichaBtn = `<button type="button" class="btn-pagar" style="background:#334155;" onclick="openCredFicha('${c.id}')" title="Ver y editar la ficha del crédito">Ficha</button>`;
     const pagarBtn = paid ? '' : `<button class="btn-pagar" onclick="openCredModal('${c.id}')" title="Registrar pago de cuota">Pagar</button>`;
     const undoBtn = lastPago
       ? `<button class="btn-pagar" style="background:#f59e0b;" onclick="credUndoLastPago('${c.id}')" title="Deshacer último pago">↶</button>`
@@ -9439,12 +9491,12 @@ function renderCreditos() {
         </tr>`
       : '';
     return `<tr class="${paid?'cred-paid':''}">
-      <td class="cred-cell-credito" title="${esc(acrTitle)}"><span class="cred-nro ${nroClass}">${c.id}</span><span class="cred-acr-short">${esc(credOtorgadoShort(c))}</span></td>
+      <td class="cred-cell-credito" title="Abrir ficha de ${esc(c.id)} · ${esc(acrTitle)}" onclick="openCredFicha('${c.id}')"><span class="cred-nro ${nroClass}">${c.id}</span><span class="cred-acr-short">${esc(credOtorgadoShort(c))}</span></td>
       <td>${fmt(c.valorOtorgado||0)}</td>
       <td>${fmt(c.valorPagar||0)}</td>
       <td style="color:var(--success)">${fmt(c.totalPagado||0)}</td>
       <td style="color:${paid?'var(--success)':'var(--danger)'};font-weight:700;">${fmt(saldo)}</td>
-      <td style="text-align:center;">${c.cuotasRest||0}</td>
+      <td style="text-align:center;" title="Restantes / base">${c.cuotasRest||0} / ${c.totalCuotas||0}</td>
       <td>
         <div class="cred-bar-wrap">
           <div class="cred-bar-track"><div class="cred-bar-fill" style="width:${progPct}%;background:${barColor};"></div></div>
@@ -9456,7 +9508,7 @@ function renderCreditos() {
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(credLastPagoTxt(c))}</div>
       </td>
       <td>${badge}</td>
-      <td class="cred-actions-cell"><div class="cred-actions">${pagarBtn}${undoBtn}${histBtn}${delBtn}</div></td>
+      <td class="cred-actions-cell"><div class="cred-actions">${fichaBtn}${pagarBtn}${undoBtn}${histBtn}${delBtn}</div></td>
     </tr>${histRow}`;
   }).join('');
 }
@@ -9475,11 +9527,11 @@ function openCredModal(credId) {
   set('cred-modal-title', 'Registrar pago — ' + c.id);
   document.getElementById('cred-modal-info').innerHTML = `
     <div><div class="cred-modal-info-label">Prestamista</div>
-         <div class="cred-modal-info-val">${c.otorgado==='alberto'?'🔵 Alberto':c.otorgado==='pancho'?'🟣 Schele/Pancho':'🟠 '+c.otorgado}</div></div>
+         <div class="cred-modal-info-val">${c.otorgado==='alberto'?'🔵 Alberto':c.otorgado==='pancho'?'🟣 Schele/Pancho':c.otorgado==='matias'?'🟢 Matías':'🟠 '+c.otorgado}</div></div>
     <div><div class="cred-modal-info-label">Saldo actual</div>
          <div class="cred-modal-info-val" style="color:var(--danger)">${fmt(saldo)}</div></div>
     <div><div class="cred-modal-info-label">Cuotas restantes</div>
-         <div class="cred-modal-info-val">${c.cuotasRest}</div></div>
+         <div class="cred-modal-info-val">${c.cuotasRest} de ${c.totalCuotas||0}</div></div>
     <div><div class="cred-modal-info-label">Cuota estándar</div>
          <div class="cred-modal-info-val" style="color:var(--success)">${fmt(cuotaV)}</div></div>`;
   const inp = document.getElementById('cred-modal-amount');
@@ -9506,6 +9558,130 @@ function closeCredModalBtn() {
   _credSaving = false;
   const okBtn = document.querySelector('#credModal .cred-modal-ok');
   if (okBtn) okBtn.disabled = false;
+}
+
+function credFichaToggleOtro(sel) {
+  const custom = document.getElementById('cf-otorgado-custom');
+  if (!custom) return;
+  if (sel && sel.value === 'otro') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+  }
+}
+
+function credFichaPreview() {
+  const el = document.getElementById('cf-preview');
+  if (!el) return;
+  const total = parseNumCL(document.getElementById('cf-total').value || '', false);
+  const cuotas = parseInt(document.getElementById('cf-cuotas').value, 10) || 0;
+  const c = (state.creditos || []).find(x => x.id === _credFicha);
+  if (!total || !cuotas) { el.textContent = ''; return; }
+  const cuota = Math.round(total / cuotas);
+  const pagado = c ? (c.totalPagado || 0) : 0;
+  const saldo = Math.max(0, total - pagado);
+  const rest = saldo <= 0 ? 0 : Math.round(saldo / cuota);
+  el.textContent = 'Cuota base: ' + fmt(cuota) + ' · quedarían ' + rest + ' pendientes';
+}
+
+function openCredFicha(credId) {
+  const c = (state.creditos || []).find(x => x.id === credId);
+  if (!c) return;
+  _credFicha = credId;
+  set('cred-ficha-title', 'Ficha — ' + c.id);
+  const cuota = credCuotaVal(c);
+  const saldo = credSaldo(c);
+  const pagos = Array.isArray(c.pagosHist) ? c.pagosHist : [];
+  document.getElementById('cred-ficha-info').innerHTML =
+    '<div><div class="cred-modal-info-label">Prestamista</div><div class="cred-modal-info-val">' + esc(credAcreedorLabel(c)) + '</div></div>' +
+    '<div><div class="cred-modal-info-label">Base</div><div class="cred-modal-info-val">' + (c.totalCuotas || 0) + ' cuotas</div></div>' +
+    '<div><div class="cred-modal-info-label">Cuota</div><div class="cred-modal-info-val" style="color:var(--success)">' + fmt(cuota) + '</div></div>' +
+    '<div><div class="cred-modal-info-label">Pagado</div><div class="cred-modal-info-val">' + fmt(c.totalPagado || 0) + ' · ' + pagos.length + ' pago' + (pagos.length === 1 ? '' : 's') + '</div></div>' +
+    '<div><div class="cred-modal-info-label">Saldo</div><div class="cred-modal-info-val" style="color:var(--danger)">' + fmt(saldo) + '</div></div>' +
+    '<div><div class="cred-modal-info-label">Restantes</div><div class="cred-modal-info-val">' + (c.cuotasRest || 0) + ' de ' + (c.totalCuotas || 0) + '</div></div>';
+  const sel = document.getElementById('cf-otorgado');
+  const custom = document.getElementById('cf-otorgado-custom');
+  const known = c.otorgado === 'alberto' || c.otorgado === 'pancho' || c.otorgado === 'matias';
+  sel.value = known ? c.otorgado : 'otro';
+  custom.value = known ? '' : (c.otorgado || '');
+  custom.style.display = known ? 'none' : 'block';
+  document.getElementById('cf-valor').value = fmtInputCL(c.valorOtorgado || 0);
+  document.getElementById('cf-total').value = fmtInputCL(c.valorPagar || 0);
+  document.getElementById('cf-cuotas').value = c.totalCuotas || 16;
+  document.getElementById('cf-fecha').value = credParseClDateToKey(c.fechaEmision) || '';
+  const hist = document.getElementById('cred-ficha-hist');
+  if (!pagos.length) {
+    hist.innerHTML = '<div style="font-size:11px;color:#94a3b8;">Sin pagos registrados.</div>';
+  } else {
+    hist.innerHTML = '<div style="font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:6px;">Pagos registrados</div>' +
+      pagos.map(function(p) {
+        const reg = credPagoRegistroTxt(p);
+        return '<div style="font-size:11px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;margin-bottom:6px;">' +
+          '<b>' + fmt(p.monto || 0) + '</b> · pago: ' + esc(p.fecha || '—') + ' · por: ' + esc(p.user || '—') +
+          (reg ? '<div style="font-size:9px;color:#94a3b8;">registro: ' + esc(reg) + '</div>' : '') +
+          '</div>';
+      }).join('');
+  }
+  credFichaPreview();
+  document.getElementById('credFichaModal').classList.add('open');
+}
+
+function closeCredFichaBg(e) {
+  if (e.target === document.getElementById('credFichaModal')) closeCredFicha();
+}
+
+function closeCredFicha() {
+  const modal = document.getElementById('credFichaModal');
+  if (modal) modal.classList.remove('open');
+  _credFicha = null;
+}
+
+function saveCredFicha() {
+  if (!_credFicha) return;
+  const c = (state.creditos || []).find(x => x.id === _credFicha);
+  if (!c) return;
+  const sel = document.getElementById('cf-otorgado').value;
+  let otor = sel;
+  if (sel === 'otro') {
+    otor = (document.getElementById('cf-otorgado-custom').value || '').trim();
+    if (!otor) { notify('⚠ Escribe el nombre del acreedor'); return; }
+  }
+  const valor = parseNumCL(document.getElementById('cf-valor').value || '', false);
+  const total = parseNumCL(document.getElementById('cf-total').value || '', false);
+  const cuotas = parseInt(document.getElementById('cf-cuotas').value, 10);
+  const fecha = document.getElementById('cf-fecha').value;
+  if (!valor || !total || !cuotas || cuotas < 1 || !fecha) {
+    notify('⚠ Completa valor otorgado, valor a pagar, N° de cuotas y fecha');
+    return;
+  }
+  if (total + 1 < (c.totalPagado || 0)) {
+    notify('⚠ El valor a pagar no puede ser menor que lo ya pagado (' + fmt(c.totalPagado || 0) + ')');
+    return;
+  }
+  const parts = fecha.split('-');
+  if (parts.length !== 3) { notify('⚠ Fecha de emisión inválida'); return; }
+  const cuota = Math.round(total / cuotas);
+  if (!confirm(
+    '¿Guardar la ficha de ' + c.id + '?\n\n' +
+    'Base: ' + cuotas + ' cuotas\n' +
+    'Cuota: ' + fmt(cuota) + '\n' +
+    'Valor a pagar: ' + fmt(total)
+  )) return;
+  pushUndo();
+  c.otorgado = otor;
+  c.valorOtorgado = valor;
+  c.valorPagar = total;
+  c.totalCuotas = cuotas;
+  c.fechaEmision = parts[2] + '-' + parts[1] + '-' + parts[0];
+  credRecalcAfterPagos(c);
+  const id = c.id;
+  closeCredFicha();
+  renderCreditos();
+  markUnsaved();
+  if (typeof saveState === 'function') saveState('Editó ficha del crédito ' + id, true);
+  notify('✓ Ficha de ' + id + ' guardada · base ' + cuotas + ' cuotas · cuota ' + fmt(cuota));
 }
 
 function confirmCredPago() {
@@ -9614,7 +9790,7 @@ function credUndoPagoByKey(credId, key) {
 function credCollectPagosRows() {
   const rows = [];
   (state.creditos || []).forEach(function(c) {
-    const acreedor = c.otorgado === 'alberto' ? 'Alberto' : (c.otorgado === 'pancho' ? 'Schele/Pancho' : (c.otorgado || '—'));
+    const acreedor = c.otorgado === 'alberto' ? 'Alberto' : (c.otorgado === 'pancho' ? 'Schele/Pancho' : (c.otorgado === 'matias' ? 'Matías' : (c.otorgado || '—')));
     (Array.isArray(c.pagosHist) ? c.pagosHist : []).forEach(function(p, i) {
       rows.push({
         credId: c.id || '—',
@@ -9716,6 +9892,7 @@ function credAcreedorLabel(c) {
   const o = (c && c.otorgado) || '';
   if (o === 'alberto') return 'Alberto';
   if (o === 'pancho') return 'Schele/Pancho';
+  if (o === 'matias') return 'Matías';
   return String(o || '—');
 }
 
@@ -9724,6 +9901,7 @@ function credOtorgadoShort(c) {
   const o = (c && c.otorgado) || '';
   if (o === 'alberto') return 'Alb.';
   if (o === 'pancho') return 'Pancho';
+  if (o === 'matias') return 'Matías';
   const s = String(o || '—');
   return s.length > 10 ? s.slice(0, 9) + '…' : s;
 }
@@ -26336,7 +26514,7 @@ function psemEliminar(w, i) {
 }
 
 </script>
-<script src="js/sac.js?v=2026.11.11.1"></script>
+<script src="js/sac.js?v=2026.11.13.2"></script>
 <script>
 
 // ── UNSAVED CHANGES ──

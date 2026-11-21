@@ -2556,6 +2556,15 @@ function sacImportSelected() {
   notify(msg);
 }
 
+function sacUltimoEventoCarga_(c, acciones) {
+  const log = Array.isArray(c && c.auditLog) ? c.auditLog : [];
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    if (e && acciones.indexOf(e.accion) >= 0) return e;
+  }
+  return null;
+}
+
 function sacInformeCargaFila_(c) {
   const es = c.estado || 'nopagado';
   const abonado = sacCargaAbonadoNum(c);
@@ -2563,25 +2572,32 @@ function sacInformeCargaFila_(c) {
   const total = Number(c.monto) || 0;
   let detalle = 'No pagado';
   let monto = es === 'pagado' ? total : (pendiente || total);
+  let evento = null;
   if (es === 'pagado') {
     detalle = 'Pagada';
     monto = total;
+    evento = sacUltimoEventoCarga_(c, ['pagar_todo', 'estado_pagado', 'ajuste_saldo']);
   } else if (es === 'pausa') {
     detalle = abonado > 0
       ? 'En pausa · abonado ' + fmt(abonado) + ' · se congela ' + fmt(pendiente)
       : 'En pausa · no suma a por pagar';
     monto = pendiente || total;
+    evento = sacUltimoEventoCarga_(c, ['pausa']);
   } else if (es === 'parcial' || abonado > 0) {
     detalle = 'Pago parcial · abonado ' + fmt(abonado) + ' de ' + fmt(total);
     monto = pendiente;
   }
   const extra = [c.resp ? 'Responsable: ' + c.resp : '', c.nota || ''].filter(Boolean).join(' · ');
+  const fecha = evento ? [evento.fecha || '', evento.hora || ''].filter(Boolean).join(' ') : '';
+  const usuario = evento && evento.usuario && evento.usuario !== '?' ? evento.usuario : '';
   return {
     nombre: c.nombre || 'Sin nombre',
     cat: c.cat || 'Otro',
     detalle,
     extra,
-    monto
+    monto,
+    fecha,
+    usuario
   };
 }
 
@@ -2598,8 +2614,8 @@ function sacInformeCargasPDF(modo) {
   });
   const defs = {
     porpagar: { titulo: 'Por pagar', nota: 'Pendientes y pagos parciales. El monto es lo que falta.' },
-    pausa: { titulo: 'En pausa', nota: 'Congeladas. Estos montos no entran en por pagar.' },
-    pagado: { titulo: 'Ya pagadas', nota: 'Cargas saldadas de esta semana.' }
+    pausa: { titulo: 'En pausa', nota: 'Congeladas. Estos montos no entran en por pagar. Fecha y usuario de quien pausó.' },
+    pagado: { titulo: 'Ya pagadas', nota: 'Cargas saldadas de esta semana. Fecha y usuario de quien pagó.' }
   };
   const keys = wanted === 'todos' ? ['porpagar', 'pausa', 'pagado'] : [wanted];
   const periodo = (typeof sacPeriodLabel === 'function' ? sacPeriodLabel() : '') || 'Semana';
@@ -2612,22 +2628,26 @@ function sacInformeCargasPDF(modo) {
     );
     const filas = items.map(sacInformeCargaFila_);
     const suma = filas.reduce((s, f) => s + (Number(f.monto) || 0), 0);
+    const conQuien = key === 'pausa' || key === 'pagado';
+    const cols = conQuien ? 7 : 5;
     const body = filas.length
       ? filas.map((f, i) => `<tr>
           <td class="n">${i + 1}</td>
           <td><div class="nom">${esc(f.nombre)}</div>${f.extra ? `<div class="extra">${esc(f.extra)}</div>` : ''}</td>
           <td>${esc(f.cat)}</td>
           <td class="det">${esc(f.detalle)}</td>
+          ${conQuien ? `<td class="quien">${esc(f.fecha || 'Sin registro')}</td><td class="quien">${esc(f.usuario || 'Sin registro')}</td>` : ''}
           <td class="mon">${fmt(f.monto)}</td>
         </tr>`).join('')
-      : `<tr><td colspan="5" class="vacio">No hay cargas en esta lista.</td></tr>`;
+      : `<tr><td colspan="${cols}" class="vacio">No hay cargas en esta lista.</td></tr>`;
+    const headQuien = conQuien ? `<th>Fecha</th><th>Usuario</th>` : '';
     return `<section>
       <h2>${esc(defs[key].titulo)}</h2>
       <p class="nota">${esc(defs[key].nota)}</p>
       <table>
-        <thead><tr><th>#</th><th>Carga</th><th>Categoría</th><th>Detalle</th><th class="mon">Monto</th></tr></thead>
+        <thead><tr><th>#</th><th>Carga</th><th>Categoría</th><th>Detalle</th>${headQuien}<th class="mon">Monto</th></tr></thead>
         <tbody>${body}</tbody>
-        <tfoot><tr><td colspan="4">Total ${esc(defs[key].titulo.toLowerCase())} · ${filas.length} carga${filas.length === 1 ? '' : 's'}</td><td class="mon">${fmt(suma)}</td></tr></tfoot>
+        <tfoot><tr><td colspan="${cols - 1}">Total ${esc(defs[key].titulo.toLowerCase())} · ${filas.length} carga${filas.length === 1 ? '' : 's'}</td><td class="mon">${fmt(suma)}</td></tr></tfoot>
       </table>
     </section>`;
   }).join('');
@@ -2651,6 +2671,7 @@ function sacInformeCargasPDF(modo) {
   .nom { font-weight: 700; }
   .extra { font-size: 10px; color: #555; margin-top: 2px; }
   .det { color: #333; }
+  td.quien { white-space: nowrap; font-size: 10px; }
   tfoot td { font-weight: 800; border-top: 2px solid #111; border-bottom: none; padding-top: 7px; }
   .vacio { color: #777; font-style: italic; }
   .foot { margin-top: 16px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 8px; }
