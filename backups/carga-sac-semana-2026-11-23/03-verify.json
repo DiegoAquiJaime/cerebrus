@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "version": "1795441159038",
+  "lastUser": "Diego",
+  "old_week_equal": true,
+  "other_weeks_equal": true,
+  "extra_equal": true,
+  "cierres_equal": true,
+  "creditos_equal": true,
+  "facturas_equal": true,
+  "propinas_equal": true,
+  "informes_equal": true,
+  "inventario_equal": true,
+  "period": {
+    "type": "range",
+    "start": "2026-11-23",
+    "end": "2026-11-29"
+  },
+  "new_n": 26,
+  "new_total": 39565580,
+  "new_names": [
+    "Turnos y Dobles",
+    "Bono Locomoción",
+    "Bono Basura",
+    "Bono Comedor",
+    "Bono Marcelo",
+    "Abastible",
+    "Chilquinta (Luz / Abono)",
+    "Movistar",
+    "Mantención",
+    "Pacto Proveedores",
+    "Supermercado",
+    "Ariztía",
+    "Brotes",
+    "Flores Comestibles",
+    "Masas",
+    "Crédito Informal Alberto",
+    "Crédito Informal Matías/Pancho",
+    "Crédito Informal Sebastián",
+    "Cuota Matías",
+    "Crédito Fogape",
+    "Tarjetas y Créditos",
+    "Retiro Personal Sebastián",
+    "Sra. Paty – Retiro Personal",
+    "Pacto Sharif",
+    "Pago cuota CCMM",
+    "Pago cuota CARNES 18 sept."
+  ],
+  "new_estados": [
+    "nopagado"
+  ],
+  "vs_est": [
+    2000000,
+    2000000,
+    2000000,
+    2000000,
+    4000000,
+    7000000,
+    6000000
+  ],
+  "vs_total": 25000000,
+  "sac_keys": [
+    "R|2026-10-26|2026-11-01",
+    "R|2026-11-02|2026-11-08",
+    "R|2026-11-09|2026-11-15",
+    "R|2026-11-16|2026-11-22",
+    "R|2026-11-23|2026-11-29",
+    "S|2026|11|2",
+    "S|2026|11|3"
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "period_before": {
+    "type": "range",
+    "start": "2026-11-16",
+    "end": "2026-11-22"
+  },
+  "new_key": "R|2026-11-23|2026-11-29",
+  "n": 26,
+  "total": 39565580,
+  "vs_est": [
+    2000000,
+    2000000,
+    2000000,
+    2000000,
+    4000000,
+    7000000,
+    6000000
+  ],
+  "vs_total": 25000000,
+  "cargas": [
+    {
+      "nombre": "Turnos y Dobles",
+      "cat": "RRHH",
+      "monto": 1200000
+    },
+    {
+      "nombre": "Bono Locomoción",
+      "cat": "RRHH",
+      "monto": 250000
+    },
+    {
+      "nombre": "Bono Basura",
+      "cat": "Bono",
+      "monto": 21000
+    },
+    {
+      "nombre": "Bono Comedor",
+      "cat": "RRHH",
+      "monto": 120000
+    },
+    {
+      "nombre": "Bono Marcelo",
+      "cat": "RRHH",
+      "monto": 100000
+    },
+    {
+      "nombre": "Abastible",
+      "cat": "Servicio",
+      "monto": 665743
+    },
+    {
+      "nombre": "Chilquinta (Luz / Abono)",
+      "cat": "Servicio",
+      "monto": 400000
+    },
+    {
+      "nombre": "Movistar",
+      "cat": "Servicio",
+      "monto": 279028
+    },
+    {
+      "nombre": "Mantención",
+      "cat": "Servicio",
+      "monto": 600000
+    },
+    {
+      "nombre": "Pacto Proveedores",
+      "cat": "Proveedor",
+      "monto": 2200000
+    },
+    {
+      "nombre": "Supermercado",
+      "cat": "Proveedor",
+      "monto": 7500000
+    },
+    {
+      "nombre": "Ariztía",
+      "cat": "Proveedor",
+      "monto": 130000
+    },
+    {
+      "nombre": "Brotes",
+      "cat": "Proveedor",
+      "monto": 46000
+    },
+    {
+      "nombre": "Flores Comestibles",
+      "cat": "Proveedor",
+      "monto": 43000
+    },
+    {
+      "nombre": "Masas",
+      "cat": "Proveedor",
+      "monto": 80000
+    },
+    {
+      "nombre": "Crédito Informal Alberto",
+      "cat": "Crédito",
+      "monto": 3750000
+    },
+    {
+      "nombre": "Crédito Informal Matías/Pancho",
+      "cat": "Crédito",
+      "monto": 3000000
+    },
+    {
+      "nombre": "Crédito Informal Sebastián",
+      "cat": "Crédito",
+      "monto": 7750000
+    },
+    {
+      "nombre": "Cuota Matías",
+      "cat": "Crédito",
+      "monto": 750000
+    },
+    {
+      "nombre": "Crédito Fogape",
+      "cat": "Crédito",
+      "monto": 3230809
+    },
+    {
+      "nombre": "Tarjetas y Créditos",
+      "cat": "TC",
+      "monto": 3000000
+    },
+    {
+      "nombre": "Retiro Personal Sebastián",
+      "cat": "Retiro",
+      "monto": 2000000
+    },
+    {
+      "nombre": "Sra. Paty – Retiro Personal",
+      "cat": "Retiro",
+      "monto": 250000
+    },
+    {
+      "nombre": "Pacto Sharif",
+      "cat": "Otro",
+      "monto": 500000
+    },
+    {
+      "nombre": "Pago cuota CCMM",
+      "cat": "Otro",
+      "monto": 1600000
+    },
+    {
+      "nombre": "Pago cuota CARNES 18 sept.",
+      "cat": "Otro",
+      "monto": 100000
+    }
+  ]
+}
